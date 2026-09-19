@@ -1,0 +1,336 @@
+PDS_VERSION_ID               = PDS3
+DD_VERSION_ID                = PDSCAT1R103
+LABEL_REVISION_NOTE          = "
+  2017-06-19, S. Murakami (ISAS/JAXA): generated automatically.
+  2017-10-11, S. Murakami (ISAS/JAXA): revised, generated automatically.
+  2018-04-26, S. Murakami (ISAS/JAXA): revised, generated automatically.
+  2018-09-14, S. Murakami (ISAS/JAXA): revised, generated automatically.
+  2018-10-15, S. Murakami (ISAS/JAXA): revised, generated automatically.
+  "
+
+
+/* ---- FILE CHARACTERISTICS ---- */
+
+FILE_NAME                    = "uvi_20181105_080112_283_geo_v10.fit"
+FILE_RECORDS                 = 10242
+RECORD_TYPE                  = FIXED_LENGTH
+RECORD_BYTES                 = 2880
+
+
+/* ---- POINTERS TO DATA OBJECTS ---- */
+
+^PRIMARY_HEADER              = ("uvi_20181105_080112_283_geo_v10.fit", 1)
+^LATITUDE_HEADER             = ("uvi_20181105_080112_283_geo_v10.fit", 2)
+^LATITUDE_IMAGE              = ("uvi_20181105_080112_283_geo_v10.fit", 8)
+^LONGITUDE_HEADER            = ("uvi_20181105_080112_283_geo_v10.fit", 1465)
+^LONGITUDE_IMAGE             = ("uvi_20181105_080112_283_geo_v10.fit", 1471)
+^LOCAL_TIME_HEADER           = ("uvi_20181105_080112_283_geo_v10.fit", 2928)
+^LOCAL_TIME_IMAGE            = ("uvi_20181105_080112_283_geo_v10.fit", 2934)
+^PHASE_ANGLE_HEADER          = ("uvi_20181105_080112_283_geo_v10.fit", 4391)
+^PHASE_ANGLE_IMAGE           = ("uvi_20181105_080112_283_geo_v10.fit", 4397)
+^INCIDENCE_ANGLE_HEADER      = ("uvi_20181105_080112_283_geo_v10.fit", 5854)
+^INCIDENCE_ANGLE_IMAGE       = ("uvi_20181105_080112_283_geo_v10.fit", 5860)
+^EMISSION_ANGLE_HEADER       = ("uvi_20181105_080112_283_geo_v10.fit", 7317)
+^EMISSION_ANGLE_IMAGE        = ("uvi_20181105_080112_283_geo_v10.fit", 7323)
+^AZIMUTHAL_ANGLE_HEADER      = ("uvi_20181105_080112_283_geo_v10.fit", 8780)
+^AZIMUTHAL_ANGLE_IMAGE       = ("uvi_20181105_080112_283_geo_v10.fit", 8786)
+
+
+/* ---- IDENTIFICATION DATA ELEMENTS ---- */
+
+MISSION_NAME                 = "VENUS CLIMATE ORBITER"
+MISSION_ALIAS_NAME           = {"PLANET-C", "AKATSUKI"}
+MISSION_ID                   = "VCO"
+DATA_SET_ID                  = "VCO-V-UVI-3-SEDR-V1.0"
+PRODUCT_ID                   = "UVI_20181105_080112_283_GEO_V10.FIT"
+PRODUCT_TYPE                 = "GEOMETRY"
+PRODUCT_CREATION_TIME        = 2019-11-12T11:58:43
+INSTRUMENT_HOST_NAME         = "VENUS CLIMATE ORBITER"
+INSTRUMENT_HOST_ID           = "VCO"
+INSTRUMENT_NAME              = "ULTRA VIOLET IMAGER"
+INSTRUMENT_ID                = "UVI"
+PRODUCER_ID                  = "VCO/SPIDAR TEAM"
+INSTITUTION_NAME             = "ISAS/JAXA"
+
+
+/* TIME INFORMATION */
+
+START_TIME                   = 2018-11-05T08:01:10.932
+OBSERVATION_TIME             = 2018-11-05T08:01:12.369
+STOP_TIME                    = 2018-11-05T08:01:13.807
+START_JULIAN_DATE_VALUE      = 2458427.8341543055
+MID_JULIAN_DATE_VALUE        = 2458427.8341709375
+STOP_JULIAN_DATE_VALUE       = 2458427.834187581
+SPACECRAFT_CLOCK_START_COUNT = "3/0014517271"
+SPACECRAFT_CLOCK_STOP_COUNT  = "3/0014517363"
+MISSION_PHASE_NAME           = "EXTENDED SCIENCE PHASE 1"
+
+
+/* TARGET INFORMATION */
+
+TARGET_NAME                  = VENUS
+VCO:SPHERICAL_RADIUS         = 6051.8 <km>
+VCO:ASSUMED_CLOUD_ALTITUDE   = 70.0 <km>
+
+
+/* ---- DESCRIPTIVE DATA ELEMENTS ---- */
+
+/* INSTRUMENTAL INFORMATION AND ITS CONDITION */
+
+IMAGE_TYPE                   = "GEOMETRY_INFO"
+FILTER_NAME                  = "283 NM"
+CENTER_FILTER_WAVELENGTH     = 0.283 <micrometer>
+BANDWIDTH                    = 0.014 <micrometer>
+VCO:FILTER_MEAN_TRANSMISSION = 0.28
+HORIZONTAL_PIXEL_FOV         = 0.000204619 <rad>
+VERTICAL_PIXEL_FOV           = 0.000204619 <rad>
+EXPOSURE_DURATION            = 0.5 <s>
+
+
+/* OBSERVATION PROGRAM INFORMATION */
+
+VCO:OBSERVATION_PROGRAM_ID   = "0X05_V3"
+OBSERVATION_NAME             = "DAYSIDE SLIM (UVI, LIR)"
+
+
+/* ORBIT INFORMATION */
+
+ORBIT_NUMBER                 = 98
+PERIAPSIS_TIME               = 2018-11-04T17:47:55.000
+PERIAPSIS_LONGITUDE          = 349.5 <deg>
+PERIAPSIS_LATITUDE           = -5.31 <deg>
+PERIAPSIS_ALTITUDE           = 10264.3 <km>
+ORBITAL_INCLINATION          = 174.61 <deg>
+VCO:ORBITAL_ECCENTRICITY     = 0.915
+ASCENDING_NODE_LONGITUDE     = 294.52 <deg>
+PERIAPSIS_ARGUMENT_ANGLE     = 260.0 <deg>
+ORBITAL_SEMIMAJOR_AXIS       = 192469.0 <km>
+
+
+/* GEOMETRY INFORMATION */
+
+CENTRAL_BODY_DISTANCE        = 128304.0 <km>
+TARGET_HELIOCENTRIC_DISTANCE = 108116000.0 <km>
+SUB_SOLAR_LATITUDE           = 0.427875 <deg>
+SUB_SOLAR_LONGITUDE          = 181.717 <deg>
+SUB_SPACECRAFT_LATITUDE      = 3.8564 <deg>
+SUB_SPACECRAFT_LONGITUDE     = 204.715 <deg>
+LOCAL_HOUR_ANGLE             = 10.4668 <hour>
+VCO:SUB_SC_PHASE_ANGLE       = 23.2337 <deg>
+SUB_SPACECRAFT_LINE_SAMPLE   = 561.182
+SUB_SPACECRAFT_LINE          = 515.314
+VCO:SC_SUN_POSITION          = (
+                                71639500.0 <km>,
+                                75296600.0 <km>,
+                                29357900.0 <km>
+                               )
+RIGHT_ASCENSION              = 70.0506 <deg>
+DECLINATION                  = 17.3275 <deg>
+RA_DEC_REF_PIXEL             = (512.5, 512.5)
+QUATERNION                   = (
+                                0.449173,
+                                0.365796,
+                                -0.685265,
+                                0.441418
+                               )
+QUATERNION_DESC              = "J2000 to VCO Spacecraft Coordinate System
+                                quaternion:
+                                ( cos(angle/2), ux*sin(angle/2),
+                                  uy*sin(angle/2), uz*sin(angle/2) )"
+
+
+/* INSTRUMENT STATUS INFORMATION */
+
+INSTRUMENT_TEMPERATURE_POINT = (
+                                "UVI CCD",
+                                "UVI FILTER"
+                               )
+INSTRUMENT_TEMPERATURE       = (
+                                -39.89 <degC>,
+                                -1.5 <degC>
+                               )
+
+
+/* ---- DATA OBJECTS DEFINITIONS ---- */
+
+OBJECT                       = PRIMARY_HEADER
+  BYTES                      = 2880
+  HEADER_TYPE                = FITS
+  INTERCHANGE_FORMAT         = BINARY
+  RECORDS                    = 1
+  DESCRIPTION                = "Header of primary HDU of UVI GEO FITS
+                                file that contains general information of
+                                the file."
+END_OBJECT                   = PRIMARY_HEADER
+
+OBJECT                       = LATITUDE_HEADER
+  BYTES                      = 17280
+  HEADER_TYPE                = FITS
+  INTERCHANGE_FORMAT         = BINARY
+  RECORDS                    = 6
+  DESCRIPTION                = "Header of the HDU for latitude that
+                                contains detailed metadata of the data."
+END_OBJECT                   = LATITUDE_HEADER
+
+OBJECT                       = LATITUDE_IMAGE
+  LINE_SAMPLES               = 1024
+  LINES                      = 1024
+  SAMPLE_BITS                = 32
+  SAMPLE_TYPE                = IEEE_REAL
+  UNIT                       = "DEG"
+  VALID_MAXIMUM              = 90.0
+  VALID_MINIMUM              = -90.0
+  MAXIMUM_LATITUDE           = 88.853462  
+  MINIMUM_LATITUDE           = -82.447197 
+  LINE_DISPLAY_DIRECTION     = UP
+  DESCRIPTION                = "Data of the HDU that contains value of
+                                latitude at the center of each pixel."
+END_OBJECT                   = LATITUDE_IMAGE
+
+OBJECT                       = LONGITUDE_HEADER
+  BYTES                      = 17280
+  HEADER_TYPE                = FITS
+  INTERCHANGE_FORMAT         = BINARY
+  RECORDS                    = 6
+  DESCRIPTION                = "Header of the HDU for longitude that
+                                contains detailed metadata of the data."
+END_OBJECT                   = LONGITUDE_HEADER
+
+OBJECT                       = LONGITUDE_IMAGE
+  LINE_SAMPLES               = 1024
+  LINES                      = 1024
+  SAMPLE_BITS                = 32
+  SAMPLE_TYPE                = IEEE_REAL
+  UNIT                       = "DEG"
+  VALID_MAXIMUM              = 360.0
+  VALID_MINIMUM              = 0.0
+  MAXIMUM_LONGITUDE          = 305.674561 
+  MINIMUM_LONGITUDE          = 111.242188 
+  LINE_DISPLAY_DIRECTION     = UP
+  DESCRIPTION                = "Data of the HDU that contains value of
+                                longitude at the center of each pixel."
+END_OBJECT                   = LONGITUDE_IMAGE
+
+OBJECT                       = LOCAL_TIME_HEADER
+  BYTES                      = 17280
+  HEADER_TYPE                = FITS
+  INTERCHANGE_FORMAT         = BINARY
+  RECORDS                    = 6
+  DESCRIPTION                = "Header of the HDU for local time that
+                                contains detailed metadata of the data."
+END_OBJECT                   = LOCAL_TIME_HEADER
+
+OBJECT                       = LOCAL_TIME_IMAGE
+  LINE_SAMPLES               = 1024
+  LINES                      = 1024
+  SAMPLE_BITS                = 32
+  SAMPLE_TYPE                = IEEE_REAL
+  UNIT                       = "HOUR"
+  VALID_MAXIMUM              = 24.0
+  VALID_MINIMUM              = 0.0
+  MAXIMUM_LOCAL_TIME         = 16.698330  
+  MINIMUM_LOCAL_TIME         = 3.736171   
+  LINE_DISPLAY_DIRECTION     = UP
+  DESCRIPTION                = "Data of the HDU that contains value of local
+                                solar time at the center of each pixel."
+END_OBJECT                   = LOCAL_TIME_IMAGE
+
+OBJECT                       = PHASE_ANGLE_HEADER
+  BYTES                      = 17280
+  HEADER_TYPE                = FITS
+  INTERCHANGE_FORMAT         = BINARY
+  RECORDS                    = 6
+  DESCRIPTION                = "Header of the HDU for phase angle that
+                                contains detailed metadata of the data."
+END_OBJECT                   = PHASE_ANGLE_HEADER
+
+OBJECT                       = PHASE_ANGLE_IMAGE
+  LINE_SAMPLES               = 1024
+  LINES                      = 1024
+  SAMPLE_BITS                = 32
+  SAMPLE_TYPE                = IEEE_REAL
+  UNIT                       = "DEG"
+  VALID_MAXIMUM              = 180.0
+  VALID_MINIMUM              = 0.0
+  MAXIMUM_PHASE_ANGLE        = 25.963060  
+  MINIMUM_PHASE_ANGLE        = 20.500965  
+  LINE_DISPLAY_DIRECTION     = UP
+  DESCRIPTION                = "Data of the HDU that contains value of phase
+                                angle at the center of each pixel."
+END_OBJECT                   = PHASE_ANGLE_IMAGE
+
+OBJECT                       = INCIDENCE_ANGLE_HEADER
+  BYTES                      = 17280
+  HEADER_TYPE                = FITS
+  INTERCHANGE_FORMAT         = BINARY
+  RECORDS                    = 6
+  DESCRIPTION                = "Header of the HDU for incidence angle that
+                                contains detailed metadata of the data."
+END_OBJECT                   = INCIDENCE_ANGLE_HEADER
+
+OBJECT                       = INCIDENCE_ANGLE_IMAGE
+  LINE_SAMPLES               = 1024
+  LINES                      = 1024
+  SAMPLE_BITS                = 32
+  SAMPLE_TYPE                = IEEE_REAL
+  UNIT                       = "DEG"
+  VALID_MAXIMUM              = 180.0
+  VALID_MINIMUM              = 0.0
+  MAXIMUM_INCIDENCE_ANGLE    = 109.926918 
+  MINIMUM_INCIDENCE_ANGLE    = 0.050239   
+  LINE_DISPLAY_DIRECTION     = UP
+  DESCRIPTION                = "Data of the HDU that contains value of
+                                incidence angle at the center of each
+                                pixel."
+END_OBJECT                   = INCIDENCE_ANGLE_IMAGE
+
+OBJECT                       = EMISSION_ANGLE_HEADER
+  BYTES                      = 17280
+  HEADER_TYPE                = FITS
+  INTERCHANGE_FORMAT         = BINARY
+  RECORDS                    = 6
+  DESCRIPTION                = "Header of the HDU for emission angle that
+                                contains detailed metadata of the data."
+END_OBJECT                   = EMISSION_ANGLE_HEADER
+
+OBJECT                       = EMISSION_ANGLE_IMAGE
+  LINE_SAMPLES               = 1024
+  LINES                      = 1024
+  SAMPLE_BITS                = 32
+  SAMPLE_TYPE                = IEEE_REAL
+  UNIT                       = "DEG"
+  VALID_MAXIMUM              = 180.0
+  VALID_MINIMUM              = 0.0
+  MAXIMUM_EMISSION_ANGLE     = 89.925896  
+  MINIMUM_EMISSION_ANGLE     = 0.090989   
+  LINE_DISPLAY_DIRECTION     = UP
+  DESCRIPTION                = "Data of the HDU that contains value of
+                                emission angle at the center of each pixel."
+END_OBJECT                   = EMISSION_ANGLE_IMAGE
+
+OBJECT                       = AZIMUTHAL_ANGLE_HEADER
+  BYTES                      = 17280
+  HEADER_TYPE                = FITS
+  INTERCHANGE_FORMAT         = BINARY
+  RECORDS                    = 6
+  DESCRIPTION                = "Header of the HDU for azimuthal angle that
+                                contains detailed metadata of the data."
+END_OBJECT                   = AZIMUTHAL_ANGLE_HEADER
+
+OBJECT                       = AZIMUTHAL_ANGLE_IMAGE
+  LINE_SAMPLES               = 1024
+  LINES                      = 1024
+  SAMPLE_BITS                = 32
+  SAMPLE_TYPE                = IEEE_REAL
+  UNIT                       = "DEG"
+  VALID_MAXIMUM              = 180.0
+  VALID_MINIMUM              = 0.0
+  MAXIMUM                    = 179.999283 
+  MINIMUM                    = 0.021176   
+  LINE_DISPLAY_DIRECTION     = UP
+  DESCRIPTION                = "Data of the HDU that contains value of
+                                azimuthal angle at the center of each
+                                pixel."
+END_OBJECT                   = AZIMUTHAL_ANGLE_IMAGE
+
+END

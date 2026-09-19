@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VEDA — Visualization, Exploration, and Data Analysis</title>
+<link rel="stylesheet" href="css/app.css">
+<script src="vendor/plotly.min.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand veda-brand">
+    <div class="veda-logo" aria-hidden="true">🪐</div>
+    <div>
+      <h1>VEDA</h1>
+      <p class="sub">Visualization, Exploration, and Data Analysis &bull; Planetary Science Lab <span id="version-tag"></span></p>
+    </div>
+  </div>
+
+  <!-- Primary Exploration Mode Switcher -->
+  <div class="mode-switcher-wrap" role="tablist">
+    <button class="mode-btn active" id="btn-mode-body" role="tab" title="Compare multiple spacecraft missions observing the same celestial body">
+      🪐 By Celestial Body
+    </button>
+    <button class="mode-btn" id="btn-mode-mission" role="tab" title="Explore scientific observations from a specific spacecraft mission">
+      🛰️ By Mission
+    </button>
+    <button class="mode-btn" id="btn-mode-earth" role="tab" title="High-density tropical Earth GNSS radio occultations">
+      🌍 Earth GNSS RO
+    </button>
+  </div>
+
+  <div class="topright">
+    <button class="ghost" id="btn-settings">Settings</button>
+    <button class="ghost" id="btn-about">About VEDA</button>
+    <button class="ghost" id="btn-help">Science Docs</button>
+  </div>
+</header>
+
+<div id="banner" class="banner hidden"></div>
+
+<main id="veda-container">
+
+<!-- ======================================================================== -->
+<!-- MODE 1: EXPLORE BY CELESTIAL BODY (MULTI-MISSION COMPARISON)            -->
+<!-- ======================================================================== -->
+<section id="veda-view-body" class="veda-section active">
+  <!-- Celestial Body Selector Bar -->
+  <div class="card" style="margin-bottom: 12px;">
+    <div class="card-head">
+      <h2>1. Select Target Planetary Body or Moon</h2>
+      <span class="hint">Missions that genuinely observed the target will be populated below</span>
+    </div>
+    <div id="veda-bodies-grid" class="veda-bodies-grid">
+      <!-- Populated dynamically: Venus, Mars, Jupiter, Saturn, Titan, Pluto, Mercury, Moon, Ceres, Vesta, Comet 67P, Earth -->
+    </div>
+  </div>
+
+  <!-- Planetary Thermodynamic Constants Banner -->
+  <div id="veda-body-banner" class="veda-body-banner">
+    <!-- Populated dynamically with body physical constants -->
+  </div>
+
+  <!-- Multi-Mission Selection & Comparative Visualizer Grid -->
+  <div class="grid-2" style="grid-template-columns: 340px 1fr; gap: 14px;">
+    <!-- Left Column: Multi-Mission Checkboxes & Controls -->
+    <div class="card">
+      <h2>2. Select Missions to Compare</h2>
+      <p class="hint">Toggle multiple missions simultaneously to compare aligned profiles and evaluate composite variance:</p>
+      <div id="veda-missions-checkboxes" class="mission-checkboxes-list">
+        <!-- Checkboxes with encounter classification badges -->
+      </div>
+
+      <hr>
+      <h2>3. Analysis Variable</h2>
+      <div class="row" style="margin-bottom: 10px;">
+        <label style="width: 100%;">Thermodynamic Variable:
+          <select id="veda-compare-variable-select" style="width: 100%; margin-top: 4px;"></select>
+        </label>
+      </div>
+
+      <div class="stack" style="gap: 8px; margin-top: 14px;">
+        <button class="primary" id="veda-btn-export-comparison-csv" style="width: 100%;">📥 Export Comparison CSV</button>
+        <button class="ghost" id="veda-btn-download-comparison-png" style="width: 100%;">📷 Snapshot Plot (PNG)</button>
+        <button class="ghost" id="veda-btn-download-publication-fig" style="width: 100%;" title="Download publication-quality high-resolution figure (DPI 300)">🏛️ Publication Figure (DPI 300)</button>
+      </div>
+      <div id="veda-comparison-status" class="hint" style="margin-top: 12px; font-weight: 500;"></div>
+    </div>
+
+    <!-- Right Column: Interactive Plotly Comparison Chart & Planetary Map -->
+    <div class="card" style="min-height: 520px; display: flex; flex-direction: column;">
+      <div class="view-subtabs">
+        <button class="view-subtab-btn active" id="btn-subtab-soundings">📈 Soundings & Profiles</button>
+        <button class="view-subtab-btn" id="btn-subtab-map">🌐 Planetary Spatial Map & Footprints</button>
+      </div>
+
+      <!-- Tab 1: Aligned Soundings & Composite Dispersion -->
+      <div id="veda-subtab-soundings-panel" style="flex: 1; display: flex; flex-direction: column;">
+        <div id="veda-comparison-plot" style="flex: 1; min-height: 480px;"></div>
+      </div>
+
+      <!-- Tab 2: Planetary Spatial Footprints Map -->
+      <div id="veda-subtab-map-panel" style="flex: 1; display: none; flex-direction: column;">
+        <div class="map-projection-controls">
+          <span class="hint" id="veda-map-status">Displaying observation footprints across selected missions</span>
+          <div class="row" style="margin: 0; gap: 6px;">
+            <button class="small ghost active" id="btn-map-proj-2d">2D Equirectangular</button>
+            <button class="small ghost" id="btn-map-proj-3d">3D Orthographic</button>
+          </div>
+        </div>
+        <div id="veda-planetary-map" style="flex: 1; min-height: 460px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comparative Observations Data Table -->
+  <div class="card" style="margin-top: 14px;">
+    <div class="card-head">
+      <h2>Cross-Mission Soundings Summary</h2>
+      <span class="hint">Individual observations contributing to the composite mean and ±1σ dispersion</span>
+    </div>
+    <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 12.5px;">
+      <thead>
+        <tr style="border-bottom: 1px solid var(--line); text-align: left;">
+          <th style="padding: 6px 8px;">Mission</th>
+          <th style="padding: 6px 8px;">Observation ID</th>
+          <th style="padding: 6px 8px;">Instrument</th>
+          <th style="padding: 6px 8px;">Date (UTC)</th>
+          <th style="padding: 6px 8px;">Lat / Lon</th>
+          <th style="padding: 6px 8px;">Altitude Span</th>
+          <th style="padding: 6px 8px;">Action</th>
+        </tr>
+      </thead>
+      <tbody id="veda-comparison-table-body">
+        <!-- Rows populated dynamically -->
+      </tbody>
+    </table>
+  </div>
+</section>
+
+
+<!-- ======================================================================== -->
+<!-- MODE 2: EXPLORE BY MISSION (DEEP SPACECRAFT DIVE)                       -->
+<!-- ======================================================================== -->
+<section id="veda-view-mission" class="veda-section" style="display: none;">
+  <!-- Mission Filter Bar -->
+  <div class="mission-filters-bar">
+    <button class="mission-filter-btn active" data-filter="all">All Missions (16)</button>
+    <button class="mission-filter-btn" data-filter="orbiter">Orbiters</button>
+    <button class="mission-filter-btn" data-filter="flyby">Flybys & Encounters</button>
+    <button class="mission-filter-btn" data-filter="other">Constellations & Probes</button>
+  </div>
+
+  <!-- Spacecraft Cards Catalog -->
+  <div id="veda-missions-list" class="veda-missions-catalog">
+    <!-- Populated dynamically with mission cards -->
+  </div>
+
+  <!-- Active Mission Header -->
+  <div id="veda-mission-header" class="veda-body-banner">
+    <!-- Populated dynamically with mission details -->
+  </div>
+
+  <!-- Remote Archive Discovery & Downloader Panel (Collapsible) -->
+  <div id="veda-archive-search-panel" class="archive-search-card" style="display: none;">
+    <div class="card-head" style="justify-content: space-between; align-items: center;">
+      <h3 style="margin: 0;">🌐 Discover Remote Mission Archives (NASA PDS / ESA PSA / JAXA DARTS)</h3>
+      <button class="ghost small" id="btn-close-archive-search">&times; Close</button>
+    </div>
+    <p class="hint" style="margin: 4px 0 12px;">Query authentic international planetary science archives to discover and download calibrated data products directly into VEDA's local cache.</p>
+    <div class="row" style="gap: 12px; align-items: flex-end; flex-wrap: wrap;">
+      <label style="flex: 1; min-width: 150px;">Target Agency / Archive:
+        <select id="archive-agency-select" style="width: 100%; margin-top: 4px;">
+          <option value="all">All Planetary Archives (NASA, ESA, JAXA)</option>
+          <option value="nasa">NASA Planetary Data System (PDS)</option>
+          <option value="esa">ESA Planetary Science Archive (PSA)</option>
+          <option value="jaxa">JAXA DARTS / ISAS</option>
+        </select>
+      </label>
+      <label style="flex: 1; min-width: 150px;">Filter Product / Target:
+        <input type="text" id="archive-search-input" placeholder="e.g. Venus, Pluto, LORRI, RS..." style="width: 100%; margin-top: 4px;" />
+      </label>
+      <button class="primary" id="btn-execute-archive-search" style="height: 38px;">🔍 Query Archive</button>
+    </div>
+
+    <!-- Archive Search Results -->
+    <div id="archive-results-container" style="margin-top: 14px; max-height: 280px; overflow-y: auto;">
+      <div class="hint">Click "Query Archive" to search remote repositories.</div>
+    </div>
+  </div>
+
+  <!-- Mission Observations & Visualizer Grid -->
+  <div class="grid-2" style="grid-template-columns: 360px 1fr; gap: 14px;">
+    <!-- Left Column: Instrument Filter & Observations Table -->
+    <div class="card">
+      <div class="card-head" style="align-items: center; justify-content: space-between;">
+        <h2>Instruments & Observations</h2>
+        <button class="ghost small" id="btn-toggle-archive-search" title="Search authentic NASA PDS, ESA PSA, and JAXA DARTS archives">🌐 Remote Archives</button>
+      </div>
+      <div class="row" style="margin-bottom: 10px;">
+        <label style="width: 100%;">Instrument Payload:
+          <select id="veda-instrument-select" style="width: 100%; margin-top: 4px;"></select>
+        </label>
+      </div>
+
+      <div style="max-height: 440px; overflow-y: auto; margin-top: 10px;">
+        <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--line); text-align: left;">
+              <th style="padding: 4px 6px;">Observation</th>
+              <th style="padding: 4px 6px;">Inst</th>
+              <th style="padding: 4px 6px;">Target</th>
+              <th style="padding: 4px 6px;">Date</th>
+              <th style="padding: 4px 6px;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="veda-observations-table-body">
+            <!-- Populated dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Right Column: Observation Visualizer Workspace -->
+    <div class="card" id="veda-observation-viewer" style="min-height: 520px;">
+      <div class="empty-state">Select an observation on the left to visualize.</div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ======================================================================== -->
+<!-- MODE 3: EARTH GNSS RADIO OCCULTATION (COSMIC-2 WORKFLOW)                -->
+<!-- ======================================================================== -->
+<section id="veda-view-earth" class="veda-section" style="display: none;">
+  <nav class="tabs" role="tablist" style="margin-bottom: 14px;">
+    <button class="tab active" role="tab" data-tab="get">Get Earth Data</button>
+    <button class="tab" role="tab" data-tab="explore">Explore Earth Granules</button>
+    <button class="tab" role="tab" data-tab="profile">Earth Profiles</button>
+    <button class="tab" role="tab" data-tab="composite">Earth Composite</button>
+    <button class="tab" role="tab" data-tab="export">Earth Export</button>
+  </nav>
+
+  <!-- GET DATA -->
+  <section class="panel active" id="tab-get">
+    <div class="explain" data-curious>
+      <strong>COSMIC-2 GNSS Radio Occultation:</strong> Dual-frequency GPS and GLONASS signals
+      grazing Earth's tropical atmosphere yield high-precision vertical profiles of temperature,
+      pressure, moisture, and ionospheric electron density.
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <h2>1. Choose a day</h2>
+        <div class="row">
+          <label>Date (UTC)
+            <input type="date" id="get-date">
+          </label>
+          <button class="ghost" id="btn-latest">Latest available</button>
+        </div>
+        <div class="row">
+          <label>Processing stream
+            <select id="get-stream"></select>
+          </label>
+        </div>
+        <p class="hint" id="stream-blurb"></p>
+        <button class="primary" id="btn-scan">Scan CDAAC Archive</button>
+      </div>
+
+      <div class="card">
+        <h2>2. Data Granules</h2>
+        <div class="row">
+          <label>Sample size
+            <select id="get-count">
+              <option value="24">24 profiles</option>
+              <option value="120" selected>120 profiles</option>
+              <option value="480">480 profiles</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <button class="primary" id="btn-download" disabled>Download Granules</button>
+          <button class="ghost" id="btn-load-samples">Load Bundled Granules</button>
+        </div>
+        <div id="job-progress" class="progress-wrap hidden">
+          <div class="progress-bar"><div class="progress-fill" id="job-bar"></div></div>
+          <p class="hint" id="job-status"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EXPLORE -->
+  <section class="panel" id="tab-explore">
+    <div class="card">
+      <div class="card-head">
+        <h2>Earth GNSS RO Spatial Distribution</h2>
+        <div class="row">
+          <input type="text" id="filter-text" placeholder="Filter by receiver, date...">
+          <button class="ghost" id="btn-refresh-explore">Refresh</button>
+        </div>
+      </div>
+      <div id="explore-map" style="height: 380px;"></div>
+    </div>
+  </section>
+
+  <!-- PROFILES -->
+  <section class="panel" id="tab-profile">
+    <div class="card">
+      <div class="card-head">
+        <h2>Earth Atmospheric Soundings</h2>
+        <span class="hint" id="active-profile-name">Select profile</span>
+      </div>
+      <div id="profile-plot" style="height: 480px;"></div>
+    </div>
+  </section>
+
+  <!-- COMPOSITE -->
+  <section class="panel" id="tab-composite">
+    <div class="card">
+      <h2>Earth Climatological Mean & Spread</h2>
+      <div id="composite-plot" style="height: 480px;"></div>
+    </div>
+  </section>
+
+  <!-- EXPORT -->
+  <section class="panel" id="tab-export">
+    <div class="card">
+      <h2>Export Earth Granules</h2>
+      <div class="row">
+        <button class="primary" id="btn-export-nc">Export NetCDF Bundle</button>
+        <button class="ghost" id="btn-export-csv">Export CSV</button>
+        <button class="ghost" id="btn-reveal-exports">Reveal Folder</button>
+      </div>
+    </div>
+  </section>
+</section>
+
+</main>
+
+<!-- Drawer for Settings / About / Help -->
+<aside id="drawer" class="drawer hidden" aria-hidden="true">
+  <div class="drawer-head">
+    <h2 id="drawer-title">Details</h2>
+    <button class="ghost" id="drawer-close" aria-label="Close">&times;</button>
+  </div>
+  <div class="drawer-body" id="drawer-content"></div>
+</aside>
+
+<div id="toasts" class="toasts" aria-live="polite"></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

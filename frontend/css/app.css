@@ -1,0 +1,608 @@
+/* COSMIC-2 Explorer - single stylesheet, no framework, no build step. */
+
+:root {
+  --bg: #f4f6f8;
+  --surface: #ffffff;
+  --ink: #16191d;
+  --ink-soft: #5b6470;
+  --line: #d9dee4;
+  --focal: #1f4e79;
+  --focal-soft: #e8f0f7;
+  --accent: #c1440e;
+  --ok: #216e39;
+  --warn: #8a5a00;
+  --radius: 10px;
+  --shadow: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 3px rgba(16, 24, 40, .08);
+  --mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
+  --ui-font-size: 14px;
+}
+
+:root[data-theme="dark"] {
+  --bg: #121212;
+  --surface: #1e1e1e;
+  --ink: #e0e0e0;
+  --ink-soft: #a0a0a0;
+  --line: #333333;
+  --focal: #64b5f6;
+  --focal-soft: #1f3a53;
+  --accent: #ff8a65;
+  --ok: #81c784;
+  --warn: #ffd54f;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 1px 3px rgba(0, 0, 0, .5);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font: var(--ui-font-size)/1.5 "Segoe UI", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1 { font-size: 17px; margin: 0; letter-spacing: -.01em; }
+h2 { font-size: 14px; margin: 0 0 10px; letter-spacing: .01em; }
+h3 { font-size: 13px; margin: 14px 0 6px; color: var(--ink-soft); }
+p { margin: 0 0 8px; }
+code, pre { font-family: var(--mono); font-size: 12px; }
+hr { border: 0; border-top: 1px solid var(--line); margin: 14px 0; }
+
+/* ---------- top bar ---------- */
+.topbar {
+  display: flex; align-items: center; gap: 20px;
+  padding: 10px 18px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; z-index: 40;
+}
+.brand { display: flex; align-items: center; gap: 11px; min-width: 260px; }
+.logo {
+  width: 30px; height: 30px; border-radius: 50%; flex: none;
+  background:
+    radial-gradient(circle at 50% 58%, #1f4e79 0 34%, transparent 35%),
+    conic-gradient(from 210deg, #cfe0ee 0 38%, transparent 39%),
+    linear-gradient(#eef4f9, #dae6f0);
+  border: 1px solid #b9cbdb;
+}
+.sub { margin: 0; font-size: 11.5px; color: var(--ink-soft); }
+.topright { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+
+.tabs { display: flex; gap: 2px; }
+.tab {
+  border: 0; background: transparent; color: var(--ink-soft);
+  padding: 7px 14px; border-radius: 7px; cursor: pointer;
+  font: inherit; font-weight: 500;
+}
+.tab:hover { background: var(--bg); color: var(--ink); }
+.tab.active { background: var(--focal-soft); color: var(--focal); }
+
+/* ---------- layout ---------- */
+main { padding: 16px 18px 60px; max-width: 1560px; margin: 0 auto; }
+.panel { display: none; }
+.panel.active { display: block; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.card-head {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 12px; margin-bottom: 8px;
+}
+.card-head h2 { margin: 0; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid-side { display: grid; grid-template-columns: 286px 1fr; gap: 14px; align-items: start; }
+.stack > .card:last-child { margin-bottom: 0; }
+.row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 10px; }
+.row.tight { gap: 8px; }
+.filters { position: sticky; top: 68px; }
+
+@media (max-width: 1100px) {
+  .grid-2, .grid-side { grid-template-columns: 1fr; }
+  .filters { position: static; }
+  .tabs { flex-wrap: wrap; }
+}
+
+/* ---------- controls ---------- */
+label { display: block; font-size: 12px; color: var(--ink-soft); margin-bottom: 10px; }
+label.inline { display: inline-flex; align-items: center; gap: 6px; margin: 0; }
+label.check, .switch {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 12.5px; color: var(--ink); margin-bottom: 8px; cursor: pointer;
+}
+input, select, button, textarea { font: inherit; }
+input[type=date], input[type=number], input[type=text], select {
+  width: 100%; margin-top: 3px; padding: 6px 8px;
+  border: 1px solid var(--line); border-radius: 7px;
+  background: var(--surface); color: var(--ink); font-size: 13px;
+}
+input:focus, select:focus { outline: 2px solid var(--focal); outline-offset: -1px; }
+fieldset { border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px 2px; margin: 0 0 10px; }
+legend { font-size: 11px; color: var(--ink-soft); padding: 0 4px; }
+
+button {
+  cursor: pointer; border-radius: 7px; padding: 7px 13px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  font-size: 13px; font-weight: 500;
+}
+button:hover:not(:disabled) { border-color: #b6c0cc; background: #fbfcfd; }
+button:disabled { opacity: .5; cursor: default; }
+button.primary { background: var(--focal); border-color: var(--focal); color: #fff; }
+button.primary:hover:not(:disabled) { background: #1a405f; }
+button.ghost { background: transparent; }
+button.danger { color: var(--accent); border-color: #e7c4b6; }
+button.link { border: 0; background: none; color: var(--focal); padding: 0 2px; text-decoration: underline; }
+
+.pill {
+  display: inline-block; padding: 2px 9px; border-radius: 999px;
+  background: var(--focal-soft); color: var(--focal);
+  font-size: 11.5px; font-weight: 600; white-space: nowrap;
+}
+.pill.warn { background: #fdf3e2; color: var(--warn); }
+.pill.bad { background: #fbeae5; color: var(--accent); }
+.pill.ok { background: #e7f3ea; color: var(--ok); }
+
+.hint { font-size: 11.5px; color: var(--ink-soft); margin: 6px 0 0; }
+.explain {
+  background: var(--focal-soft); border: 1px solid #cadcec;
+  border-radius: var(--radius); padding: 11px 14px; margin-bottom: 14px;
+  font-size: 13px; color: #123a5c;
+}
+body.no-curious [data-curious] { display: none; }
+
+/* ---------- product cards ---------- */
+.product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(268px, 1fr)); gap: 10px; }
+.product {
+  border: 1px solid var(--line); border-radius: 9px; padding: 11px 12px;
+  display: flex; flex-direction: column; gap: 6px; background: #fdfdfe;
+}
+.product.unreadable { opacity: .62; }
+.product .ptitle { display: flex; align-items: baseline; gap: 7px; justify-content: space-between; }
+.product .pname { font-weight: 600; font-size: 13px; }
+.product .pcode { font-family: var(--mono); font-size: 11px; color: var(--ink-soft); }
+.product .pdesc { font-size: 12px; color: var(--ink-soft); }
+.product .pfoot { display: flex; align-items: center; gap: 8px; margin-top: auto; }
+
+/* ---------- jobs ---------- */
+.jobs { display: flex; flex-direction: column; gap: 9px; }
+.job { border: 1px solid var(--line); border-radius: 9px; padding: 9px 11px; }
+.job-head { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+.job-title { font-weight: 600; font-size: 13px; }
+.bar { height: 6px; background: #e9edf1; border-radius: 4px; overflow: hidden; margin: 7px 0 5px; }
+.bar > span { display: block; height: 100%; background: var(--focal); transition: width .3s; }
+.job.done .bar > span { background: var(--ok); }
+.job.failed .bar > span { background: var(--accent); }
+.job-meta { font-size: 11.5px; color: var(--ink-soft); }
+
+/* ---------- tables ---------- */
+.table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.table th, .table td {
+  text-align: left; padding: 6px 9px; border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.table th { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-soft); font-weight: 600; }
+.table tbody tr:hover { background: #f8fafc; }
+.table tbody tr.selected { background: var(--focal-soft); }
+.table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.scroll-x { overflow-x: auto; }
+
+.stats { display: flex; gap: 22px; flex-wrap: wrap; margin-bottom: 10px; }
+.stat .v { font-size: 19px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.stat .k { font-size: 11px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .04em; }
+
+/* ---------- plots ---------- */
+.plot { width: 100%; height: 380px; }
+.plot.tall { height: 520px; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 5px; max-height: 190px; overflow-y: auto; margin-bottom: 10px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 999px;
+  padding: 2px 5px 2px 9px; font-size: 11.5px;
+}
+.chip button { border: 0; background: none; padding: 0 3px; color: var(--ink-soft); font-size: 14px; line-height: 1; }
+
+/* ---------- diagnostics ---------- */
+.diag-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(216px, 1fr)); gap: 10px; }
+.diag {
+  border: 1px solid var(--line); border-left: 3px solid var(--focal);
+  border-radius: 7px; padding: 8px 11px; background: #fdfdfe;
+}
+.diag .dk { font-size: 11px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .03em; }
+.diag .dv { font-size: 16px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.diag .dn { font-size: 11.5px; color: var(--ink-soft); margin-top: 3px; }
+.diag.alt { border-left-color: var(--accent); }
+
+.cite { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; white-space: pre-wrap; margin: 0; }
+
+/* ---------- banner, toasts, drawer ---------- */
+.banner {
+  background: #fdf3e2; border-bottom: 1px solid #ecd9b4; color: #6b4600;
+  padding: 8px 18px; font-size: 12.5px;
+}
+.banner.bad { background: #fbeae5; border-color: #eec8bb; color: #7d2c0d; }
+.hidden { display: none !important; }
+
+.toasts { position: fixed; right: 16px; bottom: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 80; }
+.toast {
+  background: #1c2430; color: #fff; border-radius: 8px; padding: 9px 13px;
+  font-size: 12.5px; box-shadow: 0 6px 18px rgba(0, 0, 0, .18); max-width: 380px;
+}
+.toast.bad { background: #7d2c0d; }
+.toast.good { background: #1b5e34; }
+
+.drawer {
+  position: fixed; top: 0; right: 0; width: 460px; max-width: 94vw; height: 100%;
+  background: var(--surface); border-left: 1px solid var(--line);
+  box-shadow: -8px 0 28px rgba(16, 24, 40, .12); z-index: 70;
+  display: flex; flex-direction: column;
+}
+.drawer-head { display: flex; justify-content: space-between; align-items: center; padding: 13px 16px; border-bottom: 1px solid var(--line); }
+.drawer-head h2 { margin: 0; }
+.drawer-body { padding: 14px 16px; overflow-y: auto; font-size: 13px; }
+.drawer-body h3 { margin-top: 16px; }
+.drawer-body dt { font-weight: 600; margin-top: 10px; }
+.drawer-body dd { margin: 2px 0 0; color: var(--ink-soft); }
+.drawer-body table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.drawer-body td { padding: 3px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+
+/* ==========================================================================
+   VEDA Planetary Science Laboratory Styles
+   ========================================================================== */
+
+.veda-brand { display: flex; align-items: center; gap: 12px; }
+.veda-logo {
+  font-size: 26px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, #2a3b4c, #101720);
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  border: 1px solid #3b5066;
+}
+
+.mode-switcher-wrap {
+  display: flex;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  padding: 3px;
+  gap: 4px;
+}
+.mode-btn {
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 6px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.mode-btn:hover { color: var(--ink); }
+.mode-btn.active {
+  background: var(--surface);
+  color: var(--focal);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Celestial Bodies Grid */
+.veda-bodies-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.body-selector-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+  color: var(--ink);
+}
+.body-selector-card:hover {
+  border-color: var(--focal);
+  background: var(--focal-soft);
+}
+.body-selector-card.active {
+  border-color: var(--focal);
+  background: var(--focal-soft);
+  box-shadow: 0 0 0 1.5px var(--focal);
+}
+.body-emoji { font-size: 20px; }
+.body-card-name { font-weight: 700; font-size: 13px; }
+.body-card-sub { font-size: 10.5px; color: var(--ink-soft); }
+
+/* Body Physics Banner */
+.veda-body-banner {
+  background: linear-gradient(135deg, rgba(31, 78, 121, 0.08), rgba(22, 25, 29, 0.02));
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin-bottom: 14px;
+}
+.body-banner-head { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+.body-banner-head h2 { margin: 0; font-size: 18px; }
+.body-desc { font-size: 13px; color: var(--ink-soft); margin-bottom: 10px; }
+.physics-metrics-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.phys-badge {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+}
+
+/* Multi-Mission Checkboxes */
+.mission-checkboxes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0;
+  max-height: 280px;
+  overflow-y: auto;
+}
+.mission-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.12s;
+}
+.mission-checkbox-label:hover { background: var(--bg); }
+.mission-name-span { font-weight: 600; }
+.mission-instruments-hint { margin-left: auto; font-size: 11px; color: var(--ink-soft); }
+
+/* Badges */
+.badge {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.badge-orbiter { background: rgba(68, 138, 255, 0.15); color: #448aff; border: 1px solid rgba(68, 138, 255, 0.3); }
+.badge-flyby { background: rgba(255, 215, 64, 0.15); color: #ffd740; border: 1px solid rgba(255, 215, 64, 0.3); }
+.badge-constellation { background: rgba(0, 230, 118, 0.15); color: #00e676; border: 1px solid rgba(0, 230, 118, 0.3); }
+.badge-agency { background: rgba(255, 255, 255, 0.1); color: var(--ink-soft); }
+.status-badge.status-operational { background: rgba(76, 175, 80, 0.15); color: #81c784; }
+.status-badge.status-completed { background: rgba(158, 158, 158, 0.15); color: #b0bec5; }
+
+/* Mission Mode Layout */
+.mission-filters-bar { display: flex; gap: 8px; margin-bottom: 12px; }
+.mission-filter-btn {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-soft);
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.mission-filter-btn.active {
+  background: var(--focal);
+  color: #fff;
+  border-color: var(--focal);
+}
+
+.veda-missions-catalog {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.mission-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.mission-card:hover { border-color: var(--focal); transform: translateY(-1px); }
+.mission-card.active { border-color: var(--focal); box-shadow: 0 0 0 1.5px var(--focal); background: var(--focal-soft); }
+.mission-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.mission-card-agency { font-size: 11.5px; color: var(--ink-soft); }
+.mission-card-targets { font-size: 11px; margin-top: 4px; color: var(--focal); font-weight: 500; }
+
+.obs-row { cursor: pointer; }
+.obs-row:hover { background: var(--bg); }
+.obs-row.selected { background: var(--focal-soft); font-weight: 600; }
+
+/* Viewer & Toolbar */
+.viewer-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 12px;
+}
+.diagnostics-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.diag-chip {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 11.5px;
+}
+
+/* FITS / Camera Imaging Display */
+.image-display-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 12px;
+}
+.image-frame-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+.image-frame-container img {
+  max-width: 100%;
+  max-height: 480px;
+  object-fit: contain;
+  display: block;
+}
+.image-meta-strip {
+  width: 100%;
+  padding: 6px 12px;
+  background: #111;
+  color: #aaa;
+  font-size: 11px;
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid #222;
+}
+.image-controls-row { display: flex; gap: 12px; align-items: center; }
+.image-controls-row label { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; }
+.transect-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+}
+.transect-panel h4 { margin: 0 0 4px; font-size: 13px; }
+
+/* Subtab Navigation (Plot vs Planetary Map) */
+.view-subtabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 8px;
+}
+.view-subtab-btn {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--text-dim);
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.view-subtab-btn:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+.view-subtab-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px rgba(30, 136, 229, 0.35);
+}
+
+/* Planetary Map Controls */
+.map-projection-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  border: 1px solid var(--line);
+}
+.map-projection-controls .hint { font-size: 11.5px; margin: 0; }
+
+/* Interactive FITS Canvas & Overlay */
+.fits-interactive-wrap {
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #000;
+  cursor: crosshair;
+}
+.fits-interactive-wrap img {
+  display: block;
+  max-width: 100%;
+  max-height: 480px;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.fits-canvas-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.pixel-inspector-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 10px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-family: 'SF Mono', Consolas, monospace;
+  font-size: 11.5px;
+  color: #38bdf8;
+  margin-top: 6px;
+}
+.pixel-inspector-badge span { color: var(--text-dim); }
+.pixel-inspector-badge strong { color: #f8fafc; font-weight: 600; }
+
+/* Remote Archive Downloader */
+.archive-search-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.archive-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  font-size: 10.5px;
+  font-weight: 700;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+}
+.archive-badge.nasa { background: #1e3a8a; color: #93c5fd; }
+.archive-badge.esa { background: #064e3b; color: #6ee7b7; }
+.archive-badge.jaxa { background: #831843; color: #fbcfe8; }
+

@@ -1,0 +1,67 @@
+<div class="prose">
+  <h2>COSMIC-2 Scientific Guidebook</h2>
+
+  <p>Welcome to the COSMIC-2 Explorer Guidebook. This tool transforms raw radio occultation soundings into scientifically actionable data, suitable for both educational exploration and rigorous atmospheric research.</p>
+
+  <h3>1. Mission & Spacecraft Overview</h3>
+  <p>The <strong>COSMIC-2 (Constellation Observing System for Meteorology, Ionosphere, and Climate)</strong> mission is a fleet of six microsatellites launched in June 2019 into a 24-degree inclination low Earth orbit (LEO). Its primary mission objectives are to improve tropical and subtropical weather forecasting, monitor climate change, and analyze space weather.</p>
+  <p>The spacecraft are equipped with the advanced TriG GNSS Radio Occultation (TGRS) receiver, allowing them to track signals from multiple GNSS constellations (GPS, GLONASS, Galileo) with exceptional signal-to-noise ratios, probing deeper into the moist tropical troposphere than previous missions.</p>
+
+  <h3>2. GNSS Radio Occultation Fundamentals</h3>
+  <p><strong>Radio Occultation (RO)</strong> is a remote sensing technique that leverages the atmospheric refraction of radio waves.</p>
+  <ul>
+    <li><strong>How it works:</strong> As a GNSS satellite sets or rises behind the Earth relative to the LEO satellite, its radio signal grazes the atmosphere.</li>
+    <li><strong>Atmospheric Refraction:</strong> The atmospheric density gradient bends and slows the signal. The TGRS receiver precisely measures this phase delay.</li>
+    <li><strong>Bending Angle & Impact Parameter:</strong> The delay is converted into a bending angle as a function of the impact parameter (the perpendicular distance from the center of curvature to the ray path).</li>
+    <li><strong>Inversion:</strong> Using the Abel inversion (or similar techniques), the bending angle profile is inverted to yield an atmospheric refractivity profile.</li>
+  </ul>
+
+  <h3>3. Physical Quantities & Variables</h3>
+  <p>In the neutral atmosphere (troposphere and stratosphere), microwave refractivity ($N$) is given by the Smith-Weintraub equation:</p>
+  <p><code>N = 77.6(P/T) + 3.73e5(e/T²)</code></p>
+  <p>where $P$ is pressure (hPa), $T$ is temperature (K), and $e$ is water vapor pressure (hPa). From this, we derive essential products:</p>
+  <ul>
+    <li><strong>Dry Temperature (temp_dry):</strong> Computed assuming $e = 0$. This is highly accurate in the dry stratosphere but unphysical in the moist lower troposphere.</li>
+    <li><strong>Temperature (Temp) & Moisture:</strong> In the lower troposphere, auxiliary data (like 1D-Var from weather models) is required to separate the temperature and moisture contributions.</li>
+    <li><strong>Electron Density (Ionosphere):</strong> In the ionosphere, free electrons cause a dispersive delay (varying by frequency). Dual-frequency GNSS signals allow isolation of this effect to compute electron density profiles (e.g., NmF2, hmF2).</li>
+  </ul>
+
+  <h3>4. Data Architecture & Repositories</h3>
+  <p>Data is organized into processing streams (e.g., Near Real-Time vs. Post-Processed) and levels (Level 1 raw phase, Level 2 retrieved profiles). This application primarily interacts with Level 2 products, such as <code>wetPf2</code> (moist atmospheric profiles) and <code>ionPrf</code> (ionospheric profiles), directly downloaded from the UCAR CDAAC (COSMIC Data Analysis and Archive Center).</p>
+
+  <h3>5. Scientific Processing Pipeline</h3>
+  <p>A rigorous scientific workflow requires careful data treatment before interpretation. This application allows you to visually construct and inspect a processing pipeline:</p>
+  <ol>
+    <li><strong>Quality Control (QC):</strong> Profiles flagged with processing errors or failing background checks should be excluded (toggle "Good quality only").</li>
+    <li><strong>Outlier Detection/Removal:</strong> 
+        <ul>
+            <li><em>Sigma Clipping:</em> Iteratively removes points beyond N standard deviations. Best for Gaussian noise.</li>
+            <li><em>MAD (Median Absolute Deviation):</em> Highly robust against extreme outliers.</li>
+            <li><em>IQR Filtering:</em> Based on interquartile range.</li>
+        </ul>
+    </li>
+    <li><strong>Smoothing / Filtering:</strong> Reduces high-frequency noise.
+        <ul>
+            <li><em>Moving Average:</em> Simple unweighted smoothing.</li>
+            <li><em>Gaussian Smoothing:</em> Weighted smoothing that preserves edges better than moving average.</li>
+            <li><em>Savitzky-Golay:</em> Polynomial fitting that excellently preserves signal peaks and structural integrity.</li>
+        </ul>
+    </li>
+    <li><strong>Averaging / Binning:</strong> Combining multiple profiles by latitude bands or local time to establish climatological baselines.</li>
+  </ol>
+
+  <h3>6. Uncertainty & Error Propagation</h3>
+  <p>Uncertainties in RO arise from structural errors (assumptions in the Abel inversion), thermal noise, and background model errors (in 1D-Var). When averaging profiles, you can visualize the statistical spread using standard deviations (measuring variability) or standard errors (measuring the confidence of the mean). <em>Note: Only use error bars when statistically justified by the sample size.</em></p>
+
+  <h3>7. Visualization & Derived Quantities</h3>
+  <p>Effective visualization distinguishes science from mere data. The plotting capabilities allow you to compare raw vs. processed data, overlay multiple profiles, and evaluate altitude-dependent statistics. Derived quantities, such as atmospheric stability (lapse rate) or tropopause height, can be extracted from the fundamental variables.</p>
+
+  <h3>8. Provenance & Reproducibility</h3>
+  <p>Reproducibility is the cornerstone of science. Every dataset or figure exported from this tool preserves its exact processing history (provenance)—including the source file, download date, outlier method, and smoothing parameters. Always report these parameters in publications to ensure your results can be independently verified.</p>
+
+  <h3>9. Recommended Workflows</h3>
+  <ul>
+    <li><strong>For Students:</strong> Start with the "Explore" tab. Examine individual profiles. Apply different smoothing methods and observe the effect on the "Compare" tab. Read the contextual help on controls to learn the terminology.</li>
+    <li><strong>For Researchers:</strong> Use the bulk download features. Apply strict QC and robust MAD filtering. Export regridded netCDF files or publication-quality figures directly. Utilize the provenance JSON to document your methodology in research notebooks.</li>
+  </ul>
+</div>
