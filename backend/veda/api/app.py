@@ -19,6 +19,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from contextlib import asynccontextmanager
+
 from ..config import (
     APP_NAME,
     APP_TITLE,
@@ -33,6 +35,12 @@ from ..config import (
 from .routes import router as veda_router
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    ensure_dirs()
+    yield
+
+
 def create_app() -> FastAPI:
     ensure_dirs()
 
@@ -41,6 +49,7 @@ def create_app() -> FastAPI:
         version=APP_VERSION,
         docs_url="/api/docs",
         openapi_url="/api/openapi.json",
+        lifespan=lifespan,
     )
 
     app.add_middleware(
@@ -52,10 +61,6 @@ def create_app() -> FastAPI:
 
     # Mount VEDA multi-mission scientific router
     app.include_router(veda_router)
-
-    @app.on_event("startup")
-    def _startup() -> None:
-        ensure_dirs()
 
     @app.get("/api/health")
     def health_check() -> Dict[str, Any]:

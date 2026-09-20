@@ -32,7 +32,7 @@ def platform_info() -> dict:
         "title": "VEDA: Visualization, Exploration, and Data Analysis",
         "version": "2.0.0",
         "description": "Multi-Mission Planetary Science Visualization & Comparative Analysis Platform",
-        "agencies_supported": ["NASA", "ESA", "JAXA", "NOAA"],
+        "agencies_supported": ["NASA", "ESA", "JAXA", "ISRO", "NOAA"],
         "missions_count": len(mgr.list_missions()),
         "bodies_count": len(BODIES),
         "missions": mgr.list_missions(),

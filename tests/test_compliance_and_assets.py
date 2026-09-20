@@ -24,7 +24,7 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 def test_zero_em_and_en_dashes_across_repository():
     """Verify strictly ZERO em-dashes and ZERO en-dashes across all source and doc files."""
     disallowed = ["\u2014", "\u2013"]
-    extensions = [".py", ".js", ".html", ".css", ".md", ".ps1", ".json", ".ini", ".spec"]
+    extensions = [".py", ".js", ".html", ".css", ".md", ".ps1", ".json", ".ini", ".spec", ".txt"]
     exclude_dirs = [".git", "venv", "__pycache__", ".pytest_cache", "pyinstaller_work", "dist", "sampledata", "legacy"]
 
     violations = []
@@ -49,7 +49,7 @@ def test_zero_em_and_en_dashes_across_repository():
 # ===========================================================================
 
 def test_mandatory_docs_exist():
-    """Verify that all mandatory legal and documentation files are present."""
+    """Verify that all mandatory legal, configuration, and documentation files are present."""
     required_files = [
         "LICENSE",
         "DATA_POLICY.md",
@@ -57,6 +57,7 @@ def test_mandatory_docs_exist():
         "THIRD_PARTY_LICENSES.md",
         "CONTRIBUTING.md",
         "README.md",
+        "requirements.txt",
     ]
     for filename in required_files:
         p = ROOT_DIR / filename
