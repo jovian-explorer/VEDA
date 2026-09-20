@@ -97,11 +97,34 @@ export async function withBusy(button, label, fn) {
 }
 
 export function drawer(title, bodyNode) {
-  $('#drawer-title').textContent = title;
-  const body = $('#drawer-body');
-  clear(body);
-  body.append(bodyNode);
-  $('#drawer').classList.remove('hidden');
+  const t = $('#drawer-title');
+  if (t) t.textContent = title;
+  const body = $('#drawer-body') || $('#drawer-content') || $('.drawer-body');
+  if (body) {
+    clear(body);
+    body.append(bodyNode);
+  }
+  const d = $('#drawer');
+  if (d) {
+    d.classList.remove('hidden');
+    d.setAttribute('aria-hidden', 'false');
+  }
+  const b = $('#drawer-backdrop');
+  if (b) {
+    b.classList.remove('hidden');
+  }
+}
+
+export function closeDrawer() {
+  const d = $('#drawer');
+  if (d) {
+    d.classList.add('hidden');
+    d.setAttribute('aria-hidden', 'true');
+  }
+  const b = $('#drawer-backdrop');
+  if (b) {
+    b.classList.add('hidden');
+  }
 }
 
 export function fillSelect(select, options, value) {

@@ -252,14 +252,19 @@ body.no-curious [data-curious] { display: none; }
 .toast.bad { background: #7d2c0d; }
 .toast.good { background: #1b5e34; }
 
+.drawer-backdrop {
+  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(3px); z-index: 69;
+}
 .drawer {
   position: fixed; top: 0; right: 0; width: 460px; max-width: 94vw; height: 100%;
   background: var(--surface); border-left: 1px solid var(--line);
-  box-shadow: -8px 0 28px rgba(16, 24, 40, .12); z-index: 70;
+  box-shadow: -8px 0 28px rgba(0, 0, 0, .4); z-index: 70;
   display: flex; flex-direction: column;
 }
 .drawer-head { display: flex; justify-content: space-between; align-items: center; padding: 13px 16px; border-bottom: 1px solid var(--line); }
-.drawer-head h2 { margin: 0; }
+.drawer-head h2 { margin: 0; font-size: 17px; }
+#drawer-close { font-size: 22px; line-height: 1; padding: 2px 8px; cursor: pointer; border-radius: 4px; }
 .drawer-body { padding: 14px 16px; overflow-y: auto; font-size: 13px; }
 .drawer-body h3 { margin-top: 16px; }
 .drawer-body dt { font-weight: 600; margin-top: 10px; }

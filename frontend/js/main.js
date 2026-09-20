@@ -3,7 +3,7 @@
  * Main Application Shell and Orchestrator
  */
 import { api, state } from './api.js';
-import { $, $$, el, banner, toast, drawer } from './ui.js';
+import { $, $$, el, banner, toast, drawer, closeDrawer } from './ui.js';
 import { initVeda } from './veda_app.js';
 
 function wireChrome() {
@@ -30,13 +30,33 @@ function wireChrome() {
     });
   }
 
-  $('#btn-settings').addEventListener('click', () => drawer('Settings', settingsBody()));
-  $('#btn-about').addEventListener('click', () => drawer('About VEDA', aboutBody()));
-  $('#btn-help').addEventListener('click', () => drawer('Planetary Science Guide', helpBody()));
-  $('#drawer-close').addEventListener('click', () => $('#drawer').classList.add('hidden'));
+  const btnSettings = $('#btn-settings');
+  if (btnSettings) {
+    btnSettings.addEventListener('click', () => drawer('Settings', settingsBody()));
+  }
+
+  const btnAbout = $('#btn-about');
+  if (btnAbout) {
+    btnAbout.addEventListener('click', () => drawer('About VEDA', aboutBody()));
+  }
+
+  const btnHelp = $('#btn-help');
+  if (btnHelp) {
+    btnHelp.addEventListener('click', () => drawer('Planetary Science Guide', helpBody()));
+  }
+
+  const closeBtn = $('#drawer-close');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', closeDrawer);
+  }
+
+  const backdrop = $('#drawer-backdrop');
+  if (backdrop) {
+    backdrop.addEventListener('click', closeDrawer);
+  }
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') $('#drawer').classList.add('hidden');
+    if (e.key === 'Escape') closeDrawer();
   });
 
   if (state.meta && state.meta.settings) {
@@ -174,18 +194,23 @@ function aboutBody() {
 }
 
 async function boot() {
+  // Wire chrome and event listeners immediately
+  wireChrome();
+
   try {
     state.meta = await api.meta();
+    if (state.meta && state.meta.app) {
+      $('#version-tag').textContent = `v${state.meta.app.version}`;
+      document.title = `${state.meta.app.title} ${state.meta.app.version}`;
+    }
+    if (state.meta && state.meta.settings) {
+      applySettings(state.meta.settings);
+    }
   } catch (err) {
+    console.warn('Could not reach backend /api/meta:', err);
     banner(`Could not reach the backend: ${err.message}`, 'bad');
-    return;
-  }
-  if (state.meta && state.meta.app) {
-    $('#version-tag').textContent = `v${state.meta.app.version}`;
-    document.title = `${state.meta.app.title} ${state.meta.app.version}`;
   }
 
-  wireChrome();
   await initVeda();
 }
 

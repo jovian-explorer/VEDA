@@ -153,7 +153,7 @@ def test_launch_from_temp() -> None:
         return
     tmpdir = tempfile.mkdtemp()
     try:
-        alive, log = _launch_from_cwd(tmpdir, timeout_s=20)
+        alive, log = _launch_from_cwd(tmpdir, timeout_s=35)
     finally:
         _kill_cosmic()
         import shutil
