@@ -137,6 +137,34 @@ When publishing peer-reviewed journal papers, conference proceedings, technical 
 }
 ```
 
+### G. Mars Orbiter Mission MENCA Investigation (ISRO ISSDC)
+```bibtex
+@article{Bhardwaj_MENCA_2016,
+  author       = {Bhardwaj, Anil and Thampi, Smitha V. and Das, Tirtha Pratim and Dhanya, M. B. and Naik, Neha and Pant, Tarun Kumar and Pradeepkumar, P. and Sreelatha, P. and Sundar, Abhishek and Vipin, K. K. and others},
+  title        = {{On the evening and morning exosphere of Mars: Results from MENCA on the Mars Orbiter Mission}},
+  journal      = {Geophysical Research Letters},
+  volume       = {43},
+  number       = {6},
+  pages        = {2388-2395},
+  year         = {2016},
+  doi          = {10.1002/2016GL067707}
+}
+```
+
+### H. Chandrayaan-2 Dual Frequency Radio Science (ISRO ISSDC / PRADAN)
+```bibtex
+@article{Choudhary_DFRS_2022,
+  author       = {Choudhary, R. K. and Ambili, K. M. and Thampi, Smitha V. and Bhardwaj, Anil},
+  title        = {{Dual Frequency Radio Science (DFRS) experiment onboard Chandrayaan-2: Detection of lunar ionosphere}},
+  journal      = {Current Science},
+  volume       = {122},
+  number       = {2},
+  pages        = {186-193},
+  year         = {2022},
+  doi          = {10.18520/cs/v122/i2/186-193}
+}
+```
+
 ---
 
 ## 5. Scientific Integrity and Algorithmic Provenance

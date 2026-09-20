@@ -29,6 +29,7 @@ from .extended_adapters import (
     DawnAdapter,
     RosettaAdapter,
 )
+from .isro_adapters import MomAdapter, Chandrayaan2Adapter
 
 
 class MissionManager:
@@ -54,6 +55,8 @@ class MissionManager:
         self.register_adapter(LroAdapter())
         self.register_adapter(DawnAdapter())
         self.register_adapter(RosettaAdapter())
+        self.register_adapter(MomAdapter())
+        self.register_adapter(Chandrayaan2Adapter())
 
     def register_adapter(self, adapter: BaseMissionAdapter) -> None:
         self._adapters[adapter.mission_id.lower()] = adapter

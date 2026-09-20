@@ -24,8 +24,8 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 def test_zero_em_and_en_dashes_across_repository():
     """Verify strictly ZERO em-dashes and ZERO en-dashes across all source and doc files."""
     disallowed = ["\u2014", "\u2013"]
-    extensions = [".py", ".js", ".html", ".css", ".md", ".ps1", ".json", ".ini"]
-    exclude_dirs = [".git", "venv", "__pycache__", ".pytest_cache", "build", "dist", "sampledata", "legacy"]
+    extensions = [".py", ".js", ".html", ".css", ".md", ".ps1", ".json", ".ini", ".spec"]
+    exclude_dirs = [".git", "venv", "__pycache__", ".pytest_cache", "pyinstaller_work", "dist", "sampledata", "legacy"]
 
     violations = []
     for p in ROOT_DIR.rglob("*"):

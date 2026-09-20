@@ -11,7 +11,7 @@
 ## Documentation Quick Links
 
 * 📖 **[User Guide and Scientific Manual](USAGE.md)**: Operational workflows, planetary thermodynamics, FITS imaging, and data export.
-* 🛰️ **[Third-Party Data Policy and Citations](DATA_POLICY.md)**: Policies for NASA PDS, ESA PSA, JAXA DARTS, and mandatory academic attribution guidelines.
+* 🛰️ **[Third-Party Data Policy and Citations](DATA_POLICY.md)**: Policies for NASA PDS, ESA PSA, JAXA DARTS, ISRO ISSDC, and mandatory academic attribution guidelines.
 * ⚖️ **[Software License (MIT)](LICENSE)**: Open-source terms and conditions for VEDA.
 * 📜 **[Third-Party Licenses and Attributions](THIRD_PARTY_LICENSES.md)**: Notices for bundled and linked open-source libraries (KaTeX, Plotly, Three.js, FastAPI, NumPy, SciPy, Astropy, Matplotlib, PyWebView).
 * 🤝 **[Contributing Guidelines](CONTRIBUTING.md)**: Development workflow, coding conventions, testing protocols, and style rules.
@@ -31,13 +31,13 @@ VEDA is engineered to build as a native, single-file standalone Windows desktop 
 #### A. By Celestial Body
 Explore any non-Earth target planetary body or satellite:
 * **Venus** (Akatsuki, Venus Express, Magellan, Pioneer Venus Orbiter, BepiColombo)
-* **Mars** (MAVEN, Mars Reconnaissance Orbiter)
+* **Mars** (MAVEN, Mars Reconnaissance Orbiter, Mars Orbiter Mission / MOM)
 * **Jupiter** (Juno, Galileo, Cassini, New Horizons)
 * **Saturn** (Cassini-Huygens)
 * **Titan** (Cassini-Huygens)
 * **Pluto and Arrokoth** (New Horizons)
 * **Mercury** (MESSENGER, BepiColombo)
-* **Moon** (Lunar Reconnaissance Orbiter)
+* **Moon** (Lunar Reconnaissance Orbiter, Chandrayaan-2)
 * **Ceres** (Dawn)
 * **Vesta** (Dawn)
 * **Comet 67P/C-G** (Rosetta)
@@ -57,7 +57,7 @@ Explore any non-Earth target planetary body or satellite:
 
 #### C. By Mission
 Dive into specific spacecraft architectures with accurate mission classification:
-* **Orbiters**: Akatsuki, Juno, Cassini, Venus Express, MAVEN, BepiColombo, Galileo, MESSENGER, Magellan, PVO, LRO, MRO, Dawn, Rosetta.
+* **Orbiters**: Akatsuki, Juno, Cassini, Venus Express, MAVEN, BepiColombo, Galileo, MESSENGER, Magellan, PVO, LRO, MRO, Dawn, Rosetta, Mars Orbiter Mission (MOM), Chandrayaan-2.
 * **Flybys and Encounters**: New Horizons (Pluto, Arrokoth, Jupiter gravity assist), BepiColombo Venus flybys, Galileo Venus flyby.
 * **Multi-level Data Pipeline**: Raw to Calibrated to Derived to User Analysis to Visualization to Export.
 * **Astronomical Imaging and Interactive FITS Canvas**:
@@ -70,7 +70,7 @@ Dive into specific spacecraft architectures with accurate mission classification
 
 ### 3. Remote Archive Discovery and Streaming Downloader
 
-* **International Planetary Archives**: Direct queries to NASA Planetary Data System (PDS), ESA Planetary Science Archive (PSA), and JAXA DARTS / ISAS.
+* **International Planetary Archives**: Direct queries to NASA Planetary Data System (PDS), ESA Planetary Science Archive (PSA), JAXA DARTS / ISAS, and ISRO ISSDC.
 * **Live Progress and Cataloging**: Background streaming chunked downloader with byte tracking, SHA-256 verification, and SQLite cataloging via `/api/veda/archive/download` and `/api/veda/archive/tasks/{task_id}`.
 * **In-App Search UI**: Query remote archives by agency and keyword directly within Mission Mode.
 

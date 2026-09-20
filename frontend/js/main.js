@@ -219,6 +219,8 @@ function aboutBody() {
       <li><strong>Lunar Reconnaissance Orbiter (LRO)</strong>: High-Resolution Lunar Orbiter (NASA)</li>
       <li><strong>Dawn</strong>: Vesta and Ceres Protoplanet Orbiter (NASA)</li>
       <li><strong>Rosetta</strong>: Comet 67P/Churyumov-Gerasimenko Rendezvous and Lander (ESA)</li>
+      <li><strong>Mars Orbiter Mission (MOM / Mangalyaan)</strong>: Mars Exospheric and Imaging Orbiter (ISRO)</li>
+      <li><strong>Chandrayaan-2 Orbiter (CH2O)</strong>: Lunar Exosphere, Ionosphere, and High-Resolution Mapping (ISRO)</li>
     </ul>
 
     <hr/>

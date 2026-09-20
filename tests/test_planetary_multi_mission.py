@@ -12,6 +12,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 import pytest
+import numpy as np
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT_DIR / "backend"))
@@ -74,14 +75,15 @@ def test_earth_strictly_excluded():
 # 2. MISSION CATALOG & URL INTEGRITY TESTS
 # ===========================================================================
 
-def test_all_15_missions_metadata_and_urls():
-    """Verify all 15 planetary missions possess valid descriptions and archive URLs."""
+def test_all_17_missions_metadata_and_urls():
+    """Verify all 17 planetary missions possess valid descriptions and archive URLs."""
     expected_missions = [
         "akatsuki", "vex", "magellan", "pvo", "bepicolombo",
         "messenger", "maven", "mro", "juno", "galileo",
-        "cassini", "new_horizons", "lro", "dawn", "rosetta"
+        "cassini", "new_horizons", "lro", "dawn", "rosetta",
+        "mom", "chandrayaan2"
     ]
-    assert len(MISSIONS) >= 15
+    assert len(MISSIONS) >= 17
     for mission_id in expected_missions:
         assert mission_id in MISSIONS, f"Expected mission {mission_id} missing"
         m = MISSIONS[mission_id]
@@ -173,3 +175,35 @@ def test_publication_figure_generator():
     assert fig_png.media_type == "image/png"
     assert fig_png.body.startswith(b"\x89PNG")
     assert len(fig_png.body) > 5000
+
+
+# ===========================================================================
+# 6. ISRO PLANETARY MISSIONS (MOM & CHANDRAYAAN-2)
+# ===========================================================================
+
+def test_isro_planetary_missions_mom_and_ch2():
+    """Verify ISRO planetary missions MOM and Chandrayaan-2 adapters and profiles."""
+    mgr = get_mission_manager()
+
+    # MOM (Mars)
+    mom_obs = mgr.discover_by_mission("mom", body_id="mars")
+    assert len(mom_obs) >= 2
+    mom_prof = mgr.load_profile("mom", mom_obs[0]["observation_id"])
+    assert mom_prof is not None
+    assert mom_prof.body_id == "mars"
+    assert mom_prof.instrument == "MENCA"
+    assert len(mom_prof.altitude_km) > 0
+    assert len(mom_prof.temperature_k) > 0
+    assert "SPL" in mom_prof.provenance.doi_or_citation or "Bhardwaj" in mom_prof.provenance.doi_or_citation
+
+    # Chandrayaan-2 (Moon)
+    ch2_obs = mgr.discover_by_mission("chandrayaan2", body_id="moon")
+    assert len(ch2_obs) >= 2
+    ch2_prof = mgr.load_profile("chandrayaan2", ch2_obs[0]["observation_id"])
+    assert ch2_prof is not None
+    assert ch2_prof.body_id == "moon"
+    assert ch2_prof.instrument == "DFRS"
+    assert ch2_prof.electron_density_cm3 is not None
+    assert len(ch2_prof.electron_density_cm3) > 0
+    assert np.nanmax(ch2_prof.electron_density_cm3) > 100.0
+

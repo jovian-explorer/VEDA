@@ -59,7 +59,7 @@ VEDA provides two exploration paradigms accessible via the top-left navigation s
 
 ### Mode 2: Exploration by Spacecraft Mission
 1. **Mission Architecture**:
-   * Browse 15 planetary missions filtered by mission class (**Orbiters** vs. **Flybys and Encounters**).
+   * Browse 17 planetary missions filtered by mission class (**Orbiters** vs. **Flybys and Encounters**).
    * Inspect spacecraft trajectory parameters, orbital configurations, scientific payload suites, and target bodies.
    * Direct links are provided to the official mission portal and data archive.
 2. **Observation Timeline and Soundings Catalog**:
@@ -129,7 +129,7 @@ VEDA connects directly to international planetary science archives:
 
 1. **Archive Search**:
    * In Mission Mode, open the Remote Archive Query interface.
-   * Select target agency: **NASA PDS**, **ESA PSA**, or **JAXA DARTS**.
+   * Select target agency: **NASA PDS**, **ESA PSA**, **JAXA DARTS**, or **ISRO ISSDC**.
    * Enter search keywords, mission name, or target body.
 2. **Chunked Streaming Acquisition**:
    * Click **Download** on any discovered file.
