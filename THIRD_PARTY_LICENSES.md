@@ -20,6 +20,7 @@ VEDA (Visualization, Exploration, and Data Analysis) bundles, links, or interact
 | **Matplotlib** | Backend (Python) | PSF / BSD Compatible | Server-side generation of 300-DPI publication figures |
 | **PyWebView** | Backend (Python) | BSD 3-Clause | Native desktop window binding with Edge WebView2 runtime |
 | **Requests** | Backend (Python) | Apache 2.0 | HTTP client for remote planetary archive queries and downloads |
+| **Pillow** | Backend (Python) | HPND License | Astronomical image rendering and PNG thumbnail processing |
 
 ---
 
@@ -174,3 +175,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 * **License**: Matplotlib License (PSF Compatible)
 * **Copyright**: Copyright (c) 2002-2026 Matplotlib Development Team
 * **Terms**: Redistribution and use in source and binary forms, with or without modification, are permitted under the terms of the Matplotlib License agreement.
+
+---
+
+## 8. Pillow (PIL Fork)
+
+* **License**: HPND License (Historical Permission Notice and Disclaimer)
+* **Copyright**:
+  * Copyright (c) 2010-2026 by Jeffrey A. Clark and contributors
+  * Copyright (c) 1997-2011 by Secret Labs AB
+  * Copyright (c) 1995-2011 by Fredrik Lundh
+* **Terms**: Permission to use, copy, modify, and distribute this software and its documentation for any purpose and without fee is hereby granted, provided that the above copyright notice appear in all copies and that both that copyright notice and this permission notice appear in supporting documentation.

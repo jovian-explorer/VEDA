@@ -197,6 +197,17 @@ def extract_photometric_transect(
 ) -> Dict[str, Any]:
     """Sample pixel intensities along a line segment (x0, y0) -> (x1, y1)."""
     h, w = image.shape
+    if w < 2 or h < 2:
+        val = float(image[0, 0]) if (h > 0 and w > 0) else 0.0
+        return {
+            "x0": x0, "y0": y0, "x1": x1, "y1": y1,
+            "distances_pixels": [0.0] * num_samples,
+            "intensities": [val] * num_samples,
+            "min_intensity": val,
+            "max_intensity": val,
+            "mean_intensity": val,
+        }
+
     x0 = max(0.0, min(float(x0), w - 1.0))
     y0 = max(0.0, min(float(y0), h - 1.0))
     x1 = max(0.0, min(float(x1), w - 1.0))

@@ -1,8 +1,8 @@
-"""COSMIC-2 Advanced Atmospheric & Ionospheric Science Module.
+"""VEDA Advanced Planetary Atmospheric & Ionospheric Science Module.
 
 This module provides high-precision physical and numerical calculations for
-Radio Occultation (RO) and Space Weather data products, conforming to WMO and
-CODATA physical standards as specified in SCIENCE_SPECS.md.
+Planetary Radio Occultation (RO) and Space Weather data products, conforming to
+authoritative physical and CODATA standards.
 
 Algorithms implemented:
 1. Potential Temperature (theta) calculation with automatic temperature unit detection.
@@ -10,9 +10,8 @@ Algorithms implemented:
 3. Vertical Total Electron Content (VTEC) trapezoidal integration from ionospheric electron density.
 4. Scintillation S4 event categorization, climatology fractions, and burst counting.
 
-Author: Account 2 (Specialist Science Authority)
-Task: TASK-2026-001
-Date: 2026-09-19
+Author: Keshav Aggarwal (SPL / VSSC, ISRO)
+Date: 2026-09-20
 """
 
 from __future__ import annotations
@@ -142,17 +141,19 @@ def compute_brunt_vaisala(
     altitude_km: Union[np.ndarray, list],
     theta_k: Union[np.ndarray, list],
     smooth_window: int = 5,
+    gravity_ms2: Optional[float] = None,
 ) -> np.ndarray:
     """Compute Brunt-Vaisala buoyancy frequency squared (N^2) in rad^2 s^-2.
 
     Formula:
-        N^2(z) = (g_0 / theta(z)) * (d theta(z) / dz_meters)
+        N^2(z) = (g / theta(z)) * (d theta(z) / dz_meters)
     where geometric altitude is converted to meters: z_meters = z_km * 1000.0.
 
     Parameters:
         altitude_km: 1D geometric altitude array in km.
         theta_k: 1D potential temperature array in Kelvin.
         smooth_window: Window size for preliminary smoothing of theta (default 5).
+        gravity_ms2: Optional local surface gravity acceleration in m/s^2 (defaults to G_0).
 
     Returns:
         1D float64 NumPy array of N^2 in s^-2.
@@ -209,8 +210,9 @@ def compute_brunt_vaisala(
     inv_order[sort_order] = np.arange(len(sort_order))
     dth_dz_v = dth_dz_sorted[inv_order]
 
-    # Calculate N^2 = (g_0 / theta) * (d theta / dz)
-    n2_v = (G_0 / th_v) * dth_dz_v
+    # Calculate N^2 = (g / theta) * (d theta / dz)
+    g_eff = float(gravity_ms2) if gravity_ms2 is not None and gravity_ms2 > 0 else G_0
+    n2_v = (g_eff / th_v) * dth_dz_v
 
     # Map back to full-length array
     n2_full = np.full(n_pts, np.nan, dtype=np.float64)

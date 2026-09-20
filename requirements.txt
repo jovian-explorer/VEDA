@@ -1,0 +1,23 @@
+# VEDA Planetary Science Laboratory: Core Dependencies
+# Install with: pip install -r requirements.txt
+
+# REST API & ASGI Web Server
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+pydantic>=2.0.0
+
+# Scientific Stack & Numerical Mathematics
+numpy>=1.24.0
+scipy>=1.10.0
+astropy>=5.3.0
+matplotlib>=3.7.0
+pillow>=9.5.0
+
+# Desktop GUI Runtime
+pywebview>=4.0.0
+
+# Remote Planetary Archive Acquisition
+requests>=2.28.0
+
+# Testing & Verification
+pytest>=7.3.0

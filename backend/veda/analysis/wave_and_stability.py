@@ -228,7 +228,8 @@ def fit_chapman_ionosphere(
 
     def chapman_func(z_val, nm, hm, h):
         zeta = (z_val - hm) / np.clip(h, 1.0, 500.0)
-        return nm * np.exp(0.5 * (1.0 - zeta - np.exp(-zeta)))
+        zeta_clipped = np.clip(zeta, -50.0, 50.0)
+        return nm * np.exp(0.5 * (1.0 - zeta_clipped - np.exp(-zeta_clipped)))
 
     try:
         popt, _ = curve_fit(

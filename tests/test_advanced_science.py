@@ -1,14 +1,14 @@
-"""Unit tests for COSMIC-2 Advanced Atmospheric & Ionospheric Science Module.
+"""Unit tests for VEDA Advanced Planetary Atmospheric & Ionospheric Science Module.
 
 Verifies:
 - Known physical benchmarks (isothermal atmosphere, dry adiabatic, Chapman ionospheric layer, scintillation events)
 - Automatic unit conversion (Celsius vs. Kelvin)
 - Monotonicity, non-uniform altitude grids, and descending occultation profiles
 - Resilience to NaNs, infinite values, negative pressures, and boundary edge cases
+- Planetary gravity scaling across Solar System targets
 
-Author: Account 2 (Specialist Science Authority)
-Task: TASK-2026-001
-Date: 2026-09-19
+Author: Keshav Aggarwal (SPL / VSSC, ISRO)
+Date: 2026-09-20
 """
 
 import math
@@ -17,7 +17,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend" / "veda" / "analysis"))
+ROOT_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT_DIR / "backend"))
+sys.path.insert(0, str(ROOT_DIR / "backend" / "veda" / "analysis"))
 
 from advanced_science import (
     C_P,
@@ -289,4 +291,43 @@ class TestEdgeAndNonUniformCases:
 
         vtec = compute_vtec(nan_arr, nan_arr)
         assert np.isnan(vtec["vtec_tecu"])
+
+    def test_custom_planetary_gravity_brunt_vaisala(self):
+        """Verify Brunt-Vaisala calculation scales linearly with planetary gravity."""
+        z = np.linspace(10.0, 50.0, 41)
+        theta = 300.0 + 2.0 * z
+
+        n2_earth = compute_brunt_vaisala(z, theta, smooth_window=1, gravity_ms2=9.80665)
+        n2_mars = compute_brunt_vaisala(z, theta, smooth_window=1, gravity_ms2=3.72)
+
+        valid = np.isfinite(n2_earth) & np.isfinite(n2_mars)
+        ratio = n2_mars[valid] / n2_earth[valid]
+        np.testing.assert_allclose(ratio, 3.72 / 9.80665, rtol=1e-5)
+
+    def test_atmospheric_gradient_with_duplicates_and_descending(self):
+        """Verify robust gradient calculation on non-monotonic and duplicate coordinate grids."""
+        from veda.analysis.atmospheric import _gradient_nan_safe
+        z = np.array([50.0, 40.0, 30.0, 30.0, 20.0, 10.0])
+        t = np.array([250.0, 260.0, 270.0, 270.0, 280.0, 290.0])
+
+        grad = _gradient_nan_safe(z, t)
+        assert grad.shape == z.shape
+        assert np.all(np.isfinite(grad))
+        # Lapse rate dT/dz is negative (-1.0 K/km) since T decreases with altitude
+        assert np.all(grad < 0.0)
+
+    def test_chapman_extreme_altitudes_no_overflow(self):
+        """Verify Chapman layer fit avoids numerical exponential overflow on wide altitude grids."""
+        from veda.analysis.wave_and_stability import fit_chapman_ionosphere
+        z = np.linspace(50.0, 800.0, 100)
+        # Theoretical Chapman profile with Nm = 1e5, hm = 300 km, H = 50 km
+        zeta = (z - 300.0) / 50.0
+        ne = 1e5 * np.exp(0.5 * (1.0 - zeta - np.exp(-zeta)))
+
+        fit = fit_chapman_ionosphere(z, ne)
+        assert fit["nmf2_cm3"] is not None
+        assert abs(fit["nmf2_cm3"] - 1e5) < 5000.0
+        assert fit["hmf2_km"] is not None
+        assert abs(fit["hmf2_km"] - 300.0) < 5.0
+        assert fit["r_squared"] is not None and fit["r_squared"] > 0.98
 

@@ -18,14 +18,33 @@ from ..core.registry import get_body
 
 
 def _gradient_nan_safe(z_km: np.ndarray, v: np.ndarray) -> np.ndarray:
-    """Compute dv/dz robustly in presence of non-finite values."""
+    """Compute dv/dz robustly handling non-finite values and non-monotonic or duplicate altitudes."""
     z = np.asarray(z_km, dtype=np.float64)
     val = np.asarray(v, dtype=np.float64)
     out = np.full(val.shape, np.nan, dtype=np.float64)
     ok = np.isfinite(z) & np.isfinite(val)
     if ok.sum() < 2:
         return out
-    out[ok] = np.gradient(val[ok], z[ok])
+
+    z_ok = z[ok]
+    val_ok = val[ok]
+
+    sort_order = np.argsort(z_ok)
+    z_sorted = z_ok[sort_order].copy()
+    val_sorted = val_ok[sort_order]
+
+    # Guard against duplicate altitudes that could cause division by zero
+    diffs = np.diff(z_sorted)
+    if np.any(diffs <= 0):
+        for j in range(1, len(z_sorted)):
+            if z_sorted[j] <= z_sorted[j - 1]:
+                z_sorted[j] = z_sorted[j - 1] + 1e-6
+
+    grad_sorted = np.gradient(val_sorted, z_sorted)
+
+    inv_order = np.empty_like(sort_order)
+    inv_order[sort_order] = np.arange(len(sort_order))
+    out[ok] = grad_sorted[inv_order]
     return out
 
 
@@ -34,13 +53,11 @@ def compute_atmospheric_diagnostics(
     body: Optional[BodyInfo] = None,
 ) -> Dict[str, np.ndarray]:
     """Compute full suite of thermodynamic derived quantities for a profile."""
+    derived: Dict[str, np.ndarray] = {}
     if body is None:
         body = get_body(profile.body_id)
     if body is None:
-        # Default to Earth constants if unknown body
-        body = get_body("earth")
-
-    derived: Dict[str, np.ndarray] = {}
+        return derived
     z = profile.altitude_km
     if z is None or z.size < 2:
         return derived

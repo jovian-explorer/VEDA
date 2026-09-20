@@ -160,3 +160,52 @@ def test_pds3_table_class_behavior():
     alt = tbl.series("ALTITUDE")
     assert len(alt) == 3
     assert alt[0] == 10.0
+
+
+def test_transect_single_pixel_image():
+    """Verify transect extraction safely handles 1x1 single pixel images without errors."""
+    tiny_img = np.array([[42.0]], dtype=np.float32)
+    res = extract_photometric_transect(tiny_img, x0=0, y0=0, x1=0, y1=0, num_samples=10)
+    assert len(res["intensities"]) == 10
+    assert res["intensities"][0] == 42.0
+    assert res["min_intensity"] == 42.0
+    assert res["max_intensity"] == 42.0
+
+
+def test_pds3_table_pointer_fallback(tmp_path):
+    """Verify PDS3 reader resolves table filename from ^TABLE pointer when base name differs."""
+    from veda.readers.pds3_reader import read_pds3_table
+    lbl_content = """PDS_VERSION_ID = PDS3
+RECORD_TYPE = FIXED_LENGTH
+RECORD_BYTES = 20
+FILE_RECORDS = 2
+^TABLE = "custom_telemetry.tab"
+OBJECT = COLUMN
+  NAME = ALTITUDE
+  COLUMN_NUMBER = 1
+  START_BYTE = 1
+  BYTES = 10
+  DATA_TYPE = ASCII_REAL
+END_OBJECT = COLUMN
+OBJECT = COLUMN
+  NAME = TEMPERATURE
+  COLUMN_NUMBER = 2
+  START_BYTE = 11
+  BYTES = 10
+  DATA_TYPE = ASCII_REAL
+END_OBJECT = COLUMN
+END
+"""
+    tab_content = "      10.5     245.2\n      11.0     244.8\n"
+
+    lbl_file = tmp_path / "metadata.lbl"
+    tab_file = tmp_path / "custom_telemetry.tab"
+    lbl_file.write_text(lbl_content, encoding="utf-8")
+    tab_file.write_text(tab_content, encoding="utf-8")
+
+    parsed = read_pds3_table(str(lbl_file))
+    assert parsed.series("ALTITUDE") is not None
+    assert len(parsed.series("ALTITUDE")) == 2
+    assert abs(parsed.series("ALTITUDE")[0] - 10.5) < 1e-3
+    assert abs(parsed.series("TEMPERATURE")[0] - 245.2) < 1e-3
+

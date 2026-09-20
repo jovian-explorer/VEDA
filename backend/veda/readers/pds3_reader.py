@@ -155,11 +155,25 @@ def read_pds3_table(table_or_label_path: str) -> Pds3Table:
 
     if not lbl_p.exists():
         raise FileNotFoundError(f"PDS3 label not found at {lbl_p}")
-    if not tab_p.exists():
-        raise FileNotFoundError(f"PDS3 table not found at {tab_p}")
 
     lbl_text = lbl_p.read_text(encoding="utf-8", errors="replace")
     metadata, col_defs = parse_pds3_label(lbl_text)
+
+    if not tab_p.exists():
+        # Check if ^TABLE or ^SPREADSHEET pointer specifies filename in directory
+        table_pointer = metadata.get("^TABLE") or metadata.get("^SPREADSHEET")
+        if table_pointer:
+            ptr_name = str(table_pointer).strip('()"\' ')
+            cand = lbl_p.parent / ptr_name
+            if cand.exists():
+                tab_p = cand
+            elif (lbl_p.parent / ptr_name.lower()).exists():
+                tab_p = lbl_p.parent / ptr_name.lower()
+            elif (lbl_p.parent / ptr_name.upper()).exists():
+                tab_p = lbl_p.parent / ptr_name.upper()
+
+    if not tab_p.exists():
+        raise FileNotFoundError(f"PDS3 table not found at {tab_p}")
 
     # Read the table file lines
     with tab_p.open("r", encoding="utf-8", errors="replace") as f:
