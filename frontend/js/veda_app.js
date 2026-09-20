@@ -1,6 +1,6 @@
 /**
- * VEDA — Visualization, Exploration, and Data Analysis
- * Multi-Mission Planetary Science Data Laboratory Frontend Controller
+ * VEDA: Visualization, Exploration, and Data Analysis
+ * Dedicated Planetary Science Laboratory Workstation Controller
  */
 import { api } from './api.js';
 
@@ -185,8 +185,12 @@ export async function loadAndRenderCelestialBody(bodyId) {
       <div class="body-banner-head">
         <h2>${BODY_EMOJIS[bodyId] || '🪐'} ${bodyDetails.name}</h2>
         <span class="badge category-badge">${bodyDetails.category.replace('_', ' ').toUpperCase()}</span>
+        <div class="body-banner-links" style="display:inline-flex; gap:8px; margin-left:auto; flex-wrap:wrap;">
+          ${bodyDetails.mission_page_url ? `<a href="${bodyDetails.mission_page_url}" target="_blank" rel="noopener" class="badge" style="text-decoration:none; background:#1e3a5f; color:#90caf9;">🌐 Exploration Overview ↗</a>` : ''}
+          ${bodyDetails.data_page_url ? `<a href="${bodyDetails.data_page_url}" target="_blank" rel="noopener" class="badge" style="text-decoration:none; background:#2e4c36; color:#a5d6a7;">🗄️ Planetary Data Archive ↗</a>` : ''}
+        </div>
       </div>
-      <p class="body-desc">${bodyDetails.description}</p>
+      <p class="body-desc" style="line-height:1.6; margin:8px 0 12px 0;">${bodyDetails.description}</p>
       <div class="physics-metrics-row">
         <div class="phys-badge"><strong>Radius:</strong> ${bodyDetails.radius_km.toLocaleString()} km</div>
         <div class="phys-badge"><strong>Gravity g₀:</strong> ${bodyDetails.surface_gravity} m/s²</div>
@@ -501,8 +505,8 @@ function renderComparisonTable() {
       <td><code>${p.observation_id}</code></td>
       <td>${p.instrument}</td>
       <td>${p.time_utc ? p.time_utc.split('T')[0] : 'N/A'}</td>
-      <td>${p.latitude != null ? p.latitude.toFixed(1) + '°' : '—'} / ${p.longitude != null ? p.longitude.toFixed(1) + '°' : '—'}</td>
-      <td>${p.z_range_km ? `${p.z_range_km[0]} – ${p.z_range_km[1]} km` : '—'}</td>
+      <td>${p.latitude != null ? p.latitude.toFixed(1) + '°' : '-'} / ${p.longitude != null ? p.longitude.toFixed(1) + '°' : '-'}</td>
+      <td>${p.z_range_km ? `${p.z_range_km[0]} to ${p.z_range_km[1]} km` : '-'}</td>
       <td><button class="ghost small btn-dive-deep" data-mission="${p.mission_id}" data-obs="${p.observation_id}" title="Jump to Mission mode for detailed profile and provenance">🔍 Deep Dive</button></td>
     </tr>
   `).join('');
@@ -607,8 +611,8 @@ export function renderPlanetaryMap(projection = '2d') {
         o.instrument,
         o.product,
         o.time_utc || 'N/A',
-        o.latitude != null ? o.latitude.toFixed(2) : '—',
-        o.longitude != null ? o.longitude.toFixed(2) : '—'
+        o.latitude != null ? o.latitude.toFixed(2) : '-',
+        o.longitude != null ? o.longitude.toFixed(2) : '-'
       ]);
 
       traces.push({
@@ -726,8 +730,8 @@ export function renderPlanetaryMap(projection = '2d') {
           o.instrument,
           o.product,
           o.time_utc || 'N/A',
-          o.latitude != null ? o.latitude.toFixed(2) : '—',
-          o.longitude != null ? o.longitude.toFixed(2) : '—'
+          o.latitude != null ? o.latitude.toFixed(2) : '-',
+          o.longitude != null ? o.longitude.toFixed(2) : '-'
         ]);
       });
 
@@ -852,11 +856,15 @@ export async function loadAndRenderMission(missionId) {
         ${typeTag}
         <span class="badge badge-agency">${mission.agency}</span>
         <span class="badge status-badge status-${mission.mission_status}">${mission.mission_status.toUpperCase()}</span>
+        <div class="mission-header-links" style="display:inline-flex; gap:8px; margin-left:auto; flex-wrap:wrap;">
+          ${mission.mission_page_url ? `<a href="${mission.mission_page_url}" target="_blank" rel="noopener" class="badge" style="text-decoration:none; background:#1e3a5f; color:#90caf9;">🌐 Official Mission Page ↗</a>` : ''}
+          ${(mission.data_page_url || mission.archive_url) ? `<a href="${mission.data_page_url || mission.archive_url}" target="_blank" rel="noopener" class="badge" style="text-decoration:none; background:#2e4c36; color:#a5d6a7;">🗄️ Authoritative Data Archive ↗</a>` : ''}
+        </div>
       </div>
-      <p class="mission-header-desc">${mission.description}</p>
+      <p class="mission-header-desc" style="line-height:1.6; margin:8px 0 12px 0;">${mission.description}</p>
       <div class="mission-meta-chips">
         <span><strong>Launch:</strong> ${mission.launch_date}</span>
-        <span><strong>Archive:</strong> <a href="${mission.archive_url}" target="_blank" rel="noopener">${mission.authoritative_archive} ↗</a></span>
+        <span><strong>Archive Node:</strong> <a href="${mission.data_page_url || mission.archive_url}" target="_blank" rel="noopener">${mission.authoritative_archive} ↗</a></span>
         <span><strong>Citation:</strong> <em>${mission.citation}</em></span>
       </div>
     `;
@@ -910,7 +918,7 @@ function renderObservationsTable() {
       <td><strong>${obs.observation_id}</strong></td>
       <td>${obs.instrument}</td>
       <td>${obs.body_id.toUpperCase()}</td>
-      <td>${obs.time_utc ? obs.time_utc.split('T')[0] : '—'}</td>
+      <td>${obs.time_utc ? obs.time_utc.split('T')[0] : '-'}</td>
       <td><button class="small ghost btn-inspect-obs">Inspect</button></td>
     </tr>
   `).join('');
@@ -1091,13 +1099,13 @@ async function inspectImageObservation(obs) {
             <canvas class="fits-canvas-overlay" id="fits-drawing-canvas"></canvas>
           </div>
           <div class="pixel-inspector-badge" id="fits-pixel-inspector">
-            <span>Cursor:</span> <strong id="fits-cursor-coords">X: — | Y: —</strong>
+            <span>Cursor:</span> <strong id="fits-cursor-coords">X: - | Y: -</strong>
             <span style="margin-left: auto; color: #64748b;">Click & drag on image to slice transect</span>
           </div>
           <div class="image-meta-strip">
             <span>Filter: ${imgMeta.filter_name || 'Clear'}</span>
-            <span>Target Dist: ${imgMeta.target_distance_km ? imgMeta.target_distance_km.toLocaleString() + ' km' : '—'}</span>
-            <span>Phase Angle: ${imgMeta.solar_phase_angle_deg ? imgMeta.solar_phase_angle_deg.toFixed(1) + '°' : '—'}</span>
+            <span>Target Dist: ${imgMeta.target_distance_km ? imgMeta.target_distance_km.toLocaleString() + ' km' : '-'}</span>
+            <span>Phase Angle: ${imgMeta.solar_phase_angle_deg ? imgMeta.solar_phase_angle_deg.toFixed(1) + '°' : '-'}</span>
           </div>
         </div>
 

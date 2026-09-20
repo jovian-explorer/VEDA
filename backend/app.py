@@ -192,7 +192,7 @@ def main(argv: list[str] | None = None) -> int:
     if not fe.is_dir():
         msg = f"Frontend assets are missing.\nExpected: {fe}"
         _log(f"ERROR: {msg}")
-        _show_error_dialog(f"{APP_TITLE} – Startup Error", msg)
+        _show_error_dialog(f"{APP_TITLE} - Startup Error", msg)
         return 2
 
     host, port = "127.0.0.1", args.port or free_port()
@@ -203,7 +203,7 @@ def main(argv: list[str] | None = None) -> int:
     if not _wait_until_up(url + "api/health"):
         msg = f"The backend server did not start within {STARTUP_TIMEOUT_S}s.\nCheck: {LOG_DIR / 'startup.log'}"
         _log(f"ERROR: {msg}")
-        _show_error_dialog(f"{APP_TITLE} – Startup Error", msg)
+        _show_error_dialog(f"{APP_TITLE} - Startup Error", msg)
         return 3
 
     _log("Backend healthy.")

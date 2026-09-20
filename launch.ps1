@@ -1,4 +1,4 @@
-# VEDA — Visualization, Exploration, and Data Analysis — launch script
+# VEDA: Visualization, Exploration, and Data Analysis - launch script
 # Usage:
 #   .\launch.ps1             # starts VEDA and opens browser
 #   .\launch.ps1 --no-window # server only
@@ -24,7 +24,7 @@ if ($browser) { $args += "--browser" }
 if ($nowindow) { $args += "--no-window" }
 if ($port -ne 0) { $args += "--port", $port }
 
-Write-Host "Starting VEDA — Planetary Science Data Laboratory..." -ForegroundColor Cyan
+Write-Host "Starting VEDA: Planetary Science Data Laboratory..." -ForegroundColor Cyan
 Write-Host "Backend: $BackendDir"
 
 # Change to backend dir and launch

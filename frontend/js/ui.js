@@ -25,7 +25,7 @@ export function clear(node) { while (node.firstChild) node.removeChild(node.firs
 // ---------------------------------------------------------------- formatting
 
 export function fmt(v, digits = 2) {
-  if (v === null || v === undefined || Number.isNaN(v)) return '\u2014';
+  if (v === null || v === undefined || Number.isNaN(v)) return '-';
   if (typeof v === 'boolean') return v ? 'yes' : 'no';
   if (typeof v !== 'number') return String(v);
   if (v !== 0 && (Math.abs(v) >= 1e5 || Math.abs(v) < 1e-3)) {
@@ -35,7 +35,7 @@ export function fmt(v, digits = 2) {
 }
 
 export function bytes(n) {
-  if (!n && n !== 0) return '\u2014';
+  if (!n && n !== 0) return '-';
   const u = ['B', 'kB', 'MB', 'GB', 'TB'];
   let i = 0;
   while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
@@ -43,7 +43,7 @@ export function bytes(n) {
 }
 
 export function clock(seconds) {
-  if (!seconds || seconds < 0) return '\u2014';
+  if (!seconds || seconds < 0) return '-';
   if (seconds < 60) return `${Math.round(seconds)} s`;
   if (seconds < 3600) return `${Math.floor(seconds / 60)} min ${Math.round(seconds % 60)} s`;
   return `${(seconds / 3600).toFixed(1)} h`;
@@ -51,12 +51,12 @@ export function clock(seconds) {
 
 export function isoDay(d) { return d.toISOString().slice(0, 10); }
 
-export function timeOf(iso) { return iso ? iso.slice(11, 19) : '\u2014'; }
-export function dayOf(iso)  { return iso ? iso.slice(0, 10) : '\u2014'; }
+export function timeOf(iso) { return iso ? iso.slice(11, 19) : '-'; }
+export function dayOf(iso)  { return iso ? iso.slice(0, 10) : '-'; }
 
 /** Signed degrees to a hemisphere-tagged string. */
 export function latlon(v, kind) {
-  if (v === null || v === undefined) return '\u2014';
+  if (v === null || v === undefined) return '-';
   const h = kind === 'lat' ? (v >= 0 ? 'N' : 'S') : (v >= 0 ? 'E' : 'W');
   return `${Math.abs(v).toFixed(2)}\u00b0${h}`;
 }
@@ -103,6 +103,21 @@ export function drawer(title, bodyNode) {
   if (body) {
     clear(body);
     body.append(bodyNode);
+    if (typeof window.renderMathInElement === 'function') {
+      try {
+        window.renderMathInElement(body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false},
+            {left: '\\(', right: '\\)', display: false},
+            {left: '\\[', right: '\\]', display: true}
+          ],
+          throwOnError: false
+        });
+      } catch (err) {
+        console.warn('LaTeX compilation warning:', err);
+      }
+    }
   }
   const d = $('#drawer');
   if (d) {

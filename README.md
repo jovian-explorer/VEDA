@@ -2,7 +2,7 @@
   <img src="frontend/img/veda_logo.png" width="140" alt="VEDA Planetary Science Laboratory Emblem" />
 </p>
 
-# VEDA — Visualization, Exploration, and Data Analysis
+# VEDA: Visualization, Exploration, and Data Analysis
 
 **VEDA** is a general multi-mission planetary-science data laboratory capable of discovering, downloading, processing, analyzing, visualizing, and comparing scientific observations across multiple robotic spacecraft missions and celestial bodies.
 
@@ -51,7 +51,7 @@ Dive into specific spacecraft architectures with accurate mission classification
 * **Flybys & Encounters**: New Horizons (Pluto, Arrokoth, Jupiter gravity assist), BepiColombo Venus flybys, Galileo Venus flyby.
 * **Multi-level Data Pipeline**: Raw $\to$ Calibrated $\to$ Derived $\to$ User Analysis $\to$ Visualization $\to$ Export.
 * **Astronomical Imaging & Interactive FITS Canvas**:
-  - Full astronomical contrast stretching: **ZScale**, **Percentile (0.5%–99.5%)**, **Linear**, **Log**, **Sqrt**, **Asinh**, **Histogram Equalization**.
+  - Full astronomical contrast stretching: **ZScale**, **Percentile (0.5% to 99.5%)**, **Linear**, **Log**, **Sqrt**, **Asinh**, **Histogram Equalization**.
   - Scientific palettes: Inferno, Viridis, Plasma, Magma, Grayscale, Twilight.
   - **Live Pixel Coordinate Inspector**: Real-time crosshair tracking displaying native image coordinates `(X, Y)` under the cursor.
   - **Click-and-Drag Custom Transect Slicing**: Scientists can drag a line slice directly across planetary cloud bands, surface features, or atmospheric limbs $(x_0, y_0) \to (x_1, y_1)$ to instantly extract 1D calibrated photometric flux cross-sections and 60-bin pixel value histograms/CDFs.
@@ -137,3 +137,14 @@ Total Test Count: **91 Tests Passing (100% Success Rate)**
 * `tests/test_cosmic2.py`: 36 passed
 * `tests/test_pipeline.py`: 10 passed
 * `tests/test_explorer_launch.py`: 5 passed
+
+---
+
+## Scientific Leadership & Affiliation
+
+* **Lead Researcher & Developer**: Keshav Aggarwal
+* **Current Affiliation**: Research Associate, Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), Indian Space Research Organisation (ISRO), Thiruvananthapuram, Kerala, India.
+* **Former Affiliation**: Former Prime Minister's Research Fellow (PMRF Scholar), Department of Astronomy, Astrophysics and Space Engineering (DAASE), Indian Institute of Technology (IIT) Indore.
+* **Research Focus**: Planetary Radio Occultation, Space Physics, Solar Wind Velocity and Turbulence, Coronal Electron Density, and Multi-Mission Planetary Science Data Systems.
+* **Website**: [https://jovian-explorer.github.io/](https://jovian-explorer.github.io/)
+

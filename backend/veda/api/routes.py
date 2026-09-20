@@ -29,7 +29,7 @@ def platform_info() -> dict:
     """Platform overview, version, and supported assets."""
     mgr = get_mission_manager()
     return {
-        "title": "VEDA — Visualization, Exploration, and Data Analysis",
+        "title": "VEDA: Visualization, Exploration, and Data Analysis",
         "version": "2.0.0",
         "description": "Multi-Mission Planetary Science Visualization & Comparative Analysis Platform",
         "agencies_supported": ["NASA", "ESA", "JAXA", "NOAA"],
@@ -61,6 +61,8 @@ def get_mission_details(mission_id: str) -> dict:
         "primary_targets": m.primary_targets,
         "authoritative_archive": m.authoritative_archive,
         "archive_url": m.archive_url,
+        "mission_page_url": m.mission_page_url or m.archive_url,
+        "data_page_url": m.data_page_url or m.archive_url,
         "citation": m.citation,
         "description": m.description,
         "instruments": [
@@ -101,6 +103,8 @@ def get_body_details(body_id: str) -> dict:
         "atmospheric_composition": b.atmospheric_composition,
         "description": b.description,
         "supported_missions": b.supported_missions,
+        "mission_page_url": b.mission_page_url,
+        "data_page_url": b.data_page_url,
         "missions": missions,
     }
 

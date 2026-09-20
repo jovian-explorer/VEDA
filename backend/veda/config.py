@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 APP_NAME = "VEDA"
-APP_TITLE = "VEDA — Visualization, Exploration, and Data Analysis"
+APP_TITLE = "VEDA: Visualization, Exploration, and Data Analysis"
 APP_VERSION = "2.0.0"
 
 

@@ -1,4 +1,4 @@
-"""Comprehensive API smoke test — checks all endpoints the frontend calls."""
+"""Comprehensive API smoke test : checks all endpoints the frontend calls."""
 import json
 import urllib.request
 import sys

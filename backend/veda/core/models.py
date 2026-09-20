@@ -25,6 +25,8 @@ class BodyInfo:
     atmospheric_composition: Dict[str, float]  # gas name -> fraction percentage
     description: str
     supported_missions: List[str] = field(default_factory=list)
+    mission_page_url: str = ""
+    data_page_url: str = ""
 
 
 @dataclass
@@ -51,6 +53,8 @@ class MissionInfo:
     target_encounters: Dict[str, str] = field(default_factory=dict)  # body_id -> encounter type (e.g. {"venus": "flyby", "mercury": "orbiter"})
     authoritative_archive: str = ""
     archive_url: str = ""
+    mission_page_url: str = ""
+    data_page_url: str = ""
     citation: str = ""
     description: str = ""
 

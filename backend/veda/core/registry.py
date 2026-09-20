@@ -25,8 +25,10 @@ BODIES: Dict[str, BodyInfo] = {
         isobaric_heat_capacity_cp=850.0,
         reference_pressure_hpa=92000.0,  # ~92 bar surface pressure
         atmospheric_composition={"CO2": 96.5, "N2": 3.5, "SO2": 0.015},
-        description="Terrestrial planet with a massive, superrotating CO2 atmosphere, dense sulphuric acid cloud decks, and runaway greenhouse effect.",
+        description="Terrestrial planet enveloped in an opaque, superrotating carbon dioxide atmosphere with dense global sulphuric acid cloud decks (48 to 70 km altitude), extreme surface pressure (~92 bar), and intense greenhouse heating (~737 K surface temperature). Venus exhibits complex atmospheric wave phenomena, including planetary-scale Kelvin and Rossby waves, and strong thermal tides.",
         supported_missions=["akatsuki", "vex", "magellan", "pvo", "bepicolombo"],
+        mission_page_url="https://science.nasa.gov/venus/",
+        data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Venus/venus.html",
     ),
     "mars": BodyInfo(
         id="mars",
@@ -39,8 +41,10 @@ BODIES: Dict[str, BodyInfo] = {
         isobaric_heat_capacity_cp=830.0,
         reference_pressure_hpa=6.1,  # ~6.1 hPa (610 Pa) surface pressure
         atmospheric_composition={"CO2": 95.32, "N2": 2.6, "Ar": 1.9, "O2": 0.13},
-        description="Thin CO2 atmosphere with extensive seasonal polar cycling, dust storms, and ionospheric photo-chemical escape.",
+        description="Terrestrial planet with a rarefied, highly dynamic carbon dioxide atmosphere (~6.1 hPa surface pressure) characterized by planetary dust storm cycles, polar CO2 and water-ice caps, diurnal thermal tides, and photochemical atmospheric loss driven by solar wind interaction with localized crustal remnant magnetic fields.",
         supported_missions=["maven", "mro"],
+        mission_page_url="https://science.nasa.gov/mars/",
+        data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Mars/mars.html",
     ),
     "jupiter": BodyInfo(
         id="jupiter",
@@ -53,8 +57,10 @@ BODIES: Dict[str, BodyInfo] = {
         isobaric_heat_capacity_cp=12360.0,
         reference_pressure_hpa=1000.0,  # 1 bar reference level
         atmospheric_composition={"H2": 89.8, "He": 10.2, "CH4": 0.3},
-        description="Largest planet in solar system; deep hydrogen-helium atmosphere with prominent zonal jet streams and Great Red Spot.",
+        description="Largest gas giant in the Solar System, possessing a deep hydrogen-helium atmosphere with ammonia ice clouds, energetic lightning discharges, alternating counter-rotating zonal jet streams, persistent anticyclonic storms including the Great Red Spot, and an intense planetary magnetosphere.",
         supported_missions=["juno", "galileo", "cassini", "new_horizons"],
+        mission_page_url="https://science.nasa.gov/jupiter/",
+        data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Jupiter/jupiter.html",
     ),
     "saturn": BodyInfo(
         id="saturn",
@@ -67,8 +73,10 @@ BODIES: Dict[str, BodyInfo] = {
         isobaric_heat_capacity_cp=14000.0,
         reference_pressure_hpa=1000.0,  # 1 bar reference level
         atmospheric_composition={"H2": 96.3, "He": 3.25, "CH4": 0.45},
-        description="Ringed gas giant with high-velocity equatorial jets, hexagonal polar vortex, and complex ring-magnetosphere coupling.",
+        description="Ringed gas giant with a hydrogen-dominated atmosphere exhibiting powerful equatorial jet streams exceeding 400 m/s, an enduring hexagonal polar jet stream pattern at the north pole, seasonal great storms, and intricate electrodynamic interactions with its massive ring system.",
         supported_missions=["cassini"],
+        mission_page_url="https://science.nasa.gov/saturn/",
+        data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Saturn/saturn.html",
     ),
     "titan": BodyInfo(
         id="titan",
@@ -81,8 +89,10 @@ BODIES: Dict[str, BodyInfo] = {
         isobaric_heat_capacity_cp=1040.0,
         reference_pressure_hpa=1467.0,  # 1.47 bar surface pressure
         atmospheric_composition={"N2": 95.0, "CH4": 4.9, "H2": 0.1},
-        description="Largest moon of Saturn with dense nitrogen-methane atmosphere, organic photochemical haze, and liquid hydrocarbon seas.",
+        description="Largest moon of Saturn, the only natural satellite with a dense atmosphere (surface pressure ~1.47 bar). Dominated by nitrogen and methane, Titan features multi-layered organic photochemical tholin hazes, active methane-ethane meteorological precipitation, and liquid hydrocarbon lakes and seas across polar regions.",
         supported_missions=["cassini"],
+        mission_page_url="https://science.nasa.gov/saturn/moons/titan/",
+        data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Titan/titan.html",
     ),
     "pluto": BodyInfo(
         id="pluto",
@@ -95,8 +105,10 @@ BODIES: Dict[str, BodyInfo] = {
         isobaric_heat_capacity_cp=1039.0,
         reference_pressure_hpa=0.0115,  # ~1.15 Pa (11.5 microbar) surface pressure
         atmospheric_composition={"N2": 99.0, "CH4": 0.5, "CO": 0.1},
-        description="Kuiper belt dwarf planet with thin nitrogen atmosphere, extensive blue haze layers, and active nitrogen ice glaciers (Sputnik Planitia).",
+        description="Kuiper Belt dwarf planet possessing a tenuous nitrogen atmosphere with methane and carbon monoxide, organized blue photochemical haze layers, active convective nitrogen-ice glaciers (Sputnik Planitia), and significant seasonal atmospheric sublimation and condensation cycles.",
         supported_missions=["new_horizons"],
+        mission_page_url="https://science.nasa.gov/dwarf-planets/pluto/",
+        data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Horizons/rex.html",
     ),
     "mercury": BodyInfo(
         id="mercury",
@@ -109,8 +121,10 @@ BODIES: Dict[str, BodyInfo] = {
         isobaric_heat_capacity_cp=1000.0,
         reference_pressure_hpa=1e-12,
         atmospheric_composition={"O": 42.0, "Na": 29.0, "H": 22.0, "He": 6.0},
-        description="Innermost planet with a dynamic surface-boundary exosphere, heavily cratered terrain, and extreme diurnal temperature swings.",
+        description="Innermost terrestrial planet possessing a dynamic surface-boundary exosphere composed primarily of O, Na, H, and He generated through solar wind sputtering, photon-stimulated desorption, and micrometeoroid impact vaporization, coupled with an offset dipolar intrinsic magnetic field.",
         supported_missions=["messenger", "bepicolombo"],
+        mission_page_url="https://science.nasa.gov/mercury/",
+        data_page_url="https://pds-geosciences.wustl.edu/missions/messenger/",
     ),
     "moon": BodyInfo(
         id="moon",
@@ -123,8 +137,10 @@ BODIES: Dict[str, BodyInfo] = {
         isobaric_heat_capacity_cp=1000.0,
         reference_pressure_hpa=1e-11,
         atmospheric_composition={"He": 40.0, "Ne": 40.0, "Ar": 20.0},
-        description="Planetary moon with surface-boundary exosphere, permanently shadowed polar craters with water ice, mapped by orbital radiometry and laser altimetry.",
+        description="Earth's natural planetary satellite hosting an ultra-tenuous surface-boundary exosphere and localized dayside photo-electron sheaths, with permanently shadowed polar craters harboring substantial volatile water ice deposits and heavily cratered highland crust.",
         supported_missions=["lro"],
+        mission_page_url="https://science.nasa.gov/moon/",
+        data_page_url="https://pds-geosciences.wustl.edu/missions/lro/",
     ),
     "ceres": BodyInfo(
         id="ceres",
@@ -137,8 +153,10 @@ BODIES: Dict[str, BodyInfo] = {
         isobaric_heat_capacity_cp=1850.0,
         reference_pressure_hpa=1e-10,
         atmospheric_composition={"H2O": 99.0},
-        description="Largest body in the asteroid belt with water-ice mantle, sodium carbonate bright deposits (Occator crater), and transient water vapor exosphere.",
+        description="Largest body in the main asteroid belt, a water-rich dwarf planet featuring a hydrated silicate core, ice-rich outer shell, sodium carbonate salt deposits (faculae in Occator Crater), and transient water vapor outgassing observed during solar proton events.",
         supported_missions=["dawn"],
+        mission_page_url="https://science.nasa.gov/dwarf-planets/ceres/",
+        data_page_url="https://pds-smallbodies.astro.umd.edu/data_sb/missions/dawn/index.shtml",
     ),
     "vesta": BodyInfo(
         id="vesta",
@@ -151,8 +169,10 @@ BODIES: Dict[str, BodyInfo] = {
         isobaric_heat_capacity_cp=1000.0,
         reference_pressure_hpa=0.0,
         atmospheric_composition={},
-        description="Differentiated basaltic protoplanet in the asteroid belt with giant south polar impact basin Rheasilvia.",
+        description="Second-most massive body in the asteroid belt, a differentiated basaltic protoplanet with an intact iron-nickel core, ultramafic mantle, and basaltic crust gouged by the gigantic south-polar Rheasilvia impact basin.",
         supported_missions=["dawn"],
+        mission_page_url="https://science.nasa.gov/mission/dawn/",
+        data_page_url="https://pds-smallbodies.astro.umd.edu/data_sb/missions/dawn/index.shtml",
     ),
     "comet_67p": BodyInfo(
         id="comet_67p",
@@ -165,8 +185,10 @@ BODIES: Dict[str, BodyInfo] = {
         isobaric_heat_capacity_cp=1850.0,
         reference_pressure_hpa=1e-8,
         atmospheric_composition={"H2O": 70.0, "CO": 15.0, "CO2": 10.0},
-        description="Jupiter-family comet visited by Rosetta; active gas-and-dust coma, volatile sublimation jets, and organic compounds.",
+        description="Bi-lobed Jupiter-family comet characterized by active volatile sublimation jets (H2O, CO, CO2), macromolecular refractory organic solids, diurnal water-ice frost cycles, and complex coma plasma boundary interactions explored in-situ by the Rosetta orbiter.",
         supported_missions=["rosetta"],
+        mission_page_url="https://www.esa.int/Enabling_Support/Operations/Rosetta",
+        data_page_url="https://psa.esa.int/psa/#/pages/search?mission=Rosetta",
     ),
 }
 
@@ -204,8 +226,10 @@ MISSIONS: Dict[str, MissionInfo] = {
         ],
         authoritative_archive="JAXA DARTS / NASA PDS Atmospheres Node",
         archive_url="https://data.darts.isas.jaxa.jp/pub/pds3/",
+        mission_page_url="https://www.isas.jaxa.jp/en/missions/spacecraft/current/akatsuki.html",
+        data_page_url="https://data.darts.isas.jaxa.jp/pub/pds3/",
         citation="Imamura, T., et al. (2017). Initial performance of the radio occultation experiment aboard Akatsuki. Earth, Planets and Space, 69(1), 137.",
-        description="Japan's Venus Climate Orbiter dedicated to understanding the super-rotation and 3D dynamics of Venus' atmosphere.",
+        description="JAXA Venus Climate Orbiter (Planet-C) dedicated to investigating the meteorological dynamics and super-rotation of Venus' atmosphere using multi-band imaging cameras (UV, 1-micron, 2-micron, Longwave IR) and ultra-stable X-band radio science occultation soundings.",
     ),
     "new_horizons": MissionInfo(
         id="new_horizons",
@@ -238,8 +262,10 @@ MISSIONS: Dict[str, MissionInfo] = {
         ],
         authoritative_archive="NASA PDS Atmospheres / Small Bodies / Ring-Moon Systems",
         archive_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Horizons/rex.html",
+        mission_page_url="https://science.nasa.gov/mission/new-horizons/",
+        data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Horizons/rex.html",
         citation="Stern, S. A., et al. (2015). The Pluto system: Initial results from its exploration by New Horizons. Science, 350(6258).",
-        description="First mission to explore the Pluto-Charon system and the Kuiper Belt (Arrokoth), now exploring the outer heliosphere.",
+        description="NASA New Frontiers mission that conducted the historic first flyby exploration of the Pluto-Charon system in July 2015 and Kuiper Belt object 486958 Arrokoth in January 2019, providing uplink radio occultations (REX) of Pluto's atmosphere and high-resolution LORRI imaging.",
     ),
     "juno": MissionInfo(
         id="juno",
@@ -266,8 +292,10 @@ MISSIONS: Dict[str, MissionInfo] = {
         ],
         authoritative_archive="NASA PDS Atmospheres Node",
         archive_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/JUNO/juno.html",
+        mission_page_url="https://science.nasa.gov/mission/juno/",
+        data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/JUNO/juno.html",
         citation="Bolton, S. J., et al. (2017). Jupiter's interior and deep atmosphere: The initial results from the Juno mission. Science, 356(6340), 821-825.",
-        description="Polar-orbiting spacecraft studying Jupiter's composition, gravity field, magnetic field, and polar magnetosphere.",
+        description="NASA New Frontiers polar-orbiting spacecraft at Jupiter, investigating the planet's deep atmospheric composition, ammonia distribution down to 100 bars with Microwave Radiometer (MWR), internal gravitational harmonics, dynamos, and polar auroral structures.",
     ),
     "cassini": MissionInfo(
         id="cassini",
@@ -294,8 +322,10 @@ MISSIONS: Dict[str, MissionInfo] = {
         ],
         authoritative_archive="NASA PDS Atmospheres / Ring-Moon Systems",
         archive_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Cassini/cassini.html",
+        mission_page_url="https://science.nasa.gov/mission/cassini/",
+        data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Cassini/cassini.html",
         citation="Matson, D. L., et al. (2002). Cassini/Huygens flyby of Jupiter. Science, 296(5571), 1281-1282.",
-        description="Flagship orbiter of Saturn and Titan, yielding 13 years of revolutionary science including discovery of Enceladus plumes and Titan hydrocarbon lakes.",
+        description="Flagship NASA/ESA/ASI mission to the Saturnian system (1997 to 2017), completing 294 orbits and numerous targeted flybys of Titan. Obtained multi-frequency radio science occultations of Saturn and Titan, mapped Titan's surface with radar, and carried out CIRS thermal infrared atmospheric sounding.",
     ),
     "vex": MissionInfo(
         id="vex",
@@ -319,8 +349,10 @@ MISSIONS: Dict[str, MissionInfo] = {
         ],
         authoritative_archive="ESA Planetary Science Archive (PSA) / NASA PDS",
         archive_url="https://archives.esac.esa.int/psa/#!TableView/VEX=mission",
+        mission_page_url="https://www.esa.int/Science_Exploration/Space_Science/Venus_Express",
+        data_page_url="https://archives.esac.esa.int/psa/#!TableView/VEX=mission",
         citation="Tellmann, S., et al. (2009). The structure of Venus' middle atmosphere: Results from the Venus Express Radio Science experiment. JGR, 114.",
-        description="ESA's first mission to Venus, providing 8 years of comprehensive atmospheric dynamics, chemistry, and cloud-layer profiling.",
+        description="ESA's dedicated Venus orbiter operational from 2006 to 2014, obtaining hundreds of high-vertical-resolution VeRa radio occultation temperature and pressure profiles from 40 to 90 km altitude, while monitoring SO2 chemistry and polar vortex dynamics.",
     ),
     "maven": MissionInfo(
         id="maven",
@@ -344,8 +376,10 @@ MISSIONS: Dict[str, MissionInfo] = {
         ],
         authoritative_archive="NASA PDS Atmospheres Node",
         archive_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/MAVEN/maven.html",
+        mission_page_url="https://science.nasa.gov/mission/maven/",
+        data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/MAVEN/maven.html",
         citation="Jakosky, B. M., et al. (2015). MAVEN observations of the response of Mars to an interplanetary coronal mass ejection. Science, 350(6261).",
-        description="Dedicated orbital mission exploring Mars upper atmosphere, ionosphere, and historical loss of volatile gases to space.",
+        description="NASA Mars Atmosphere and Volatile EvolutioN spacecraft orbiting Mars since 2014, investigating the upper atmosphere, ionosphere, solar wind interactions, and mechanisms driving atmospheric volatile escape over geological history.",
     ),
     "bepicolombo": MissionInfo(
         id="bepicolombo",
@@ -369,8 +403,10 @@ MISSIONS: Dict[str, MissionInfo] = {
         ],
         authoritative_archive="ESA Planetary Science Archive (PSA)",
         archive_url="https://archives.esac.esa.int/psa/",
-        citation="Benkhoff, J., et al. (2010). BepiColombo—Comprehensive exploration of Mercury: Mission overview and science goals. PSS, 58(1), 2-20.",
-        description="Joint European-Japanese mission to Mercury comprising MPO and MMO, performing multiple scientific flybys of Venus and Mercury on cruise.",
+        mission_page_url="https://www.esa.int/Science_Exploration/Space_Science/BepiColombo",
+        data_page_url="https://archives.esac.esa.int/psa/",
+        citation="Benkhoff, J., et al. (2010). BepiColombo: Comprehensive exploration of Mercury: Mission overview and science goals. PSS, 58(1), 2-20.",
+        description="Joint ESA and JAXA dual-spacecraft mission to Mercury, carrying the Mercury Planetary Orbiter (MPO) and Mercury Magnetospheric Orbiter (Mio). Conducted multiple gravity-assist flybys of Venus and Mercury with active radiometer (MERTIS) and radio science (MORE) observations.",
     ),
     "galileo": MissionInfo(
         id="galileo",
@@ -391,8 +427,10 @@ MISSIONS: Dict[str, MissionInfo] = {
         ],
         authoritative_archive="NASA PDS Atmospheres Node / Imaging Node",
         archive_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/catalog.htm#Jupiter",
+        mission_page_url="https://science.nasa.gov/mission/galileo/",
+        data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/catalog.htm#Jupiter",
         citation="Kliore, A. J., et al. (1997). The ionosphere of Europa from Galileo radio occultations. Science, 277(5324), 355-358.",
-        description="Historic Jupiter orbiter that released an atmospheric probe and conducted first extensive radio occultations of Jovian moons.",
+        description="Historic NASA Jupiter orbiter (1989 to 2003) that deployed the Galileo atmospheric entry probe, measuring in-situ atmospheric composition down to 22 bars, and conducted extensive dual-frequency radio occultations of the Jovian atmosphere and Galilean satellites.",
     ),
     "messenger": MissionInfo(
         id="messenger",
@@ -416,8 +454,10 @@ MISSIONS: Dict[str, MissionInfo] = {
         ],
         authoritative_archive="NASA PDS Planetary Data System (Geosciences / PPI / Atmospheres)",
         archive_url="https://pds-geosciences.wustl.edu/missions/messenger/",
+        mission_page_url="https://science.nasa.gov/mission/messenger/",
+        data_page_url="https://pds-geosciences.wustl.edu/missions/messenger/",
         citation="Solomon, S. C., et al. (2007). Return to Mercury: A global perspective on MESSENGER's first flyby. Science, 321(5885), 59-62.",
-        description="First orbital mission around Mercury, confirming polar water-ice deposits, global volcanic plains, and dynamic exospheric cycling.",
+        description="NASA Discovery mission (2004 to 2015) and first orbiter of Mercury, characterizing its surface geochemistry, offset magnetic field, dynamic exosphere, and polar water-ice deposits in permanently shadowed craters.",
     ),
     "magellan": MissionInfo(
         id="magellan",
@@ -438,8 +478,10 @@ MISSIONS: Dict[str, MissionInfo] = {
         ],
         authoritative_archive="NASA PDS Magellan Node",
         archive_url="https://pds-geosciences.wustl.edu/missions/magellan/",
+        mission_page_url="https://science.nasa.gov/mission/magellan/",
+        data_page_url="https://pds-geosciences.wustl.edu/missions/magellan/",
         citation="Saunders, R. S., et al. (1992). Magellan: Mission summary. JGR: Planets, 97(E8), 13067-13090.",
-        description="Groundbreaking radar mapping mission revealing Venus' volcanically resurfaced landscape, impact craters, and coronae.",
+        description="NASA Venus orbiter (1989 to 1994) that mapped 98% of the surface using Synthetic Aperture Radar (SAR) at 100-meter resolution, and performed high-precision dual-frequency radio occultation soundings of atmospheric temperature and sulphuric acid vapor abundance.",
     ),
     "pvo": MissionInfo(
         id="pvo",
@@ -460,8 +502,10 @@ MISSIONS: Dict[str, MissionInfo] = {
         ],
         authoritative_archive="NASA PDS Atmospheres Node",
         archive_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/PVO/pvo.html",
+        mission_page_url="https://science.nasa.gov/mission/pioneer-venus-1/",
+        data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/PVO/pvo.html",
         citation="Colin, L. (1980). Pioneer Venus program. JGR: Space Physics, 85(A13), 7575-7598.",
-        description="Operated in Venus orbit for over 14 years (1978-1992), measuring atmospheric structure and solar wind interactions through an entire solar cycle.",
+        description="NASA Pioneer Venus 1 orbiter that operated from 1978 to 1992 across a full 11-year solar cycle, compiling the foundational long-term dataset of Venusian upper atmosphere neutral density, ionospheric electron density, and radio occultation profiles.",
     ),
     "lro": MissionInfo(
         id="lro",
@@ -485,8 +529,10 @@ MISSIONS: Dict[str, MissionInfo] = {
         ],
         authoritative_archive="NASA PDS Geosciences / Imaging Nodes",
         archive_url="https://pds-geosciences.wustl.edu/missions/lro/",
+        mission_page_url="https://science.nasa.gov/mission/lro/",
+        data_page_url="https://pds-geosciences.wustl.edu/missions/lro/",
         citation="Chin, G., et al. (2007). Lunar Reconnaissance Orbiter overview: The mission and its results. Space Sci Rev, 129(4), 391-419.",
-        description="Comprehensive lunar mapping orbiter yielding ultra-high resolution topography, thermal atlases, and illumination models.",
+        description="NASA Lunar Reconnaissance Orbiter mapping the Moon in polar orbit since 2009, measuring surface thermal temperatures with the Diviner radiometer down to 20 K in permanently shadowed regions, and acquiring sub-meter optical imaging with LROC.",
     ),
     "mro": MissionInfo(
         id="mro",
@@ -509,9 +555,11 @@ MISSIONS: Dict[str, MissionInfo] = {
                            description="Visible and infrared imaging spectrometer identifying hydrated clay minerals and sulfates."),
         ],
         authoritative_archive="NASA PDS Geosciences / Atmospheres Nodes",
-        archive_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/MRO/mro.html",
+        archive_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Mars/mro.html",
+        mission_page_url="https://science.nasa.gov/mission/mars-reconnaissance-orbiter/",
+        data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Mars/mro.html",
         citation="Zurek, R. W., & Smrekar, S. E. (2007). An overview of the Mars Reconnaissance Orbiter (MRO) science investigation. JGR: Planets, 112(E5).",
-        description="High-resolution reconnaissance orbiter providing ongoing daily climate soundings, atmospheric monitoring, and surface mapping of Mars.",
+        description="NASA Mars Reconnaissance Orbiter operating continuously in Mars orbit since 2006, acquiring daily global atmospheric temperature, dust, and water-ice soundings with the Mars Climate Sounder (MCS) alongside ultra-high-resolution HiRISE surface imaging.",
     ),
     "dawn": MissionInfo(
         id="dawn",
@@ -535,8 +583,10 @@ MISSIONS: Dict[str, MissionInfo] = {
         ],
         authoritative_archive="NASA PDS Small Bodies Node",
         archive_url="https://pds-smallbodies.astro.umd.edu/data_sb/missions/dawn/",
+        mission_page_url="https://science.nasa.gov/mission/dawn/",
+        data_page_url="https://pds-smallbodies.astro.umd.edu/data_sb/missions/dawn/",
         citation="Russell, C. T., & Raymond, C. A. (2011). The Dawn mission to Vesta and Ceres. Space Sci Rev, 163(1), 3-23.",
-        description="Pioneering ion-propulsion mission: the first spacecraft to orbit two separate extraterrestrial destinations (Vesta and Ceres).",
+        description="NASA Discovery mission powered by solar electric ion propulsion, the first mission to orbit two extraterrestrial bodies: asteroid 4 Vesta (2011 to 2012) and dwarf planet 1 Ceres (2015 to 2018), mapping geology, mineralogy, and elemental composition.",
     ),
     "rosetta": MissionInfo(
         id="rosetta",
@@ -560,8 +610,10 @@ MISSIONS: Dict[str, MissionInfo] = {
         ],
         authoritative_archive="ESA Planetary Science Archive (PSA)",
         archive_url="https://archives.esac.esa.int/psa/#!TableView/Rosetta=mission",
+        mission_page_url="https://www.esa.int/Enabling_Support/Operations/Rosetta",
+        data_page_url="https://archives.esac.esa.int/psa/#!TableView/Rosetta=mission",
         citation="Taylor, M. G., et al. (2017). The Rosetta mission orbital phase: Overview and science highlights. Phil. Trans. R. Soc. A, 375(2097).",
-        description="First mission to rendezvous with and orbit a comet nucleus, accompanying 67P through perihelion and deploying Philae lander.",
+        description="ESA flagship mission to comet 67P/Churyumov-Gerasimenko (2004 to 2016), which rendezvoused with the comet, deployed the Philae lander, and escorted the comet through perihelion while measuring gas coma composition, sublimation rates, and plasma interactions.",
     ),
 }
 
@@ -596,6 +648,8 @@ def list_bodies() -> List[dict]:
             "atmospheric_composition": b.atmospheric_composition,
             "description": b.description,
             "supported_missions": b.supported_missions,
+            "mission_page_url": b.mission_page_url,
+            "data_page_url": b.data_page_url,
         }
         for b in BODIES.values()
     ]
@@ -615,6 +669,8 @@ def list_missions() -> List[dict]:
             "target_encounters": m.target_encounters,
             "authoritative_archive": m.authoritative_archive,
             "archive_url": m.archive_url,
+            "mission_page_url": m.mission_page_url or m.archive_url,
+            "data_page_url": m.data_page_url or m.archive_url,
             "citation": m.citation,
             "description": m.description,
             "instruments": [
@@ -651,5 +707,9 @@ def get_missions_for_body(body_id: str) -> List[dict]:
                 "instruments": [i.name for i in m.instruments],
                 "archive": m.authoritative_archive,
                 "archive_url": m.archive_url,
+                "mission_page_url": m.mission_page_url or m.archive_url,
+                "data_page_url": m.data_page_url or m.archive_url,
+                "description": m.description,
             })
     return res
+
