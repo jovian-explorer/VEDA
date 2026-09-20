@@ -78,13 +78,22 @@ class MomAdapter(BaseMissionAdapter):
         ]
 
     def load_profile(self, observation_id: str) -> Optional[ObservationProfile]:
-        # Mars exosphere and thermosphere altitude grid (80 to 240 km)
-        z_km = np.linspace(80.0, 240.0, 81)
-        # Thermospheric temperature structure (Bhardwaj et al. 2016)
-        # Asymptotic exospheric temperature ~ 250 K
-        t_k = 140.0 + 110.0 * (1.0 - np.exp(-(z_km - 80.0) / 45.0))
-        # Atmospheric pressure in hPa (microbar regime decaying into nanobars)
-        p_hpa = 1e-4 * np.exp(-(z_km - 80.0) / 10.5)
+        from pathlib import Path
+        sample_tab = Path(__file__).resolve().parents[3] / "sampledata" / "veda" / "mars_mom" / "mom_menca_orbit_1200.tab"
+        if sample_tab.exists():
+            from ..readers.pds3_reader import read_any_table
+            tbl = read_any_table(str(sample_tab))
+            z_km = tbl.series("ALTITUDE") if tbl.series("ALTITUDE") is not None else np.linspace(80.0, 240.0, 81)
+            t_k = tbl.series("TEMPERATURE")
+            p_hpa = tbl.series("PRESSURE")
+        else:
+            # Mars exosphere and thermosphere altitude grid (80 to 240 km)
+            z_km = np.linspace(80.0, 240.0, 81)
+            # Thermospheric temperature structure (Bhardwaj et al. 2016)
+            # Asymptotic exospheric temperature ~ 250 K
+            t_k = 140.0 + 110.0 * (1.0 - np.exp(-(z_km - 80.0) / 45.0))
+            # Atmospheric pressure in hPa (microbar regime decaying into nanobars)
+            p_hpa = 1e-4 * np.exp(-(z_km - 80.0) / 10.5)
 
         prof = ObservationProfile(
             observation_id=observation_id,
@@ -97,7 +106,7 @@ class MomAdapter(BaseMissionAdapter):
             altitude_km=z_km,
             pressure_hpa=p_hpa,
             temperature_k=t_k,
-            temperature_c=t_k - 273.15,
+            temperature_c=t_k - 273.15 if t_k is not None else None,
             provenance=ProvenanceRecord(
                 mission_id="mom",
                 instrument="MENCA",
@@ -170,16 +179,21 @@ class Chandrayaan2Adapter(BaseMissionAdapter):
         ]
 
     def load_profile(self, observation_id: str) -> Optional[ObservationProfile]:
-        # Lunar exosphere / ionosphere altitude grid (0.5 to 100 km)
-        z_km = np.linspace(0.5, 100.0, 100)
-        # Moon diurnal temperature profile
-        t_k = np.full(z_km.shape, 130.0)
-        # Ultra-tenuous exospheric pressure in hPa
-        p_hpa = 1e-11 * np.exp(-z_km / 25.0)
-
-        # Dual-Frequency Radio Science lunar ionosphere electron density (Choudhary et al. 2022)
-        # Near-surface electron density ~ 300 to 400 electrons/cm^3
-        ne_cm3 = 350.0 * np.exp(-z_km / 12.0)
+        from pathlib import Path
+        sample_tab = Path(__file__).resolve().parents[3] / "sampledata" / "veda" / "moon_chandrayaan2" / "ch2_dfrs_orbit_1420.tab"
+        if sample_tab.exists() and "dfrs" in observation_id.lower():
+            from ..readers.pds3_reader import read_any_table
+            tbl = read_any_table(str(sample_tab))
+            z_km = tbl.series("ALTITUDE") if tbl.series("ALTITUDE") is not None else np.linspace(0.5, 100.0, 100)
+            ne_cm3 = tbl.series("ELECTRON_DENSITY")
+            t_k = tbl.series("TEMPERATURE")
+            p_hpa = 1e-11 * np.exp(-z_km / 25.0)
+        else:
+            # Lunar exosphere / ionosphere altitude grid (0.5 to 100 km)
+            z_km = np.linspace(0.5, 100.0, 100)
+            t_k = np.full(z_km.shape, 130.0)
+            p_hpa = 1e-11 * np.exp(-z_km / 25.0)
+            ne_cm3 = 350.0 * np.exp(-z_km / 12.0)
 
         prof = ObservationProfile(
             observation_id=observation_id,
@@ -192,7 +206,7 @@ class Chandrayaan2Adapter(BaseMissionAdapter):
             altitude_km=z_km,
             pressure_hpa=p_hpa,
             temperature_k=t_k,
-            temperature_c=t_k - 273.15,
+            temperature_c=t_k - 273.15 if t_k is not None else None,
             electron_density_cm3=ne_cm3,
             provenance=ProvenanceRecord(
                 mission_id="chandrayaan2",

@@ -38,63 +38,102 @@ class FitsImageData:
 
 
 def load_fits_image(file_path: str) -> FitsImageData:
-    """Read a FITS file and compute astronomical baseline statistics."""
+    """Read a FITS file or raster image and compute astronomical baseline statistics."""
     p = Path(file_path)
     if not p.exists():
-        raise FileNotFoundError(f"FITS file not found at {file_path}")
+        raise FileNotFoundError(f"Image file not found at {file_path}")
 
-    with fits.open(str(p)) as hdul:
-        primary_hdu = hdul[0]
-        data = primary_hdu.data
-        if data is None and len(hdul) > 1:
-            data = hdul[1].data
-            raw_hdr = hdul[1].header
-        else:
-            raw_hdr = primary_hdu.header
-
-        if data is None:
-            raise ValueError(f"No image array found in {file_path}")
-
-        # Ensure 2D float64
-        arr = np.squeeze(data).astype(np.float64)
-        if arr.ndim != 2:
-            raise ValueError(f"Expected 2D image array, got shape {arr.shape}")
-
-        error_data = None
-        if len(hdul) > 1 and hdul[1].data is not None and hdul[1].data.shape == arr.shape:
-            error_data = np.squeeze(hdul[1].data).astype(np.float64)
-
-        quality_data = None
-        if len(hdul) > 2 and hdul[2].data is not None and hdul[2].data.shape == arr.shape:
-            quality_data = np.squeeze(hdul[2].data).astype(np.int32)
-
-        # Extract header cards
-        hdr_dict: Dict[str, Any] = {}
-        for card in raw_hdr.cards:
-            k = card.keyword.strip()
-            if k and k not in ("COMMENT", "HISTORY"):
-                hdr_dict[k] = card.value
-
-        # Calculate robust statistics
-        finite_mask = np.isfinite(arr)
-        if finite_mask.any():
-            v_valid = arr[finite_mask]
+    # If standard raster format, load with Pillow
+    if p.suffix.lower() in (".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"):
+        with Image.open(str(p)) as im:
+            gray = im.convert("L")
+            arr = np.asarray(gray, dtype=np.float64)
             stats = {
-                "min": float(np.min(v_valid)),
-                "max": float(np.max(v_valid)),
-                "mean": float(np.mean(v_valid)),
-                "median": float(np.median(v_valid)),
-                "std": float(np.std(v_valid)),
-                "p01": float(np.percentile(v_valid, 1.0)),
-                "p05": float(np.percentile(v_valid, 5.0)),
-                "p95": float(np.percentile(v_valid, 95.0)),
-                "p99": float(np.percentile(v_valid, 99.0)),
+                "min": float(np.min(arr)),
+                "max": float(np.max(arr)),
+                "mean": float(np.mean(arr)),
+                "median": float(np.median(arr)),
+                "std": float(np.std(arr)),
+                "p01": float(np.percentile(arr, 1.0)),
+                "p05": float(np.percentile(arr, 5.0)),
+                "p95": float(np.percentile(arr, 95.0)),
+                "p99": float(np.percentile(arr, 99.0)),
                 "shape_y": int(arr.shape[0]),
                 "shape_x": int(arr.shape[1]),
             }
-        else:
-            stats = {"min": 0.0, "max": 0.0, "mean": 0.0, "median": 0.0, "std": 0.0,
-                     "shape_y": int(arr.shape[0]), "shape_x": int(arr.shape[1])}
+            return FitsImageData(
+                file_path=str(p),
+                primary_data=arr,
+                error_data=None,
+                quality_mask=None,
+                header={"FORMAT": p.suffix.upper().lstrip("."), "NAXIS1": arr.shape[1], "NAXIS2": arr.shape[0]},
+                stats=stats,
+            )
+
+    try:
+        with fits.open(str(p), ignore_missing_simple=True) as hdul:
+            primary_hdu = hdul[0]
+            data = primary_hdu.data
+            if data is None and len(hdul) > 1:
+                data = hdul[1].data
+                raw_hdr = hdul[1].header
+            else:
+                raw_hdr = primary_hdu.header
+
+            if data is None:
+                raise ValueError(f"No image array found in {file_path}")
+
+            # Ensure 2D float64
+            arr = np.squeeze(data).astype(np.float64)
+            if arr.ndim != 2:
+                raise ValueError(f"Expected 2D image array, got shape {arr.shape}")
+
+            error_data = None
+            if len(hdul) > 1 and hdul[1].data is not None and hdul[1].data.shape == arr.shape:
+                error_data = np.squeeze(hdul[1].data).astype(np.float64)
+
+            quality_data = None
+            if len(hdul) > 2 and hdul[2].data is not None and hdul[2].data.shape == arr.shape:
+                quality_data = np.squeeze(np.nan_to_num(hdul[2].data, nan=0)).astype(np.int32)
+
+            # Extract header cards
+            hdr_dict: Dict[str, Any] = {}
+            for card in raw_hdr.cards:
+                k = card.keyword.strip()
+                if k and k not in ("COMMENT", "HISTORY"):
+                    hdr_dict[k] = card.value
+    except Exception as exc:
+        # If FITS reading fails, attempt fallback with Pillow
+        try:
+            with Image.open(str(p)) as im:
+                gray = im.convert("L")
+                arr = np.asarray(gray, dtype=np.float64)
+                error_data = None
+                quality_data = None
+                hdr_dict = {"FORMAT": "RASTER", "NAXIS1": arr.shape[1], "NAXIS2": arr.shape[0]}
+        except Exception:
+            raise exc
+
+    # Calculate robust statistics
+    finite_mask = np.isfinite(arr)
+    if finite_mask.any():
+        v_valid = arr[finite_mask]
+        stats = {
+            "min": float(np.min(v_valid)),
+            "max": float(np.max(v_valid)),
+            "mean": float(np.mean(v_valid)),
+            "median": float(np.median(v_valid)),
+            "std": float(np.std(v_valid)),
+            "p01": float(np.percentile(v_valid, 1.0)),
+            "p05": float(np.percentile(v_valid, 5.0)),
+            "p95": float(np.percentile(v_valid, 95.0)),
+            "p99": float(np.percentile(v_valid, 99.0)),
+            "shape_y": int(arr.shape[0]),
+            "shape_x": int(arr.shape[1]),
+        }
+    else:
+        stats = {"min": 0.0, "max": 0.0, "mean": 0.0, "median": 0.0, "std": 0.0,
+                 "shape_y": int(arr.shape[0]), "shape_x": int(arr.shape[1])}
 
     return FitsImageData(
         file_path=str(p),

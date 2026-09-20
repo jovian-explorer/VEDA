@@ -3,6 +3,7 @@
  * Dedicated Planetary Science Laboratory Workstation Controller
  */
 import { api } from './api.js';
+import { renderMath, toast } from './ui.js';
 
 // VEDA Global State
 export const vedaState = {
@@ -63,7 +64,19 @@ const MISSION_COLORS = {
   lro: '#b0bec5',
   dawn: '#00b0ff',
   rosetta: '#1de9b6',
+  mom: '#ff3d00',
+  chandrayaan2: '#00e676',
+  user_imported: '#00e5ff',
 };
+
+export function getMissionColor(missionId) {
+  const m = (missionId || '').toLowerCase();
+  if (MISSION_COLORS[m]) return MISSION_COLORS[m];
+  const fallback = ['#ff5252', '#448aff', '#00e676', '#ffb300', '#ba68c8', '#00e5ff', '#ff3d00', '#69f0ae'];
+  let hash = 0;
+  for (let i = 0; i < m.length; i++) hash = (hash << 5) - hash + m.charCodeAt(i);
+  return fallback[Math.abs(hash) % fallback.length];
+}
 
 // Planetary Icons & Badges
 const BODY_EMOJIS = {
@@ -104,6 +117,7 @@ export async function initVeda() {
   setupModeSwitching();
   setupBodyModeControls();
   setupMissionModeControls();
+  setupWorkflowGuideInteractions();
 
   // Render Initial View
   renderCelestialBodiesGrid();
@@ -112,33 +126,66 @@ export async function initVeda() {
 }
 
 /**
- * Mode Switching: By Celestial Body vs By Mission
+ * Mode Switching: By Celestial Body vs By Mission vs Workflow Guide
  */
+export function switchMode(mode) {
+  vedaState.mode = mode;
+  const btnBodyMode = document.getElementById('btn-mode-body');
+  const btnMissionMode = document.getElementById('btn-mode-mission');
+  const btnGuideMode = document.getElementById('btn-mode-guide');
+  const viewBody = document.getElementById('veda-view-body');
+  const viewMission = document.getElementById('veda-view-mission');
+  const viewGuide = document.getElementById('veda-view-guide');
+
+  if (btnBodyMode) btnBodyMode.classList.toggle('active', mode === 'body');
+  if (btnMissionMode) btnMissionMode.classList.toggle('active', mode === 'mission');
+  if (btnGuideMode) btnGuideMode.classList.toggle('active', mode === 'guide');
+
+  if (viewBody) viewBody.style.display = (mode === 'body') ? 'block' : 'none';
+  if (viewMission) viewMission.style.display = (mode === 'mission') ? 'block' : 'none';
+  if (viewGuide) viewGuide.style.display = (mode === 'guide') ? 'block' : 'none';
+
+  if (mode === 'body') {
+    renderComparisonPlot();
+  } else if (mode === 'mission') {
+    if (!vedaState.activeMission) {
+      loadAndRenderMission(vedaState.activeMissionId);
+    }
+  } else if (mode === 'guide') {
+    if (viewGuide) renderMath(viewGuide);
+  }
+
+  setTimeout(() => {
+    window.dispatchEvent(new Event('resize'));
+    resizeAllPlots();
+  }, 60);
+}
+
+export function resizeAllPlots() {
+  if (!window.Plotly) return;
+  const plotIds = [
+    'veda-comparison-plot',
+    'veda-single-profile-plot',
+    'veda-transect-plot',
+    'veda-histogram-plot',
+    'veda-planetary-map'
+  ];
+  plotIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.offsetParent !== null && typeof window.Plotly.Plots.resize === 'function') {
+      try { window.Plotly.Plots.resize(el); } catch (e) {}
+    }
+  });
+}
+
 function setupModeSwitching() {
   const btnBodyMode = document.getElementById('btn-mode-body');
   const btnMissionMode = document.getElementById('btn-mode-mission');
-  const viewBody = document.getElementById('veda-view-body');
-  const viewMission = document.getElementById('veda-view-mission');
+  const btnGuideMode = document.getElementById('btn-mode-guide');
 
-  if (btnBodyMode && btnMissionMode) {
-    btnBodyMode.addEventListener('click', () => {
-      vedaState.mode = 'body';
-      btnBodyMode.classList.add('active');
-      btnMissionMode.classList.remove('active');
-      if (viewBody) viewBody.style.display = 'block';
-      if (viewMission) viewMission.style.display = 'none';
-      renderComparisonPlot();
-    });
-
-    btnMissionMode.addEventListener('click', () => {
-      vedaState.mode = 'mission';
-      btnMissionMode.classList.add('active');
-      btnBodyMode.classList.remove('active');
-      if (viewBody) viewBody.style.display = 'none';
-      if (viewMission) viewMission.style.display = 'block';
-      loadAndRenderMission(vedaState.activeMissionId);
-    });
-  }
+  if (btnBodyMode) btnBodyMode.addEventListener('click', () => switchMode('body'));
+  if (btnMissionMode) btnMissionMode.addEventListener('click', () => switchMode('mission'));
+  if (btnGuideMode) btnGuideMode.addEventListener('click', () => switchMode('guide'));
 }
 
 // ==========================================================================
@@ -948,40 +995,80 @@ async function inspectProfileObservation(obs) {
   if (!viewer) return;
 
   try {
-    const prof = await api.vedaProfile(obs.mission_id, obs.observation_id);
+    const prof = (obs.altitude_km && obs.n_points != null)
+      ? obs
+      : await api.vedaProfile(obs.mission_id, obs.observation_id);
     vedaState.currentProfileData = prof;
+
+    // Detect available variables with valid numerical data
+    const candidateVars = [
+      'temperature_k',
+      'electron_density_cm3',
+      'pressure_hpa',
+      'density',
+      'potential_temperature',
+      'buoyancy_freq_sq',
+      'lapse_rate',
+      'temperature_c',
+      'scale_height',
+    ];
+
+    const hasValidData = (k) => {
+      let arr = null;
+      if (k === 'temperature_k') arr = prof.temperature_k;
+      else if (k === 'temperature_c') arr = prof.temperature_c;
+      else if (k === 'pressure_hpa') arr = prof.pressure_hpa;
+      else if (k === 'electron_density_cm3') arr = prof.electron_density_cm3;
+      else if (prof.derived && prof.derived[k]) arr = prof.derived[k];
+      return Array.isArray(arr) && arr.length > 0 && arr.some(v => v != null && !isNaN(v));
+    };
+
+    let bestVar = candidateVars.find(k => hasValidData(k)) || 'temperature_k';
+
+    const optionsHtml = candidateVars.map(k => {
+      const available = hasValidData(k);
+      const cfg = VARIABLE_CONFIGS[k] || { label: k, units: '' };
+      const selected = (k === bestVar) ? ' selected' : '';
+      const disabled = !available ? ' disabled' : '';
+      const statusText = available ? '' : ' (not in profile)';
+      return `<option value="${k}"${selected}${disabled}>${cfg.label}${statusText}</option>`;
+    }).join('');
+
+    const missionTag = (prof.mission_id || 'LOCAL').toUpperCase();
+    const bodyTag = (prof.body_id || 'PLANET').toUpperCase();
+    const instTag = prof.instrument || 'Sounder';
+    const timeTag = prof.time_utc || 'N/A';
+    const latStr = prof.latitude != null ? `${prof.latitude.toFixed(2)}°` : 'N/A';
+    const lonStr = prof.longitude != null ? `${prof.longitude.toFixed(2)}°` : 'N/A';
 
     viewer.innerHTML = `
       <div class="profile-viewer-wrap">
         <div class="viewer-toolbar">
           <div class="viewer-title">
-            <h3>Observation: <code>${prof.observation_id}</code> &bull; ${prof.instrument} (${prof.body_id.toUpperCase()})</h3>
+            <h3>Observation: <code>${prof.observation_id}</code> &bull; ${instTag} (${bodyTag})</h3>
           </div>
           <div class="toolbar-actions">
-            <a class="btn small primary" href="${api.vedaExportProfileCsvUrl(obs.mission_id, obs.observation_id)}" download>📥 Export CSV</a>
-            <a class="btn small ghost" href="${api.vedaExportProfileJsonUrl(obs.mission_id, obs.observation_id)}" download>Structured JSON</a>
+            ${prof.mission_id ? `
+              <a class="btn small primary" href="${api.vedaExportProfileCsvUrl(prof.mission_id, prof.observation_id)}" download>📥 Export CSV</a>
+              <a class="btn small ghost" href="${api.vedaExportProfileJsonUrl(prof.mission_id, prof.observation_id)}" download>Structured JSON</a>
+            ` : `
+              <button class="btn small primary" id="btn-export-local-profile-csv">📥 Export CSV</button>
+            `}
           </div>
         </div>
 
         <div class="diagnostics-bar">
-          <div class="diag-chip"><strong>Sounding Points:</strong> ${prof.n_points}</div>
-          <div class="diag-chip"><strong>Time UTC:</strong> ${prof.time_utc}</div>
-          <div class="diag-chip"><strong>Lat/Lon:</strong> ${prof.latitude != null ? prof.latitude.toFixed(2) + '°' : 'N/A'}, ${prof.longitude != null ? prof.longitude.toFixed(2) + '°' : 'N/A'}</div>
+          <div class="diag-chip"><strong>Sounding Points:</strong> ${prof.n_points || 0}</div>
+          <div class="diag-chip"><strong>Time UTC:</strong> ${timeTag}</div>
+          <div class="diag-chip"><strong>Lat/Lon:</strong> ${latStr}, ${lonStr}</div>
           ${prof.provenance ? `<div class="diag-chip"><strong>Archive:</strong> ${prof.provenance.archive_source}</div>` : ''}
+          ${prof.filename ? `<div class="diag-chip"><strong>File:</strong> ${prof.filename}</div>` : ''}
         </div>
 
         <div class="profile-variable-selector-row">
           <label>Plot Variable:
             <select id="veda-profile-var-select">
-              <option value="temperature_k">Temperature (K)</option>
-              <option value="temperature_c">Temperature (°C)</option>
-              <option value="pressure_hpa">Pressure (hPa)</option>
-              <option value="lapse_rate">Environmental Lapse Rate (-dT/dz [K/km])</option>
-              <option value="potential_temperature">Potential Temperature θ (K)</option>
-              <option value="buoyancy_freq_sq">Brunt-Väisälä N² (rad²/s²)</option>
-              <option value="density">Mass Density ρ (kg/m³)</option>
-              <option value="scale_height">Scale Height H (km)</option>
-              <option value="electron_density_cm3">Electron Density Ne (cm⁻³)</option>
+              ${optionsHtml}
             </select>
           </label>
         </div>
@@ -992,14 +1079,66 @@ async function inspectProfileObservation(obs) {
 
     const varSelect = document.getElementById('veda-profile-var-select');
     if (varSelect) {
-      varSelect.value = 'temperature_k';
+      varSelect.value = bestVar;
       varSelect.onchange = () => renderSingleProfilePlot(prof, varSelect.value);
     }
 
-    renderSingleProfilePlot(prof, 'temperature_k');
+    const btnLocalExport = document.getElementById('btn-export-local-profile-csv');
+    if (btnLocalExport) {
+      btnLocalExport.addEventListener('click', () => exportLocalProfileCsv(prof));
+    }
+
+    renderSingleProfilePlot(prof, bestVar);
   } catch (err) {
     viewer.innerHTML = `<div class="error-box">Failed to load profile: ${err.message}</div>`;
   }
+}
+
+function exportLocalProfileCsv(prof) {
+  if (!prof) return;
+  const z = prof.altitude_km || [];
+  const n = z.length;
+  if (!n) {
+    alert('No data points in profile to export.');
+    return;
+  }
+  const lines = [
+    '# VEDA Profile Export',
+    `# Observation ID: ${prof.observation_id || 'imported_profile'}`,
+    `# Mission: ${prof.mission_id || 'User Imported'}`,
+    `# Target Body: ${prof.body_id || 'Unknown'}`,
+    `# Instrument: ${prof.instrument || 'Unknown'}`,
+    `# Sounding Points: ${n}`,
+    '# Software: VEDA (Keshav Aggarwal, SPL, VSSC, ISRO 2026)',
+    'altitude_km,temperature_k,pressure_hpa,electron_density_cm3,potential_temp_k,lapse_rate_k_per_km,buoyancy_freq_sq'
+  ];
+  const t = prof.temperature_k || [];
+  const p = prof.pressure_hpa || [];
+  const ne = prof.electron_density_cm3 || [];
+  const pt = (prof.derived && prof.derived.potential_temperature) || [];
+  const lr = (prof.derived && prof.derived.lapse_rate) || [];
+  const n2 = (prof.derived && prof.derived.buoyancy_freq_sq) || [];
+
+  for (let i = 0; i < n; i++) {
+    const alt = z[i] != null ? z[i] : '';
+    const temp = t[i] != null ? t[i] : '';
+    const pres = p[i] != null ? p[i] : '';
+    const ed = ne[i] != null ? ne[i] : '';
+    const pot = pt[i] != null ? pt[i] : '';
+    const lrate = lr[i] != null ? lr[i] : '';
+    const bfq = n2[i] != null ? n2[i] : '';
+    lines.push(`${alt},${temp},${pres},${ed},${pot},${lrate},${bfq}`);
+  }
+
+  const csvBlob = new Blob([lines.join('\\r\\n')], { type: 'text/csv;charset=utf-8;' });
+  const downloadUrl = URL.createObjectURL(csvBlob);
+  const a = document.createElement('a');
+  a.href = downloadUrl;
+  a.download = `${prof.observation_id || 'veda_profile'}_profile.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(downloadUrl);
 }
 
 function renderSingleProfilePlot(prof, varKey) {
@@ -1035,7 +1174,7 @@ function renderSingleProfilePlot(prof, varKey) {
 
   const layout = {
     title: {
-      text: `${prof.mission_id.toUpperCase()} &bull; ${prof.observation_id} (${varCfg.label})`,
+      text: `${(prof.mission_id || 'LOCAL').toUpperCase()} &bull; ${prof.observation_id} (${varCfg.label})`,
       font: { color: '#e0e0e0', size: 14 },
     },
     paper_bgcolor: 'transparent',
@@ -1060,10 +1199,11 @@ async function inspectImageObservation(obs) {
   const viewer = document.getElementById('veda-observation-viewer');
   if (!viewer) return;
 
-  const imgMeta = await api.vedaImageMeta(obs.mission_id, obs.observation_id);
-  vedaState.currentImageData = imgMeta;
+  try {
+    const imgMeta = await api.vedaImageMeta(obs.mission_id, obs.observation_id);
+    vedaState.currentImageData = imgMeta;
 
-  viewer.innerHTML = `
+    viewer.innerHTML = `
     <div class="image-viewer-wrap">
       <div class="viewer-toolbar">
         <h3>Camera Observation: <code>${obs.observation_id}</code> (${obs.instrument})</h3>
@@ -1274,10 +1414,13 @@ async function inspectImageObservation(obs) {
   // Initial load of transect & histogram
   const initMidY = Math.round(origH / 2);
   vedaState.transectCoords = { x0: 10, y0: initMidY, x1: origW - 10, y1: initMidY };
-  await Promise.all([
-    loadTransect(obs.mission_id, obs.observation_id, 10, initMidY, origW - 10, initMidY),
-    loadImageHistogram(obs.mission_id, obs.observation_id),
-  ]);
+    await Promise.all([
+      loadTransect(obs.mission_id, obs.observation_id, 10, initMidY, origW - 10, initMidY),
+      loadImageHistogram(obs.mission_id, obs.observation_id),
+    ]);
+  } catch (err) {
+    viewer.innerHTML = `<div class="error-box">Failed to load camera observation: ${err.message}</div>`;
+  }
 }
 
 async function loadTransect(missionId, obsId, x0, y0, x1, y1) {
@@ -1505,4 +1648,208 @@ function setupMissionModeControls() {
       resultsContainer.innerHTML = `<div class="hint text-danger">Archive search error: ${err.message}</div>`;
     }
   }
+}
+
+// ==========================================================================
+// 3. WORKFLOW GUIDE & UNIVERSAL FILE INGESTION
+// ==========================================================================
+
+function readFileAsText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error || new Error('Failed to read file as text'));
+    reader.readAsText(file);
+  });
+}
+
+function readFileAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error || new Error('Failed to read file as base64'));
+    reader.readAsDataURL(file);
+  });
+}
+
+export async function handleUploadedFile(file) {
+  if (!file) return;
+  toast(`Parsing ${file.name}...`);
+  try {
+    const isBinary = /\.(fits?|fit|png|jpe?g)$/i.test(file.name);
+    let fileContent;
+    if (isBinary) {
+      fileContent = await readFileAsBase64(file);
+    } else {
+      fileContent = await readFileAsText(file);
+    }
+
+    const payload = {
+      filename: file.name,
+      file_content: fileContent,
+      body_id: vedaState.activeBodyId || 'venus'
+    };
+
+    const res = await api.vedaParseFile(payload);
+
+    if (res.status === 'ok' || res.observation_id || res.n_points) {
+      toast(`Successfully parsed ${file.name} (${res.n_points || 0} levels)`, 'good');
+      switchMode('mission');
+      await inspectProfileObservation(res);
+      const viewer = document.getElementById('veda-observation-viewer');
+      if (viewer) viewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      toast(`Could not parse file: ${res.detail || 'Unknown format'}`, 'bad');
+    }
+  } catch (err) {
+    console.error('File load error:', err);
+    toast(`Failed to load file: ${err.message}`, 'bad');
+  }
+}
+
+export function setupWorkflowGuideInteractions() {
+  const fileInput = document.getElementById('veda-file-input');
+  const btnLoadFile = document.getElementById('btn-load-file');
+  if (btnLoadFile && fileInput) {
+    btnLoadFile.addEventListener('click', () => fileInput.click());
+  }
+  if (fileInput) {
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleUploadedFile(e.target.files[0]);
+        fileInput.value = '';
+      }
+    });
+  }
+
+  // Drag and Drop Zone in Guide
+  const dropZone = document.getElementById('guide-drag-drop-zone');
+  if (dropZone && fileInput) {
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('drag-active');
+    });
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('drag-active');
+    });
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-active');
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+        handleUploadedFile(e.dataTransfer.files[0]);
+      }
+    });
+  }
+
+  // Guide Action Buttons
+  document.querySelectorAll('[data-guide-action]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const action = btn.dataset.guideAction;
+      switch (action) {
+        case 'browse-missions':
+          switchMode('mission');
+          break;
+        case 'trigger-file-input':
+          if (fileInput) fileInput.click();
+          break;
+        case 'load-sample-chandrayaan2':
+          switchMode('mission');
+          await loadAndRenderMission('chandrayaan2');
+          await inspectProfileObservation({
+            mission_id: 'chandrayaan2',
+            observation_id: 'ch2_dfrs_lunar_iono_sample',
+            instrument: 'DFRS'
+          });
+          break;
+        case 'load-sample-venus':
+          switchMode('mission');
+          await loadAndRenderMission('vex');
+          await inspectProfileObservation({
+            mission_id: 'vex',
+            observation_id: 'vex_vera_orbit_0045_profile',
+            instrument: 'VeRa'
+          });
+          break;
+        case 'load-sample-menca':
+          switchMode('mission');
+          await loadAndRenderMission('mom');
+          await inspectProfileObservation({
+            mission_id: 'mom',
+            observation_id: 'mom_menca_mars_exosphere_sample',
+            instrument: 'MENCA'
+          });
+          break;
+        case 'inspect-active-profile':
+          switchMode('mission');
+          if (vedaState.missionObservations && vedaState.missionObservations.length > 0) {
+            const firstProf = vedaState.missionObservations.find(o => o.data_type === 'profile') || vedaState.missionObservations[0];
+            await inspectProfileObservation(firstProf);
+          }
+          break;
+        case 'help-drawer': {
+          const btnHelp = document.getElementById('btn-help');
+          if (btnHelp) btnHelp.click();
+          break;
+        }
+        case 'compare-venus': {
+          switchMode('body');
+          await loadAndRenderCelestialBody('venus');
+          const checkboxes = document.querySelectorAll('#veda-missions-checkboxes input[type="checkbox"]');
+          vedaState.selectedMissionIdsForBody.clear();
+          checkboxes.forEach(cb => {
+            if (cb.value === 'akatsuki' || cb.value === 'vex') {
+              cb.checked = true;
+              vedaState.selectedMissionIdsForBody.add(cb.value);
+            } else {
+              cb.checked = false;
+            }
+          });
+          updateComparison();
+          break;
+        }
+        case 'compare-mars': {
+          switchMode('body');
+          await loadAndRenderCelestialBody('mars');
+          const checkboxes = document.querySelectorAll('#veda-missions-checkboxes input[type="checkbox"]');
+          vedaState.selectedMissionIdsForBody.clear();
+          checkboxes.forEach(cb => {
+            if (cb.value === 'mom' || cb.value === 'maven') {
+              cb.checked = true;
+              vedaState.selectedMissionIdsForBody.add(cb.value);
+            } else {
+              cb.checked = false;
+            }
+          });
+          updateComparison();
+          break;
+        }
+        case 'load-fits-pluto':
+          switchMode('mission');
+          await loadAndRenderMission('new_horizons');
+          await inspectImageObservation({
+            mission_id: 'new_horizons',
+            observation_id: 'nh_lorri_pluto_approach',
+            instrument: 'LORRI'
+          });
+          break;
+        case 'load-fits-akatsuki':
+          switchMode('mission');
+          await loadAndRenderMission('akatsuki');
+          await inspectImageObservation({
+            mission_id: 'akatsuki',
+            observation_id: 'uvi_20181105_080112_283_geo_v10',
+            instrument: 'UVI'
+          });
+          break;
+        case 'about-drawer': {
+          const btnAbout = document.getElementById('btn-about');
+          if (btnAbout) btnAbout.click();
+          break;
+        }
+        default:
+          console.warn('Unknown guide action:', action);
+      }
+    });
+  });
 }

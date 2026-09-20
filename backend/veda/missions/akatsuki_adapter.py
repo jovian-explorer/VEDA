@@ -45,15 +45,16 @@ class AkatsukiAdapter(BaseMissionAdapter):
             for f in sorted(d.glob("*.lbl")):
                 name = f.stem
                 is_rs = "rs_" in name.lower()
+                is_img = "uvi_" in name.lower() or "lir_" in name.lower()
                 results.append({
                     "observation_id": name,
                     "mission_id": "akatsuki",
                     "body_id": "venus",
-                    "instrument": "RS" if is_rs else "UVI",
-                    "product": "Level 4 Atmospheric Profile" if "_l4_" in name else "Radio Occultation",
-                    "time_utc": "2016-03-03T23:20:05.791Z",
-                    "latitude": 4.22,
-                    "longitude": 9.27,
+                    "instrument": "RS" if is_rs else ("UVI" if "uvi_" in name.lower() else "LIR"),
+                    "product": "Level 4 Atmospheric Profile" if "_l4_" in name else ("Calibrated FITS Image" if is_img else "Radio Occultation"),
+                    "time_utc": "2016-03-03T23:20:05.791Z" if is_rs else "2018-11-05T08:01:12.000Z",
+                    "latitude": 4.22 if is_rs else 0.0,
+                    "longitude": 9.27 if is_rs else 0.0,
                     "archive_source": "JAXA DARTS / ISAS",
                     "is_cached": True,
                     "file_path": str(f),
@@ -63,6 +64,9 @@ class AkatsukiAdapter(BaseMissionAdapter):
         return results
 
     def load_profile(self, observation_id: str) -> Optional[ObservationProfile]:
+        if "uvi" in observation_id.lower() or "lir" in observation_id.lower():
+            return None
+
         d = Path(self.data_dir)
         lbl_file = d / f"{observation_id}.lbl"
         if not lbl_file.exists():
@@ -134,6 +138,53 @@ class AkatsukiAdapter(BaseMissionAdapter):
             return prof
 
         except Exception as e:
+            return None
+
+    def load_image(self, observation_id: str) -> Optional[ObservationImage]:
+        """Load JAXA Akatsuki camera observation (UVI, LIR, IR1, IR2)."""
+        d = Path(self.data_dir)
+        fits_file = d / f"{observation_id}.fit"
+        if not fits_file.exists():
+            fits_file = d / f"{observation_id}.fits"
+        if not fits_file.exists():
+            for f in d.glob(f"*{observation_id}*.fit*"):
+                fits_file = f
+                break
+
+        if not fits_file.exists():
+            return None
+
+        from ..readers.fits_reader import load_fits_image
+        try:
+            f_data = load_fits_image(str(fits_file))
+            hdr = f_data.header
+            return ObservationImage(
+                observation_id=observation_id,
+                mission_id="akatsuki",
+                body_id="venus",
+                instrument="UVI" if "uvi" in observation_id.lower() else "LIR",
+                time_utc=str(hdr.get("DATE-OBS") or hdr.get("DATE") or "2018-11-05T08:01:12Z"),
+                target_name="VENUS",
+                filter_name=str(hdr.get("FILTER") or "283 nm SO2 Absorption Band"),
+                exposure_seconds=float(hdr.get("EXPTIME") or 0.05),
+                target_distance_km=float(hdr.get("DISTANCE") or 350000.0),
+                solar_phase_angle_deg=float(hdr.get("PHASE") or 45.0),
+                browse_url="",
+                fits_url=f"https://data.darts.isas.jaxa.jp/pub/pds3/vco-v-uvi-3-sedr-v1.0/geometry/{fits_file.name}",
+                local_path=str(fits_file),
+                provenance=ProvenanceRecord(
+                    mission_id="akatsuki",
+                    instrument="UVI",
+                    product_level="Level 3 Geometry Calibrated",
+                    original_file=fits_file.name,
+                    archive_source="JAXA DARTS / ISAS",
+                    archive_url="https://data.darts.isas.jaxa.jp/pub/pds3/vco-v-uvi-3-sedr-v1.0/",
+                    doi_or_citation="Yamazaki, A., et al. (2018). Ultraviolet Imager on Akatsuki. Earth, Planets and Space, 70:23.",
+                    retrieval_method="Radiance Calibration and Geometric Back-Projection",
+                ),
+                metadata=hdr,
+            )
+        except Exception:
             return None
 
     def get_provenance(self, observation_id: str) -> Optional[ProvenanceRecord]:

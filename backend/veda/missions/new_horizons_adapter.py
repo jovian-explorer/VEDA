@@ -115,19 +115,23 @@ class NewHorizonsAdapter(BaseMissionAdapter):
         # Surface pressure P0 ~ 1.15 Pa (0.0115 hPa) at surface (z=0 km)
         # Surface T0 ~ 37 K, sharp thermal inversion layer up to 40 km (T reaching ~110 K)
         # Above 40 km, mesosphere cools to ~70 K at 100 km.
-        z_km = np.linspace(0.0, 100.0, 101)  # 0 to 100 km altitude
-
-        # Pluto vertical temperature profile:
-        # z=0: 37 K; z=10: 80 K; z=25: 105 K; z=40: 110 K; z=100: 72 K
-        t_k = 37.0 + 73.0 * (1.0 - np.exp(-z_km / 12.0)) - 38.0 * np.clip((z_km - 40.0) / 60.0, 0.0, 1.0)
-        t_c = t_k - 273.15
-
-        # Hydrostatic pressure: P(z) = P0 * exp(-z / H) where H ~ 20 km on Pluto
-        p_surf_hpa = 0.0115  # 1.15 Pa
-        p_hpa = p_surf_hpa * np.exp(-z_km / 22.0)
-
-        # Refractivity N(z) for N2
-        ref = 15.0 * np.exp(-z_km / 22.0)
+        d = Path(self.data_dir)
+        local_tab = d / "nh_rex_pluto_ingress.tab"
+        if local_tab.exists():
+            from ..readers.pds3_reader import read_any_table
+            tbl = read_any_table(str(local_tab))
+            z_km = tbl.series("ALTITUDE") if tbl.series("ALTITUDE") is not None else np.linspace(0.0, 100.0, 101)
+            p_hpa = tbl.series("PRESSURE")
+            t_k = tbl.series("TEMPERATURE")
+            t_c = t_k - 273.15 if t_k is not None else None
+            ref = tbl.series("REFRACTIVITY")
+        else:
+            z_km = np.linspace(0.0, 100.0, 101)  # 0 to 100 km altitude
+            t_k = 37.0 + 73.0 * (1.0 - np.exp(-z_km / 12.0)) - 38.0 * np.clip((z_km - 40.0) / 60.0, 0.0, 1.0)
+            t_c = t_k - 273.15
+            p_surf_hpa = 0.0115  # 1.15 Pa
+            p_hpa = p_surf_hpa * np.exp(-z_km / 22.0)
+            ref = 15.0 * np.exp(-z_km / 22.0)
 
         prof = ObservationProfile(
             observation_id="nh-rex-pluto-ingress-20150714",
@@ -146,7 +150,7 @@ class NewHorizonsAdapter(BaseMissionAdapter):
                 mission_id="new_horizons",
                 instrument="REX",
                 product_level="Level 3",
-                original_file="nh_rex_pluto_ingress_entry.tab",
+                original_file="nh_rex_pluto_ingress.tab",
                 archive_source="NASA PDS Atmospheres Node",
                 archive_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Horizons/rex.html",
                 doi_or_citation="Gladstone, G. R., et al. (2016). The atmosphere of Pluto as observed by New Horizons. Science, 351(6279).",
@@ -162,7 +166,9 @@ class NewHorizonsAdapter(BaseMissionAdapter):
     def load_image(self, observation_id: str) -> Optional[ObservationImage]:
         """Load New Horizons LORRI image observation."""
         d = Path(self.data_dir)
+        fits_file = d / "nh_lorri_pluto_approach.fits"
         browse_file = d / "lor_0299059349_0x630_sci_full.jpg"
+        active_local = str(fits_file) if fits_file.exists() else (str(browse_file) if browse_file.exists() else None)
 
         return ObservationImage(
             observation_id=observation_id,
@@ -177,7 +183,7 @@ class NewHorizonsAdapter(BaseMissionAdapter):
             solar_phase_angle_deg=15.0,
             browse_url=str(browse_file) if browse_file.exists() else "",
             fits_url="https://opus.pds-rings.seti.org/holdings/volumes/NHxxLO_xxxx/NHPELO_2001/data/20150713_029905/lor_0299059349_0x630_sci.fit",
-            local_path=str(browse_file) if browse_file.exists() else None,
+            local_path=active_local,
             provenance=ProvenanceRecord(
                 mission_id="new_horizons",
                 instrument="LORRI",

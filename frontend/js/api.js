@@ -116,6 +116,8 @@ export const api = {
     if (missions) q.push(`missions=${encodeURIComponent(missions)}`);
     return `/api/veda/figure/publication?${q.join('&')}`;
   },
+  vedaParseFile: (req) =>
+      call('/api/veda/parse-file', {method: 'POST', body: req}),
 };
 
 // --------------------------------------------------------------------------

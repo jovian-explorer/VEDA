@@ -30,9 +30,14 @@
     <button class="mode-btn" id="btn-mode-mission" role="tab" title="Explore scientific observations from a specific spacecraft mission">
       🛰️ By Planetary Mission
     </button>
+    <button class="mode-btn" id="btn-mode-guide" role="tab" title="Interactive step-by-step tutorial on loading, processing, and analyzing planetary data">
+      📖 Workflow Guide
+    </button>
   </div>
 
   <div class="topright">
+    <button class="ghost" id="btn-load-file" title="Load any local PDS3 (.lbl/.tab), CSV, or FITS (.fit/.fits) file">📁 Load File</button>
+    <input type="file" id="veda-file-input" style="display: none;" accept=".tab,.lbl,.csv,.txt,.fit,.fits,.png,.jpg,.jpeg" />
     <button class="ghost" id="btn-settings">Settings</button>
     <button class="ghost" id="btn-about">About VEDA</button>
     <button class="ghost" id="btn-help">Science Docs</button>
@@ -230,6 +235,242 @@
   </div>
 </section>
 
+
+<!-- ======================================================================== -->
+<!-- MODE 3: STEP-BY-STEP WORKFLOW GUIDE (TUTORIAL & INTERACTIVE LAB)        -->
+<!-- ======================================================================== -->
+<section id="veda-view-guide" class="veda-section" style="display: none;">
+  <!-- Guide Hero Banner -->
+  <div class="guide-hero">
+    <h2>📖 Step-by-Step Planetary Data Processing and Visualization Guide</h2>
+    <p>
+      Welcome to the VEDA Planetary Science Data Laboratory. This interactive guide walks you through
+      the complete end-to-end scientific pipeline: discovering authentic mission archives, loading raw
+      PDS3 tables and astronomical FITS images, deriving atmospheric thermodynamics and ionospheric metrics,
+      comparing multi-spacecraft soundings on unified grids, and exporting publication-ready figures.
+    </p>
+    <div class="guide-pills-row">
+      <a class="guide-pill" href="#guide-stage-1">1. Archive Discovery</a>
+      <a class="guide-pill" href="#guide-stage-2">2. Loading and Formats</a>
+      <a class="guide-pill" href="#guide-stage-3">3. Thermodynamics and Physics</a>
+      <a class="guide-pill" href="#guide-stage-4">4. Multi-Mission Comparison</a>
+      <a class="guide-pill" href="#guide-stage-5">5. Astronomical Imaging</a>
+      <a class="guide-pill" href="#guide-stage-6">6. Exports and Publication</a>
+    </div>
+  </div>
+
+  <div class="guide-stages-grid">
+
+    <!-- STAGE 1 -->
+    <div class="guide-stage-card" id="guide-stage-1">
+      <div class="guide-stage-header">
+        <div class="guide-stage-title-wrap">
+          <div class="stage-number-badge">1</div>
+          <h3>Stage 1: Planetary Target Discovery and Archive Acquisition</h3>
+        </div>
+        <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">Data Discovery</span>
+      </div>
+      <div class="guide-stage-content">
+        <p>
+          Robotic planetary missions archive their raw telemetry and calibrated products in official international repositories:
+        </p>
+        <ul>
+          <li><strong>NASA Planetary Data System (PDS):</strong> Managed by NASA SMD nodes including Atmospheres (NMSU), Geosciences (WUSTL), Planetary Plasma Interactions (UCLA), and Ring-Moon Systems / Small Bodies (SETI/UMD).</li>
+          <li><strong>ESA Planetary Science Archive (PSA):</strong> Managed by ESAC (Madrid, Spain), hosting Venus Express, BepiColombo, Mars Express, and Rosetta.</li>
+          <li><strong>JAXA DARTS / ISAS:</strong> Data Archives and Transmission System hosting Akatsuki (Venus Climate Orbiter) and Hayabusa datasets.</li>
+          <li><strong>ISRO ISSDC / PRADAN:</strong> Indian Space Science Data Centre hosting Mars Orbiter Mission (MOM / Mangalyaan) and Chandrayaan-2 planetary telemetry.</li>
+        </ul>
+        <p>
+          In VEDA, you can explore observations either <strong>By Celestial Body</strong> (selecting a planet or moon to view all missions that observed it)
+          or <strong>By Planetary Mission</strong> (inspecting specific spacecraft payloads and downloading products with SHA-256 verification).
+        </p>
+      </div>
+      <div class="guide-actions-bar">
+        <button class="guide-action-btn" data-guide-action="mode-body">🪐 Try: Explore by Celestial Body</button>
+        <button class="guide-action-btn" data-guide-action="mode-mission">🛰️ Try: Explore by Spacecraft Mission</button>
+        <button class="guide-action-btn secondary" data-guide-action="open-archive">🌐 Query Remote Archives</button>
+      </div>
+    </div>
+
+    <!-- STAGE 2 -->
+    <div class="guide-stage-card" id="guide-stage-2">
+      <div class="guide-stage-header">
+        <div class="guide-stage-title-wrap">
+          <div class="stage-number-badge">2</div>
+          <h3>Stage 2: Planetary Data Ingestion and File Formats</h3>
+        </div>
+        <span class="badge" style="background: rgba(129, 199, 132, 0.15); color: #81c784;">File Ingestion</span>
+      </div>
+      <div class="guide-stage-content">
+        <p>
+          Planetary observations are distributed in specialized scientific formats designed for long-term preservation:
+        </p>
+        <ul>
+          <li>
+            <strong>PDS3 Labels and Tables (.lbl + .tab):</strong> The PDS3 standard pairs an ASCII label (<code>.lbl</code>) containing metadata
+            and column definitions (e.g. <code>^TABLE = "filename.tab"</code>, <code>START_BYTE</code>, <code>BYTES</code>) with a fixed-width or
+            comma-delimited data table (<code>.tab</code>). VEDA's parser automatically handles pointer indirection and column offsets.
+          </li>
+          <li>
+            <strong>Astronomical FITS Images (.fit / .fits):</strong> Flexible Image Transport System files organize astronomical images into
+            Header Data Units (HDUs). Headers provide scientific coordinate keys (<code>DATE-OBS</code>, <code>EXPTIME</code>, <code>FILTER</code>, <code>DISTANCE</code>),
+            while data arrays preserve raw 16-bit or 32-bit floating point CCD photon counts.
+          </li>
+          <li>
+            <strong>Universal Fallback Engine:</strong> If you load a standalone CSV, TSV, or plain text table without a label, VEDA inspects
+            delimiters, identifies headers, and auto-detects physical coordinate columns.
+          </li>
+        </ul>
+
+        <!-- Drag and drop zone -->
+        <div class="drag-drop-zone" id="guide-drag-drop-zone">
+          <h4>📁 Drop Any Planetary File Here (or Click to Browse)</h4>
+          <p>Supports PDS3 (.tab, .lbl), ASCII CSV, FITS (.fit, .fits), or camera images (.png, .jpg)</p>
+        </div>
+      </div>
+      <div class="guide-actions-bar">
+        <button class="guide-action-btn" data-guide-action="load-sample-akatsuki">📥 Load Venus Akatsuki Radio Science (.tab)</button>
+        <button class="guide-action-btn" data-guide-action="load-sample-mom">📥 Load Mars MOM MENCA Sounding (.tab)</button>
+        <button class="guide-action-btn" data-guide-action="load-sample-ch2">📥 Load Chandrayaan-2 DFRS Ionosphere (.tab)</button>
+        <button class="guide-action-btn secondary" data-guide-action="click-file-input">📁 Browse Local File</button>
+      </div>
+    </div>
+
+    <!-- STAGE 3 -->
+    <div class="guide-stage-card" id="guide-stage-3">
+      <div class="guide-stage-header">
+        <div class="guide-stage-title-wrap">
+          <div class="stage-number-badge">3</div>
+          <h3>Stage 3: Scientific Thermodynamics and Diagnostic Derivations</h3>
+        </div>
+        <span class="badge" style="background: rgba(255, 179, 0, 0.15); color: #ffb300;">Physics Engine</span>
+      </div>
+      <div class="guide-stage-content">
+        <p>
+          When a 1D vertical sounding is ingested, VEDA's analytical engine couples the observation with body-specific constants
+          (planetary radius $R_p$, surface gravity $g_0$, molecular weight $\mu$, specific gas constant $R_{spec} = R_{univ}/\mu$,
+          and heat capacity $C_p$) to compute key atmospheric diagnostics:
+        </p>
+
+        <div class="guide-formula-box">
+          <strong>1. Altitude-Dependent Planetary Gravity:</strong>
+          <p>$$g(z) = g_0 \\left(\\frac{R_p}{R_p + z}\\right)^2$$</p>
+        </div>
+
+        <div class="guide-formula-box">
+          <strong>2. Environmental Lapse Rate:</strong>
+          <p>$$\\Gamma(z) = -\\frac{\\partial T}{\\partial z}$$</p>
+          computed using central difference gradients on finite valid data points.
+        </div>
+
+        <div class="guide-formula-box">
+          <strong>3. Poisson Potential Temperature ($\theta$):</strong>
+          <p>$$\\theta(z) = T(z) \\left(\\frac{P_0}{P(z)}\\right)^{\\frac{R_{spec}}{C_p}}$$</p>
+          where $P_0$ is the reference pressure level of the planetary body (e.g. 92,000 hPa for Venus, 6.1 hPa for Mars).
+        </div>
+
+        <div class="guide-formula-box">
+          <strong>4. Brunt-Vaisala Static Stability Frequency ($N^2$):</strong>
+          <p>$$N^2(z) = \\frac{g(z)}{T(z)} \\left(\\frac{dT}{dz} + \\Gamma_d\\right) = \\frac{g(z)}{\\theta(z)} \\frac{d\\theta}{dz}$$</p>
+          where dry adiabatic lapse rate $\\Gamma_d = g(z) / C_p$. Regions with $N^2 > 0$ are stably stratified against buoyancy oscillations; regions with $N^2 < 0$ are dynamically unstable to convection.
+        </div>
+
+        <div class="guide-formula-box">
+          <strong>5. Ionospheric Total Electron Content (VTEC):</strong>
+          <p>$$\\text{VTEC} = 10^{-7} \\int_{z_{base}}^{z_{top}} N_e(z)\\,dz \\quad [\\text{TECU}]$$</p>
+          integrating vertical electron density profiles from radio occultation sounders (e.g. Chandrayaan-2 DFRS, Akatsuki RS, Cassini RSS).
+        </div>
+      </div>
+      <div class="guide-actions-bar">
+        <button class="guide-action-btn" data-guide-action="inspect-active-profile">📈 Plot Profile and Diagnostics</button>
+        <button class="guide-action-btn secondary" data-guide-action="help-drawer">📚 Read Science Handbook</button>
+      </div>
+    </div>
+
+    <!-- STAGE 4 -->
+    <div class="guide-stage-card" id="guide-stage-4">
+      <div class="guide-stage-header">
+        <div class="guide-stage-title-wrap">
+          <div class="stage-number-badge">4</div>
+          <h3>Stage 4: Multi-Mission Aligned Comparative Analysis</h3>
+        </div>
+        <span class="badge" style="background: rgba(229, 57, 53, 0.15); color: #ef5350;">Comparative Science</span>
+      </div>
+      <div class="guide-stage-content">
+        <p>
+          Different spacecraft observe targets at different epochs, spatial coordinates, and vertical resolutions.
+          VEDA overcomes this by interpolating soundings onto a uniform planetary vertical grid:
+        </p>
+        <ul>
+          <li><strong>Grid Regularization:</strong> Raw vertical soundings from multiple missions are aligned onto a standardized altitude grid ($dz = 0.5$ or $1.0\text{ km}$).</li>
+          <li><strong>Composite Mean Profile $\mu(z)$:</strong> Calculates the multi-spacecraft average at each altitude layer.</li>
+          <li><strong>Encounter Spread ($\pm 1\sigma$):</strong> Quantifies natural planetary atmospheric variability and instrument retrieval dispersion.</li>
+          <li><strong>Dynamic Variable Switching:</strong> Seamlessly compare Potential Temperature, Static Stability $N^2$, Lapse Rate, Pressure, or Mass Density.</li>
+        </ul>
+      </div>
+      <div class="guide-actions-bar">
+        <button class="guide-action-btn" data-guide-action="compare-venus">🪐 Compare Venus Express vs Akatsuki</button>
+        <button class="guide-action-btn" data-guide-action="compare-mars">🔴 Compare Mars MOM vs MAVEN</button>
+      </div>
+    </div>
+
+    <!-- STAGE 5 -->
+    <div class="guide-stage-card" id="guide-stage-5">
+      <div class="guide-stage-header">
+        <div class="guide-stage-title-wrap">
+          <div class="stage-number-badge">5</div>
+          <h3>Stage 5: Astronomical Camera Imaging and Photometric Transects</h3>
+        </div>
+        <span class="badge" style="background: rgba(186, 104, 200, 0.15); color: #ba68c8;">Imaging and Transects</span>
+      </div>
+      <div class="guide-stage-content">
+        <p>
+          Planetary camera observations (such as Akatsuki UVI, New Horizons LORRI, or Cassini ISS) capture spatial structures
+          like cloud bands, atmospheric waves, volcanic plumes, and impact craters. VEDA provides astronomical image tools:
+        </p>
+        <ul>
+          <li><strong>Astronomical Contrast Stretches:</strong> ZScale (IRAF standard), Percentile (0.5% to 99.5%), Linear, Logarithmic, Square Root, and Asinh algorithms.</li>
+          <li><strong>False-Color Palettes:</strong> Inferno, Viridis, Plasma, Twilight, and Grayscale colormaps to highlight subtle intensity gradients.</li>
+          <li><strong>Interactive 1D Photometric Line Transects:</strong> Click and drag across the image canvas to slice arbitrary cross-sections $(x_0, y_0) \to (x_1, y_1)$ with sub-pixel bilinear interpolation.</li>
+          <li><strong>Pixel Histograms and CDF:</strong> Inspect dynamic range and pixel intensity distributions.</li>
+        </ul>
+      </div>
+      <div class="guide-actions-bar">
+        <button class="guide-action-btn" data-guide-action="load-fits-pluto">❄️ Slice Pluto LORRI FITS Image</button>
+        <button class="guide-action-btn" data-guide-action="load-fits-akatsuki">🟡 Slice Venus Akatsuki UVI FITS Image</button>
+      </div>
+    </div>
+
+    <!-- STAGE 6 -->
+    <div class="guide-stage-card" id="guide-stage-6">
+      <div class="guide-stage-header">
+        <div class="guide-stage-title-wrap">
+          <div class="stage-number-badge">6</div>
+          <h3>Stage 6: Scientific Export, Provenance, and Academic Citation</h3>
+        </div>
+        <span class="badge" style="background: rgba(0, 229, 255, 0.15); color: #00e5ff;">Publication Ready</span>
+      </div>
+      <div class="guide-stage-content">
+        <p>
+          VEDA ensures full scientific provenance and reproducible workflows:
+        </p>
+        <ul>
+          <li><strong>RFC 4180 CSV Export:</strong> Exports numerical sounding data along with structured metadata headers documenting original archive files, spacecraft ID, and retrieval DOIs.</li>
+          <li><strong>Structured JSON Export:</strong> Delivers complete profile records with derived physics for automated downstream analysis in Python or Julia.</li>
+          <li><strong>Publication Figure Generator:</strong> Generates 300-DPI high-resolution figures with publication typography and shaded $\pm 1\sigma$ envelopes.</li>
+          <li>
+            <strong>Mandatory Academic Citation:</strong> When publishing research using VEDA, authors are required to cite both the primary space agency dataset
+            and the software: <em>Keshav Aggarwal, Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO (2026).</em>
+          </li>
+        </ul>
+      </div>
+      <div class="guide-actions-bar">
+        <button class="guide-action-btn" data-guide-action="about-drawer">🏛️ View BibTeX Citation</button>
+      </div>
+    </div>
+
+  </div>
+</section>
 
 </main>
 

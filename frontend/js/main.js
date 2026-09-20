@@ -4,29 +4,28 @@
  */
 import { api, state } from './api.js';
 import { $, $$, el, banner, toast, drawer, closeDrawer } from './ui.js';
-import { initVeda } from './veda_app.js';
+import { initVeda, switchMode, handleUploadedFile } from './veda_app.js';
 
 function wireChrome() {
   const btnBody = $('#btn-mode-body');
   const btnMission = $('#btn-mode-mission');
-  const vBody = $('#veda-view-body');
-  const vMission = $('#veda-view-mission');
+  const btnGuide = $('#btn-mode-guide');
 
-  if (btnBody && btnMission) {
-    btnBody.addEventListener('click', () => {
-      btnBody.classList.add('active');
-      btnMission.classList.remove('active');
-      if (vBody) vBody.style.display = 'block';
-      if (vMission) vMission.style.display = 'none';
-      window.dispatchEvent(new Event('resize'));
-    });
+  if (btnBody) btnBody.addEventListener('click', () => switchMode('body'));
+  if (btnMission) btnMission.addEventListener('click', () => switchMode('mission'));
+  if (btnGuide) btnGuide.addEventListener('click', () => switchMode('guide'));
 
-    btnMission.addEventListener('click', () => {
-      btnMission.classList.add('active');
-      btnBody.classList.remove('active');
-      if (vBody) vBody.style.display = 'none';
-      if (vMission) vMission.style.display = 'block';
-      window.dispatchEvent(new Event('resize'));
+  const btnLoadFile = $('#btn-load-file');
+  const fileInput = $('#veda-file-input');
+  if (btnLoadFile && fileInput) {
+    btnLoadFile.addEventListener('click', () => fileInput.click());
+  }
+  if (fileInput) {
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleUploadedFile(e.target.files[0]);
+        fileInput.value = '';
+      }
     });
   }
 

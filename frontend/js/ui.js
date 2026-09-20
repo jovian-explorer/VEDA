@@ -96,6 +96,23 @@ export async function withBusy(button, label, fn) {
   }
 }
 
+export function renderMath(element) {
+  if (!element || typeof window.renderMathInElement !== 'function') return;
+  try {
+    window.renderMathInElement(element, {
+      delimiters: [
+        {left: '$$', right: '$$', display: true},
+        {left: '$', right: '$', display: false},
+        {left: '\\(', right: '\\)', display: false},
+        {left: '\\[', right: '\\]', display: true}
+      ],
+      throwOnError: false
+    });
+  } catch (err) {
+    console.warn('LaTeX compilation warning:', err);
+  }
+}
+
 export function drawer(title, bodyNode) {
   const t = $('#drawer-title');
   if (t) t.textContent = title;
@@ -103,21 +120,7 @@ export function drawer(title, bodyNode) {
   if (body) {
     clear(body);
     body.append(bodyNode);
-    if (typeof window.renderMathInElement === 'function') {
-      try {
-        window.renderMathInElement(body, {
-          delimiters: [
-            {left: '$$', right: '$$', display: true},
-            {left: '$', right: '$', display: false},
-            {left: '\\(', right: '\\)', display: false},
-            {left: '\\[', right: '\\]', display: true}
-          ],
-          throwOnError: false
-        });
-      } catch (err) {
-        console.warn('LaTeX compilation warning:', err);
-      }
-    }
+    renderMath(body);
   }
   const d = $('#drawer');
   if (d) {

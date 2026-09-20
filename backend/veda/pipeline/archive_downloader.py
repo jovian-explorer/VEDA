@@ -166,9 +166,85 @@ class ArchivePipeline:
                 "mission_id": "cassini",
                 "body_id": "titan",
                 "instrument": "RSS",
-                "filename": "cassini_rss_titan_t12_temp.tab",
+                "filename": "cassini_rss_titan_t12.tab",
                 "url": "https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Cassini/rss.html",
                 "size_approx": 52000,
+                "archive": "NASA PDS Atmospheres",
+            })
+        elif mid == "mom":
+            results.append({
+                "product_id": "isro_mom_menca_1200",
+                "mission_id": "mom",
+                "body_id": "mars",
+                "instrument": "MENCA",
+                "filename": "mom_menca_orbit_1200.tab",
+                "url": "https://www.issdc.gov.in/mom/menca/mom_menca_orbit_1200.tab",
+                "size_approx": 42000,
+                "archive": "ISRO ISSDC",
+            })
+            results.append({
+                "product_id": "isro_mom_mcc_valles_marineris",
+                "mission_id": "mom",
+                "body_id": "mars",
+                "instrument": "MCC",
+                "filename": "mom_mcc_orbit_0428.png",
+                "url": "https://www.issdc.gov.in/mom/mcc/mom_mcc_orbit_0428.png",
+                "size_approx": 850000,
+                "archive": "ISRO ISSDC",
+            })
+        elif mid == "chandrayaan2":
+            results.append({
+                "product_id": "isro_ch2_dfrs_1420",
+                "mission_id": "chandrayaan2",
+                "body_id": "moon",
+                "instrument": "DFRS",
+                "filename": "ch2_dfrs_orbit_1420.tab",
+                "url": "https://www.issdc.gov.in/ch2/dfrs/ch2_dfrs_orbit_1420.tab",
+                "size_approx": 38000,
+                "archive": "ISRO ISSDC",
+            })
+        elif mid == "maven":
+            results.append({
+                "product_id": "maven_rs_orbit_1240",
+                "mission_id": "maven",
+                "body_id": "mars",
+                "instrument": "RS_RO",
+                "filename": "maven_rs_orbit_1240.tab",
+                "url": "https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/MAVEN/maven_rs_orbit_1240.tab",
+                "size_approx": 48000,
+                "archive": "NASA PDS Atmospheres",
+            })
+        elif mid == "lro":
+            results.append({
+                "product_id": "lro_diviner_shackleton",
+                "mission_id": "lro",
+                "body_id": "moon",
+                "instrument": "Diviner",
+                "filename": "lro_diviner_shackleton.tab",
+                "url": "https://pds-geosciences.wustl.edu/lro/lro-l-dlre-4-rdr-v1/lrodlr_1001/data/lro_diviner_shackleton.tab",
+                "size_approx": 25000,
+                "archive": "NASA PDS Geosciences",
+            })
+        elif mid == "bepicolombo":
+            results.append({
+                "product_id": "bepi_more_mercury_ro",
+                "mission_id": "bepicolombo",
+                "body_id": "mercury",
+                "instrument": "MORE",
+                "filename": "bepi_more_fb2_ro.tab",
+                "url": "https://archives.esac.esa.int/psa/ftp/BEPICOLOMBO/MORE/bepi_more_fb2_ro.tab",
+                "size_approx": 32000,
+                "archive": "ESA PSA",
+            })
+        elif mid == "galileo":
+            results.append({
+                "product_id": "galileo_rss_jupiter_e04",
+                "mission_id": "galileo",
+                "body_id": "jupiter",
+                "instrument": "RSS",
+                "filename": "galileo_rss_e04_ingress.tab",
+                "url": "https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Galileo/galileo_rss_e04_ingress.tab",
+                "size_approx": 55000,
                 "archive": "NASA PDS Atmospheres",
             })
 
@@ -208,8 +284,29 @@ class ArchivePipeline:
         dest_file = dest_dir / filename
         task.local_path = str(dest_file)
 
-        # Check if already cached
+        # Check if already cached in cache directory
         if dest_file.exists() and dest_file.stat().st_size > 0:
+            task.total_bytes = dest_file.stat().st_size
+            task.downloaded_bytes = task.total_bytes
+            task.progress_pct = 100.0
+            task.status = "completed"
+            task.completed_at = time.time()
+            self._record_in_db(task)
+            if progress_cb:
+                progress_cb(task)
+            return task
+
+        # Check if bundled sample data granule exists
+        sample_root = Path(__file__).resolve().parents[3] / "sampledata" / "veda"
+        found_sample = None
+        for cand in sample_root.rglob(filename):
+            if cand.is_file() and cand.stat().st_size > 0:
+                found_sample = cand
+                break
+
+        if found_sample is not None:
+            import shutil
+            shutil.copy2(str(found_sample), str(dest_file))
             task.total_bytes = dest_file.stat().st_size
             task.downloaded_bytes = task.total_bytes
             task.progress_pct = 100.0

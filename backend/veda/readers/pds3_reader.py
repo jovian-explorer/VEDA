@@ -159,6 +159,11 @@ def read_pds3_table(table_or_label_path: str) -> Pds3Table:
     lbl_text = lbl_p.read_text(encoding="utf-8", errors="replace")
     metadata, col_defs = parse_pds3_label(lbl_text)
 
+    if not col_defs:
+        is_img = any(k.endswith("_IMAGE") or k.endswith("_HEADER") for k in metadata) or str(metadata.get("FILE_NAME", "")).lower().endswith((".fit", ".fits"))
+        if is_img:
+            raise ValueError(f"PDS3 label references an image file ({metadata.get('FILE_NAME')}), not a tabular dataset")
+
     if not tab_p.exists():
         # Check if ^TABLE or ^SPREADSHEET pointer specifies filename in directory
         table_pointer = metadata.get("^TABLE") or metadata.get("^SPREADSHEET")
@@ -173,6 +178,8 @@ def read_pds3_table(table_or_label_path: str) -> Pds3Table:
                 tab_p = lbl_p.parent / ptr_name.upper()
 
     if not tab_p.exists():
+        if metadata.get("^IMAGE") or metadata.get("^HEADER"):
+            raise ValueError(f"PDS3 label references an image object ({metadata.get('^IMAGE')}), not a table")
         raise FileNotFoundError(f"PDS3 table not found at {tab_p}")
 
     # Read the table file lines
@@ -239,6 +246,89 @@ def read_pds3_table(table_or_label_path: str) -> Pds3Table:
         label_path=str(lbl_p),
         table_path=str(tab_p),
         metadata=metadata,
+        columns=columns_data,
+        units=units_dict,
+    )
+
+
+def read_any_table(file_path: str) -> Pds3Table:
+    """Read any tabular data file (PDS3 table, CSV, TSV, or whitespace-delimited ASCII).
+
+    If a PDS3 label is found, delegates to read_pds3_table. Otherwise parses header
+    and numeric columns automatically.
+    """
+    p = Path(file_path)
+    if not p.exists():
+        raise FileNotFoundError(f"File not found: {file_path}")
+
+    # Check for PDS3 label counterpart
+    cand_lbl = [p.with_suffix(".lbl"), p.with_suffix(".LBL")]
+    if p.suffix.lower() == ".lbl":
+        cand_lbl = [p]
+    for l in cand_lbl:
+        if l.exists():
+            return read_pds3_table(str(l))
+
+    # Read lines
+    with p.open("r", encoding="utf-8", errors="replace") as f:
+        all_lines = [ln.strip() for ln in f.read().splitlines() if ln.strip()]
+
+    if not all_lines:
+        return Pds3Table(label_path="", table_path=str(p), metadata={}, columns={}, units={})
+
+    # Skip comments
+    data_lines = [ln for ln in all_lines if not ln.startswith(("#", "%", ";", "/*"))]
+    if not data_lines:
+        return Pds3Table(label_path="", table_path=str(p), metadata={}, columns={}, units={})
+
+    # Detect delimiter
+    sample = data_lines[0]
+    if "," in sample:
+        delim = ","
+    elif "\t" in sample:
+        delim = "\t"
+    elif ";" in sample:
+        delim = ";"
+    else:
+        delim = None  # whitespace split
+
+    def _split(line: str) -> List[str]:
+        if delim:
+            return [x.strip().strip('"\'') for x in line.split(delim)]
+        return [x.strip().strip('"\'') for x in line.split()]
+
+    first_row = _split(data_lines[0])
+    # Check if first row is header
+    has_header = False
+    try:
+        float(first_row[0])
+    except ValueError:
+        has_header = True
+
+    if has_header:
+        header_names = [name.upper() for name in first_row]
+        body_lines = data_lines[1:]
+    else:
+        header_names = [f"COL_{i+1}" for i in range(len(first_row))]
+        body_lines = data_lines
+
+    n_rows = len(body_lines)
+    columns_data: Dict[str, np.ndarray] = {name: np.full(n_rows, np.nan, dtype=np.float64) for name in header_names}
+    units_dict: Dict[str, str] = {name: "" for name in header_names}
+
+    for r_i, line in enumerate(body_lines):
+        tokens = _split(line)
+        for c_i, name in enumerate(header_names):
+            if c_i < len(tokens):
+                try:
+                    columns_data[name][r_i] = float(tokens[c_i])
+                except ValueError:
+                    pass
+
+    return Pds3Table(
+        label_path="",
+        table_path=str(p),
+        metadata={"AUTO_PARSED": True, "ROW_COUNT": n_rows},
         columns=columns_data,
         units=units_dict,
     )

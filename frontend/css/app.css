@@ -624,4 +624,198 @@ body.no-curious [data-curious] { display: none; }
 .archive-badge.nasa { background: #1e3a8a; color: #93c5fd; }
 .archive-badge.esa { background: #064e3b; color: #6ee7b7; }
 .archive-badge.jaxa { background: #831843; color: #fbcfe8; }
+.archive-badge.isro { background: #7c2d12; color: #fdba74; }
+
+/* -------------------------------------------------------------------------- */
+/* Step-by-Step Workflow Guide & File Upload Styles                           */
+/* -------------------------------------------------------------------------- */
+.guide-hero {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 22px 24px;
+  margin-bottom: 18px;
+  position: relative;
+  overflow: hidden;
+}
+.guide-hero::after {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.15), transparent 70%);
+  pointer-events: none;
+}
+.guide-hero h2 {
+  font-size: 22px;
+  color: #f8fafc;
+  margin: 0 0 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.guide-hero p {
+  color: #94a3b8;
+  font-size: 13.5px;
+  line-height: 1.6;
+  margin: 0 0 14px 0;
+  max-width: 900px;
+}
+.guide-pills-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.guide-pill {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.guide-pill:hover, .guide-pill.active {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+}
+.guide-stages-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.guide-stage-card {
+  background: var(--card-bg, #1e293b);
+  border: 1px solid var(--line, #334155);
+  border-left: 4px solid var(--accent, #38bdf8);
+  border-radius: 8px;
+  padding: 18px 22px;
+  transition: box-shadow 0.2s ease;
+}
+.guide-stage-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+.guide-stage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.guide-stage-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.stage-number-badge {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.guide-stage-card h3 {
+  font-size: 17px;
+  color: #f1f5f9;
+  margin: 0;
+}
+.guide-stage-content {
+  color: #cbd5e1;
+  font-size: 13.5px;
+  line-height: 1.65;
+}
+.guide-stage-content ul, .guide-stage-content ol {
+  margin: 8px 0 12px 20px;
+  padding: 0;
+}
+.guide-stage-content li {
+  margin-bottom: 6px;
+}
+.guide-formula-box {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin: 10px 0;
+  overflow-x: auto;
+}
+.guide-actions-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.guide-action-btn {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: #38bdf8;
+  padding: 6px 14px;
+  border-radius: 5px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.guide-action-btn:hover {
+  background: #38bdf8;
+  color: #0f172a;
+}
+.guide-action-btn.secondary {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #94a3b8;
+}
+.guide-action-btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #f8fafc;
+}
+.drag-drop-zone {
+  border: 2px dashed rgba(56, 189, 248, 0.4);
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+  background: rgba(15, 23, 42, 0.5);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin: 10px 0;
+}
+.drag-drop-zone:hover, .drag-drop-zone.dragover {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.08);
+}
+.drag-drop-zone h4 {
+  margin: 0 0 4px 0;
+  color: #f1f5f9;
+  font-size: 15px;
+}
+.drag-drop-zone p {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 12.5px;
+}
+
 
