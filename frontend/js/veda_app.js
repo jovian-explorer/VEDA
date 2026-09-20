@@ -63,13 +63,11 @@ const MISSION_COLORS = {
   lro: '#b0bec5',
   dawn: '#00b0ff',
   rosetta: '#1de9b6',
-  cosmic2: '#00e676',
 };
 
 // Planetary Icons & Badges
 const BODY_EMOJIS = {
   venus: '🟡',
-  earth: '🌍',
   mars: '🔴',
   jupiter: '🪐',
   saturn: '🪐',

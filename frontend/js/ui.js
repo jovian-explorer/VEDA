@@ -124,7 +124,7 @@ export const PLOT_CONFIG = {
   responsive: true,
   // The bundled basemaps make geo plots work with no network access.
   topojsonURL: 'vendor/topojson/',
-  toImageButtonOptions: {format: 'png', scale: 2, filename: 'cosmic2'},
+  toImageButtonOptions: {format: 'png', scale: 2, filename: 'veda_plot'},
   modeBarButtonsToRemove: ['sendDataToCloud', 'select2d'],
 };
 

@@ -12,7 +12,6 @@ from ..core.registry import BODIES, MISSIONS, get_body, get_mission
 from ..analysis.atmospheric import compare_profiles_on_body
 
 # Import adapters
-from .cosmic2_adapter import Cosmic2Adapter
 from .akatsuki_adapter import AkatsukiAdapter
 from .new_horizons_adapter import NewHorizonsAdapter
 from .juno_adapter import JunoAdapter
@@ -40,7 +39,6 @@ class MissionManager:
         self._register_default_adapters()
 
     def _register_default_adapters(self) -> None:
-        self.register_adapter(Cosmic2Adapter())
         self.register_adapter(AkatsukiAdapter())
         self.register_adapter(NewHorizonsAdapter())
         self.register_adapter(JunoAdapter())
@@ -166,7 +164,7 @@ class MissionManager:
         return compare_profiles_on_body(
             profiles=loaded_profiles,
             body=body,
-            altitude_step_km=0.5 if body_id in ("earth", "mars", "pluto", "venus") else 2.0,
+            altitude_step_km=0.5 if body_id in ("mars", "pluto", "venus") else 2.0,
             variable_name=variable_name,
         )
 

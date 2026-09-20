@@ -28,20 +28,6 @@ BODIES: Dict[str, BodyInfo] = {
         description="Terrestrial planet with a massive, superrotating CO2 atmosphere, dense sulphuric acid cloud decks, and runaway greenhouse effect.",
         supported_missions=["akatsuki", "vex", "magellan", "pvo", "bepicolombo"],
     ),
-    "earth": BodyInfo(
-        id="earth",
-        name="Earth",
-        category="terrestrial_planet",
-        radius_km=6371.0,
-        surface_gravity=9.80665,
-        mean_molecular_weight=28.97,  # 78% N2, 21% O2, 1% Ar
-        gas_constant_r=287.058,
-        isobaric_heat_capacity_cp=1004.6,
-        reference_pressure_hpa=1000.0,
-        atmospheric_composition={"N2": 78.08, "O2": 20.95, "Ar": 0.93, "H2O": 1.0},
-        description="Our home planet; dense tropical GNSS radio occultation atmospheric and ionospheric profiling.",
-        supported_missions=["cosmic2"],
-    ),
     "mars": BodyInfo(
         id="mars",
         name="Mars",
@@ -128,7 +114,7 @@ BODIES: Dict[str, BodyInfo] = {
     ),
     "moon": BodyInfo(
         id="moon",
-        name="Moon (Earth's Satellite)",
+        name="Moon",
         category="moon",
         radius_km=1737.4,
         surface_gravity=1.62,
@@ -137,7 +123,7 @@ BODIES: Dict[str, BodyInfo] = {
         isobaric_heat_capacity_cp=1000.0,
         reference_pressure_hpa=1e-11,
         atmospheric_composition={"He": 40.0, "Ne": 40.0, "Ar": 20.0},
-        description="Earth's natural satellite; surface-boundary exosphere, permanently shadowed polar craters with water ice, mapped by orbital radiometry and laser altimetry.",
+        description="Planetary moon with surface-boundary exosphere, permanently shadowed polar craters with water ice, mapped by orbital radiometry and laser altimetry.",
         supported_missions=["lro"],
     ),
     "ceres": BodyInfo(
@@ -190,28 +176,6 @@ BODIES: Dict[str, BodyInfo] = {
 # ===========================================================================
 
 MISSIONS: Dict[str, MissionInfo] = {
-    "cosmic2": MissionInfo(
-        id="cosmic2",
-        name="COSMIC-2",
-        agency="NOAA / UCAR / TACC / NASA",
-        launch_date="2019-06-25",
-        mission_status="operational",
-        primary_targets=["earth"],
-        mission_type="constellation",
-        target_encounters={"earth": "orbiter"},
-        instruments=[
-            InstrumentInfo(id="TGRS", name="TriG GNSS Radio Occultation Receiver", instrument_type="radio_science",
-                           measurement_targets=["neutral_atmosphere", "ionosphere"],
-                           description="Dual-frequency GPS and GLONASS radio occultation sensor tracking refractivity, temperature, water vapour, and electron density."),
-            InstrumentInfo(id="IVM", name="Ion Velocity Meter", instrument_type="plasma",
-                           measurement_targets=["ionosphere", "plasma"],
-                           description="In-situ measurement of ion drift, density, and temperature at low Earth orbit."),
-        ],
-        authoritative_archive="UCAR COSMIC Data Analysis and Archive Center (CDAAC)",
-        archive_url="https://data.cosmic.ucar.edu/gnss-ro/cosmic2/",
-        citation="UCAR/CDAAC COSMIC-2 Post-Processed and Near-Real-Time Data Products (2020-present).",
-        description="Six-satellite constellation in 24° low-inclination orbit providing ~5,000 daily high-precision tropical atmospheric and ionospheric soundings.",
-    ),
     "akatsuki": MissionInfo(
         id="akatsuki",
         name="Akatsuki (VCO)",
@@ -391,7 +355,7 @@ MISSIONS: Dict[str, MissionInfo] = {
         mission_status="operational",
         primary_targets=["mercury", "venus"],
         mission_type="orbiter",
-        target_encounters={"earth": "flyby", "venus": "flyby", "mercury": "orbiter"},
+        target_encounters={"venus": "flyby", "mercury": "orbiter"},
         instruments=[
             InstrumentInfo(id="MORE", name="Mercury Orbiter Radio science Experiment", instrument_type="radio_science",
                            measurement_targets=["gravity", "occultation"],
@@ -416,7 +380,7 @@ MISSIONS: Dict[str, MissionInfo] = {
         mission_status="completed",
         primary_targets=["jupiter", "venus"],
         mission_type="orbiter",
-        target_encounters={"venus": "flyby", "earth": "flyby", "jupiter": "orbiter"},
+        target_encounters={"venus": "flyby", "jupiter": "orbiter"},
         instruments=[
             InstrumentInfo(id="RSS", name="Radio Science", instrument_type="radio_science",
                            measurement_targets=["neutral_atmosphere", "ionosphere"],
@@ -438,7 +402,7 @@ MISSIONS: Dict[str, MissionInfo] = {
         mission_status="completed",
         primary_targets=["mercury", "venus"],
         mission_type="orbiter",
-        target_encounters={"earth": "flyby", "venus": "flyby", "mercury": "orbiter"},
+        target_encounters={"venus": "flyby", "mercury": "orbiter"},
         instruments=[
             InstrumentInfo(id="RS", name="Radio Science Investigation", instrument_type="radio_science",
                            measurement_targets=["gravity", "exosphere"],
@@ -582,7 +546,7 @@ MISSIONS: Dict[str, MissionInfo] = {
         mission_status="completed",
         primary_targets=["comet_67p"],
         mission_type="orbiter",
-        target_encounters={"earth": "flyby", "mars": "flyby", "comet_67p": "orbiter"},
+        target_encounters={"mars": "flyby", "comet_67p": "orbiter"},
         instruments=[
             InstrumentInfo(id="OSIRIS", name="Optical, Spectroscopic, and Infrared Remote Imaging System", instrument_type="camera",
                            measurement_targets=["nucleus", "coma_jets"],

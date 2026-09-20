@@ -14,7 +14,7 @@ if str(backend_dir) not in sys.path:
 def pytest_sessionstart(session):
     """Ensure backend server is running on 127.0.0.1:8992 before test collection."""
     import uvicorn
-    from cosmic2.api import app
+    from veda.api.app import app
 
     base = "http://127.0.0.1:8992"
     try:

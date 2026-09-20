@@ -19,8 +19,9 @@ import time
 from pathlib import Path
 
 PROJECT = Path(__file__).resolve().parents[1]
-EXE = PROJECT / "dist" / "COSMIC2-Explorer.exe"
-APPDATA = Path(os.environ.get("LOCALAPPDATA", "")) / "COSMIC2Explorer"
+EXE = (PROJECT / "dist" / "VEDA.exe") if (PROJECT / "dist" / "VEDA.exe").exists() else (PROJECT / "dist" / "COSMIC2-Explorer.exe")
+_app_dir_name = "VEDA" if (Path(os.environ.get("LOCALAPPDATA", "")) / "VEDA").exists() or (PROJECT / "dist" / "VEDA.exe").exists() else "COSMIC2Explorer"
+APPDATA = Path(os.environ.get("LOCALAPPDATA", "")) / _app_dir_name
 STARTUP_LOG = APPDATA / "logs" / "startup.log"
 ERROR_LOG = APPDATA / "logs" / "startup-error.log"
 
@@ -39,15 +40,16 @@ def check(name: str, condition: bool, detail: str = "") -> None:
 
 
 def _kill_cosmic() -> None:
-    """Kill any running COSMIC2-Explorer processes."""
-    try:
-        subprocess.run(
-            ["taskkill", "/F", "/IM", "COSMIC2-Explorer.exe"],
-            capture_output=True, timeout=5,
-        )
-    except Exception:
-        pass
-    time.sleep(0.5)
+    """Kill any running VEDA or COSMIC2-Explorer processes."""
+    for proc_name in ("VEDA.exe", "COSMIC2-Explorer.exe"):
+        try:
+            subprocess.run(
+                ["taskkill", "/F", "/IM", proc_name],
+                capture_output=True, timeout=5,
+            )
+        except Exception:
+            pass
+    time.sleep(1.0)
 
 
 def _launch_from_cwd(cwd: str, timeout_s: int = 35) -> tuple[bool, str]:
@@ -129,7 +131,7 @@ def test_launch_from_desktop() -> None:
     check("Process alive after 20s (from Desktop)", alive)
     check("Startup log written", bool(log))
     if log:
-        check("CWD logged (not relative-path crash)", "Starting COSMIC-2 Explorer" in log, log[:200])
+        check("CWD logged (not relative-path crash)", ("Starting VEDA" in log or "Starting COSMIC-2 Explorer" in log), log[:200])
         check("Backend healthy from Desktop CWD", "Backend healthy" in log)
 
 
@@ -149,8 +151,13 @@ def test_launch_from_temp() -> None:
     if not EXE.is_file():
         print(f"  {SKIP}  EXE not found")
         return
-    with tempfile.TemporaryDirectory() as tmpdir:
+    tmpdir = tempfile.mkdtemp()
+    try:
         alive, log = _launch_from_cwd(tmpdir, timeout_s=20)
+    finally:
+        _kill_cosmic()
+        import shutil
+        shutil.rmtree(tmpdir, ignore_errors=True)
     check("Process alive after 20s (from temp dir)", alive)
     if log:
         check("Backend healthy from temp CWD", "Backend healthy" in log)

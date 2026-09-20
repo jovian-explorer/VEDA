@@ -52,9 +52,10 @@ from veda.missions.manager import get_mission_manager
 # ===========================================================================
 
 def test_registry_bodies_physics():
-    """Verify all bodies have physical constants for thermodynamics."""
+    """Verify all bodies have physical constants for thermodynamics and Earth is excluded."""
+    assert "earth" not in BODIES, "VEDA must strictly exclude Earth per scope requirements"
     assert len(BODIES) >= 10
-    required_bodies = ["venus", "earth", "mars", "jupiter", "saturn", "titan", "pluto", "mercury", "moon", "ceres", "vesta", "comet_67p"]
+    required_bodies = ["venus", "mars", "jupiter", "saturn", "titan", "pluto", "mercury", "moon", "ceres", "vesta", "comet_67p"]
     for bid in required_bodies:
         assert bid in BODIES, f"Missing body: {bid}"
         b = BODIES[bid]
@@ -65,10 +66,10 @@ def test_registry_bodies_physics():
 
 
 def test_registry_mission_classification():
-    """Verify distinction between Orbiters, Flybys, and Constellations."""
+    """Verify distinction between Orbiters, Flybys, and non-Earth planetary missions."""
+    assert "cosmic2" not in MISSIONS, "VEDA must strictly exclude cosmic2 / Earth GNSS RO"
     assert MISSIONS["new_horizons"].mission_type == "flyby"
     assert MISSIONS["new_horizons"].target_encounters.get("pluto") == "flyby"
-    assert MISSIONS["cosmic2"].mission_type == "constellation"
     assert MISSIONS["akatsuki"].mission_type == "orbiter"
     assert MISSIONS["juno"].mission_type == "orbiter"
     assert MISSIONS["cassini"].mission_type == "orbiter"

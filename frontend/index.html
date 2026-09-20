@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>VEDA — Visualization, Exploration, and Data Analysis</title>
+<link rel="icon" type="image/x-icon" href="favicon.ico">
 <link rel="stylesheet" href="css/app.css">
 <script src="vendor/plotly.min.js"></script>
 </head>
@@ -11,7 +12,7 @@
 
 <header class="topbar">
   <div class="brand veda-brand">
-    <div class="veda-logo" aria-hidden="true">🪐</div>
+    <img src="img/veda_logo.png" class="veda-brand-logo" alt="VEDA Emblem" />
     <div>
       <h1>VEDA</h1>
       <p class="sub">Visualization, Exploration, and Data Analysis &bull; Planetary Science Lab <span id="version-tag"></span></p>
@@ -24,10 +25,7 @@
       🪐 By Celestial Body
     </button>
     <button class="mode-btn" id="btn-mode-mission" role="tab" title="Explore scientific observations from a specific spacecraft mission">
-      🛰️ By Mission
-    </button>
-    <button class="mode-btn" id="btn-mode-earth" role="tab" title="High-density tropical Earth GNSS radio occultations">
-      🌍 Earth GNSS RO
+      🛰️ By Planetary Mission
     </button>
   </div>
 
@@ -229,112 +227,6 @@
   </div>
 </section>
 
-
-<!-- ======================================================================== -->
-<!-- MODE 3: EARTH GNSS RADIO OCCULTATION (COSMIC-2 WORKFLOW)                -->
-<!-- ======================================================================== -->
-<section id="veda-view-earth" class="veda-section" style="display: none;">
-  <nav class="tabs" role="tablist" style="margin-bottom: 14px;">
-    <button class="tab active" role="tab" data-tab="get">Get Earth Data</button>
-    <button class="tab" role="tab" data-tab="explore">Explore Earth Granules</button>
-    <button class="tab" role="tab" data-tab="profile">Earth Profiles</button>
-    <button class="tab" role="tab" data-tab="composite">Earth Composite</button>
-    <button class="tab" role="tab" data-tab="export">Earth Export</button>
-  </nav>
-
-  <!-- GET DATA -->
-  <section class="panel active" id="tab-get">
-    <div class="explain" data-curious>
-      <strong>COSMIC-2 GNSS Radio Occultation:</strong> Dual-frequency GPS and GLONASS signals
-      grazing Earth's tropical atmosphere yield high-precision vertical profiles of temperature,
-      pressure, moisture, and ionospheric electron density.
-    </div>
-    <div class="grid-2">
-      <div class="card">
-        <h2>1. Choose a day</h2>
-        <div class="row">
-          <label>Date (UTC)
-            <input type="date" id="get-date">
-          </label>
-          <button class="ghost" id="btn-latest">Latest available</button>
-        </div>
-        <div class="row">
-          <label>Processing stream
-            <select id="get-stream"></select>
-          </label>
-        </div>
-        <p class="hint" id="stream-blurb"></p>
-        <button class="primary" id="btn-scan">Scan CDAAC Archive</button>
-      </div>
-
-      <div class="card">
-        <h2>2. Data Granules</h2>
-        <div class="row">
-          <label>Sample size
-            <select id="get-count">
-              <option value="24">24 profiles</option>
-              <option value="120" selected>120 profiles</option>
-              <option value="480">480 profiles</option>
-            </select>
-          </label>
-        </div>
-        <div class="row">
-          <button class="primary" id="btn-download" disabled>Download Granules</button>
-          <button class="ghost" id="btn-load-samples">Load Bundled Granules</button>
-        </div>
-        <div id="job-progress" class="progress-wrap hidden">
-          <div class="progress-bar"><div class="progress-fill" id="job-bar"></div></div>
-          <p class="hint" id="job-status"></p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- EXPLORE -->
-  <section class="panel" id="tab-explore">
-    <div class="card">
-      <div class="card-head">
-        <h2>Earth GNSS RO Spatial Distribution</h2>
-        <div class="row">
-          <input type="text" id="filter-text" placeholder="Filter by receiver, date...">
-          <button class="ghost" id="btn-refresh-explore">Refresh</button>
-        </div>
-      </div>
-      <div id="explore-map" style="height: 380px;"></div>
-    </div>
-  </section>
-
-  <!-- PROFILES -->
-  <section class="panel" id="tab-profile">
-    <div class="card">
-      <div class="card-head">
-        <h2>Earth Atmospheric Soundings</h2>
-        <span class="hint" id="active-profile-name">Select profile</span>
-      </div>
-      <div id="profile-plot" style="height: 480px;"></div>
-    </div>
-  </section>
-
-  <!-- COMPOSITE -->
-  <section class="panel" id="tab-composite">
-    <div class="card">
-      <h2>Earth Climatological Mean & Spread</h2>
-      <div id="composite-plot" style="height: 480px;"></div>
-    </div>
-  </section>
-
-  <!-- EXPORT -->
-  <section class="panel" id="tab-export">
-    <div class="card">
-      <h2>Export Earth Granules</h2>
-      <div class="row">
-        <button class="primary" id="btn-export-nc">Export NetCDF Bundle</button>
-        <button class="ghost" id="btn-export-csv">Export CSV</button>
-        <button class="ghost" id="btn-reveal-exports">Reveal Folder</button>
-      </div>
-    </div>
-  </section>
-</section>
 
 </main>
 

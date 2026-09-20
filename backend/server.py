@@ -21,7 +21,7 @@ if __package__ in (None, ""):  # allow `python server.py` from any cwd
 
 import uvicorn
 
-from cosmic2.config import APP_TITLE, APP_VERSION, DATA_ROOT, ensure_dirs
+from veda.config import APP_TITLE, APP_VERSION, DATA_ROOT, ensure_dirs
 
 
 def free_port(preferred: int = 8765, tries: int = 40) -> int:
@@ -52,14 +52,14 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  data folder : {DATA_ROOT}")
     print(f"  open        : http://{args.host}:{port}/")
     print(f"  API docs    : http://{args.host}:{port}/api/docs")
-    uvicorn.run("cosmic2.api:app" if args.reload else _get_app(),
+    uvicorn.run("veda.api.app:app" if args.reload else _get_app(),
                 host=args.host, port=port, log_level=args.log_level,
                 reload=args.reload)
     return 0
 
 
 def _get_app():
-    from cosmic2.api import app
+    from veda.api.app import app
     return app
 
 

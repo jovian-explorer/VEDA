@@ -49,8 +49,8 @@ os.environ["PATH"] = _CWD_DIR + os.pathsep + os.environ.get("PATH", "")
 if __package__ in (None, ""):
     sys.path.insert(0, getattr(sys, "_MEIPASS", str(Path(__file__).resolve().parent)))
 
-from cosmic2.config import (APP_NAME, APP_TITLE, APP_VERSION, LOG_DIR,
-                             DATA_ROOT, ensure_dirs, frontend_dir)
+from veda.config import (APP_NAME, APP_TITLE, APP_VERSION, LOG_DIR,
+                           DATA_ROOT, ensure_dirs, frontend_dir)
 from server import free_port
 
 STARTUP_TIMEOUT_S = 120   # cold-start of a 198 MB onefile EXE can take 60-90s
@@ -98,7 +98,7 @@ def _show_error_dialog(title: str, message: str) -> None:
 
 def _serve(host: str, port: int) -> None:
     import uvicorn
-    from cosmic2.api import app
+    from veda.api.app import app
     uvicorn.run(app, host=host, port=port, log_level="warning")
 
 
