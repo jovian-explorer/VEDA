@@ -143,7 +143,11 @@ def compare_profiles_on_body(
         return {"grid_km": [], "composite_mean": [], "composite_std": [], "profiles": []}
 
     # Determine altitude span covering the observations
-    all_z = [p.altitude_km for p in profiles if p.altitude_km is not None and p.altitude_km.size > 0]
+    valid_profiles = [p for p in profiles if p is not None]
+    if not valid_profiles:
+        return {"grid_km": [], "composite_mean": [], "composite_std": [], "profiles": []}
+
+    all_z = [p.altitude_km for p in valid_profiles if p.altitude_km is not None and p.altitude_km.size > 0]
     if not all_z:
         return {"grid_km": [], "composite_mean": [], "composite_std": [], "profiles": []}
 
@@ -163,7 +167,7 @@ def compare_profiles_on_body(
     interpolated_matrix = []
     profile_summaries = []
 
-    for p in profiles:
+    for p in valid_profiles:
         # Extract target variable
         v = None
         if variable_name == "temperature_k":
