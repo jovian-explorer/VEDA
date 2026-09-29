@@ -13,7 +13,7 @@ When contributing code, algorithms, or mission data models to VEDA, the followin
    * Earth-centric GNSS or terrestrial weather data pipelines must not be integrated into VEDA.
 2. **Offline-First Architecture**:
    * The application must operate seamlessly in offline research environments without active internet connectivity.
-   * All vendor libraries (e.g. KaTeX, Plotly, Three.js) must be bundled locally within `frontend/vendor/`. No external CDN links are permitted in application HTML or scripts.
+   * All vendor libraries (e.g. KaTeX, Plotly, Three.js) must be bundled locally within `src/veda/frontend/vendor/`. No external CDN links are permitted in application HTML or scripts.
 3. **Typography and Style Constraint**:
    * **Do not use em-dashes or en-dashes anywhere in the repository.**
    * Use standard ASCII hyphens (`-`), colons (`:`), commas (`,`), or parentheses (`()`).
@@ -25,16 +25,17 @@ When contributing code, algorithms, or mission data models to VEDA, the followin
 
 ### A. Environment Setup
 Clone the repository and install required dependencies in a virtual environment:
-```powershell
+```bash
 git clone https://github.com/jovian-explorer/VEDA.git
 cd VEDA
-python -m venv venv
-.\venv\Scripts\Activate.ps1
-pip install fastapi uvicorn pydantic numpy scipy astropy matplotlib pywebview requests pytest
+python -m venv .venv
+# Windows: .venv\Scripts\activate     macOS/Linux: source .venv/bin/activate
+pip install -e ".[dev]"
 ```
+The package lives in `src/veda/`; the web UI is in `src/veda/frontend/` and is served by the backend, so edits show up after a browser refresh.
 
 ### B. Branching Strategy
-* Create feature branches branched from `master`:
+* Create feature branches from `main`:
   ```powershell
   git checkout -b feature/planetary-mission-name
   ```
@@ -60,10 +61,10 @@ pip install fastapi uvicorn pydantic numpy scipy astropy matplotlib pywebview re
 
 Before submitting a pull request, run the complete verification test suite:
 
-```powershell
-# Run the core VEDA planetary science test suite:
-python -m pytest tests/test_veda.py tests/test_wave_and_stability.py tests/test_advanced_science.py -v
+```bash
+pytest
 ```
+CI runs the same suite on Windows, macOS and Linux. To exercise the frozen build locally, run `pip install -e ".[build]"` and `python scripts/build_exe.py`, then `pytest tests/test_explorer_launch.py` (Windows).
 
 All tests must pass with a 100% success rate. If you add a new planetary body, spacecraft mission, or scientific reader, you must provide corresponding unit tests under `tests/`.
 

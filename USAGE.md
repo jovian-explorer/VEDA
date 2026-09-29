@@ -7,33 +7,24 @@ This guide provides operational workflows, scientific methodologies, and usage i
 ## 1. System Requirements and Installation
 
 ### Operating Environment
-* **Platform**: Microsoft Windows 10 / 11 (64-bit architecture).
+* **Platform**: Windows 10/11 (x64), macOS 12 or newer, or a desktop Linux distribution (x86_64).
 * **System Memory**: 4 GB RAM minimum (8 GB or more recommended for multi-mission grids and large FITS images).
 * **Display Resolution**: 1280 x 800 minimum (1920 x 1080 or higher recommended).
-* **GUI Runtime**: Microsoft Edge WebView2 Evergreen Runtime (pre-installed on Windows 10/11).
+* **GUI Runtime**: WebView2 on Windows (preinstalled), WebKit on macOS (built in), GTK or Qt on Linux. Without a webview runtime VEDA opens in the default browser.
 
-### Standalone Executable Execution
-VEDA can be executed without installing Python or third-party dependencies:
-```powershell
-# Double-click in Windows File Explorer or execute from PowerShell:
-.\dist\VEDA.exe
+### Standalone App
+Download the archive for your OS from the [latest release](https://github.com/jovian-explorer/VEDA/releases/latest), unzip it and run `VEDA.exe` (Windows), `VEDA.app` (macOS) or `./VEDA` (Linux). No Python installation is needed.
+
+### Python Installation
+```bash
+pip install "git+https://github.com/jovian-explorer/VEDA.git"
+
+veda                          # desktop window (browser fallback)
+veda --browser                # open in the default browser
+veda --no-window --port 8765  # headless server, open http://127.0.0.1:8765/
 ```
 
-### Developer Mode Execution
-If running from source code in a Python environment:
-```powershell
-# Install required scientific packages:
-pip install fastapi uvicorn pydantic numpy scipy astropy matplotlib pywebview requests pytest
-
-# Launch the application in interactive desktop window mode:
-python app.py
-
-# Or launch via PowerShell script (starts server and opens default browser):
-.\launch.ps1
-
-# Run in headless server mode (accessible via local network or browser at port 8765):
-python app.py --no-window --port 8765
-```
+See the README for the development setup and platform notes.
 
 ---
 

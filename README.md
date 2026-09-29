@@ -20,11 +20,11 @@
 
 ## Key Capabilities
 
-### 1. Standalone Windows Executable (.exe Package)
-VEDA is engineered to build as a native, single-file standalone Windows desktop application:
-* **Output Binary**: `dist\VEDA.exe` (self-contained, with native WebView2 GUI and embedded static assets).
-* **Explorer Double-Click Resilient**: Automatically detects and handles non-terminal Explorer execution contexts, setting internal working directories from `sys._MEIPASS` and falling back cleanly to the system browser if needed.
-* **Build Script**: `.\package_exe.ps1` builds the package in one command via PyInstaller.
+### 1. Runs Everywhere: Desktop App, Python Package, or Local Server
+* **Standalone app** for Windows (`VEDA.exe`), macOS (`VEDA.app`) and Linux (`VEDA`), built automatically for every release.
+* **Python package**: `pip install` straight from GitHub gives you the `veda` and `veda-server` commands.
+* **Native window with a safe fallback**: opens in a native window (WebView2, WebKit or GTK/Qt) and falls back to your default browser if no webview runtime is available.
+* **Self-contained**: frontend, math typesetting, plotting libraries and sample granules are all bundled, so the app works offline.
 
 ### 2. Dual Exploration Paradigms
 
@@ -104,33 +104,74 @@ Applies target-specific physical constants ($R_{spec}, c_p, g_0, P_{ref}$) to co
 
 ---
 
-## Quick Start
+## Installation
 
-### Running from Pre-built Executable
-```powershell
-# Double-click or run from terminal:
-.\dist\VEDA.exe
+### Option A: download the app (no Python needed)
+Open the [latest release](https://github.com/jovian-explorer/VEDA/releases/latest) and download the archive for your OS:
+
+| OS | Asset | Run |
+|---|---|---|
+| Windows 10/11 (x64) | `VEDA-<version>-windows-x86_64.zip` | unzip, double-click `VEDA.exe` |
+| macOS (Apple Silicon) | `VEDA-<version>-macos-arm64.zip` | unzip, right-click `VEDA.app` > Open the first time (the app is not notarized) |
+| Linux (x86_64) | `VEDA-<version>-linux-x86_64.zip` | unzip, `chmod +x VEDA && ./VEDA` |
+
+The repository is private, so you need to be signed in to GitHub with access to it.
+
+### Option B: install with pip (any OS, Python 3.10+)
+```bash
+pip install "git+https://github.com/jovian-explorer/VEDA.git"
+veda                  # desktop window (falls back to the browser)
+veda --browser        # always use the default browser
+veda-server           # headless API + web UI, prints the URL
+python -m veda        # same as `veda`
+```
+Add `[netcdf]` (`pip install "veda[netcdf] @ git+https://github.com/jovian-explorer/VEDA.git"`) to read HDF5-backed COSMIC-2 netCDF4 files; classic netCDF3 granules work without it.
+
+### Option C: development setup
+```bash
+git clone https://github.com/jovian-explorer/VEDA.git
+cd VEDA
+python -m venv .venv
+# Windows: .venv\Scripts\activate     macOS/Linux: source .venv/bin/activate
+pip install -e ".[dev]"
+pytest
 ```
 
-### Building the Standalone Executable (.exe)
-```powershell
-.\package_exe.ps1
+## Running
+
+| Command | What it does |
+|---|---|
+| `veda` | Starts the backend on a free local port (8765 or the next free one) and opens the native window |
+| `veda --browser` | Same, but opens your default browser |
+| `veda --no-window --port 8765` | Server only; open `http://127.0.0.1:8765/` yourself |
+| `veda-server --host 0.0.0.0` | Serve on your network (the API has no authentication, so only do this on a trusted network) |
+
+The interactive REST API documentation is at `/api/docs` on the same address.
+
+**Where VEDA keeps your files** (cache, exports, settings, logs):
+
+| OS | Location |
+|---|---|
+| Windows | `%LOCALAPPDATA%\VEDA` |
+| macOS | `~/Library/Application Support/VEDA` |
+| Linux | `$XDG_DATA_HOME/VEDA` (default `~/.local/share/VEDA`) |
+
+Set `VEDA_HOME` to use a different folder.
+
+## Building the Standalone App
+
+```bash
+pip install -e ".[build]"
+python scripts/build_exe.py            # dist/VEDA.exe, dist/VEDA.app or dist/VEDA
+python scripts/build_exe.py --archive  # also zips it for distribution
 ```
+PyInstaller cannot cross-compile, so each OS builds its own binary. Pushing a `v*` tag runs `.github/workflows/release.yml`, which builds all three and attaches them to a GitHub Release.
 
-### Launching in Development Mode
-```powershell
-# Method 1: PowerShell launcher (starts app and opens browser)
-.\launch.ps1
+## Platform Notes
 
-# Method 2: Direct Python launch
-python app.py
-
-# Method 3: Server-only mode (headless)
-python app.py --no-window --port 8765
-```
-
-Navigate to: `http://127.0.0.1:8765/`
-Interactive REST API documentation: `http://127.0.0.1:8765/api/docs`
+* **Windows**: uses the Microsoft Edge WebView2 runtime (preinstalled on Windows 10/11).
+* **macOS**: uses the system WebKit, so nothing extra is needed. Unsigned builds need right-click > Open the first time.
+* **Linux**: the native window needs GTK or Qt bindings for pywebview, for example `sudo apt install python3-gi gir1.2-webkit2-4.1` or `pip install "pywebview[qt]"`. Without them VEDA opens in your browser automatically.
 
 ---
 
@@ -156,8 +197,8 @@ See **[DATA_POLICY.md](DATA_POLICY.md)** for detailed citation instructions and 
   title        = {{VEDA: Visualization, Exploration, and Data Analysis - A Multi-Mission Planetary Science Data Laboratory}},
   year         = {2026},
   publisher    = {Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO},
-  version      = {1.0.0},
-  url          = {https://jovian-explorer.github.io/},
+  version      = {2.0.0},
+  url          = {https://github.com/jovian-explorer/VEDA},
   address      = {Thiruvananthapuram, Kerala, India}
 }
 ```
@@ -168,20 +209,26 @@ See **[DATA_POLICY.md](DATA_POLICY.md)** for detailed citation instructions and 
 
 * **Software License**: VEDA is distributed under the **[MIT License](LICENSE)**. Copyright (c) 2026 Keshav Aggarwal, Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO.
 * **Third-Party Open Source**: Bundles and interfaces with open-source libraries under permissive licenses (MIT, BSD-3-Clause, Apache-2.0, PSF). Full copyright statements and license texts are provided in **[THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)**.
-* **Offline KaTeX Typography**: KaTeX 0.16.9 is bundled locally in `frontend/vendor/katex/` for self-contained, offline LaTeX mathematical equation rendering.
+* **Offline KaTeX Typography**: KaTeX 0.16.9 is bundled locally in `src/veda/frontend/vendor/katex/` for self-contained, offline LaTeX mathematical equation rendering.
 
 ---
 
-## Verification Test Suites
+## Project Layout and Tests
 
-```powershell
-python -m pytest tests/test_veda.py tests/test_wave_and_stability.py tests/test_advanced_science.py -v
+```
+src/veda/            Python package (FastAPI backend, readers, analysis, mission adapters)
+src/veda/frontend/   Web UI served by the backend (bundled offline: KaTeX, Plotly, TopoJSON)
+src/veda/sampledata/ Sample granules used by the demo workflows and the tests
+packaging/           PyInstaller spec, entry script and icon
+scripts/             build_exe.py, generate_sample_granules.py
+tests/               pytest suite
 ```
 
-Total Core Planetary Science Tests: **40 Tests Passing (100% Success Rate)**
-* `tests/test_veda.py`: 15 passed
-* `tests/test_wave_and_stability.py`: 3 passed
-* `tests/test_advanced_science.py`: 22 passed
+```bash
+pytest                          # full suite
+pytest tests/test_veda.py -v    # a single module
+```
+CI runs the suite on Windows, macOS and Linux for every push to `main`. The Windows exe launch tests in `tests/test_explorer_launch.py` run after `python scripts/build_exe.py` and skip otherwise.
 
 ---
 
