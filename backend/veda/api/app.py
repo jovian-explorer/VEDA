@@ -71,6 +71,14 @@ def create_app() -> FastAPI:
             "version": APP_VERSION,
         }
 
+    from ..core.registry import (
+        LEAD_RESEARCHER,
+        DATA_AVAILABILITY_STATEMENT,
+        list_variables,
+        list_data_portals,
+        DATA_LICENSES,
+    )
+
     @app.get("/api/meta")
     def meta() -> Dict[str, Any]:
         return {
@@ -80,6 +88,11 @@ def create_app() -> FastAPI:
                 "version": APP_VERSION,
             },
             "settings": SETTINGS.to_dict(),
+            "lead_researcher": LEAD_RESEARCHER,
+            "data_availability": DATA_AVAILABILITY_STATEMENT,
+            "variables": list_variables(),
+            "data_portals": list_data_portals(),
+            "licenses": DATA_LICENSES,
         }
 
     @app.post("/api/settings")

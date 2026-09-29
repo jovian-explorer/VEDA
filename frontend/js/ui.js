@@ -96,20 +96,177 @@ export async function withBusy(button, label, fn) {
   }
 }
 
+/**
+ * Render KaTeX math in the target element (or document.body by default).
+ * Safely handles synchronous execution and deferred asset loading.
+ */
 export function renderMath(element) {
-  if (!element || typeof window.renderMathInElement !== 'function') return;
-  try {
-    window.renderMathInElement(element, {
-      delimiters: [
-        {left: '$$', right: '$$', display: true},
-        {left: '$', right: '$', display: false},
-        {left: '\\(', right: '\\)', display: false},
-        {left: '\\[', right: '\\]', display: true}
-      ],
-      throwOnError: false
-    });
-  } catch (err) {
-    console.warn('LaTeX compilation warning:', err);
+  const target = element || document.body;
+  if (!target) return;
+  const doRender = () => {
+    if (typeof window.renderMathInElement === 'function') {
+      try {
+        window.renderMathInElement(target, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false},
+            {left: '\\[', right: '\\]', display: true},
+            {left: '\\(', right: '\\)', display: false}
+          ],
+          ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code', 'option'],
+          throwOnError: false
+        });
+      } catch (err) {
+        console.warn('LaTeX compilation warning:', err);
+      }
+    }
+  };
+  if (typeof window.renderMathInElement === 'function') {
+    doRender();
+  } else if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', doRender, { once: true });
+    window.addEventListener('load', doRender, { once: true });
+  } else {
+    setTimeout(doRender, 200);
+    setTimeout(doRender, 800);
+  }
+}
+
+/**
+ * Convert LaTeX math expressions and HTML entities to native SVG HTML/Unicode for Plotly.
+ * Enables clean subscripts, superscripts, Greek letters, and formulas on figure titles
+ * and axis labels without requiring external MathJax.
+ */
+export function cleanPlotlyMath(str) {
+  if (!str || typeof str !== 'string') return str || '';
+  let s = str;
+
+  // 1. Decode HTML entities
+  const entityMap = {
+    '&bull;': ' \u2022 ',
+    '&rarr;': ' \u2192 ',
+    '&larr;': ' \u2190 ',
+    '&harr;': ' \u2194 ',
+    '&deg;': '\u00b0',
+    '&plusmn;': '\u00b1',
+    '&times;': '\u00d7',
+    '&middot;': '\u00b7',
+    '&le;': '\u2264',
+    '&ge;': '\u2265',
+    '&ne;': '\u2260',
+    '&infin;': '\u221e',
+    '&alpha;': '\u03b1', '&beta;': '\u03b2', '&gamma;': '\u03b3',
+    '&delta;': '\u03b4', '&epsilon;': '\u03b5', '&theta;': '\u03b8',
+    '&lambda;': '\u03bb', '&mu;': '\u03bc', '&pi;': '\u03c0',
+    '&rho;': '\u03c1', '&sigma;': '\u03c3', '&tau;': '\u03c4',
+    '&phi;': '\u03c6', '&omega;': '\u03c9'
+  };
+  for (const [ent, rep] of Object.entries(entityMap)) {
+    s = s.split(ent).join(rep);
+  }
+
+  // 2. LaTeX Greek symbols
+  const greekMap = {
+    '\\alpha': '\u03b1', '\\beta': '\u03b2', '\\gamma': '\u03b3', '\\Gamma': '\u0393',
+    '\\delta': '\u03b4', '\\Delta': '\u0394', '\\epsilon': '\u03b5', '\\varepsilon': '\u03b5',
+    '\\zeta': '\u03b6', '\\eta': '\u03b7', '\\theta': '\u03b8', '\\vartheta': '\u03b8', '\\Theta': '\u0398',
+    '\\iota': '\u03b9', '\\kappa': '\u03ba', '\\lambda': '\u03bb', '\\Lambda': '\u039b',
+    '\\mu': '\u03bc', '\\nu': '\u03bd', '\\xi': '\u03be', '\\Xi': '\u039e',
+    '\\pi': '\u03c0', '\\Pi': '\u03a0', '\\varpi': '\u03d6',
+    '\\rho': '\u03c1', '\\varrho': '\u03f1', '\\sigma': '\u03c3', '\\Sigma': '\u03a3', '\\varsigma': '\u03c2',
+    '\\tau': '\u03c4', '\\upsilon': '\u03c5', '\\Upsilon': '\u03a5',
+    '\\phi': '\u03c6', '\\varphi': '\u03c6', '\\Phi': '\u03a6',
+    '\\chi': '\u03c7', '\\psi': '\u03c8', '\\Psi': '\u03a8',
+    '\\omega': '\u03c9', '\\Omega': '\u03a9'
+  };
+  for (const [tex, uni] of Object.entries(greekMap)) {
+    s = s.replace(new RegExp(tex.replace(/\\/g, '\\\\'), 'g'), uni);
+  }
+
+  // 3. LaTeX Math symbols, sizing, and delimiters
+  const symMap = {
+    '\\partial': '\u2202', '\\nabla': '\u2207', '\\pm': '\u00b1', '\\mp': '\u2213',
+    '\\times': '\u00d7', '\\cdot': '\u00b7', '\\approx': '\u2248', '\\sim': '~',
+    '\\equiv': '\u2261', '\\neq': '\u2260', '\\leq': '\u2264', '\\le': '\u2264',
+    '\\geq': '\u2265', '\\ge': '\u2265', '\\ll': '\u226a', '\\gg': '\u226b',
+    '\\int': '\u222b', '\\infty': '\u221e', '\\odot': '\u2299', '\\oplus': '\u2295',
+    '\\hbar': '\u0127', '\\circ': '\u00b0', '\\deg': '\u00b0', '\\prime': '\u2032',
+    '\\quad': '  ', '\\qquad': '    ', '\\,': ' ', '\\;': ' ', '\\:': ' ', '\\!': '',
+    '\\left': '', '\\right': ''
+  };
+  for (const [tex, uni] of Object.entries(symMap)) {
+    s = s.replace(new RegExp(tex.replace(/\\/g, '\\\\'), 'g'), uni);
+  }
+
+  // 4. Fractions & Square Roots
+  s = s.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1 / $2)');
+  s = s.replace(/\\sqrt\{([^}]+)\}/g, '\u221a($1)');
+  s = s.replace(/\\sqrt([a-zA-Z0-9])/g, '\u221a$1');
+
+  // 5. Degrees and Primes
+  s = s.replace(/\^\{\\circ\}|\^\\circ/g, '\u00b0');
+  s = s.replace(/\^\{\\prime\}|\^\\prime|\^\'/g, '\u2032');
+  s = s.replace(/\b([a-zA-Z])\'(?!\w)/g, '$1\u2032');
+
+  // 6. Explicit LaTeX text/math wrappers
+  s = s.replace(/\\(?:text|mathrm|mathbf|mathit|mathsf|operatorname)\{([^}]+)\}/g, '$1');
+
+  // 7. Explicit braced sub/super: _{...} and ^{...}
+  s = s.replace(/_\{([^}]+)\}/g, '<sub>$1</sub>');
+  s = s.replace(/\^\{([^}]+)\}/g, '<sup>$1</sup>');
+
+  // 8. Single letter / Greek symbol subscripts: c_s, E_p, N_e, \tau_B (-> \u03c4_B), P_0, T_0, g_0, R_p, C_p, H_p, z_0
+  s = s.replace(/(?<![a-zA-Z0-9_\u0370-\u03ff])([a-zA-Z\u0370-\u03ff])_([a-zA-Z0-9]{1,4})(?![a-zA-Z0-9_])/g, '$1<sub>$2</sub>');
+
+  // 9. Caret superscripts: N^2, a^2, r^2, 10^5, m^3, cm^-3, s^-2, rad^2, K^2
+  s = s.replace(/(?<![a-zA-Z0-9])([a-zA-Z0-9\u0370-\u03ff]+|\)|\])\^([0-9+-]+)\b/g, '$1<sup>$2</sup>');
+
+  // 10. Slash unit notation: e.g. /s^2 -> /s<sup>2</sup>, /m^3 -> /m<sup>3</sup>
+  s = s.replace(/\/([a-zA-Z]+)\^([0-9+-]+)\b/g, '/$1<sup>$2</sup>');
+
+  // 11. Inside math mode $...$: clean remaining sub/superscripts
+  s = s.replace(/\$([^$]+)\$/g, (_, inner) => {
+    let cleanInner = inner;
+    cleanInner = cleanInner.replace(/([a-zA-Z\u0370-\u03ff])_([0-9a-zA-Z])/g, '$1<sub>$2</sub>');
+    cleanInner = cleanInner.replace(/([a-zA-Z0-9\u0370-\u03ff])\^([0-9+-]+)/g, '$1<sup>$2</sup>');
+    return cleanInner;
+  });
+
+  // 12. Strip lingering $ delimiters and backslashes before plain words
+  s = s.replace(/\$+/g, '');
+  s = s.replace(/\\([a-zA-Z]+)/g, '$1');
+
+  // 13. Normalize whitespace
+  s = s.replace(/\s+/g, ' ').trim();
+  return s;
+}
+
+/**
+ * Dynamically relayout all active Plotly plots when universal font scale changes.
+ */
+export function updatePlotlyFonts() {
+  const root = document.documentElement;
+  const fontScale = parseFloat(getComputedStyle(root).getPropertyValue('--font-scale') || '1.0');
+  const plotIds = [
+    'explore-map', 'profile-plot', 'composite-plot', 'scatter-plot',
+    'veda-comparison-plot', 'veda-planet-map', 'veda-observation-plot',
+    'transect-plot', 'histogram-plot'
+  ];
+  for (const id of plotIds) {
+    const el = document.getElementById(id);
+    if (el && el.data && window.Plotly && typeof window.Plotly.relayout === 'function') {
+      try {
+        window.Plotly.relayout(el, {
+          'font.size': Math.round(12 * fontScale),
+          'title.font.size': Math.round(14 * fontScale),
+          'xaxis.title.font.size': Math.round(12 * fontScale),
+          'yaxis.title.font.size': Math.round(12 * fontScale),
+          'xaxis.tickfont.size': Math.round(10.5 * fontScale),
+          'yaxis.tickfont.size': Math.round(10.5 * fontScale),
+          'legend.font.size': Math.round(10.5 * fontScale),
+        });
+      } catch (_) {}
+    }
   }
 }
 
@@ -157,8 +314,16 @@ export function fillSelect(select, options, value) {
 
 // ---------------------------------------------------------------- plotly
 
-export const PALETTE = ['#1f4e79', '#c1440e', '#2b7a4b', '#7b5aa6',
-                        '#b08900', '#0f7d8c', '#8c4a6b', '#4a6b8c'];
+export const PALETTE = [
+  '#0284c7', // Luminous Celestial Blue
+  '#f97316', // Vibrant Solar Amber
+  '#10b981', // Neon Emerald
+  '#8b5cf6', // Electric Violet
+  '#f43f5e', // Radiant Rose
+  '#06b6d4', // Bright Cyan
+  '#eab308', // Sun Gold
+  '#ec4899', // Nebula Pink
+];
 
 export const PLOT_CONFIG = {
   displaylogo: false,
@@ -170,18 +335,58 @@ export const PLOT_CONFIG = {
 };
 
 export function layoutBase(extra = {}) {
+  const isDark = document.documentElement.dataset.theme !== 'light';
+  const fontScale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--font-scale') || '1.0');
+
   return Object.assign({
-    font: {family: '"Segoe UI", system-ui, sans-serif', size: 12, color: '#16191d'},
-    paper_bgcolor: '#ffffff',
-    plot_bgcolor: '#ffffff',
-    margin: {l: 64, r: 18, t: 34, b: 52},
+    font: {
+      family: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      size: Math.round(12 * fontScale),
+      color: isDark ? '#e2e8f0' : '#1e293b'
+    },
+    paper_bgcolor: isDark ? '#0f172a' : '#ffffff',
+    plot_bgcolor: isDark ? 'rgba(15, 23, 42, 0.75)' : 'rgba(248, 250, 252, 0.75)',
+    margin: {l: 64, r: 24, t: 40, b: 54},
     hovermode: 'closest',
-    xaxis: {gridcolor: '#eceff2', zeroline: false, ticks: 'outside',
-            ticklen: 4, tickcolor: '#c9d0d8', automargin: true},
-    yaxis: {gridcolor: '#eceff2', zeroline: false, ticks: 'outside',
-            ticklen: 4, tickcolor: '#c9d0d8', automargin: true},
-    legend: {bgcolor: 'rgba(255,255,255,.75)', bordercolor: '#d9dee4',
-             borderwidth: 0, font: {size: 11}},
+    hoverlabel: {
+      bgcolor: isDark ? '#1e293b' : '#ffffff',
+      bordercolor: isDark ? '#475569' : '#cbd5e1',
+      font: {
+        family: 'system-ui, -apple-system, sans-serif',
+        size: Math.round(11.5 * fontScale),
+        color: isDark ? '#f8fafc' : '#0f172a'
+      }
+    },
+    xaxis: {
+      gridcolor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0',
+      zerolinecolor: isDark ? 'rgba(255, 255, 255, 0.2)' : '#94a3b8',
+      zeroline: true,
+      zerolinewidth: 1.2,
+      ticks: 'outside',
+      ticklen: 4,
+      tickcolor: isDark ? '#475569' : '#94a3b8',
+      automargin: true,
+      linecolor: isDark ? '#334155' : '#cbd5e1',
+      linewidth: 1
+    },
+    yaxis: {
+      gridcolor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0',
+      zerolinecolor: isDark ? 'rgba(255, 255, 255, 0.2)' : '#94a3b8',
+      zeroline: true,
+      zerolinewidth: 1.2,
+      ticks: 'outside',
+      ticklen: 4,
+      tickcolor: isDark ? '#475569' : '#94a3b8',
+      automargin: true,
+      linecolor: isDark ? '#334155' : '#cbd5e1',
+      linewidth: 1
+    },
+    legend: {
+      bgcolor: isDark ? 'rgba(15, 23, 42, 0.85)' : 'rgba(255, 255, 255, 0.85)',
+      bordercolor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
+      borderwidth: 1,
+      font: {size: Math.round(11 * fontScale), color: isDark ? '#e2e8f0' : '#334155'}
+    },
   }, extra);
 }
 

@@ -84,15 +84,18 @@ def compute_atmospheric_diagnostics(
 
     # 3. Scale Height H = R_spec * T / g(z) in km
     r_spec = body.gas_constant_r
+    cp = body.isobaric_heat_capacity_cp
     with np.errstate(invalid="ignore", divide="ignore"):
         h_scale = (r_spec * t_k) / (gz * 1000.0)
+        gamma = cp / max(cp - r_spec, 1.0) if cp > r_spec else 1.4
+        cs = np.sqrt(gamma * r_spec * t_k)
     derived["scale_height"] = h_scale
+    derived["speed_of_sound"] = cs
 
     # 4. Pressure and Potential Temperature
     p_hpa = profile.pressure_hpa
     if p_hpa is not None and p_hpa.size == z.size:
         # Poisson constant kappa = R / Cp
-        cp = body.isobaric_heat_capacity_cp
         kappa = r_spec / cp
         p_ref = body.reference_pressure_hpa
 
@@ -102,6 +105,7 @@ def compute_atmospheric_diagnostics(
             rho = (p_hpa * 100.0) / (r_spec * t_k)
 
         derived["potential_temperature"] = theta
+        derived["dtheta_dz"] = _gradient_nan_safe(z, theta)
         derived["density"] = rho
 
         # Brunt-Vaisala frequency squared N^2 = (g / theta) * (d_theta / dz)
@@ -110,7 +114,9 @@ def compute_atmospheric_diagnostics(
         dtdz_m = dtdz / 1000.0
         with np.errstate(invalid="ignore", divide="ignore"):
             n2 = (gz / t_k) * (dtdz_m + gz / cp)
+            tau_b = np.where(n2 > 0, (2.0 * np.pi / np.sqrt(n2)) / 60.0, np.nan)
         derived["buoyancy_freq_sq"] = n2
+        derived["buoyancy_period"] = tau_b
 
     # 5. Ionospheric VTEC & F2 peak diagnostics if electron density is present
     if profile.electron_density_cm3 is not None and profile.electron_density_cm3.size >= 2:
@@ -262,6 +268,8 @@ def export_profile_to_csv(profile: ObservationProfile) -> str:
     if profile.provenance:
         lines.append(f"# Archive: {profile.provenance.archive_source} ({profile.provenance.archive_url})")
         lines.append(f"# Citation: {profile.provenance.doi_or_citation}")
+    lines.append("# Data Availability: NASA PDS Atmospheres, ESA PSA, JAXA DARTS, and ISRO ISSDC PRADAN planetary science archives.")
+    lines.append("# Software License: MIT License (Keshav Aggarwal, SPL, VSSC, ISRO)")
 
     cols = ["altitude_km"]
     data_arrays = [profile.altitude_km]
@@ -314,6 +322,8 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
     lines = [
         f"# VEDA Cross-Mission Comparative Analysis - Body: {body_name}, Variable: {var_name}",
         f"# Total Profiles: {len(profiles)}",
+        "# Data Availability: NASA PDS Atmospheres, ESA PSA, JAXA DARTS, and ISRO ISSDC PRADAN planetary science archives.",
+        "# Software License: MIT License (Keshav Aggarwal, SPL, VSSC, ISRO)",
     ]
     for p in profiles:
         lines.append(f"# Mission: {p.get('mission_id')}, Obs: {p.get('observation_id')}, Lat: {p.get('latitude')}, Lon: {p.get('longitude')}")

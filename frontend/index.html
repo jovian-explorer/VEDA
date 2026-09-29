@@ -36,8 +36,15 @@
   </div>
 
   <div class="topright">
+    <div class="font-zoom-ctrl" title="Universal UI text scaling">
+      <button type="button" class="zoom-btn" id="btn-font-dec" title="Decrease UI font size (A-)">A-</button>
+      <span class="zoom-label" id="font-scale-display" title="Click to reset font scale to 100%">100%</span>
+      <button type="button" class="zoom-btn" id="btn-font-inc" title="Increase UI font size (A+)">A+</button>
+    </div>
     <button class="ghost" id="btn-load-file" title="Load any local PDS3 (.lbl/.tab), CSV, or FITS (.fit/.fits) file">📁 Load File</button>
     <input type="file" id="veda-file-input" style="display: none;" accept=".tab,.lbl,.csv,.txt,.fit,.fits,.png,.jpg,.jpeg" />
+    <button class="ghost" id="btn-veda-vars" title="Explore registered planetary analysis variables, KaTeX formulas, and DOIs">Variables</button>
+    <button class="ghost" id="btn-veda-data-policy" title="Authoritative planetary data archives, availability statement, and open-source licenses">Data & Licenses</button>
     <button class="ghost" id="btn-settings">Settings</button>
     <button class="ghost" id="btn-about">About VEDA</button>
     <button class="ghost" id="btn-help">Science Docs</button>
@@ -63,6 +70,11 @@
     </div>
   </div>
 
+  <!-- Planetary Body Physical Constants Quick-Card -->
+  <div id="veda-body-quick-card" class="card planetary-quick-card" style="margin-bottom: 14px;">
+    <!-- Populated dynamically with physical constants quick-card -->
+  </div>
+
   <!-- Planetary Thermodynamic Constants Banner -->
   <div id="veda-body-banner" class="veda-body-banner">
     <!-- Populated dynamically with body physical constants -->
@@ -79,11 +91,29 @@
       </div>
 
       <hr>
-      <h2>3. Analysis Variable</h2>
+      <h2>3. Analysis Variable & Units</h2>
       <div class="row" style="margin-bottom: 10px;">
         <label style="width: 100%;">Thermodynamic Variable:
           <select id="veda-compare-variable-select" style="width: 100%; margin-top: 4px;"></select>
         </label>
+      </div>
+
+      <!-- Quick Unit Switcher in Body Comparative View -->
+      <div class="quick-unit-switcher-row" style="margin-bottom: 12px;">
+        <span class="unit-switcher-subtitle">Quick Unit Switcher:</span>
+        <div class="unit-btn-cluster">
+          <div class="unit-subgroup">
+            <span class="unit-lbl">T:</span>
+            <button type="button" class="unit-pill active" id="btn-comp-unit-k" title="Switch temperature to Kelvin (K)">K</button>
+            <button type="button" class="unit-pill" id="btn-comp-unit-c" title="Switch temperature to Celsius (°C)">°C</button>
+          </div>
+          <div class="unit-subgroup">
+            <span class="unit-lbl">P:</span>
+            <button type="button" class="unit-pill" id="btn-comp-unit-bar" title="Switch pressure to bar">bar</button>
+            <button type="button" class="unit-pill active" id="btn-comp-unit-hpa" title="Switch pressure to hPa">hPa</button>
+            <button type="button" class="unit-pill" id="btn-comp-unit-pa" title="Switch pressure to Pa">Pa</button>
+          </div>
+        </div>
       </div>
 
       <div class="stack" style="gap: 8px; margin-top: 14px;">
@@ -126,7 +156,7 @@
       <h2>Cross-Mission Soundings Summary</h2>
       <span class="hint">Individual observations contributing to the composite mean and ±1σ dispersion</span>
     </div>
-    <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 12.5px;">
+    <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: calc(12.5px * var(--font-scale, 1.0));">
       <thead>
         <tr style="border-bottom: 1px solid var(--line); text-align: left;">
           <th style="padding: 6px 8px;">Mission</th>
@@ -211,7 +241,7 @@
       </div>
 
       <div style="max-height: 440px; overflow-y: auto; margin-top: 10px;">
-        <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
+        <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: calc(12px * var(--font-scale, 1.0));">
           <thead>
             <tr style="border-bottom: 1px solid var(--line); text-align: left;">
               <th style="padding: 4px 6px;">Observation</th>
@@ -256,6 +286,46 @@
       <a class="guide-pill" href="#guide-stage-4">4. Multi-Mission Comparison</a>
       <a class="guide-pill" href="#guide-stage-5">5. Astronomical Imaging</a>
       <a class="guide-pill" href="#guide-stage-6">6. Exports and Publication</a>
+    </div>
+  </div>
+
+  <!-- Interactive Demonstration Profiles -->
+  <div class="card demo-profiles-card" style="margin-bottom: 20px;">
+    <div class="card-head">
+      <div>
+        <h2 style="font-size: calc(15px * var(--font-scale, 1.0)); margin: 0 0 4px 0;">⚡ Interactive Demonstration Profiles</h2>
+        <p class="hint" style="margin: 0;">One-click profiles loading real planetary soundings from sample data:</p>
+      </div>
+    </div>
+    <div class="demo-profiles-btn-grid">
+      <button class="demo-profile-btn" data-guide-action="demo-akatsuki">
+        <span class="demo-btn-icon">🟡</span>
+        <div class="demo-btn-info">
+          <strong>Load Akatsuki Venus Radio Occultation Sounding (VCO)</strong>
+          <span class="demo-btn-sub">Venus (0 to 100 km) : JAXA DARTS RS Inversion</span>
+        </div>
+      </button>
+      <button class="demo-profile-btn" data-guide-action="demo-cassini">
+        <span class="demo-btn-icon">🟠</span>
+        <div class="demo-btn-info">
+          <strong>Load Cassini Titan Neutral Ionosphere Profile</strong>
+          <span class="demo-btn-sub">Titan (0 to 300 km) : NASA PDS RSS Occultation</span>
+        </div>
+      </button>
+      <button class="demo-profile-btn" data-guide-action="demo-new-horizons">
+        <span class="demo-btn-icon">❄️</span>
+        <div class="demo-btn-info">
+          <strong>Load New Horizons Pluto Atmospheric Profile</strong>
+          <span class="demo-btn-sub">Pluto (0 to 100 km) : NASA PDS REX Ingress</span>
+        </div>
+      </button>
+      <button class="demo-profile-btn" data-guide-action="demo-bepicolombo">
+        <span class="demo-btn-icon">🛰️</span>
+        <div class="demo-btn-info">
+          <strong>Load BepiColombo Venus Flyby Science Data</strong>
+          <span class="demo-btn-sub">Venus (50 to 95 km) : ESA PSA MORE Radio Science</span>
+        </div>
+      </button>
     </div>
   </div>
 
@@ -354,30 +424,30 @@
 
         <div class="guide-formula-box">
           <strong>1. Altitude-Dependent Planetary Gravity:</strong>
-          <p>$$g(z) = g_0 \\left(\\frac{R_p}{R_p + z}\\right)^2$$</p>
+          <p>$$g(z) = g_0 \left(\frac{R_p}{R_p + z}\right)^2$$</p>
         </div>
 
         <div class="guide-formula-box">
           <strong>2. Environmental Lapse Rate:</strong>
-          <p>$$\\Gamma(z) = -\\frac{\\partial T}{\\partial z}$$</p>
+          <p>$$\Gamma(z) = -\frac{\partial T}{\partial z}$$</p>
           computed using central difference gradients on finite valid data points.
         </div>
 
         <div class="guide-formula-box">
           <strong>3. Poisson Potential Temperature ($\theta$):</strong>
-          <p>$$\\theta(z) = T(z) \\left(\\frac{P_0}{P(z)}\\right)^{\\frac{R_{spec}}{C_p}}$$</p>
+          <p>$$\theta(z) = T(z) \left(\frac{P_0}{P(z)}\right)^{\frac{R_{spec}}{C_p}}$$</p>
           where $P_0$ is the reference pressure level of the planetary body (e.g. 92,000 hPa for Venus, 6.1 hPa for Mars).
         </div>
 
         <div class="guide-formula-box">
           <strong>4. Brunt-Vaisala Static Stability Frequency ($N^2$):</strong>
-          <p>$$N^2(z) = \\frac{g(z)}{T(z)} \\left(\\frac{dT}{dz} + \\Gamma_d\\right) = \\frac{g(z)}{\\theta(z)} \\frac{d\\theta}{dz}$$</p>
-          where dry adiabatic lapse rate $\\Gamma_d = g(z) / C_p$. Regions with $N^2 > 0$ are stably stratified against buoyancy oscillations; regions with $N^2 < 0$ are dynamically unstable to convection.
+          <p>$$N^2(z) = \frac{g(z)}{T(z)} \left(\frac{dT}{dz} + \Gamma_d\right) = \frac{g(z)}{\theta(z)} \frac{d\theta}{dz}$$</p>
+          where dry adiabatic lapse rate $\Gamma_d = g(z) / C_p$. Regions with $N^2 > 0$ are stably stratified against buoyancy oscillations; regions with $N^2 < 0$ are dynamically unstable to convection.
         </div>
 
         <div class="guide-formula-box">
           <strong>5. Ionospheric Total Electron Content (VTEC):</strong>
-          <p>$$\\text{VTEC} = 10^{-7} \\int_{z_{base}}^{z_{top}} N_e(z)\\,dz \\quad [\\text{TECU}]$$</p>
+          <p>$$\text{VTEC} = 10^{-7} \int_{z_{base}}^{z_{top}} N_e(z)\,dz \quad [\text{TECU}]$$</p>
           integrating vertical electron density profiles from radio occultation sounders (e.g. Chandrayaan-2 DFRS, Akatsuki RS, Cassini RSS).
         </div>
       </div>
@@ -469,10 +539,232 @@
       </div>
     </div>
 
+    <!-- Mathematical Formulations of Planetary Atmospheric Profiling -->
+    <div class="card" style="margin-top: 24px; padding: 18px; border: 1px solid var(--border-color); border-radius: 8px;">
+      <div class="card-head" style="margin-bottom: 12px;">
+        <h2 style="margin: 0; font-size: calc(18px * var(--font-scale, 1.0)); color: var(--text-primary);">Mathematical Formulations of Planetary Atmospheric Profiling</h2>
+        <span class="badge" style="background: rgba(0, 229, 255, 0.15); color: #00e5ff;">Planetary Physics &amp; Inversion</span>
+      </div>
+      <p class="hint" style="margin-bottom: 16px;">
+        Rigorous mathematical expressions implemented in VEDA for cross-mission planetary radio occultation sounding, thermodynamic scaling, and wave analysis:
+      </p>
+
+      <div class="grid-2" style="gap: 14px;">
+        <!-- Formula 1: Abel Inversion for Oblate Planetary Bodies -->
+        <div class="guide-formula-box" style="padding: 12px; background: rgba(0,0,0,0.18); border: 1px solid var(--border-color); border-radius: 6px;">
+          <h4 style="margin: 0 0 6px 0; color: #00e5ff; font-size: calc(14px * var(--font-scale, 1.0));">1. Radio Occultation Abel Inversion for Oblate Bodies</h4>
+          <p style="font-size: calc(12px * var(--font-scale, 1.0)); margin-bottom: 6px; color: var(--text-secondary);">
+            The Doppler frequency shift provides the ray bending angle \( \alpha(a) \). For oblate planets (Jupiter, Saturn), the standard spherical Abel transform is generalized using the local radius of curvature \( R_c(\phi, \theta) \):
+          </p>
+          <p style="text-align: center; margin: 8px 0;">$$n(r) = \exp\left[ \frac{1}{\pi} \int_a^\infty \frac{\alpha(x)}{\sqrt{x^2 - a^2}} \, dx \right], \quad N(r) = (n(r) - 1) \times 10^6$$</p>
+          <p style="font-size: calc(11px * var(--font-scale, 1.0)); color: var(--text-muted); margin: 0;">
+            Reference: Fjeldbo, Kliore &amp; Eshleman (1971), Astron. J., 76, 123-140. DOI: <a href="https://doi.org/10.1086/111096" target="_blank" rel="noopener" class="link">10.1086/111096</a>
+          </p>
+        </div>
+
+        <!-- Formula 2: Altitude-Dependent Planetary Gravity and Scale Height -->
+        <div class="guide-formula-box" style="padding: 12px; background: rgba(0,0,0,0.18); border: 1px solid var(--border-color); border-radius: 6px;">
+          <h4 style="margin: 0 0 6px 0; color: #00e5ff; font-size: calc(14px * var(--font-scale, 1.0));">2. Variable Planetary Gravity &amp; Scale Height</h4>
+          <p style="font-size: calc(12px * var(--font-scale, 1.0)); margin-bottom: 6px; color: var(--text-secondary);">
+            Planetary gravity decreases with height above the reference body radius \( R_{body} \). The local pressure scale height \( H(z) \) depends on specific gas constant \( R_{spec} = R_{univ}/\mu \):
+          </p>
+          <p style="text-align: center; margin: 8px 0;">$$g(z) = g_0 \left(\frac{R_{body}}{R_{body} + z}\right)^2, \quad H(z) = \frac{R_{spec} T(z)}{g(z)}$$</p>
+          <p style="font-size: calc(11px * var(--font-scale, 1.0)); color: var(--text-muted); margin: 0;">
+            Reference: Chamberlain &amp; Hunten (1987), Theory of Planetary Atmospheres, Academic Press.
+          </p>
+        </div>
+
+        <!-- Formula 3: Hydrostatic Planetary Pressure and Mass Density -->
+        <div class="guide-formula-box" style="padding: 12px; background: rgba(0,0,0,0.18); border: 1px solid var(--border-color); border-radius: 6px;">
+          <h4 style="margin: 0 0 6px 0; color: #00e5ff; font-size: calc(14px * var(--font-scale, 1.0));">3. Hydrostatic Integration &amp; Mass Density</h4>
+          <p style="font-size: calc(12px * var(--font-scale, 1.0)); margin-bottom: 6px; color: var(--text-secondary);">
+            Integrating refractivity downward under hydrostatic equilibrium yields pressure \( P(z) \) and atmospheric mass density \( \rho(z) \):
+          </p>
+          <p style="text-align: center; margin: 8px 0;">$$P(z) = \int_z^\infty \rho(z') g(z') \, dz', \quad \rho(z) = \frac{P(z)}{R_{spec} T(z)}$$</p>
+          <p style="font-size: calc(11px * var(--font-scale, 1.0)); color: var(--text-muted); margin: 0;">
+            Reference: Tellmann et al. (2012), Icarus, 221(2), 471-480. DOI: <a href="https://doi.org/10.1016/j.icarus.2012.08.023" target="_blank" rel="noopener" class="link">10.1016/j.icarus.2012.08.023</a>
+          </p>
+        </div>
+
+        <!-- Formula 4: Planetary Poisson Potential Temperature -->
+        <div class="guide-formula-box" style="padding: 12px; background: rgba(0,0,0,0.18); border: 1px solid var(--border-color); border-radius: 6px;">
+          <h4 style="margin: 0 0 6px 0; color: #00e5ff; font-size: calc(14px * var(--font-scale, 1.0));">4. Poisson Potential Temperature on Other Worlds</h4>
+          <p style="font-size: calc(12px * var(--font-scale, 1.0)); margin-bottom: 6px; color: var(--text-secondary);">
+            Potential temperature \( \theta \) scales temperature to reference pressure \( P_{ref} \) using the body-specific Poisson exponent \( \kappa = R_{spec}/c_p \):
+          </p>
+          <p style="text-align: center; margin: 8px 0;">$$\theta(z) = T(z) \left(\frac{P_{ref}}{P(z)}\right)^\kappa, \quad \kappa = \frac{R_{spec}}{c_p}$$</p>
+          <p style="font-size: calc(11px * var(--font-scale, 1.0)); color: var(--text-muted); margin: 0;">
+            Reference: Holton &amp; Hakim (2012), An Introduction to Dynamic Meteorology.
+          </p>
+        </div>
+
+        <!-- Formula 5: Brunt-Vaisala Static Stability on Planetary Bodies -->
+        <div class="guide-formula-box" style="padding: 12px; background: rgba(0,0,0,0.18); border: 1px solid var(--border-color); border-radius: 6px;">
+          <h4 style="margin: 0 0 6px 0; color: #00e5ff; font-size: calc(14px * var(--font-scale, 1.0));">5. Brunt-Vaisala Static Stability &amp; Buoyancy Period</h4>
+          <p style="font-size: calc(12px * var(--font-scale, 1.0)); margin-bottom: 6px; color: var(--text-secondary);">
+            Vertical static stability is measured by \( N^2 \). When \( N^2 > 0 \), fluid parcels oscillate with period \( \tau_B \):
+          </p>
+          <p style="text-align: center; margin: 8px 0;">$$N^2(z) = \frac{g(z)}{T(z)} \left(\frac{dT}{dz} + \frac{g(z)}{c_p}\right) = \frac{g(z)}{\theta(z)} \frac{d\theta}{dz}, \quad \tau_B = \frac{2\pi}{N}$$</p>
+          <p style="font-size: calc(11px * var(--font-scale, 1.0)); color: var(--text-muted); margin: 0;">
+            Reference: Tellmann et al. (2012), Icarus, 221, 471-480.
+          </p>
+        </div>
+
+        <!-- Formula 6: Chapman Planetary Ionosphere Layer -->
+        <div class="guide-formula-box" style="padding: 12px; background: rgba(0,0,0,0.18); border: 1px solid var(--border-color); border-radius: 6px;">
+          <h4 style="margin: 0 0 6px 0; color: #00e5ff; font-size: calc(14px * var(--font-scale, 1.0));">6. Planetary Chapman Ionospheric Electron Density</h4>
+          <p style="font-size: calc(12px * var(--font-scale, 1.0)); margin-bottom: 6px; color: var(--text-secondary);">
+            Photo-ionization in planetary upper atmospheres is parameterized by the Chapman production function with normalized height \( z_r = (z - h_m)/H_p \):
+          </p>
+          <p style="text-align: center; margin: 8px 0;">$$N_e(z) = N_{max} \cdot \exp\left[ \frac{1}{2} \left( 1 - \frac{z - h_m}{H_p} - \exp\left(-\frac{z - h_m}{H_p}\right) \right) \right]$$</p>
+          <p style="font-size: calc(11px * var(--font-scale, 1.0)); color: var(--text-muted); margin: 0;">
+            Reference: Withers et al. (2014), J. Geophys. Res. Space Physics, 119(9), 7720-7732. DOI: <a href="https://doi.org/10.1002/2014JA020182" target="_blank" rel="noopener" class="link">10.1002/2014JA020182</a>
+          </p>
+        </div>
+      </div>
+      <div class="guide-actions-bar" style="margin-top: 16px;">
+        <button class="guide-action-btn" data-guide-action="vars-drawer">📐 Open Variables &amp; Algorithm Catalog</button>
+      </div>
+    </div>
+
+    <!-- Authoritative Planetary Science Data Portals -->
+    <div class="card" style="margin-top: 24px; padding: 18px; border: 1px solid var(--border-color); border-radius: 8px;">
+      <div class="card-head" style="margin-bottom: 12px;">
+        <h2 style="margin: 0; font-size: calc(18px * var(--font-scale, 1.0)); color: var(--text-primary);">Authoritative Planetary Science Data Sites and International Archives</h2>
+        <span class="badge" style="background: rgba(0, 229, 255, 0.15); color: #00e5ff;">Public Space Archives</span>
+      </div>
+      <p class="hint" style="margin-bottom: 16px;">
+        Primary repositories hosting the raw and calibrated planetary mission telemetry datasets analyzed in VEDA:
+      </p>
+
+      <div class="grid-2" style="gap: 14px;">
+        <!-- Portal 1: NASA PDS Atmospheres -->
+        <div class="card" style="margin: 0; padding: 12px; background: rgba(0,0,0,0.18); border: 1px solid var(--border-color);">
+          <h4 style="margin: 0 0 6px 0; color: #00e5ff;">1. NASA Planetary Data System (PDS) Atmospheres Node</h4>
+          <p style="font-size: calc(12px * var(--font-scale, 1.0)); color: var(--text-secondary); margin-bottom: 8px;">
+            <strong>Host:</strong> New Mexico State University, Las Cruces, NM, USA.
+          </p>
+          <p style="font-size: calc(12px * var(--font-scale, 1.0)); margin-bottom: 8px;">
+            Archiving atmospheric radio science, thermal profiles, and entry probe telemetry for New Horizons (Pluto/Jupiter), Galileo (Jupiter), Cassini (Saturn/Titan), and MAVEN/MRO (Mars).
+          </p>
+          <a href="https://pds-atmospheres.nmsu.edu/" target="_blank" rel="noopener" class="button ghost" style="padding: 4px 10px; font-size: calc(11px * var(--font-scale, 1.0));">🌐 PDS Atmospheres Portal ↗</a>
+        </div>
+
+        <!-- Portal 2: ESA Planetary Science Archive -->
+        <div class="card" style="margin: 0; padding: 12px; background: rgba(0,0,0,0.18); border: 1px solid var(--border-color);">
+          <h4 style="margin: 0 0 6px 0; color: #00e5ff;">2. ESA Planetary Science Archive (PSA)</h4>
+          <p style="font-size: calc(12px * var(--font-scale, 1.0)); color: var(--text-secondary); margin-bottom: 8px;">
+            <strong>Host:</strong> European Space Astronomy Centre (ESAC), Madrid, Spain.
+          </p>
+          <p style="font-size: calc(12px * var(--font-scale, 1.0)); margin-bottom: 8px;">
+            Central repository for European planetary exploration missions: Venus Express (VeRa radio science), BepiColombo (MORE / Mio), Rosetta (RSI / OSIRIS), and Mars Express (MaRS).
+          </p>
+          <a href="https://archives.esac.esa.int/psa/" target="_blank" rel="noopener" class="button ghost" style="padding: 4px 10px; font-size: calc(11px * var(--font-scale, 1.0));">🌐 ESA PSA Portal ↗</a>
+        </div>
+
+        <!-- Portal 3: JAXA DARTS -->
+        <div class="card" style="margin: 0; padding: 12px; background: rgba(0,0,0,0.18); border: 1px solid var(--border-color);">
+          <h4 style="margin: 0 0 6px 0; color: #00e5ff;">3. JAXA Data Archives and Transmission System (DARTS)</h4>
+          <p style="font-size: calc(12px * var(--font-scale, 1.0)); color: var(--text-secondary); margin-bottom: 8px;">
+            <strong>Host:</strong> ISAS / JAXA, Sagamihara, Japan.
+          </p>
+          <p style="font-size: calc(12px * var(--font-scale, 1.0)); margin-bottom: 8px;">
+            Primary repository for Akatsuki (Planet-C / VCO) Venus Climate Orbiter Level 4 radio science vertical soundings and multi-spectral visible/infrared/ultraviolet imagery.
+          </p>
+          <a href="https://data.darts.isas.jaxa.jp/pub/pds3/" target="_blank" rel="noopener" class="button ghost" style="padding: 4px 10px; font-size: calc(11px * var(--font-scale, 1.0));">🌐 JAXA DARTS Archive ↗</a>
+        </div>
+
+        <!-- Portal 4: ISRO ISSDC PRADAN -->
+        <div class="card" style="margin: 0; padding: 12px; background: rgba(0,0,0,0.18); border: 1px solid var(--border-color);">
+          <h4 style="margin: 0 0 6px 0; color: #00e5ff;">4. ISRO ISSDC / PRADAN (Planetary Data Archive)</h4>
+          <p style="font-size: calc(12px * var(--font-scale, 1.0)); color: var(--text-secondary); margin-bottom: 8px;">
+            <strong>Host:</strong> Indian Space Science Data Centre (ISSDC), Byalalu, Bengaluru, India.
+          </p>
+          <p style="font-size: calc(12px * var(--font-scale, 1.0)); margin-bottom: 8px;">
+            Archiving Indian planetary exploration science: Chandrayaan-2 Dual Frequency Radio Science (DFRS) and CHACE-2 mass spectrometry; Mars Orbiter Mission (MOM) MENCA and MCC.
+          </p>
+          <a href="https://pradan.issdc.gov.in/ch2/" target="_blank" rel="noopener" class="button ghost" style="padding: 4px 10px; font-size: calc(11px * var(--font-scale, 1.0));">🌐 ISRO ISSDC PRADAN ↗</a>
+        </div>
+      </div>
+      <div class="guide-actions-bar" style="margin-top: 16px;">
+        <button class="guide-action-btn" data-guide-action="data-policy-drawer">🌐 Explore All Planetary Data Portals</button>
+      </div>
+    </div>
+
+    <!-- Data Availability, Attribution & Software Licensing -->
+    <div class="card" style="margin-top: 24px; padding: 18px; border: 1px solid var(--border-color); border-radius: 8px;">
+      <div class="card-head" style="margin-bottom: 12px;">
+        <h2 style="margin: 0; font-size: calc(18px * var(--font-scale, 1.0)); color: var(--text-primary);">Planetary Data Availability Statements, Dual Attribution, and Licensing</h2>
+        <span class="badge" style="background: rgba(0, 229, 255, 0.15); color: #00e5ff;">Open Science Policy</span>
+      </div>
+
+      <h3 style="font-size: calc(14px * var(--font-scale, 1.0)); margin-bottom: 6px;">1. Standard Data Availability Statement for Publications</h3>
+      <p style="font-size: calc(12px * var(--font-scale, 1.0)); margin-bottom: 8px;">Researchers publishing scientific analyses using VEDA are encouraged to include this statement:</p>
+      <blockquote style="background: rgba(0,0,0,0.2); border-left: 4px solid #00e5ff; margin: 8px 0; padding: 10px 14px; font-size: calc(12px * var(--font-scale, 1.0)); color: var(--text-secondary);">
+        "The planetary spacecraft observations and radio occultation profiles analyzed in this study were retrieved from international planetary data archives: NASA Planetary Data System (PDS) Atmospheres Node (https://pds-atmospheres.nmsu.edu/), European Space Agency (ESA) Planetary Science Archive (PSA) (https://archives.esac.esa.int/psa/), JAXA Data Archives and Transmission System (DARTS) (https://data.darts.isas.jaxa.jp/), and ISRO Indian Space Science Data Centre (ISSDC / PRADAN) (https://pradan.issdc.gov.in/). Cross-mission calibration, thermodynamic profiling, and comparative analysis were conducted using VEDA (Version 2.0.0), available open-source at https://github.com/keshav-aggarwal/VEDA."
+      </blockquote>
+
+      <h3 style="font-size: calc(14px * var(--font-scale, 1.0)); margin-top: 16px; margin-bottom: 6px;">2. Mandatory Dual-Attribution Citations</h3>
+      <p style="font-size: calc(12px * var(--font-scale, 1.0)); margin-bottom: 8px;">Please provide dual attribution for both the primary space agency mission dataset and the VEDA platform:</p>
+      <div class="grid-2" style="gap: 12px;">
+        <div>
+          <strong style="font-size: calc(12px * var(--font-scale, 1.0));">VEDA Software Platform:</strong>
+          <pre style="background: rgba(0,0,0,0.25); padding: 8px; border-radius: 4px; font-size: calc(10px * var(--font-scale, 1.0)); overflow-x: auto; border: 1px solid var(--border-color);">
+@software{Aggarwal_VEDA_2026,
+  author       = {Keshav Aggarwal},
+  title        = {{VEDA: Visualization, Exploration, and Data Analysis - A Multi-Mission Planetary Science Data Laboratory}},
+  year         = {2026},
+  publisher    = {Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO},
+  version      = {2.0.0},
+  url          = {https://jovian-explorer.github.io/},
+  address      = {Thiruvananthapuram, Kerala, India}
+}</pre>
+        </div>
+        <div>
+          <strong style="font-size: calc(12px * var(--font-scale, 1.0));">Akatsuki Radio Science (JAXA DARTS):</strong>
+          <pre style="background: rgba(0,0,0,0.25); padding: 8px; border-radius: 4px; font-size: calc(10px * var(--font-scale, 1.0)); overflow-x: auto; border: 1px solid var(--border-color);">
+@article{Imamura_Akatsuki_2017,
+  author    = {Takeshi Imamura and Hiroki Ando and Silvia Tellmann and Martin P{\"a}tzold and Bernd H{\"a}usler},
+  title     = {{Initial performance of the radio occultation experiment aboard Akatsuki}},
+  journal   = {Earth, Planets and Space},
+  volume    = {69},
+  number    = {1},
+  pages     = {137},
+  year      = {2017},
+  doi       = {10.1186/s40623-017-0722-3}
+}</pre>
+        </div>
+      </div>
+
+      <h3 style="font-size: calc(14px * var(--font-scale, 1.0)); margin-top: 16px; margin-bottom: 6px;">3. Open-Source Software Licensing (MIT)</h3>
+      <p style="font-size: calc(12px * var(--font-scale, 1.0)); color: var(--text-secondary);">
+        VEDA is open-source scientific software distributed under the <strong>MIT License</strong>. Copyright &copy; 2026 <strong>Keshav Aggarwal</strong>, Research Associate at Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), Indian Space Research Organisation (ISRO), Thiruvananthapuram, Kerala, India (Former PMRF Scholar at DAASE, IIT Indore).
+      </p>
+      <div class="guide-actions-bar" style="margin-top: 16px;">
+        <button class="guide-action-btn" data-guide-action="data-policy-drawer">📜 View Full Licensing &amp; Policy Drawer</button>
+      </div>
+    </div>
+
   </div>
 </section>
 
 </main>
+
+<!-- Drag and Drop Fullscreen Overlay Indicator -->
+<div id="veda-drag-drop-overlay" class="drag-drop-overlay hidden" aria-hidden="true">
+  <div class="drag-drop-modal">
+    <div class="drag-icon">📥</div>
+    <h3>Drop Planetary Science File to Ingest</h3>
+    <p>Release to parse and visualize vertical sounding profiles or FITS images</p>
+    <div class="drag-supported-badges">
+      <span class="file-ext-badge">.TAB</span>
+      <span class="file-ext-badge">.LBL</span>
+      <span class="file-ext-badge">.CSV</span>
+      <span class="file-ext-badge">.FIT</span>
+      <span class="file-ext-badge">.FITS</span>
+    </div>
+  </div>
+</div>
 
 <!-- Drawer for Settings / About / Help -->
 <div id="drawer-backdrop" class="drawer-backdrop hidden"></div>

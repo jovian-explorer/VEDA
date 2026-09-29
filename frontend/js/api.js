@@ -118,6 +118,16 @@ export const api = {
   },
   vedaParseFile: (req) =>
       call('/api/veda/parse-file', {method: 'POST', body: req}),
+  vedaVariables: () =>
+      call('/api/veda/variables'),
+  vedaVariable: (id) =>
+      call(`/api/veda/variables/${encodeURIComponent(id)}`),
+  vedaDataAvailability: () =>
+      call('/api/veda/data-availability'),
+  vedaLicenses: () =>
+      call('/api/veda/licenses'),
+  vedaPortals: () =>
+      call('/api/veda/portals'),
 };
 
 // --------------------------------------------------------------------------

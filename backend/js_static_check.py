@@ -28,7 +28,7 @@ def check_file(name):
             m = re.search(r"Plotly\.react\('([^']+)'", line)
             if m:
                 div_id = m.group(1)
-                html = (frontend / "index.html").read_text()
+                html = (frontend / "index.html").read_text(encoding="utf-8")
                 if f'id="{div_id}"' not in html:
                     errors.append(f"{name}:{i}: Plotly.react target '{div_id}' not in HTML")
 
@@ -37,7 +37,7 @@ def check_file(name):
             m = re.search(r"fillSelect\(\s*\$\('#([^']+)'\)", line)
             if m:
                 eid = m.group(1)
-                html = (frontend / "index.html").read_text()
+                html = (frontend / "index.html").read_text(encoding="utf-8")
                 if f'id="{eid}"' not in html:
                     errors.append(f"{name}:{i}: fillSelect target '#{eid}' not in HTML")
 
@@ -53,7 +53,7 @@ def check_file(name):
 
 
 contents = {}
-for jsfile in ["main.js", "tabs_data.js", "tabs_science.js", "ui.js", "api.js"]:
+for jsfile in ["main.js", "veda_app.js", "ui.js", "api.js"]:
     contents[jsfile] = check_file(jsfile)
 
 # Check imports are consistent

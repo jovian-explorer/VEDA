@@ -212,8 +212,8 @@ export async function refreshLocal() {
       ['products', String(s.by_product.length)],
       ['on disk', bytes(s.cache_bytes_on_disk)],
       ['quota', bytes(s.cache_quota_bytes)],
-      ['earliest', s.time_min ? s.time_min.slice(0, 10) : '\u2014'],
-      ['latest', s.time_max ? s.time_max.slice(0, 10) : '\u2014'],
+      ['earliest', s.time_min ? s.time_min.slice(0, 10) : '-'],
+      ['latest', s.time_max ? s.time_max.slice(0, 10) : '-'],
     ];
     for (const [k, v] of stats) {
       box.append(el('div', {class: 'stat'}, el('div', {class: 'v'}, v),
@@ -347,9 +347,9 @@ function renderResults() {
       el('td', {class: 'num'}, latlon(g.lat, 'lat')),
       el('td', {class: 'num'}, latlon(g.lon, 'lon')),
       el('td', {class: 'num'}, fmt(g.local_time, 1)),
-      el('td', {}, g.sat || '\u2014'),
-      el('td', {}, g.occ_prn || '\u2014'),
-      el('td', {class: 'num'}, String(g.n_levels ?? '\u2014')),
+      el('td', {}, g.sat || '-'),
+      el('td', {}, g.occ_prn || '-'),
+      el('td', {class: 'num'}, String(g.n_levels ?? '-')),
       el('td', {class: 'num'}, fmt(g.alt_max, 1)),
       el('td', {}, el('span', {class: `pill ${g.good ? 'ok' : 'bad'}`},
                       g.good ? 'good' : 'failed')));

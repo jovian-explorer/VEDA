@@ -782,3 +782,277 @@ def get_missions_for_body(body_id: str) -> List[dict]:
             })
     return res
 
+
+# ===========================================================================
+# PLANETARY FIELD & SCIENTIFIC VARIABLE REGISTRY
+# ===========================================================================
+
+FIELD_REGISTRY: Dict[str, dict] = {
+    "temperature_k": {
+        "id": "temperature_k",
+        "label": "Temperature (Kelvin)",
+        "units": "K",
+        "category": "thermodynamic",
+        "formula": r"T",
+        "reference": "Fjeldbo, G., Kliore, A. J., & Eshleman, V. R. (1971), Astron. J., 76, 123-140",
+        "doi": "10.1086/111096",
+        "archive": "NASA PDS / ESA PSA / JAXA DARTS",
+        "description": "Planetary atmospheric temperature derived from radio occultation refractivity via hydrostatic integration."
+    },
+    "temperature_c": {
+        "id": "temperature_c",
+        "label": "Temperature (Celsius)",
+        "units": "°C",
+        "category": "thermodynamic",
+        "formula": r"T_C = T - 273.15",
+        "reference": "BIPM International Temperature Scale (ITS-90)",
+        "doi": "10.1086/111096",
+        "archive": "NASA PDS / ESA PSA / JAXA DARTS",
+        "description": "Atmospheric temperature converted to degrees Celsius."
+    },
+    "pressure_hpa": {
+        "id": "pressure_hpa",
+        "label": "Atmospheric Pressure",
+        "units": "hPa",
+        "category": "thermodynamic",
+        "formula": r"P(z) = \int_z^\infty \rho(z') g(z')\,dz'",
+        "reference": "Tellmann, S., et al. (2012), Icarus, 221(2), 471-480",
+        "doi": "10.1016/j.icarus.2012.08.023",
+        "archive": "ESA PSA / NASA PDS",
+        "description": "Planetary atmospheric pressure profile obtained from hydrostatic equilibrium integration."
+    },
+    "refractivity": {
+        "id": "refractivity",
+        "label": "Radio Refractivity",
+        "units": "N-units",
+        "category": "radio_science",
+        "formula": r"N(r) = (n(r) - 1) \times 10^6 = 10^6 \left( \exp\left[\frac{1}{\pi} \int_a^\infty \frac{\alpha(x)}{\sqrt{x^2 - a^2}} \, dx\right] - 1 \right)",
+        "reference": "Fjeldbo, G., Kliore, A. J., & Eshleman, V. R. (1971), Astron. J., 76, 123-140",
+        "doi": "10.1086/111096",
+        "archive": "NASA PDS / ESA PSA / JAXA DARTS",
+        "description": "Radio refractivity inverted from spacecraft Doppler bending angle via the Abel integral transform."
+    },
+    "electron_density_cm3": {
+        "id": "electron_density_cm3",
+        "label": "Electron Density",
+        "units": "el/cm³",
+        "category": "ionosphere",
+        "formula": r"N_e(r) = -\frac{f^2}{40.3 \pi} \int_r^{r_{sc}} \frac{d\alpha_{iono}/da}{\sqrt{a^2 - r^2}}\,da",
+        "reference": "Withers, P., et al. (2014), J. Geophys. Res. Space Physics, 119(9), 7720-7732",
+        "doi": "10.1002/2014JA020182",
+        "archive": "NASA PDS / ESA PSA / ISRO ISSDC",
+        "description": "Planetary ionospheric electron density inverted from dual-frequency radio occultation excess phase."
+    },
+    "potential_temperature": {
+        "id": "potential_temperature",
+        "label": "Potential Temperature",
+        "units": "K",
+        "category": "derived_stability",
+        "formula": r"\theta = T \left(\frac{P_{ref}}{P}\right)^\kappa, \quad \kappa = \frac{R_{spec}}{c_p}",
+        "reference": "Holton, J. R., & Hakim, G. J. (2012), An Introduction to Dynamic Meteorology, Academic Press",
+        "doi": "10.1016/C2009-0-63394-8",
+        "archive": "Planetary Thermodynamic Formulation",
+        "description": "Potential temperature evaluated with body-specific gas constant R and isobaric heat capacity Cp."
+    },
+    "lapse_rate": {
+        "id": "lapse_rate",
+        "label": "Environmental Lapse Rate",
+        "units": "K/km",
+        "category": "derived_stability",
+        "formula": r"\Gamma = -\frac{dT}{dz}",
+        "reference": "Salby, M. L. (1996), Fundamentals of Atmospheric Physics, Academic Press",
+        "doi": "10.1016/S0074-6142(96)80005-7",
+        "archive": "Planetary Thermodynamic Formulation",
+        "description": "Negative vertical derivative of temperature with respect to geometric altitude."
+    },
+    "scale_height": {
+        "id": "scale_height",
+        "label": "Atmospheric Scale Height",
+        "units": "km",
+        "category": "derived_structure",
+        "formula": r"H = \frac{R_{spec} T}{g(z)} = \frac{k_B T}{\mu m_u g(z)}",
+        "reference": "Chamberlain, J. W., & Hunten, D. M. (1987), Theory of Planetary Atmospheres, Academic Press",
+        "doi": "10.1016/B978-0-12-167252-2.50005-1",
+        "archive": "Planetary Thermodynamic Formulation",
+        "description": "Atmospheric pressure e-folding scale height incorporating altitude-dependent planetary gravity g(z)."
+    },
+    "density": {
+        "id": "density",
+        "label": "Atmospheric Mass Density",
+        "units": "kg/m³",
+        "category": "derived_structure",
+        "formula": r"\rho = \frac{P}{R_{spec} T}",
+        "reference": "Seiff, A., et al. (1980), J. Geophys. Res., 85(A13), 7903-7933",
+        "doi": "10.1029/JA085iA13p07903",
+        "archive": "Planetary Thermodynamic Formulation",
+        "description": "Planetary atmospheric gas density evaluated using the ideal gas law with body-specific mean molecular weight."
+    },
+    "buoyancy_freq_sq": {
+        "id": "buoyancy_freq_sq",
+        "label": "Squared Buoyancy Frequency N²",
+        "units": "s⁻²",
+        "category": "derived_stability",
+        "formula": r"N^2 = \frac{g(z)}{T} \left( \frac{dT}{dz} + \frac{g(z)}{c_p} \right) = \frac{g(z)}{\theta} \frac{d\theta}{dz}",
+        "reference": "Tellmann, S., et al. (2012), Icarus, 221(2), 471-480",
+        "doi": "10.1016/j.icarus.2012.08.023",
+        "archive": "Planetary Thermodynamic Formulation",
+        "description": "Brunt-Vaisala static stability frequency squared determining atmospheric convective stability on other worlds."
+    },
+    "t_prime": {
+        "id": "t_prime",
+        "label": "Temperature Perturbation T'",
+        "units": "K",
+        "category": "waves",
+        "formula": r"T' = T - T_{background}",
+        "reference": "Ando, H., et al. (2020), J. Geophys. Res. Planets, 125(6), e2019JE006208",
+        "doi": "10.1029/2019JE006208",
+        "archive": "Planetary Wave Analysis",
+        "description": "Small-scale atmospheric gravity wave temperature perturbation extracted by high-pass polynomial filtering."
+    },
+    "wave_potential_energy": {
+        "id": "wave_potential_energy",
+        "label": "Gravity Wave Potential Energy Density",
+        "units": "J/kg",
+        "category": "waves",
+        "formula": r"E_p = \frac{1}{2} \left(\frac{g}{N}\right)^2 \left(\frac{T'}{T_0}\right)^2",
+        "reference": "Creasey, J. E., et al. (2006), Geophys. Res. Lett., 33(1), L01803",
+        "doi": "10.1029/2005GL024037",
+        "archive": "Planetary Wave Analysis",
+        "description": "Specific gravity wave potential energy density quantifying wave activity in planetary atmospheres."
+    },
+    "speed_of_sound": {
+        "id": "speed_of_sound",
+        "label": "Acoustic Speed of Sound",
+        "units": "m/s",
+        "category": "acoustics",
+        "formula": r"c_s = \sqrt{\gamma R_{spec} T}, \quad \gamma = \frac{c_p}{c_p - R_{spec}}",
+        "reference": "Salby, M. L. (1996), Fundamentals of Atmospheric Physics, Academic Press",
+        "doi": "10.1016/S0074-6142(96)80005-7",
+        "archive": "Planetary Acoustic Formulation",
+        "description": "Adiabatic speed of sound in planetary gas mixtures."
+    },
+    "buoyancy_period": {
+        "id": "buoyancy_period",
+        "label": "Brunt-Vaisala Buoyancy Period",
+        "units": "min",
+        "category": "derived_stability",
+        "formula": r"\tau_B = \frac{2\pi}{N} \cdot \frac{1}{60}",
+        "reference": "Gill, A. E. (1982), Atmosphere-Ocean Dynamics, Academic Press",
+        "doi": "10.1016/S0074-6142(08)60029-9",
+        "archive": "Planetary Stability Formulation",
+        "description": "Natural oscillation period of vertically displaced air parcels in a stably stratified planetary atmosphere."
+    },
+}
+
+# ===========================================================================
+# AUTHORITATIVE DATA PORTALS & LICENSES
+# ===========================================================================
+
+LEAD_RESEARCHER = (
+    "Keshav Aggarwal, Research Associate at Space Physics Laboratory (SPL), "
+    "Vikram Sarabhai Space Centre (VSSC), Indian Space Research Organisation (ISRO), "
+    "Thiruvananthapuram, Kerala, India (Former PMRF Scholar at DAASE, IIT Indore)"
+)
+
+DATA_AVAILABILITY_STATEMENT = (
+    "The planetary spacecraft observations and radio occultation profiles analyzed by VEDA "
+    "are publicly available from international planetary data archives: NASA Planetary Data System "
+    "(PDS) Atmospheres and Geosciences Nodes at https://pds-atmospheres.nmsu.edu/, European Space "
+    "Agency (ESA) Planetary Science Archive (PSA) at https://archives.esac.esa.int/psa/, JAXA Data "
+    "Archives and Transmission System (DARTS) at https://data.darts.isas.jaxa.jp/, and ISRO Indian "
+    "Space Science Data Centre (ISSDC / PRADAN) at https://pradan.issdc.gov.in/. All calibration, "
+    "retrieval, and cross-mission comparative modeling are performed locally using VEDA."
+)
+
+DATA_PORTALS = [
+    {
+        "id": "nasa_pds_atm",
+        "name": "NASA Planetary Data System (PDS) Atmospheres Node",
+        "agency": "NASA Science Mission Directorate",
+        "url": "https://pds-atmospheres.nmsu.edu/",
+        "description": "Authoritative repository for planetary atmospheric dynamics, radio occultation soundings, and entry probe profiles (Venus, Mars, Jupiter, Saturn, Titan, Pluto).",
+        "missions": ["new_horizons", "galileo", "cassini", "maven", "mro", "pvo"],
+    },
+    {
+        "id": "nasa_pds_geo",
+        "name": "NASA PDS Geosciences Node",
+        "agency": "NASA Science Mission Directorate",
+        "url": "https://pds-geosciences.wustl.edu/",
+        "description": "Orbital radar soundings, thermal emission spectrometry, and geodetic measurements across planetary surfaces and exospheres.",
+        "missions": ["messenger", "magellan", "lro"],
+    },
+    {
+        "id": "esa_psa",
+        "name": "ESA Planetary Science Archive (PSA)",
+        "agency": "European Space Agency (ESA)",
+        "url": "https://archives.esac.esa.int/psa/",
+        "description": "Primary archive for European planetary exploration missions including radio science experiments and spectral sounders.",
+        "missions": ["vex", "bepicolombo", "rosetta", "mex"],
+    },
+    {
+        "id": "jaxa_darts",
+        "name": "JAXA Data Archives and Transmission System (DARTS)",
+        "agency": "ISAS / JAXA (Japan Aerospace Exploration Agency)",
+        "url": "https://data.darts.isas.jaxa.jp/pub/pds3/",
+        "description": "Host for Akatsuki (VCO) Venus Climate Orbiter radio science Level 4 temperature/pressure profiles and multi-band camera imagery.",
+        "missions": ["akatsuki", "bepicolombo_mio"],
+    },
+    {
+        "id": "isro_issdc",
+        "name": "ISRO Indian Space Science Data Centre (ISSDC / PRADAN)",
+        "agency": "Indian Space Research Organisation (ISRO)",
+        "url": "https://pradan.issdc.gov.in/",
+        "description": "Repository for Indian planetary missions, including Space Physics Laboratory (SPL/VSSC) Chandrayaan-2 DFRS radio science and MOM MENCA mass spectrometer.",
+        "missions": ["mom", "chandrayaan2"],
+    },
+]
+
+DATA_LICENSES = {
+    "nasa_pds": {
+        "name": "NASA Open Data Policy",
+        "type": "Public Domain / U.S. Federal Government Work",
+        "url": "https://pds.nasa.gov/",
+        "terms": "Planetary data products are in the public domain and freely accessible to researchers worldwide.",
+    },
+    "esa_psa": {
+        "name": "ESA Open Access Policy",
+        "type": "Open Scientific Access",
+        "url": "https://archives.esac.esa.int/psa/",
+        "terms": "Free access for scientific research following completion of the proprietary instrument validation period.",
+    },
+    "jaxa_darts": {
+        "name": "JAXA DARTS Science Data Policy",
+        "type": "Open Research Access",
+        "url": "https://data.darts.isas.jaxa.jp/",
+        "terms": "Freely accessible for research and educational purposes with mandatory citation of JAXA and instrument teams.",
+    },
+    "isro_issdc": {
+        "name": "ISRO Planetary Science Data Policy",
+        "type": "Open Science Access",
+        "url": "https://pradan.issdc.gov.in/",
+        "terms": "Planetary datasets released by ISSDC are accessible according to ISRO open data guidelines.",
+    },
+    "software": {
+        "name": "MIT License",
+        "type": "Open Source",
+        "copyright": "Copyright (c) 2026 Keshav Aggarwal, Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO",
+        "url": "https://github.com/keshav-aggarwal/VEDA/blob/main/LICENSE",
+        "terms": "Permission is hereby granted, free of charge, to any person obtaining a copy of this software.",
+    },
+}
+
+
+def list_variables() -> List[dict]:
+    """List all registered planetary analysis variables with scientific metadata."""
+    return list(FIELD_REGISTRY.values())
+
+
+def get_variable_info(var_id: str) -> Optional[dict]:
+    """Retrieve metadata for a specific scientific variable."""
+    return FIELD_REGISTRY.get(var_id.lower())
+
+
+def list_data_portals() -> List[dict]:
+    """List authoritative planetary science data portals."""
+    return DATA_PORTALS
+

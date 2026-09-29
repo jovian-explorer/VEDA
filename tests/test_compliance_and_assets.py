@@ -117,3 +117,128 @@ def test_frontend_zero_external_cdn():
     cdn_pattern = re.compile(r'<(script|link)[^>]*(src|href)=["\']https?://', re.IGNORECASE)
     matches = cdn_pattern.findall(index_html)
     assert not matches, f"External CDN links detected in frontend/index.html: {matches}"
+
+
+# ===========================================================================
+# 4. QUALITY OF LIFE FEATURES VERIFICATION
+# ===========================================================================
+
+def test_interactive_demonstration_profiles_present():
+    """Verify that the 4 interactive demonstration profiles exist in guide tab."""
+    index_html = (ROOT_DIR / "frontend" / "index.html").read_text(encoding="utf-8")
+    app_js = (ROOT_DIR / "frontend" / "js" / "veda_app.js").read_text(encoding="utf-8")
+
+    expected_labels = [
+        "Load Akatsuki Venus Radio Occultation Sounding (VCO)",
+        "Load Cassini Titan Neutral Ionosphere Profile",
+        "Load New Horizons Pluto Atmospheric Profile",
+        "Load BepiColombo Venus Flyby Science Data",
+    ]
+    for label in expected_labels:
+        assert label in index_html, f"Missing demo button label in index.html: {label}"
+
+    actions = ["demo-akatsuki", "demo-cassini", "demo-new-horizons", "demo-bepicolombo"]
+    for act in actions:
+        assert act in index_html, f"Missing data-guide-action in index.html: {act}"
+        assert act in app_js, f"Missing handler for action in veda_app.js: {act}"
+
+
+def test_planetary_quick_card_and_constants_present():
+    """Verify Planetary Body Physical Constants Quick-Card and constants coverage."""
+    index_html = (ROOT_DIR / "frontend" / "index.html").read_text(encoding="utf-8")
+    app_js = (ROOT_DIR / "frontend" / "js" / "veda_app.js").read_text(encoding="utf-8")
+
+    assert 'id="veda-body-quick-card"' in index_html
+    assert "BODY_PHYSICAL_CONSTANTS" in app_js
+    assert "renderPlanetaryBodyQuickCard" in app_js
+
+    # Check key celestial bodies covered in quick-card catalog
+    for body_id in ["venus", "mars", "earth", "jupiter", "saturn", "titan", "pluto"]:
+        assert f"{body_id}:" in app_js, f"Body {body_id} missing in BODY_PHYSICAL_CONSTANTS"
+
+    # Check the 6 physical constants are displayed
+    metrics = [
+        "Surface gravity g",
+        "Atmospheric scale height H",
+        "Surface pressure P",
+        "Dominant atmospheric composition",
+        "Mean surface temperature T_surf",
+        "Solar distance",
+    ]
+    for m in metrics:
+        assert m in app_js, f"Missing physical metric tile in quick-card: {m}"
+
+
+def test_quick_unit_switcher_elements_and_logic():
+    """Verify Quick Unit Switcher buttons for Temperature and Pressure."""
+    index_html = (ROOT_DIR / "frontend" / "index.html").read_text(encoding="utf-8")
+    app_js = (ROOT_DIR / "frontend" / "js" / "veda_app.js").read_text(encoding="utf-8")
+
+    # Unit switcher in comparative view
+    assert "btn-comp-unit-k" in index_html
+    assert "btn-comp-unit-c" in index_html
+    assert "btn-comp-unit-bar" in index_html
+    assert "btn-comp-unit-hpa" in index_html
+    assert "btn-comp-unit-pa" in index_html
+
+    # Unit switcher state and logic in JS
+    assert "unitsTemperature" in app_js
+    assert "unitsPressure" in app_js
+    assert "unit-toggle-temp" in app_js
+    assert "unit-toggle-pres" in app_js
+
+
+def test_drag_and_drop_overlay_indicator():
+    """Verify Drag-and-Drop fullscreen indicator and supported file formats."""
+    index_html = (ROOT_DIR / "frontend" / "index.html").read_text(encoding="utf-8")
+    app_js = (ROOT_DIR / "frontend" / "js" / "veda_app.js").read_text(encoding="utf-8")
+
+    assert 'id="veda-drag-drop-overlay"' in index_html
+    assert "setupGlobalDragAndDrop" in app_js
+
+    # Check supported extensions indicated
+    for ext in [".TAB", ".LBL", ".CSV", ".FIT", ".FITS"]:
+        assert ext in index_html, f"Missing extension badge in index.html: {ext}"
+
+
+def test_universal_font_scaling_controls():
+    """Verify Universal UI Font Size Zoom Controller in index.html and app.css."""
+    index_html = (ROOT_DIR / "frontend" / "index.html").read_text(encoding="utf-8")
+    app_css = (ROOT_DIR / "frontend" / "css" / "app.css").read_text(encoding="utf-8")
+    main_js = (ROOT_DIR / "frontend" / "js" / "main.js").read_text(encoding="utf-8")
+
+    # 1. HTML Controls exist
+    assert 'class="font-zoom-ctrl"' in index_html, "Missing font-zoom-ctrl in index.html"
+    assert 'id="btn-font-dec"' in index_html, "Missing btn-font-dec button in index.html"
+    assert 'id="font-scale-display"' in index_html, "Missing font-scale-display in index.html"
+    assert 'id="btn-font-inc"' in index_html, "Missing btn-font-inc button in index.html"
+
+    # 2. CSS font scale variable and rules
+    assert "--font-scale" in app_css, "Missing --font-scale in app.css"
+    assert ".font-zoom-ctrl" in app_css, "Missing .font-zoom-ctrl in app.css"
+    assert "calc(" in app_css, "CSS does not use calc() for scalable font sizing"
+
+    # 3. JS handler implementation
+    assert "applyFontScale" in main_js, "Missing applyFontScale in main.js"
+    assert "wireFontScaling" in main_js, "Missing wireFontScaling in main.js"
+
+
+def test_clean_plotly_math_and_katex_integration():
+    """Verify cleanPlotlyMath helper and KaTeX equation formatting."""
+    ui_js = (ROOT_DIR / "frontend" / "js" / "ui.js").read_text(encoding="utf-8")
+    index_html = (ROOT_DIR / "frontend" / "index.html").read_text(encoding="utf-8")
+    app_js = (ROOT_DIR / "frontend" / "js" / "veda_app.js").read_text(encoding="utf-8")
+
+    # 1. cleanPlotlyMath export and usage
+    assert "export function cleanPlotlyMath" in ui_js, "Missing cleanPlotlyMath in ui.js"
+    assert "cleanPlotlyMath" in app_js, "veda_app.js should use cleanPlotlyMath"
+
+    # 2. KaTeX rendering integration
+    assert "export function renderMath" in ui_js, "Missing renderMath in ui.js"
+    assert "renderMathInElement" in ui_js, "renderMath should delegate to renderMathInElement"
+
+    # 3. No double-escaped backslashes in HTML formulas
+    assert "\\\\left" not in index_html, "Double backslash \\left detected in index.html"
+    assert "\\\\frac" not in index_html, "Double backslash \\frac detected in index.html"
+
+

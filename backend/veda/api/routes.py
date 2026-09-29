@@ -8,7 +8,11 @@ import numpy as np
 from fastapi import APIRouter, HTTPException, Query, Response
 from pydantic import BaseModel, Field
 
-from ..core.registry import BODIES, MISSIONS, get_body, get_mission, list_bodies, list_missions, get_missions_for_body
+from ..core.registry import (
+    BODIES, MISSIONS, FIELD_REGISTRY, DATA_PORTALS, DATA_LICENSES, LEAD_RESEARCHER,
+    DATA_AVAILABILITY_STATEMENT, get_body, get_mission, list_bodies, list_missions,
+    get_missions_for_body, list_variables, get_variable_info, list_data_portals,
+)
 from ..core.models import ObservationProfile, ProvenanceRecord
 from ..missions.manager import get_mission_manager
 from ..analysis.atmospheric import (
@@ -39,12 +43,58 @@ def platform_info() -> dict:
         "title": "VEDA: Visualization, Exploration, and Data Analysis",
         "version": "2.0.0",
         "description": "Multi-Mission Planetary Science Visualization & Comparative Analysis Platform",
+        "lead_researcher": LEAD_RESEARCHER,
+        "data_availability": DATA_AVAILABILITY_STATEMENT,
         "agencies_supported": ["NASA", "ESA", "JAXA", "ISRO", "NOAA"],
         "missions_count": len(mgr.list_missions()),
         "bodies_count": len(BODIES),
         "missions": mgr.list_missions(),
         "bodies": list(BODIES.keys()),
+        "variables": list_variables(),
+        "data_portals": list_data_portals(),
+        "licenses": DATA_LICENSES,
     }
+
+
+@router.get("/variables")
+def get_variables_catalog() -> List[dict]:
+    """List all registered planetary variables with formulas, DOIs, and citations."""
+    return list_variables()
+
+
+@router.get("/variables/{var_id}")
+def get_variable(var_id: str) -> dict:
+    """Get metadata for a specific scientific variable."""
+    v = get_variable_info(var_id)
+    if not v:
+        raise HTTPException(status_code=404, detail=f"Variable '{var_id}' not found")
+    return v
+
+
+@router.get("/data-availability")
+def get_data_availability() -> dict:
+    """Planetary data availability statement and archive endpoints."""
+    return {
+        "lead_researcher": LEAD_RESEARCHER,
+        "statement": DATA_AVAILABILITY_STATEMENT,
+        "portals": list_data_portals(),
+        "licenses": DATA_LICENSES,
+    }
+
+
+@router.get("/licenses")
+def get_licenses() -> dict:
+    """Open source and data license declarations."""
+    return {
+        "lead_researcher": LEAD_RESEARCHER,
+        "licenses": DATA_LICENSES,
+    }
+
+
+@router.get("/portals")
+def get_portals() -> List[dict]:
+    """List authoritative planetary science data portals."""
+    return list_data_portals()
 
 
 @router.get("/missions")
@@ -463,7 +513,7 @@ def generate_publication_figure(
 
     var_labels = {
         "temperature_k": "Temperature $T$ (K)",
-        "temperature_c": "Temperature $T$ (°C)",
+        "temperature_c": r"Temperature $T$ ($^\circ\mathrm{C}$)",
         "pressure_hpa": "Pressure $P$ (hPa)",
         "lapse_rate": r"Lapse Rate $-\partial T/\partial z$ (K/km)",
         "potential_temperature": r"Potential Temperature $\theta$ (K)",
@@ -478,19 +528,19 @@ def generate_publication_figure(
     if plus_sigma and minus_sigma:
         p_sig = [np.nan if x is None else x for x in plus_sigma]
         m_sig = [np.nan if x is None else x for x in minus_sigma]
-        ax.fill_betweenx(grid, m_sig, p_sig, color="#90caf9", alpha=0.3, label=r"$\pm 1\sigma$ Multi-Mission Spread")
+        ax.fill_betweenx(grid, m_sig, p_sig, color="#38bdf8", alpha=0.22, label=r"$\pm 1\sigma$ Multi-Mission Spread")
 
     # 2. Individual mission profiles
-    colors = ["#e53935", "#1e88e5", "#43a047", "#8e24aa", "#fb8c00", "#00acc1"]
+    colors = ["#0284c7", "#f97316", "#10b981", "#8b5cf6", "#f43f5e", "#06b6d4", "#eab308", "#ec4899"]
     for i, p in enumerate(comp.get("profiles", [])):
         series = [np.nan if x is None else x for x in p.get("interpolated_series", [])]
         c = colors[i % len(colors)]
         ax.plot(series, grid, label=f"{p.get('mission_id', '').upper()} ({p.get('instrument', '')})",
-                linestyle=":", linewidth=1.6, color=c)
+                linestyle="-", linewidth=1.8, color=c)
 
     # 3. Composite mean
     mean_v = [np.nan if x is None else x for x in comp.get("composite_mean", [])]
-    ax.plot(mean_v, grid, label=r"Composite Mean $\mu(z)$", color="#111111", linewidth=2.5)
+    ax.plot(mean_v, grid, label=r"Composite Mean $\mu(z)$", color="#0f172a", linewidth=2.8)
 
     ax.set_ylabel("Altitude Above Reference Surface $z$ (km)", fontsize=11, fontweight="bold")
     ax.set_xlabel(xlabel, fontsize=11, fontweight="bold")

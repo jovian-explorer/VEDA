@@ -3,7 +3,7 @@
  * Dedicated Planetary Science Laboratory Workstation Controller
  */
 import { api } from './api.js';
-import { renderMath, toast } from './ui.js';
+import { renderMath, toast, cleanPlotlyMath } from './ui.js';
 
 // VEDA Global State
 export const vedaState = {
@@ -27,6 +27,9 @@ export const vedaState = {
   selectedObservation: null,
   currentProfileData: null,
   currentImageData: null,
+  // Units State for Quick Unit Switcher
+  unitsTemperature: 'K', // 'K' | 'C'
+  unitsPressure: 'hPa',  // 'bar' | 'hPa' | 'Pa'
   // FITS image controls
   imageStretch: 'zscale',
   imageColormap: 'inferno',
@@ -82,6 +85,7 @@ export function getMissionColor(missionId) {
 const BODY_EMOJIS = {
   venus: '🟡',
   mars: '🔴',
+  earth: '🌍',
   jupiter: '🪐',
   saturn: '🪐',
   titan: '🟠',
@@ -92,6 +96,223 @@ const BODY_EMOJIS = {
   vesta: '☄️',
   comet_67p: '☄️',
 };
+
+// Planetary Body Physical Constants Quick-Card Catalog
+export const BODY_PHYSICAL_CONSTANTS = {
+  venus: {
+    name: 'Venus',
+    category: 'Terrestrial Planet',
+    gravity: '8.87 m/s²',
+    scale_height: '15.9 km',
+    pressure_bar: '92.0 bar (92,000 hPa)',
+    composition: '96.5% CO2, 3.5% N2, 0.015% SO2',
+    mean_temp_k: '737 K (464 °C)',
+    solar_dist_au: '0.723 AU (108.2 million km)',
+    notes: 'Superrotating thick CO2 atmosphere, runaway greenhouse effect'
+  },
+  mars: {
+    name: 'Mars',
+    category: 'Terrestrial Planet',
+    gravity: '3.72 m/s²',
+    scale_height: '11.1 km',
+    pressure_bar: '0.0061 bar (6.1 hPa)',
+    composition: '95.3% CO2, 2.6% N2, 1.9% Ar',
+    mean_temp_k: '214 K (-59 °C)',
+    solar_dist_au: '1.524 AU (227.9 million km)',
+    notes: 'Rarefied CO2 atmosphere with seasonal polar caps and dust storms'
+  },
+  earth: {
+    name: 'Earth',
+    category: 'Terrestrial Planet',
+    gravity: '9.81 m/s²',
+    scale_height: '8.5 km',
+    pressure_bar: '1.013 bar (1013.25 hPa)',
+    composition: '78.1% N2, 20.9% O2, 0.93% Ar',
+    mean_temp_k: '288 K (15 °C)',
+    solar_dist_au: '1.000 AU (149.6 million km)',
+    notes: 'Nitrogen-oxygen atmosphere supporting liquid hydrosphere and biosphere'
+  },
+  jupiter: {
+    name: 'Jupiter',
+    category: 'Gas Giant',
+    gravity: '24.79 m/s²',
+    scale_height: '27.0 km',
+    pressure_bar: '1.000 bar (1 bar ref level)',
+    composition: '89.8% H2, 10.2% He, 0.3% CH4',
+    mean_temp_k: '165 K (-108 °C at 1 bar)',
+    solar_dist_au: '5.204 AU (778.5 million km)',
+    notes: 'Massive hydrogen-helium envelope with ammonia ice clouds and Great Red Spot'
+  },
+  saturn: {
+    name: 'Saturn',
+    category: 'Gas Giant',
+    gravity: '10.44 m/s²',
+    scale_height: '59.5 km',
+    pressure_bar: '1.000 bar (1 bar ref level)',
+    composition: '96.3% H2, 3.25% He, 0.45% CH4',
+    mean_temp_k: '134 K (-139 °C at 1 bar)',
+    solar_dist_au: '9.582 AU (1.433 billion km)',
+    notes: 'Hydrogen-helium atmosphere with equatorial jets and northern polar hexagon'
+  },
+  titan: {
+    name: 'Titan',
+    category: 'Planetary Moon',
+    gravity: '1.352 m/s²',
+    scale_height: '20.0 km (near surface), ~40 km aloft',
+    pressure_bar: '1.467 bar (1467 hPa)',
+    composition: '95.0% N2, 4.9% CH4, 0.1% H2',
+    mean_temp_k: '94 K (-179 °C)',
+    solar_dist_au: '9.582 AU (Saturn orbit, 1.433 billion km)',
+    notes: 'Dense nitrogen atmosphere with photochemical tholin haze and liquid methane hydrologic cycle'
+  },
+  pluto: {
+    name: 'Pluto',
+    category: 'Dwarf Planet',
+    gravity: '0.62 m/s²',
+    scale_height: '50.0 km',
+    pressure_bar: '1.15e-5 bar (1.15 Pa / 0.0115 hPa)',
+    composition: '99.0% N2, 0.5% CH4, 0.1% CO',
+    mean_temp_k: '37 K (-236 °C)',
+    solar_dist_au: '39.48 AU (5.906 billion km)',
+    notes: 'Tenuous nitrogen atmosphere with steep temperature inversion and blue haze'
+  },
+  mercury: {
+    name: 'Mercury',
+    category: 'Terrestrial Planet',
+    gravity: '3.70 m/s²',
+    scale_height: 'Exosphere (Surface-boundary)',
+    pressure_bar: '~1e-15 bar (Surface exosphere)',
+    composition: '42% O, 29% Na, 22% H, 6% He',
+    mean_temp_k: '440 K (167 °C mean; diurnal 100 to 700 K)',
+    solar_dist_au: '0.387 AU (57.9 million km)',
+    notes: 'Sputtered surface-boundary exosphere with dipolar magnetic field'
+  },
+  moon: {
+    name: 'Moon',
+    category: 'Planetary Moon',
+    gravity: '1.62 m/s²',
+    scale_height: 'Exosphere (Surface-boundary)',
+    pressure_bar: '~1e-14 bar (Surface exosphere)',
+    composition: '40% He, 40% Ne, 20% Ar',
+    mean_temp_k: '220 K (-53 °C mean; diurnal 100 to 390 K)',
+    solar_dist_au: '1.000 AU (Earth orbit, 149.6 million km)',
+    notes: 'Ultra-tenuous exosphere with permanently shadowed polar volatile deposits'
+  },
+  ceres: {
+    name: 'Ceres',
+    category: 'Dwarf Planet',
+    gravity: '0.28 m/s²',
+    scale_height: 'Transient exosphere',
+    pressure_bar: '~1e-13 bar (Transient)',
+    composition: 'Transient H2O vapor',
+    mean_temp_k: '168 K (-105 °C)',
+    solar_dist_au: '2.767 AU (413.9 million km)',
+    notes: 'Water-rich dwarf planet with carbonate deposits and transient water outgassing'
+  },
+  vesta: {
+    name: 'Vesta',
+    category: 'Protoplanet / Asteroid',
+    gravity: '0.25 m/s²',
+    scale_height: 'None (Airless body)',
+    pressure_bar: '0 bar (Negligible vacuum)',
+    composition: 'None (Airless basaltic crust)',
+    mean_temp_k: '160 K (-113 °C)',
+    solar_dist_au: '2.362 AU (353.4 million km)',
+    notes: 'Differentiated basaltic protoplanet with metallic iron core and impact basins'
+  },
+  comet_67p: {
+    name: 'Comet 67P/C-G',
+    category: 'Comet',
+    gravity: '0.0001 m/s²',
+    scale_height: 'Coma expansion (~100 km)',
+    pressure_bar: '~1e-11 bar (Inner coma)',
+    composition: '70% H2O, 15% CO, 10% CO2',
+    mean_temp_k: '200 K (-73 °C mean)',
+    solar_dist_au: '3.46 AU (Perihelion: 1.24 AU, Aphelion: 5.68 AU)',
+    notes: 'Bi-lobed nucleus with active gas sublimation jets and dust coma'
+  }
+};
+
+export function renderPlanetaryBodyQuickCard(bodyId, bodyDetails) {
+  const card = document.getElementById('veda-body-quick-card');
+  if (!card) return;
+
+  const bKey = (bodyId || '').toLowerCase();
+  const c = BODY_PHYSICAL_CONSTANTS[bKey] || {
+    name: bodyDetails?.name || bodyId,
+    category: (bodyDetails?.category || 'Celestial Body').replace('_', ' '),
+    gravity: bodyDetails?.surface_gravity ? `${bodyDetails.surface_gravity} m/s²` : 'N/A',
+    scale_height: 'N/A',
+    pressure_bar: bodyDetails?.reference_pressure_hpa ? `${(bodyDetails.reference_pressure_hpa / 1000).toFixed(4)} bar` : 'N/A',
+    composition: Object.entries(bodyDetails?.atmospheric_composition || {}).map(([g, pct]) => `${g}: ${pct}%`).join(', ') || 'Trace',
+    mean_temp_k: 'N/A',
+    solar_dist_au: 'N/A',
+    notes: bodyDetails?.description || ''
+  };
+
+  const emoji = BODY_EMOJIS[bKey] || '🪐';
+  const name = bodyDetails?.name || c.name;
+
+  card.innerHTML = `
+    <div class="quick-card-head">
+      <div class="quick-card-title">
+        <span style="font-size: calc(22px * var(--font-scale, 1.0));">${emoji}</span>
+        <h3>Planetary Body Physical Constants Quick-Card: ${name}</h3>
+      </div>
+      <span class="quick-card-badge">${c.category}</span>
+    </div>
+    <div class="quick-card-grid">
+      <div class="quick-card-tile">
+        <div class="tile-head">
+          <span class="tile-icon">⚖️</span>
+          <span class="tile-label">Surface gravity g (m/s²)</span>
+        </div>
+        <div class="tile-value">${c.gravity}</div>
+        <div class="tile-sub">Reference surface acceleration</div>
+      </div>
+      <div class="quick-card-tile">
+        <div class="tile-head">
+          <span class="tile-icon">📏</span>
+          <span class="tile-label">Atmospheric scale height H (km)</span>
+        </div>
+        <div class="tile-value">${c.scale_height}</div>
+        <div class="tile-sub">Pressure e-folding vertical scale</div>
+      </div>
+      <div class="quick-card-tile">
+        <div class="tile-head">
+          <span class="tile-icon">⏲️</span>
+          <span class="tile-label">Surface pressure P₀ (bar)</span>
+        </div>
+        <div class="tile-value">${c.pressure_bar}</div>
+        <div class="tile-sub">Baseline hydrostatic pressure</div>
+      </div>
+      <div class="quick-card-tile">
+        <div class="tile-head">
+          <span class="tile-icon">🧪</span>
+          <span class="tile-label">Dominant atmospheric composition</span>
+        </div>
+        <div class="tile-value" style="font-size: calc(13px * var(--font-scale, 1.0));">${c.composition}</div>
+        <div class="tile-sub">Major atmospheric constituents</div>
+      </div>
+      <div class="quick-card-tile">
+        <div class="tile-head">
+          <span class="tile-icon">🌡️</span>
+          <span class="tile-label">Mean surface temperature T_surf (K)</span>
+        </div>
+        <div class="tile-value">${c.mean_temp_k}</div>
+        <div class="tile-sub">Planetary surface thermal state</div>
+      </div>
+      <div class="quick-card-tile">
+        <div class="tile-head">
+          <span class="tile-icon">☀️</span>
+          <span class="tile-label">Solar distance (AU)</span>
+        </div>
+        <div class="tile-value">${c.solar_dist_au}</div>
+        <div class="tile-sub">Semi-major orbital distance</div>
+      </div>
+    </div>
+  `;
+}
 
 /**
  * Initialize VEDA UI and event handlers
@@ -118,11 +339,13 @@ export async function initVeda() {
   setupBodyModeControls();
   setupMissionModeControls();
   setupWorkflowGuideInteractions();
+  setupGlobalDragAndDrop();
 
   // Render Initial View
   renderCelestialBodiesGrid();
   renderMissionsCatalog();
   await loadAndRenderCelestialBody(vedaState.activeBodyId);
+  renderMath(document.body);
 }
 
 /**
@@ -147,10 +370,12 @@ export function switchMode(mode) {
 
   if (mode === 'body') {
     renderComparisonPlot();
+    if (viewBody) renderMath(viewBody);
   } else if (mode === 'mission') {
     if (!vedaState.activeMission) {
       loadAndRenderMission(vedaState.activeMissionId);
     }
+    if (viewMission) renderMath(viewMission);
   } else if (mode === 'guide') {
     if (viewGuide) renderMath(viewGuide);
   }
@@ -222,6 +447,9 @@ export async function loadAndRenderCelestialBody(bodyId) {
   vedaState.activeBodyId = bodyId;
   const bodyDetails = await api.vedaBodyDetails(bodyId);
   vedaState.activeBody = bodyDetails;
+
+  // Render Planetary Body Physical Constants Quick-Card
+  renderPlanetaryBodyQuickCard(bodyId, bodyDetails);
 
   // Update Body Physics Banner
   const banner = document.getElementById('veda-body-banner');
@@ -295,6 +523,54 @@ function setupBodyModeControls() {
     varSelect.addEventListener('change', () => {
       vedaState.selectedCompareVariable = varSelect.value;
       updateComparison();
+    });
+  }
+
+  // Quick Unit Switcher in Body Comparative Mode
+  const btnCompK = document.getElementById('btn-comp-unit-k');
+  const btnCompC = document.getElementById('btn-comp-unit-c');
+  const btnCompBar = document.getElementById('btn-comp-unit-bar');
+  const btnCompHpa = document.getElementById('btn-comp-unit-hpa');
+  const btnCompPa = document.getElementById('btn-comp-unit-pa');
+
+  if (btnCompK && btnCompC) {
+    btnCompK.addEventListener('click', () => {
+      vedaState.unitsTemperature = 'K';
+      btnCompK.classList.add('active');
+      btnCompC.classList.remove('active');
+      if (varSelect) {
+        varSelect.value = 'temperature_k';
+        vedaState.selectedCompareVariable = 'temperature_k';
+        updateComparison();
+      }
+    });
+    btnCompC.addEventListener('click', () => {
+      vedaState.unitsTemperature = 'C';
+      btnCompC.classList.add('active');
+      btnCompK.classList.remove('active');
+      if (varSelect) {
+        varSelect.value = 'temperature_c';
+        vedaState.selectedCompareVariable = 'temperature_c';
+        updateComparison();
+      }
+    });
+  }
+
+  if (btnCompBar && btnCompHpa && btnCompPa) {
+    const pBtns = [btnCompBar, btnCompHpa, btnCompPa];
+    pBtns.forEach(b => {
+      b.addEventListener('click', () => {
+        pBtns.forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        if (b.id === 'btn-comp-unit-bar') vedaState.unitsPressure = 'bar';
+        else if (b.id === 'btn-comp-unit-pa') vedaState.unitsPressure = 'Pa';
+        else vedaState.unitsPressure = 'hPa';
+        if (varSelect) {
+          varSelect.value = 'pressure_hpa';
+          vedaState.selectedCompareVariable = 'pressure_hpa';
+          updateComparison();
+        }
+      });
     });
   }
 
@@ -466,10 +742,10 @@ function renderComparisonPlot() {
       y: zGrid,
       type: 'scatter',
       mode: 'lines',
-      fill: 'tonexty',
-      fillcolor: 'rgba(255, 255, 255, 0.12)',
+      fill: 'tonextx',
+      fillcolor: 'rgba(56, 189, 248, 0.18)',
       line: { width: 0, color: 'transparent' },
-      name: '±1σ Multi-Mission Spread',
+      name: '\u00b11\u03c3 Multi-Mission Spread',
       showlegend: true,
       hoverinfo: 'skip',
     });
@@ -484,7 +760,7 @@ function renderComparisonPlot() {
         y: zGrid,
         type: 'scatter',
         mode: 'lines',
-        line: { color: mColor, width: 1.8, dash: 'dot' },
+        line: { color: mColor, width: 2.2, dash: 'solid' },
         name: `${p.mission_id.toUpperCase()} (${p.instrument})`,
         hovertemplate: `<b>${p.mission_id.toUpperCase()}</b><br>Alt: %{y:.1f} km<br>${varCfg.label}: %{x:.2f} ${varCfg.units}<extra></extra>`,
       });
@@ -498,36 +774,39 @@ function renderComparisonPlot() {
       y: zGrid,
       type: 'scatter',
       mode: 'lines',
-      line: { color: '#ffffff', width: 3.5 },
-      name: 'Composite Mean μ(z)',
+      line: { color: '#ffffff', width: 3.2 },
+      name: 'Composite Mean \u03bc(z)',
       hovertemplate: `<b>Composite Mean</b><br>Alt: %{y:.1f} km<br>${varCfg.label}: %{x:.2f} ${varCfg.units}<extra></extra>`,
     });
   }
 
+  const fontScale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--font-scale') || '1.0');
   const layout = {
     title: {
-      text: `${data.body_name.toUpperCase()} &bull; Multi-Mission Cross-Comparison (${varCfg.label})`,
-      font: { color: '#e0e0e0', size: 15 },
+      text: cleanPlotlyMath(`${data.body_name.toUpperCase()} &bull; Multi-Mission Cross-Comparison (${varCfg.label})`),
+      font: { color: '#ffffff', size: Math.round(15 * fontScale) },
     },
     paper_bgcolor: 'transparent',
     plot_bgcolor: 'rgba(25, 30, 36, 0.6)',
-    font: { color: '#b0bec5', family: 'Segoe UI, sans-serif' },
+    font: { color: '#b0bec5', size: Math.round(12 * fontScale), family: 'Segoe UI, sans-serif' },
     xaxis: {
-      title: varCfg.axis,
+      title: { text: cleanPlotlyMath(varCfg.axis), font: { size: Math.round(12 * fontScale), color: '#e0e0e0' } },
       gridcolor: '#2a3441',
       zerolinecolor: '#37474f',
       type: varCfg.logScale ? 'log' : 'linear',
+      tickfont: { size: Math.round(10.5 * fontScale) },
     },
     yaxis: {
-      title: 'Altitude Above Reference Surface (km)',
+      title: { text: cleanPlotlyMath('Altitude Above Reference Surface (km)'), font: { size: Math.round(12 * fontScale), color: '#e0e0e0' } },
       gridcolor: '#2a3441',
       zerolinecolor: '#37474f',
+      tickfont: { size: Math.round(10.5 * fontScale) },
     },
     legend: {
       orientation: 'h',
       x: 0,
       y: 1.12,
-      font: { size: 11 },
+      font: { size: Math.round(11 * fontScale) },
     },
     margin: { l: 65, r: 25, t: 70, b: 55 },
     hovermode: 'closest',
@@ -995,9 +1274,9 @@ async function inspectProfileObservation(obs) {
   if (!viewer) return;
 
   try {
-    const prof = (obs.altitude_km && obs.n_points != null)
+    const prof = (obs.altitude_km && (obs.n_points != null || obs.altitude_km.length > 0))
       ? obs
-      : await api.vedaProfile(obs.mission_id, obs.observation_id);
+      : (obs.data ? obs.data : await api.vedaProfile(obs.mission_id, obs.observation_id));
     vedaState.currentProfileData = prof;
 
     // Detect available variables with valid numerical data
@@ -1073,6 +1352,26 @@ async function inspectProfileObservation(obs) {
           </label>
         </div>
 
+        <!-- Quick Unit Switcher in Profile View -->
+        <div class="quick-unit-switcher-card">
+          <span class="switcher-label">⚡ Quick Unit Switcher:</span>
+          <div class="unit-switcher-group">
+            <span class="unit-type-tag">Temperature:</span>
+            <div class="pill-group" id="unit-toggle-temp">
+              <button type="button" class="unit-pill ${vedaState.unitsTemperature === 'K' ? 'active' : ''}" data-temp-unit="K">Kelvin (K)</button>
+              <button type="button" class="unit-pill ${vedaState.unitsTemperature === 'C' ? 'active' : ''}" data-temp-unit="C">Celsius (°C)</button>
+            </div>
+          </div>
+          <div class="unit-switcher-group">
+            <span class="unit-type-tag">Pressure:</span>
+            <div class="pill-group" id="unit-toggle-pres">
+              <button type="button" class="unit-pill ${vedaState.unitsPressure === 'bar' ? 'active' : ''}" data-pres-unit="bar">bar</button>
+              <button type="button" class="unit-pill ${vedaState.unitsPressure === 'hPa' ? 'active' : ''}" data-pres-unit="hPa">hPa</button>
+              <button type="button" class="unit-pill ${vedaState.unitsPressure === 'Pa' ? 'active' : ''}" data-pres-unit="Pa">Pa</button>
+            </div>
+          </div>
+        </div>
+
         <div id="veda-single-profile-plot" style="height: 480px; margin-top: 10px;"></div>
       </div>
     `;
@@ -1083,12 +1382,44 @@ async function inspectProfileObservation(obs) {
       varSelect.onchange = () => renderSingleProfilePlot(prof, varSelect.value);
     }
 
+    // Connect Quick Unit Switcher buttons
+    const tempPills = viewer.querySelectorAll('#unit-toggle-temp .unit-pill');
+    tempPills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        const u = pill.dataset.tempUnit;
+        vedaState.unitsTemperature = u;
+        tempPills.forEach(p => p.classList.toggle('active', p.dataset.tempUnit === u));
+        let curVar = varSelect ? varSelect.value : bestVar;
+        if (curVar === 'temperature_k' || curVar === 'temperature_c' || !hasValidData(curVar)) {
+          curVar = u === 'K' ? 'temperature_k' : 'temperature_c';
+          if (varSelect) varSelect.value = curVar;
+        }
+        renderSingleProfilePlot(prof, curVar);
+      });
+    });
+
+    const presPills = viewer.querySelectorAll('#unit-toggle-pres .unit-pill');
+    presPills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        const u = pill.dataset.presUnit;
+        vedaState.unitsPressure = u;
+        presPills.forEach(p => p.classList.toggle('active', p.dataset.presUnit === u));
+        let curVar = varSelect ? varSelect.value : bestVar;
+        if (curVar !== 'pressure_hpa') {
+          curVar = 'pressure_hpa';
+          if (varSelect) varSelect.value = curVar;
+        }
+        renderSingleProfilePlot(prof, curVar);
+      });
+    });
+
     const btnLocalExport = document.getElementById('btn-export-local-profile-csv');
     if (btnLocalExport) {
       btnLocalExport.addEventListener('click', () => exportLocalProfileCsv(prof));
     }
 
     renderSingleProfilePlot(prof, bestVar);
+    renderMath(viewer);
   } catch (err) {
     viewer.innerHTML = `<div class="error-box">Failed to load profile: ${err.message}</div>`;
   }
@@ -1147,19 +1478,59 @@ function renderSingleProfilePlot(prof, varKey) {
 
   const z = prof.altitude_km || [];
   let series = null;
+  const varCfg = VARIABLE_CONFIGS[varKey] || { label: varKey, units: '', axis: varKey, color: '#ff7043' };
+  let label = varCfg.label;
+  let units = varCfg.units;
+  let axisTitle = varCfg.axis;
+  let isLogScale = varCfg.logScale || false;
 
-  if (varKey === 'temperature_k') series = prof.temperature_k;
-  else if (varKey === 'temperature_c') series = prof.temperature_c;
-  else if (varKey === 'pressure_hpa') series = prof.pressure_hpa;
-  else if (varKey === 'electron_density_cm3') series = prof.electron_density_cm3;
-  else if (prof.derived && prof.derived[varKey]) series = prof.derived[varKey];
+  if (varKey === 'temperature_k' || varKey === 'temperature_c') {
+    if (vedaState.unitsTemperature === 'C') {
+      series = prof.temperature_c || (prof.temperature_k ? prof.temperature_k.map(t => t != null ? t - 273.15 : null) : null);
+      label = 'Temperature (°C)';
+      units = '°C';
+      axisTitle = 'Temperature T (°C)';
+      isLogScale = false;
+    } else {
+      series = prof.temperature_k || (prof.temperature_c ? prof.temperature_c.map(t => t != null ? t + 273.15 : null) : null);
+      label = 'Temperature (K)';
+      units = 'K';
+      axisTitle = 'Temperature T (K)';
+      isLogScale = false;
+    }
+  } else if (varKey === 'pressure_hpa') {
+    const rawP = prof.pressure_hpa;
+    if (rawP && rawP.length > 0) {
+      if (vedaState.unitsPressure === 'bar') {
+        series = rawP.map(p => p != null ? p / 1000.0 : null);
+        label = 'Atmospheric Pressure (bar)';
+        units = 'bar';
+        axisTitle = 'Atmospheric Pressure P (bar)';
+        isLogScale = true;
+      } else if (vedaState.unitsPressure === 'Pa') {
+        series = rawP.map(p => p != null ? p * 100.0 : null);
+        label = 'Atmospheric Pressure (Pa)';
+        units = 'Pa';
+        axisTitle = 'Atmospheric Pressure P (Pa)';
+        isLogScale = true;
+      } else {
+        series = rawP;
+        label = 'Atmospheric Pressure (hPa)';
+        units = 'hPa';
+        axisTitle = 'Atmospheric Pressure P (hPa)';
+        isLogScale = true;
+      }
+    }
+  } else if (varKey === 'electron_density_cm3') {
+    series = prof.electron_density_cm3;
+  } else if (prof.derived && prof.derived[varKey]) {
+    series = prof.derived[varKey];
+  }
 
   if (!series || series.length === 0) {
     plotDiv.innerHTML = '<div class="empty-state">Variable not present in this observation profile.</div>';
     return;
   }
-
-  const varCfg = VARIABLE_CONFIGS[varKey] || { label: varKey, units: '', axis: varKey, color: '#ff7043' };
 
   const trace = {
     x: series,
@@ -1168,26 +1539,29 @@ function renderSingleProfilePlot(prof, varKey) {
     mode: 'lines+markers',
     marker: { size: 3.5, color: varCfg.color },
     line: { color: varCfg.color, width: 2.2 },
-    name: varCfg.label,
-    hovertemplate: `Alt: %{y:.1f} km<br>${varCfg.label}: %{x:.2f} ${varCfg.units}<extra></extra>`,
+    name: label,
+    hovertemplate: `Alt: %{y:.1f} km<br>${label}: %{x:.4g} ${units}<extra></extra>`,
   };
 
+  const fontScale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--font-scale') || '1.0');
   const layout = {
     title: {
-      text: `${(prof.mission_id || 'LOCAL').toUpperCase()} &bull; ${prof.observation_id} (${varCfg.label})`,
-      font: { color: '#e0e0e0', size: 14 },
+      text: cleanPlotlyMath(`${(prof.mission_id || 'LOCAL').toUpperCase()} &bull; ${prof.observation_id} (${label})`),
+      font: { color: '#ffffff', size: Math.round(14 * fontScale) },
     },
     paper_bgcolor: 'transparent',
     plot_bgcolor: 'rgba(25, 30, 36, 0.6)',
-    font: { color: '#b0bec5' },
+    font: { color: '#b0bec5', size: Math.round(12 * fontScale), family: 'Segoe UI, sans-serif' },
     xaxis: {
-      title: varCfg.axis,
+      title: { text: cleanPlotlyMath(axisTitle), font: { size: Math.round(12 * fontScale), color: '#e0e0e0' } },
       gridcolor: '#2a3441',
-      type: varCfg.logScale ? 'log' : 'linear',
+      type: isLogScale ? 'log' : 'linear',
+      tickfont: { size: Math.round(10.5 * fontScale) },
     },
     yaxis: {
-      title: 'Altitude Above Surface (km)',
+      title: { text: cleanPlotlyMath('Altitude Above Surface (km)'), font: { size: Math.round(12 * fontScale), color: '#e0e0e0' } },
       gridcolor: '#2a3441',
+      tickfont: { size: Math.round(10.5 * fontScale) },
     },
     margin: { l: 65, r: 25, t: 50, b: 50 },
   };
@@ -1437,13 +1811,14 @@ async function loadTransect(missionId, obsId, x0, y0, x1, y1) {
       line: { color: '#00e5ff', width: 2.2 },
       name: 'Photometric Intensity',
     };
+    const fontScale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--font-scale') || '1.0');
     const layout = {
-      title: { text: `Line Slice (${x0},${y0}) &rarr; (${x1},${y1})`, font: { size: 12, color: '#e0e0e0' } },
+      title: { text: cleanPlotlyMath(`Line Slice (${x0},${y0}) &rarr; (${x1},${y1})`), font: { size: Math.round(12 * fontScale), color: '#ffffff' } },
       paper_bgcolor: 'transparent',
       plot_bgcolor: 'rgba(25, 30, 36, 0.6)',
-      font: { color: '#b0bec5', size: 10 },
-      xaxis: { title: 'Distance Along Slice (px)', gridcolor: '#2a3441' },
-      yaxis: { title: 'Intensity', gridcolor: '#2a3441' },
+      font: { color: '#b0bec5', size: Math.round(10.5 * fontScale) },
+      xaxis: { title: { text: 'Distance Along Slice (px)', font: { size: Math.round(11 * fontScale) } }, gridcolor: '#2a3441' },
+      yaxis: { title: { text: 'Intensity', font: { size: Math.round(11 * fontScale) } }, gridcolor: '#2a3441' },
       margin: { l: 45, r: 15, t: 30, b: 35 },
     };
     window.Plotly.newPlot(plotDiv, [trace], layout, { responsive: true, displayModeBar: false });
@@ -1467,13 +1842,14 @@ async function loadImageHistogram(missionId, obsId) {
       marker: { color: '#ff8a65' },
       name: 'Pixel Counts',
     };
+    const fontScale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--font-scale') || '1.0');
     const layout = {
-      title: { text: 'Pixel Intensity Histogram', font: { size: 12, color: '#e0e0e0' } },
+      title: { text: cleanPlotlyMath('Pixel Intensity Histogram'), font: { size: Math.round(12 * fontScale), color: '#ffffff' } },
       paper_bgcolor: 'transparent',
       plot_bgcolor: 'rgba(25, 30, 36, 0.6)',
-      font: { color: '#b0bec5', size: 10 },
-      xaxis: { title: 'Pixel Value', gridcolor: '#2a3441' },
-      yaxis: { title: 'Count', gridcolor: '#2a3441' },
+      font: { color: '#b0bec5', size: Math.round(10.5 * fontScale) },
+      xaxis: { title: { text: 'Pixel Value', font: { size: Math.round(11 * fontScale) } }, gridcolor: '#2a3441' },
+      yaxis: { title: { text: 'Count', font: { size: Math.round(11 * fontScale) } }, gridcolor: '#2a3441' },
       margin: { l: 45, r: 15, t: 30, b: 35 },
     };
     window.Plotly.newPlot(plotDiv, [trace], layout, { responsive: true, displayModeBar: false });
@@ -1550,7 +1926,7 @@ function setupMissionModeControls() {
       }
 
       resultsContainer.innerHTML = `
-        <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
+        <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: calc(12px * var(--font-scale, 1.0));">
           <thead>
             <tr style="border-bottom: 1px solid var(--line); text-align: left;">
               <th style="padding: 6px 8px;">Archive / Agency</th>
@@ -1692,10 +2068,18 @@ export async function handleUploadedFile(file) {
 
     const res = await api.vedaParseFile(payload);
 
-    if (res.status === 'ok' || res.observation_id || res.n_points) {
-      toast(`Successfully parsed ${file.name} (${res.n_points || 0} levels)`, 'good');
+    if (res.type === 'profile' || res.data || res.observation_id || res.n_points) {
+      const profData = res.data || res;
+      const nPts = profData.n_points || (profData.altitude_km ? profData.altitude_km.length : 0);
+      toast(`Successfully parsed ${file.name} (${nPts} levels)`, 'good');
       switchMode('mission');
-      await inspectProfileObservation(res);
+      await inspectProfileObservation(profData);
+      const viewer = document.getElementById('veda-observation-viewer');
+      if (viewer) viewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (res.type === 'image') {
+      toast(`Successfully parsed image ${file.name}`, 'good');
+      switchMode('mission');
+      await inspectImageObservation(res);
       const viewer = document.getElementById('veda-observation-viewer');
       if (viewer) viewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else {
@@ -1747,38 +2131,112 @@ export function setupWorkflowGuideInteractions() {
     btn.addEventListener('click', async () => {
       const action = btn.dataset.guideAction;
       switch (action) {
+        // Interactive Demonstration Profiles
+        case 'demo-akatsuki':
+          switchMode('mission');
+          await loadAndRenderMission('akatsuki');
+          await inspectProfileObservation({
+            mission_id: 'akatsuki',
+            observation_id: 'rs_20160303_223100_udsc64_l4_ae_v10',
+            instrument: 'RS'
+          });
+          toast('Loaded Akatsuki Venus Radio Occultation Sounding (VCO)', 'good');
+          {
+            const viewer = document.getElementById('veda-observation-viewer');
+            if (viewer) viewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+          break;
+        case 'demo-cassini':
+          switchMode('mission');
+          await loadAndRenderMission('cassini');
+          await inspectProfileObservation({
+            mission_id: 'cassini',
+            observation_id: 'cassini-rss-titan-t12-ingress',
+            instrument: 'RSS'
+          });
+          toast('Loaded Cassini Titan Neutral Ionosphere Profile', 'good');
+          {
+            const viewer = document.getElementById('veda-observation-viewer');
+            if (viewer) viewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+          break;
+        case 'demo-new-horizons':
+          switchMode('mission');
+          await loadAndRenderMission('new_horizons');
+          await inspectProfileObservation({
+            mission_id: 'new_horizons',
+            observation_id: 'nh-rex-pluto-ingress-20150714',
+            instrument: 'REX'
+          });
+          toast('Loaded New Horizons Pluto Atmospheric Profile', 'good');
+          {
+            const viewer = document.getElementById('veda-observation-viewer');
+            if (viewer) viewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+          break;
+        case 'demo-bepicolombo':
+          switchMode('mission');
+          await loadAndRenderMission('bepicolombo');
+          await inspectProfileObservation({
+            mission_id: 'bepicolombo',
+            observation_id: 'bepicolombo-fb2-venus-more-ro',
+            instrument: 'MORE'
+          });
+          toast('Loaded BepiColombo Venus Flyby Science Data', 'good');
+          {
+            const viewer = document.getElementById('veda-observation-viewer');
+            if (viewer) viewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+          break;
+
         case 'browse-missions':
           switchMode('mission');
           break;
         case 'trigger-file-input':
+        case 'click-file-input':
           if (fileInput) fileInput.click();
           break;
+        case 'load-sample-akatsuki':
+          switchMode('mission');
+          await loadAndRenderMission('akatsuki');
+          await inspectProfileObservation({
+            mission_id: 'akatsuki',
+            observation_id: 'rs_20160303_223100_udsc64_l4_ae_v10',
+            instrument: 'RS'
+          });
+          toast('Loaded Akatsuki Venus Radio Occultation Sounding (VCO)', 'good');
+          break;
         case 'load-sample-chandrayaan2':
+        case 'load-sample-ch2':
           switchMode('mission');
           await loadAndRenderMission('chandrayaan2');
           await inspectProfileObservation({
             mission_id: 'chandrayaan2',
-            observation_id: 'ch2_dfrs_lunar_iono_sample',
+            observation_id: 'ch2_dfrs_orbit_1420',
             instrument: 'DFRS'
           });
+          toast('Loaded Chandrayaan-2 DFRS Ionosphere Sounding', 'good');
           break;
         case 'load-sample-venus':
           switchMode('mission');
           await loadAndRenderMission('vex');
           await inspectProfileObservation({
             mission_id: 'vex',
-            observation_id: 'vex_vera_orbit_0045_profile',
+            observation_id: 'vex_vera_0268_temp',
             instrument: 'VeRa'
           });
+          toast('Loaded Venus Express VeRa Temperature Profile', 'good');
           break;
         case 'load-sample-menca':
+        case 'load-sample-mom':
           switchMode('mission');
           await loadAndRenderMission('mom');
           await inspectProfileObservation({
             mission_id: 'mom',
-            observation_id: 'mom_menca_mars_exosphere_sample',
+            observation_id: 'mom_menca_orbit_1200',
             instrument: 'MENCA'
           });
+          toast('Loaded Mars MOM MENCA Sounding', 'good');
           break;
         case 'inspect-active-profile':
           switchMode('mission');
@@ -1847,9 +2305,67 @@ export function setupWorkflowGuideInteractions() {
           if (btnAbout) btnAbout.click();
           break;
         }
+        case 'vars-drawer': {
+          const btnVars = document.getElementById('btn-veda-vars');
+          if (btnVars) btnVars.click();
+          break;
+        }
+        case 'data-policy-drawer': {
+          const btnDataPolicy = document.getElementById('btn-veda-data-policy');
+          if (btnDataPolicy) btnDataPolicy.click();
+          break;
+        }
         default:
           console.warn('Unknown guide action:', action);
       }
     });
+  });
+}
+
+export function setupGlobalDragAndDrop() {
+  const overlay = document.getElementById('veda-drag-drop-overlay');
+  let dragCounter = 0;
+
+  window.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    dragCounter++;
+    if (overlay && dragCounter > 0) {
+      overlay.classList.remove('hidden');
+      overlay.setAttribute('aria-hidden', 'false');
+    }
+  });
+
+  window.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  });
+
+  window.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    dragCounter = Math.max(0, dragCounter - 1);
+    if (overlay && dragCounter === 0) {
+      overlay.classList.add('hidden');
+      overlay.setAttribute('aria-hidden', 'true');
+    }
+  });
+
+  window.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dragCounter = 0;
+    if (overlay) {
+      overlay.classList.add('hidden');
+      overlay.setAttribute('aria-hidden', 'true');
+    }
+
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      const ext = file.name.split('.').pop().toLowerCase();
+      const supported = ['tab', 'lbl', 'csv', 'fit', 'fits', 'txt', 'png', 'jpg', 'jpeg'];
+      if (supported.includes(ext)) {
+        handleUploadedFile(file);
+      } else {
+        toast(`Unsupported format .${ext}. Supported: .tab, .lbl, .csv, .fit, .fits`, 'bad');
+      }
+    }
   });
 }
