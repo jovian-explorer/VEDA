@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "veda"
+dynamic = ["version"]
+description = "VEDA: Visualization, Exploration, and Data Analysis - multi-mission planetary science data laboratory"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Keshav Aggarwal" }]
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.100.0",
+    "uvicorn[standard]>=0.23.0",
+    "pydantic>=2.0.0",
+    "numpy>=1.24.0",
+    "scipy>=1.10.0",
+    "astropy>=5.3.0",
+    "matplotlib>=3.7.0",
+    "pillow>=9.5.0",
+    "pywebview>=4.0.0",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Astronomy",
+]
+
+[project.optional-dependencies]
+netcdf = ["netCDF4>=1.6"]
+dev = ["pytest>=7.3.0"]
+build = ["pyinstaller>=6.0"]
+
+[project.urls]
+Repository = "https://github.com/jovian-explorer/VEDA"
+
+[project.scripts]
+veda = "veda.desktop:main"
+veda-server = "veda.server:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "veda.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+veda = ["frontend/**/*", "sampledata/**/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

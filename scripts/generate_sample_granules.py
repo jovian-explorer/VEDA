@@ -68,7 +68,7 @@ def make_pds3_label(
 
 
 def build_granules(root_dir: Path) -> None:
-    root = root_dir / "sampledata" / "veda"
+    root = root_dir / "src" / "veda" / "sampledata"
     root.mkdir(parents=True, exist_ok=True)
 
     # -----------------------------------------------------------------------

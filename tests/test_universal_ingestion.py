@@ -3,32 +3,34 @@ from __future__ import annotations
 
 from pathlib import Path
 import pytest
-from backend.veda.api.routes import ParseFileRequest, parse_generic_file_endpoint
-from backend.veda.pipeline.archive_downloader import get_archive_pipeline
+from veda.api.routes import ParseFileRequest, parse_generic_file_endpoint
+from veda.pipeline.archive_downloader import get_archive_pipeline
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+from veda.config import sampledata_dir
+
+SAMPLES = sampledata_dir()
 
 
 def test_ingest_all_planetary_samples():
-    """Verify that every authentic sample granule in sampledata/veda parses cleanly."""
+    """Verify that every authentic sample granule in the bundled sampledata parses cleanly."""
     samples = [
-        ("sampledata/veda/venus_akatsuki/rs_20160303_223100_udsc64_l4_ae_v10.tab", "venus", "profile"),
-        ("sampledata/veda/venus_akatsuki/uvi_20181105_080112_283_geo_v10.fit", "venus", "image"),
-        ("sampledata/veda/mars_mom/mom_menca_orbit_1200.tab", "mars", "profile"),
-        ("sampledata/veda/mars_maven/maven_rs_orbit_1240.tab", "mars", "profile"),
-        ("sampledata/veda/moon_chandrayaan2/ch2_dfrs_orbit_1420.tab", "moon", "profile"),
-        ("sampledata/veda/moon_lro/lro_diviner_shackleton.tab", "moon", "profile"),
-        ("sampledata/veda/jupiter_juno/juno_mwr_perijove_08.tab", "jupiter", "profile"),
-        ("sampledata/veda/titan_cassini/cassini_rss_titan_t12.tab", "titan", "profile"),
-        ("sampledata/veda/venus_express/vex_vera_0268_temp.tab", "venus", "profile"),
-        ("sampledata/veda/pluto_new_horizons/nh_rex_pluto_ingress.tab", "pluto", "profile"),
-        ("sampledata/veda/pluto_new_horizons/nh_lorri_pluto_approach.fits", "pluto", "image"),
-        ("sampledata/veda/pluto_new_horizons/lor_0299059349_0x630_sci_full.jpg", "pluto", "image"),
+        ("venus_akatsuki/rs_20160303_223100_udsc64_l4_ae_v10.tab", "venus", "profile"),
+        ("venus_akatsuki/uvi_20181105_080112_283_geo_v10.fit", "venus", "image"),
+        ("mars_mom/mom_menca_orbit_1200.tab", "mars", "profile"),
+        ("mars_maven/maven_rs_orbit_1240.tab", "mars", "profile"),
+        ("moon_chandrayaan2/ch2_dfrs_orbit_1420.tab", "moon", "profile"),
+        ("moon_lro/lro_diviner_shackleton.tab", "moon", "profile"),
+        ("jupiter_juno/juno_mwr_perijove_08.tab", "jupiter", "profile"),
+        ("titan_cassini/cassini_rss_titan_t12.tab", "titan", "profile"),
+        ("venus_express/vex_vera_0268_temp.tab", "venus", "profile"),
+        ("pluto_new_horizons/nh_rex_pluto_ingress.tab", "pluto", "profile"),
+        ("pluto_new_horizons/nh_lorri_pluto_approach.fits", "pluto", "image"),
+        ("pluto_new_horizons/lor_0299059349_0x630_sci_full.jpg", "pluto", "image"),
     ]
 
     for rel_path, body_id, expected_type in samples:
-        full_path = PROJECT_ROOT / rel_path
+        full_path = SAMPLES / rel_path
         assert full_path.exists(), f"Sample granule missing: {rel_path}"
 
         req = ParseFileRequest(file_path=str(full_path), body_id=body_id)
@@ -53,7 +55,7 @@ def test_ingest_all_planetary_samples():
 
 def test_derived_thermodynamics_values():
     """Verify thermodynamic calculation values on ingested sample profile."""
-    full_path = PROJECT_ROOT / "sampledata/veda/venus_express/vex_vera_0268_temp.tab"
+    full_path = SAMPLES / "venus_express/vex_vera_0268_temp.tab"
     req = ParseFileRequest(file_path=str(full_path), body_id="venus")
     res = parse_generic_file_endpoint(req)
 
@@ -110,7 +112,7 @@ def test_parse_file_content_text_and_base64():
     assert len(res_text["data"]["derived"]["potential_temperature"]) == 4
 
     # 2. Base64 content (FITS file)
-    fits_path = PROJECT_ROOT / "sampledata/veda/venus_akatsuki/uvi_20181105_080112_283_geo_v10.fit"
+    fits_path = SAMPLES / "venus_akatsuki/uvi_20181105_080112_283_geo_v10.fit"
     with open(fits_path, "rb") as f:
         raw_bytes = f.read()
     b64_str = "data:application/octet-stream;base64," + base64.b64encode(raw_bytes).decode("ascii")

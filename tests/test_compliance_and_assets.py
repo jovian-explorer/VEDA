@@ -14,7 +14,10 @@ import re
 from pathlib import Path
 import pytest
 
+from veda.config import frontend_dir
+
 ROOT_DIR = Path(__file__).resolve().parent.parent
+FRONTEND = frontend_dir()
 
 
 # ===========================================================================
@@ -25,7 +28,7 @@ def test_zero_em_and_en_dashes_across_repository():
     """Verify strictly ZERO em-dashes and ZERO en-dashes across all source and doc files."""
     disallowed = ["\u2014", "\u2013"]
     extensions = [".py", ".js", ".html", ".css", ".md", ".ps1", ".json", ".ini", ".spec", ".txt"]
-    exclude_dirs = [".git", "venv", "__pycache__", ".pytest_cache", "pyinstaller_work", "dist", "sampledata", "legacy"]
+    exclude_dirs = [".git", "venv", ".venv", "__pycache__", ".pytest_cache", "build", "dist", "sampledata", "veda.egg-info"]
 
     violations = []
     for p in ROOT_DIR.rglob("*"):
@@ -91,7 +94,7 @@ def test_data_policy_archives_and_bibtex():
 
 def test_katex_local_bundle_integrity():
     """Verify that KaTeX scripts, stylesheets, and font files exist locally for offline math typesetting."""
-    katex_dir = ROOT_DIR / "frontend" / "vendor" / "katex"
+    katex_dir = FRONTEND / "vendor" / "katex"
     assert katex_dir.exists(), "KaTeX vendor directory does not exist"
 
     js_file = katex_dir / "katex.min.js"
@@ -111,7 +114,7 @@ def test_katex_local_bundle_integrity():
 
 def test_frontend_zero_external_cdn():
     """Verify that frontend/index.html does not reference any external CDN links."""
-    index_html = (ROOT_DIR / "frontend" / "index.html").read_text(encoding="utf-8")
+    index_html = (FRONTEND / "index.html").read_text(encoding="utf-8")
 
     # Search for script or link tags with http:// or https://
     cdn_pattern = re.compile(r'<(script|link)[^>]*(src|href)=["\']https?://', re.IGNORECASE)
@@ -125,8 +128,8 @@ def test_frontend_zero_external_cdn():
 
 def test_interactive_demonstration_profiles_present():
     """Verify that the 4 interactive demonstration profiles exist in guide tab."""
-    index_html = (ROOT_DIR / "frontend" / "index.html").read_text(encoding="utf-8")
-    app_js = (ROOT_DIR / "frontend" / "js" / "veda_app.js").read_text(encoding="utf-8")
+    index_html = (FRONTEND / "index.html").read_text(encoding="utf-8")
+    app_js = (FRONTEND / "js" / "veda_app.js").read_text(encoding="utf-8")
 
     expected_labels = [
         "Load Akatsuki Venus Radio Occultation Sounding (VCO)",
@@ -145,8 +148,8 @@ def test_interactive_demonstration_profiles_present():
 
 def test_planetary_quick_card_and_constants_present():
     """Verify Planetary Body Physical Constants Quick-Card and constants coverage."""
-    index_html = (ROOT_DIR / "frontend" / "index.html").read_text(encoding="utf-8")
-    app_js = (ROOT_DIR / "frontend" / "js" / "veda_app.js").read_text(encoding="utf-8")
+    index_html = (FRONTEND / "index.html").read_text(encoding="utf-8")
+    app_js = (FRONTEND / "js" / "veda_app.js").read_text(encoding="utf-8")
 
     assert 'id="veda-body-quick-card"' in index_html
     assert "BODY_PHYSICAL_CONSTANTS" in app_js
@@ -171,8 +174,8 @@ def test_planetary_quick_card_and_constants_present():
 
 def test_quick_unit_switcher_elements_and_logic():
     """Verify Quick Unit Switcher buttons for Temperature and Pressure."""
-    index_html = (ROOT_DIR / "frontend" / "index.html").read_text(encoding="utf-8")
-    app_js = (ROOT_DIR / "frontend" / "js" / "veda_app.js").read_text(encoding="utf-8")
+    index_html = (FRONTEND / "index.html").read_text(encoding="utf-8")
+    app_js = (FRONTEND / "js" / "veda_app.js").read_text(encoding="utf-8")
 
     # Unit switcher in comparative view
     assert "btn-comp-unit-k" in index_html
@@ -190,8 +193,8 @@ def test_quick_unit_switcher_elements_and_logic():
 
 def test_drag_and_drop_overlay_indicator():
     """Verify Drag-and-Drop fullscreen indicator and supported file formats."""
-    index_html = (ROOT_DIR / "frontend" / "index.html").read_text(encoding="utf-8")
-    app_js = (ROOT_DIR / "frontend" / "js" / "veda_app.js").read_text(encoding="utf-8")
+    index_html = (FRONTEND / "index.html").read_text(encoding="utf-8")
+    app_js = (FRONTEND / "js" / "veda_app.js").read_text(encoding="utf-8")
 
     assert 'id="veda-drag-drop-overlay"' in index_html
     assert "setupGlobalDragAndDrop" in app_js
@@ -203,9 +206,9 @@ def test_drag_and_drop_overlay_indicator():
 
 def test_universal_font_scaling_controls():
     """Verify Universal UI Font Size Zoom Controller in index.html and app.css."""
-    index_html = (ROOT_DIR / "frontend" / "index.html").read_text(encoding="utf-8")
-    app_css = (ROOT_DIR / "frontend" / "css" / "app.css").read_text(encoding="utf-8")
-    main_js = (ROOT_DIR / "frontend" / "js" / "main.js").read_text(encoding="utf-8")
+    index_html = (FRONTEND / "index.html").read_text(encoding="utf-8")
+    app_css = (FRONTEND / "css" / "app.css").read_text(encoding="utf-8")
+    main_js = (FRONTEND / "js" / "main.js").read_text(encoding="utf-8")
 
     # 1. HTML Controls exist
     assert 'class="font-zoom-ctrl"' in index_html, "Missing font-zoom-ctrl in index.html"
@@ -225,9 +228,9 @@ def test_universal_font_scaling_controls():
 
 def test_clean_plotly_math_and_katex_integration():
     """Verify cleanPlotlyMath helper and KaTeX equation formatting."""
-    ui_js = (ROOT_DIR / "frontend" / "js" / "ui.js").read_text(encoding="utf-8")
-    index_html = (ROOT_DIR / "frontend" / "index.html").read_text(encoding="utf-8")
-    app_js = (ROOT_DIR / "frontend" / "js" / "veda_app.js").read_text(encoding="utf-8")
+    ui_js = (FRONTEND / "js" / "ui.js").read_text(encoding="utf-8")
+    index_html = (FRONTEND / "index.html").read_text(encoding="utf-8")
+    app_js = (FRONTEND / "js" / "veda_app.js").read_text(encoding="utf-8")
 
     # 1. cleanPlotlyMath export and usage
     assert "export function cleanPlotlyMath" in ui_js, "Missing cleanPlotlyMath in ui.js"

@@ -15,9 +15,6 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-# Ensure backend package is in python path
-ROOT_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT_DIR / "backend"))
 
 from veda.api.routes import (
     platform_info,
@@ -45,6 +42,7 @@ from veda.analysis.atmospheric import (
     export_comparison_to_csv,
 )
 from veda.missions.manager import get_mission_manager
+from veda.config import sampledata_dir
 
 
 # ===========================================================================
@@ -95,7 +93,7 @@ def test_get_missions_for_body():
 
 def test_pds3_reader_akatsuki_l4():
     """Verify reading authentic JAXA Akatsuki Level 4 radio science file."""
-    lbl_file = ROOT_DIR / "sampledata" / "veda" / "venus_akatsuki" / "rs_20160303_223100_udsc64_l4_ae_v10.lbl"
+    lbl_file = sampledata_dir() / "venus_akatsuki" / "rs_20160303_223100_udsc64_l4_ae_v10.lbl"
     if not lbl_file.exists():
         pytest.skip("Akatsuki sample file not present")
     table = read_pds3_table(lbl_file)

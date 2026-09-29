@@ -17,11 +17,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT_DIR / "backend"))
-sys.path.insert(0, str(ROOT_DIR / "backend" / "veda" / "analysis"))
 
-from advanced_science import (
+from veda.analysis.advanced_science import (
     C_P,
     G_0,
     KAPPA,

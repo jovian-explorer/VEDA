@@ -14,8 +14,6 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT_DIR / "backend"))
 
 from veda.readers.fits_reader import (
     apply_contrast_stretch,

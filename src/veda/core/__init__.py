@@ -1,0 +1,1 @@
+"""VEDA core subpackage."""

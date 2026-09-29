@@ -14,8 +14,6 @@ from pathlib import Path
 import pytest
 import numpy as np
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT_DIR / "backend"))
 
 from veda.core.registry import BODIES, MISSIONS, get_body, get_mission, list_bodies, list_missions, get_missions_for_body
 from veda.analysis.atmospheric import compare_profiles_on_body, export_comparison_to_csv, export_profile_to_csv

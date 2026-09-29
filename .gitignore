@@ -2,8 +2,10 @@ __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
-dist/
-build/pyinstaller_work/
 *.egg-info/
+.venv/
+venv/
+build/
+dist/
 .DS_Store
 Thumbs.db
