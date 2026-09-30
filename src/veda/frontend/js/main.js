@@ -4,7 +4,7 @@
  */
 import { api, state } from './api.js';
 import { $, $$, el, banner, toast, drawer, closeDrawer, renderMath, updatePlotlyFonts } from './ui.js';
-import { initVeda, switchMode, handleUploadedFile } from './veda_app.js';
+import { initVeda, switchMode } from './veda_app.js';
 
 const FONT_SCALES = [0.85, 0.92, 1.0, 1.10, 1.20, 1.32, 1.45];
 let currentScaleIdx = 2; // Default 1.0 (100%)
@@ -73,19 +73,7 @@ function wireChrome() {
   if (btnMission) btnMission.addEventListener('click', () => switchMode('mission'));
   if (btnGuide) btnGuide.addEventListener('click', () => switchMode('guide'));
 
-  const btnLoadFile = $('#btn-load-file');
-  const fileInput = $('#veda-file-input');
-  if (btnLoadFile && fileInput) {
-    btnLoadFile.addEventListener('click', () => fileInput.click());
-  }
-  if (fileInput) {
-    fileInput.addEventListener('change', (e) => {
-      if (e.target.files && e.target.files[0]) {
-        handleUploadedFile(e.target.files[0]);
-        fileInput.value = '';
-      }
-    });
-  }
+  // Load File button / file input are wired in veda_app.js (setupWorkflowGuideInteractions).
 
   const btnVars = $('#btn-veda-vars');
   if (btnVars) {

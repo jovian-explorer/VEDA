@@ -711,16 +711,22 @@ function renderComparisonPlot() {
   if (!plotDiv || !window.Plotly) return;
 
   const data = vedaState.lastComparisonData;
-  if (!data || !data.grid_km || data.grid_km.length === 0) {
-    plotDiv.innerHTML = '<div class="empty-state">No profile observations selected or available for this body.</div>';
-    return;
-  }
-
   const varCfg = VARIABLE_CONFIGS[vedaState.selectedCompareVariable] || {
     label: vedaState.selectedCompareVariable,
     units: '',
     axis: vedaState.selectedCompareVariable,
   };
+  if (!data || !data.grid_km || data.grid_km.length === 0 || !data.profile_count) {
+    if (plotDiv.data) Plotly.purge(plotDiv);
+    // varCfg.label is one of the app's own VARIABLE_CONFIGS labels (sub/sup markup).
+    plotDiv.innerHTML = `<div class="empty-state">${
+      !data || !(data.grid_km || []).length
+        ? 'No profile observations are selected or available for this body. Pick missions above to compare.'
+        : `None of the selected observations contain ${cleanPlotlyMath(varCfg.label)}. ` +
+          'Choose another variable or add missions that measure it.'
+    }</div>`;
+    return;
+  }
 
   const traces = [];
   const zGrid = data.grid_km;
@@ -783,7 +789,7 @@ function renderComparisonPlot() {
   const fontScale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--font-scale') || '1.0');
   const layout = {
     title: {
-      text: cleanPlotlyMath(`${data.body_name.toUpperCase()} &bull; Multi-Mission Cross-Comparison (${varCfg.label})`),
+      text: cleanPlotlyMath(`${(data.body_name || data.body_id || '').toUpperCase()} &bull; Multi-Mission Cross-Comparison (${varCfg.label})`),
       font: { color: '#ffffff', size: Math.round(15 * fontScale) },
     },
     paper_bgcolor: 'transparent',
@@ -2048,27 +2054,65 @@ function readFileAsBase64(file) {
   });
 }
 
-export async function handleUploadedFile(file) {
+// Keep in sync with SUPPORTED_UPLOAD_SUFFIXES in api/routes.py.
+const UPLOAD_EXTENSIONS = ['tab', 'lbl', 'csv', 'txt', 'dat', 'asc', 'fit', 'fits', 'fts', 'jpg', 'jpeg', 'png'];
+const MAX_COMPANIONS = 8;
+
+function fileExt(file) {
+  const parts = file.name.split('.');
+  return parts.length > 1 ? parts.pop().toLowerCase() : '';
+}
+
+function readUploadContent(file) {
+  return /\.(fits?|fts|png|jpe?g)$/i.test(file.name) ? readFileAsBase64(file) : readFileAsText(file);
+}
+
+// Entry point for the file picker and drag-and-drop.  A PDS3 label is sent
+// together with the other selected files (its .tab table); anything else is
+// loaded one file at a time.
+export async function handleUploadedFiles(fileList) {
+  const files = Array.from(fileList || []);
+  if (!files.length) return;
+  const unsupported = files.filter(f => !UPLOAD_EXTENSIONS.includes(fileExt(f)));
+  if (unsupported.length) {
+    toast(`Unsupported format: ${unsupported.map(f => f.name).join(', ')}. ` +
+          `Supported: ${UPLOAD_EXTENSIONS.map(e => '.' + e).join(', ')}`, 'bad');
+  }
+  const usable = files.filter(f => UPLOAD_EXTENSIONS.includes(fileExt(f)));
+  const label = usable.find(f => fileExt(f) === 'lbl');
+  if (label) {
+    const companions = usable.filter(f => f !== label).slice(0, MAX_COMPANIONS);
+    await handleUploadedFile(label, companions);
+    return;
+  }
+  for (const f of usable) {
+    await handleUploadedFile(f);
+  }
+}
+
+export async function handleUploadedFile(file, companions = []) {
   if (!file) return;
   toast(`Parsing ${file.name}...`);
   try {
-    const isBinary = /\.(fits?|fit|png|jpe?g)$/i.test(file.name);
-    let fileContent;
-    if (isBinary) {
-      fileContent = await readFileAsBase64(file);
-    } else {
-      fileContent = await readFileAsText(file);
-    }
-
     const payload = {
       filename: file.name,
-      file_content: fileContent,
-      body_id: vedaState.activeBodyId || 'venus'
+      file_content: await readUploadContent(file),
+      body_id: vedaState.activeBodyId || 'venus',
+      companion_files: await Promise.all(companions.map(async c => ({
+        filename: c.name,
+        file_content: await readUploadContent(c),
+      }))),
     };
 
     const res = await api.vedaParseFile(payload);
 
-    if (res.type === 'profile' || res.data || res.observation_id || res.n_points) {
+    if (res.type === 'image') {
+      toast(`Successfully parsed image ${file.name}`, 'good');
+      switchMode('mission');
+      await inspectImageObservation(res);
+      const viewer = document.getElementById('veda-observation-viewer');
+      if (viewer) viewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else if (res.type === 'profile' || res.data) {
       const profData = res.data || res;
       const nPts = profData.n_points || (profData.altitude_km ? profData.altitude_km.length : 0);
       toast(`Successfully parsed ${file.name} (${nPts} levels)`, 'good');
@@ -2076,18 +2120,13 @@ export async function handleUploadedFile(file) {
       await inspectProfileObservation(profData);
       const viewer = document.getElementById('veda-observation-viewer');
       if (viewer) viewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } else if (res.type === 'image') {
-      toast(`Successfully parsed image ${file.name}`, 'good');
-      switchMode('mission');
-      await inspectImageObservation(res);
-      const viewer = document.getElementById('veda-observation-viewer');
-      if (viewer) viewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else {
       toast(`Could not parse file: ${res.detail || 'Unknown format'}`, 'bad');
     }
   } catch (err) {
     console.error('File load error:', err);
-    toast(`Failed to load file: ${err.message}`, 'bad');
+    // Server messages already name the file and say what to do next.
+    toast(err.message, 'bad');
   }
 }
 
@@ -2099,8 +2138,8 @@ export function setupWorkflowGuideInteractions() {
   }
   if (fileInput) {
     fileInput.addEventListener('change', (e) => {
-      if (e.target.files && e.target.files[0]) {
-        handleUploadedFile(e.target.files[0]);
+      if (e.target.files && e.target.files.length) {
+        handleUploadedFiles(e.target.files);
         fileInput.value = '';
       }
     });
@@ -2119,9 +2158,10 @@ export function setupWorkflowGuideInteractions() {
     });
     dropZone.addEventListener('drop', (e) => {
       e.preventDefault();
+      e.stopPropagation();  // the window-level drop handler would load the files again
       dropZone.classList.remove('drag-active');
-      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
-        handleUploadedFile(e.dataTransfer.files[0]);
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+        handleUploadedFiles(e.dataTransfer.files);
       }
     });
   }
@@ -2189,9 +2229,22 @@ export function setupWorkflowGuideInteractions() {
           }
           break;
 
+        case 'mode-body':
+          switchMode('body');
+          break;
+        case 'mode-mission':
         case 'browse-missions':
           switchMode('mission');
           break;
+        case 'open-archive': {
+          switchMode('mission');
+          const panel = document.getElementById('veda-archive-search-panel');
+          if (panel && panel.style.display === 'none') {
+            document.getElementById('btn-toggle-archive-search')?.click();
+          }
+          panel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          break;
+        }
         case 'trigger-file-input':
         case 'click-file-input':
           if (fileInput) fileInput.click();
@@ -2358,14 +2411,7 @@ export function setupGlobalDragAndDrop() {
     }
 
     if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0];
-      const ext = file.name.split('.').pop().toLowerCase();
-      const supported = ['tab', 'lbl', 'csv', 'fit', 'fits', 'txt', 'png', 'jpg', 'jpeg'];
-      if (supported.includes(ext)) {
-        handleUploadedFile(file);
-      } else {
-        toast(`Unsupported format .${ext}. Supported: .tab, .lbl, .csv, .fit, .fits`, 'bad');
-      }
+      handleUploadedFiles(e.dataTransfer.files);
     }
   });
 }
