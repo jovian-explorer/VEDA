@@ -40,16 +40,42 @@ class Pds3Table:
         return max((int(v.size) for v in self.columns.values()), default=0)
 
     def series(self, name: str) -> Optional[np.ndarray]:
-        """Case-insensitive column series lookup."""
-        n_clean = name.strip().upper()
-        for k, v in self.columns.items():
-            if k.strip().upper() == n_clean:
-                return v
-        # Also check partial matching (e.g. 'TEMPERATURE' inside 'TEMPERATURE (MEDIUM...)')
-        for k, v in self.columns.items():
-            if n_clean in k.strip().upper():
-                return v
+        """Case-insensitive column lookup; see match_column for partial names."""
+        key = match_column(self.columns.keys(), name)
+        return self.columns[key] if key is not None else None
+
+
+_UNCERTAINTY_PREFIXES = ("SIGMA", "ERROR", "ERR_", "UNCERTAINTY", "STD")
+
+
+def match_column(names, query: str) -> Optional[str]:
+    """Pick the column that best represents ``query`` (e.g. TEMPERATURE).
+
+    An exact (case-insensitive) name wins.  Otherwise the query must appear as a
+    whole word, and columns are ranked so that:
+      * the quantity leads the name ("TEMPERATURE (MEDIUM ...)" beats
+        "PRESSURE (LOWER TEMPERATURE AT BOUNDARY)", which only mentions it);
+      * uncertainty columns ("SIGMA TEMPERATURE ...") come last;
+      * of several retrieval variants the nominal MEDIUM one is preferred.
+    """
+    q = query.strip().upper()
+    if not q:
         return None
+    names = list(names)
+    for k in names:
+        if k.strip().upper() == q:
+            return k
+    word = re.compile(r"(?<![A-Z0-9])" + re.escape(q) + r"(?![A-Z0-9])")
+    ranked = []
+    for i, k in enumerate(names):
+        u = k.strip().upper()
+        if not word.search(u):
+            continue
+        uncertain = u.startswith(_UNCERTAINTY_PREFIXES)
+        leading = bool(re.match(r"[^A-Z0-9]*" + re.escape(q) + r"(?![A-Z0-9])", u))
+        nominal = "MEDIUM" in u or "NOMINAL" in u
+        ranked.append((uncertain, not leading, not nominal, i, k))
+    return min(ranked)[-1] if ranked else None
 
 
 def parse_pds3_label(label_text: str) -> Tuple[Dict[str, Any], List[ColumnDef]]:

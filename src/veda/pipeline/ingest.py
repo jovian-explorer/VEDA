@@ -10,7 +10,7 @@ from ..analysis.atmospheric import compute_atmospheric_diagnostics
 from ..core.models import ObservationProfile, ProvenanceRecord
 from ..core.registry import get_body
 from ..readers.fits_reader import load_fits_image
-from ..readers.pds3_reader import Pds3Table, read_any_table
+from ..readers.pds3_reader import Pds3Table, match_column, read_any_table
 
 
 IMAGE_SUFFIXES = (".fit", ".fits", ".fts", ".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff")
@@ -64,15 +64,13 @@ def build_profile(file_path: Path, b, mission_id: Optional[str] = None,
     if not tbl.columns:
         raise ValueError(f"No numeric columns could be extracted from {file_path.name}")
 
-    cols_upper = {k.upper(): k for k in tbl.columns.keys()}
-
     def find_col(candidates: List[str]) -> Optional[str]:
+        # Whole-word matching: a bare "T" must not pick LATITUDE, and
+        # "TEMPERATURE" must not pick "PRESSURE (LOWER TEMPERATURE ...)".
         for c in candidates:
-            if c in cols_upper:
-                return cols_upper[c]
-            for k in cols_upper:
-                if c in k:
-                    return cols_upper[k]
+            hit = match_column(tbl.columns.keys(), c)
+            if hit is not None:
+                return hit
         return None
 
     alt_col = find_col(["ALTITUDE", "ALT", "HEIGHT", "GEOPOTENTIAL_HEIGHT", "Z", "RADIUS", "RAD"])

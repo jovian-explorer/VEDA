@@ -7,6 +7,7 @@ from __future__ import annotations
 import base64
 import json
 
+import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 
@@ -259,3 +260,28 @@ def test_foreign_host_header_is_rejected(client):
 def test_no_wildcard_cors(client):
     r = client.get("/api/health", headers={"origin": "https://evil.example"})
     assert "access-control-allow-origin" not in {k.lower() for k in r.headers}
+
+
+def test_match_column_prefers_the_named_quantity():
+    """Bug: 'TEMPERATURE' matched 'PRESSURE (LOWER TEMPERATURE AT BOUNDARY)', so the
+    Akatsuki profile plotted pressure in pascals as temperature (up to 47,000 K)."""
+    from veda.readers.pds3_reader import match_column
+    cols = ["RADIUS", "LATITUDE", "GEOPOTENTIAL_HEIGHT",
+            "PRESSURE (LOWER TEMPERATURE AT BOUNDARY)", "SIGMA PRESSURE (LOWER TEMPERATURE AT BOUNDARY)",
+            "PRESSURE (MEDIUM TEMPERATURE AT BOUNDARY)",
+            "TEMPERATURE (LOWER TEMPERATURE AT BOUNDARY)", "SIGMA TEMPERATURE (MEDIUM TEMPERATURE AT BOUNDARY)",
+            "TEMPERATURE (MEDIUM TEMPERATURE AT BOUNDARY)"]
+    assert match_column(cols, "TEMPERATURE") == "TEMPERATURE (MEDIUM TEMPERATURE AT BOUNDARY)"
+    assert match_column(cols, "PRESSURE") == "PRESSURE (MEDIUM TEMPERATURE AT BOUNDARY)"
+    assert match_column(cols, "HEIGHT") == "GEOPOTENTIAL_HEIGHT"
+    assert match_column(cols, "T") is None          # not LATITUDE
+    assert match_column(["time", "Temp_K", "alt"], "TEMP_K") == "Temp_K"
+
+
+def test_akatsuki_profile_temperature_is_physical():
+    from veda.missions.manager import get_mission_manager
+    prof = get_mission_manager().load_profile("akatsuki", "rs_20160303_223100_udsc64_l4_ae_v10")
+    t = prof.temperature_k[~np.isnan(prof.temperature_k)]
+    assert 100 < t.min() and t.max() < 400      # Venus 54-95 km: ~150-290 K
+    p = prof.pressure_hpa[~np.isnan(prof.pressure_hpa)]
+    assert p.max() < 1000                       # below 1 bar at >= 54 km
