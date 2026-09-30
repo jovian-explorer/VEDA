@@ -151,6 +151,22 @@ def compute_atmospheric_diagnostics(
     return derived
 
 
+def _empty_comparison(body: BodyInfo, variable_name: str, grid_km: Optional[List[float]] = None) -> Dict[str, Any]:
+    """Comparison result with no usable profiles; same keys as a full result."""
+    return {
+        "body_id": body.id,
+        "body_name": body.name,
+        "variable_name": variable_name,
+        "grid_km": grid_km or [],
+        "composite_mean": [],
+        "composite_std": [],
+        "composite_plus_1sigma": [],
+        "composite_minus_1sigma": [],
+        "profile_count": 0,
+        "profiles": [],
+    }
+
+
 def compare_profiles_on_body(
     profiles: List[ObservationProfile],
     body: BodyInfo,
@@ -163,21 +179,21 @@ def compare_profiles_on_body(
     multi-spacecraft composite mean, dispersion (+/- 1 sigma), and individual curves.
     """
     if not profiles:
-        return {"grid_km": [], "composite_mean": [], "composite_std": [], "profiles": []}
+        return _empty_comparison(body, variable_name)
 
     # Determine altitude span covering the observations
     valid_profiles = [p for p in profiles if p is not None]
     if not valid_profiles:
-        return {"grid_km": [], "composite_mean": [], "composite_std": [], "profiles": []}
+        return _empty_comparison(body, variable_name)
 
     all_z = [p.altitude_km for p in valid_profiles if p.altitude_km is not None and p.altitude_km.size > 0]
     if not all_z:
-        return {"grid_km": [], "composite_mean": [], "composite_std": [], "profiles": []}
+        return _empty_comparison(body, variable_name)
 
     z_mins = [float(np.nanmin(z)) for z in all_z if np.isfinite(z).any()]
     z_maxs = [float(np.nanmax(z)) for z in all_z if np.isfinite(z).any()]
     if not z_mins or not z_maxs:
-        return {"grid_km": [], "composite_mean": [], "composite_std": [], "profiles": []}
+        return _empty_comparison(body, variable_name)
 
     grid_lo = max(0.0, float(np.min(z_mins)))
     grid_hi = float(np.max(z_maxs))
@@ -236,8 +252,7 @@ def compare_profiles_on_body(
         })
 
     if not interpolated_matrix:
-        return {"grid_km": [round(float(z), 2) for z in z_grid],
-                "composite_mean": [], "composite_std": [], "profiles": []}
+        return _empty_comparison(body, variable_name, [round(float(z), 2) for z in z_grid])
 
     mat = np.array(interpolated_matrix)  # shape: (n_profiles, n_grid)
     with np.errstate(invalid="ignore"):

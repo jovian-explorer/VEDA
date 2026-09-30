@@ -35,6 +35,10 @@ class Pds3Table:
     units: Dict[str, str]
     descriptions: Dict[str, str] = field(default_factory=dict)
 
+    def row_count(self) -> int:
+        """Number of rows in the longest column (0 for an empty table)."""
+        return max((int(v.size) for v in self.columns.values()), default=0)
+
     def series(self, name: str) -> Optional[np.ndarray]:
         """Case-insensitive column series lookup."""
         n_clean = name.strip().upper()
@@ -269,9 +273,11 @@ def read_any_table(file_path: str) -> Pds3Table:
         if l.exists():
             return read_pds3_table(str(l))
 
-    # Read lines
-    with p.open("r", encoding="utf-8", errors="replace") as f:
-        all_lines = [ln.strip() for ln in f.read().splitlines() if ln.strip()]
+    raw = p.read_bytes()
+    if b"\x00" in raw[:4096]:
+        raise ValueError(f"{p.name} looks like a binary file, not a text table")
+
+    all_lines = [ln.strip() for ln in raw.decode("utf-8", errors="replace").splitlines() if ln.strip()]
 
     if not all_lines:
         return Pds3Table(label_path="", table_path=str(p), metadata={}, columns={}, units={})
@@ -313,17 +319,23 @@ def read_any_table(file_path: str) -> Pds3Table:
         body_lines = data_lines
 
     n_rows = len(body_lines)
-    columns_data: Dict[str, np.ndarray] = {name: np.full(n_rows, np.nan, dtype=np.float64) for name in header_names}
-    units_dict: Dict[str, str] = {name: "" for name in header_names}
-
-    for r_i, line in enumerate(body_lines):
-        tokens = _split(line)
-        for c_i, name in enumerate(header_names):
-            if c_i < len(tokens):
+    rows = [_split(line) for line in body_lines]
+    columns_data: Dict[str, np.ndarray] = {}
+    for c_i, name in enumerate(header_names):
+        cells = [r[c_i] if c_i < len(r) else "" for r in rows]
+        try:
+            # Fast path: a fully numeric column converts in one vectorised step.
+            arr = np.array(cells, dtype=np.float64)
+        except ValueError:
+            arr = np.full(n_rows, np.nan, dtype=np.float64)
+            for r_i, cell in enumerate(cells):
                 try:
-                    columns_data[name][r_i] = float(tokens[c_i])
+                    arr[r_i] = float(cell)
                 except ValueError:
                     pass
+        if np.isfinite(arr).any():
+            columns_data[name] = arr
+    units_dict: Dict[str, str] = {name: "" for name in columns_data}
 
     return Pds3Table(
         label_path="",

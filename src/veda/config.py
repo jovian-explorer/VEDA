@@ -74,6 +74,25 @@ def ensure_dirs() -> None:
         d.mkdir(parents=True, exist_ok=True)
 
 
+# Allowed values for each setting: a tuple of choices or an inclusive (min, max)
+# range.  Anything else in settings.json is replaced by the default on load, so
+# a hand-edited or corrupted file can never break the UI.
+SETTING_CHOICES: Dict[str, Any] = {
+    "ui_theme": ("dark", "light", "system"),
+    "ui_font_size": (11, 20),
+    "ui_mode": ("research", "educational"),
+    "plot_theme": ("dark", "light"),
+    "plot_dpi": (72, 1200),
+    "units_temperature": ("K", "C"),
+    "units_pressure": ("hPa", "bar", "Pa"),
+    "auto_download_sample": (False, True),
+    "network_enabled": (False, True),
+    "network_timeout_s": (5, 300),
+    "default_body": None,       # validated against the body registry
+    "default_mission": None,    # validated against the mission registry
+}
+
+
 @dataclass
 class Settings:
     """Persisted user settings for VEDA planetary laboratory."""
@@ -83,33 +102,84 @@ class Settings:
     plot_theme: str = "dark"
     plot_dpi: int = 300
     units_temperature: str = "K"
+    units_pressure: str = "hPa"
     auto_download_sample: bool = True
+    network_enabled: bool = True
+    network_timeout_s: int = 30
     default_body: str = "venus"
     default_mission: str = "akatsuki"
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
 
+    @staticmethod
+    def validate(key: str, value: Any) -> Any:
+        """Return the normalised value, or raise ValueError with a readable message."""
+        if key not in SETTING_CHOICES:
+            raise ValueError(f"Unknown setting '{key}'")
+        rule = SETTING_CHOICES[key]
+        default = getattr(Settings(), key)
+        if isinstance(default, bool):
+            if not isinstance(value, bool):
+                raise ValueError(f"{key} must be true or false")
+            return value
+        if isinstance(default, int):
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or value != int(value):
+                raise ValueError(f"{key} must be a whole number")
+            lo, hi = rule
+            if not lo <= int(value) <= hi:
+                raise ValueError(f"{key} must be between {lo} and {hi}")
+            return int(value)
+        if not isinstance(value, str):
+            raise ValueError(f"{key} must be text")
+        if rule is None:
+            from .core.registry import get_body, get_mission
+            lookup = get_body if key == "default_body" else get_mission
+            if lookup(value) is None:
+                raise ValueError(f"{key}: '{value}' is not a known id")
+            return value
+        if value not in rule:
+            raise ValueError(f"{key} must be one of: {', '.join(rule)}")
+        return value
+
+    def update(self, patch: Dict[str, Any]) -> None:
+        """Validate every key first, then apply all or nothing."""
+        clean = {k: self.validate(k, v) for k, v in patch.items()}
+        for k, v in clean.items():
+            setattr(self, k, v)
+
+    def reset(self) -> None:
+        for k, v in Settings().to_dict().items():
+            setattr(self, k, v)
+
     @classmethod
     def load(cls) -> Settings:
         ensure_dirs()
+        s = cls()
         if not SETTINGS_PATH.is_file():
-            s = cls()
             s.save()
             return s
         try:
             with open(SETTINGS_PATH, "r", encoding="utf-8") as fh:
                 data = json.load(fh)
-            return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
-        except Exception:
-            return cls()
+        except (OSError, ValueError):
+            return s
+        if isinstance(data, dict):
+            for k, v in data.items():
+                try:
+                    setattr(s, k, cls.validate(k, v))
+                except ValueError:
+                    pass  # keep the default for unknown or invalid entries
+        return s
 
     def save(self) -> None:
         ensure_dirs()
+        tmp = SETTINGS_PATH.with_suffix(".json.tmp")
         try:
-            with open(SETTINGS_PATH, "w", encoding="utf-8") as fh:
+            with open(tmp, "w", encoding="utf-8") as fh:
                 json.dump(self.to_dict(), fh, indent=2)
-        except Exception:
+            os.replace(tmp, SETTINGS_PATH)  # atomic: no half-written file on crash
+        except OSError:
             pass
 
 

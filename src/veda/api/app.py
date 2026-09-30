@@ -15,7 +15,7 @@ from typing import Any, Dict, Literal
 
 import numpy as np
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -26,8 +26,11 @@ from ..config import (
     APP_TITLE,
     APP_VERSION,
     CACHE_DIR,
+    DATA_ROOT,
     EXPORT_DIR,
+    LOG_DIR,
     SETTINGS,
+    SETTINGS_PATH,
     ensure_dirs,
     frontend_dir,
     sampledata_dir,
@@ -52,12 +55,13 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    # The UI is served from this same origin, so no CORS headers are sent:
+    # other websites open in the browser cannot call this unauthenticated API.
+    # The Host check blocks DNS-rebinding; VEDA_ALLOWED_HOSTS adds more (for
+    # `veda-server --host 0.0.0.0`, e.g. "myhost,192.168.1.20").
+    extra_hosts = [h.strip() for h in os.environ.get("VEDA_ALLOWED_HOSTS", "").split(",") if h.strip()]
+    app.add_middleware(TrustedHostMiddleware,
+                       allowed_hosts=["127.0.0.1", "localhost", "testserver", *extra_hosts])
 
     # Mount VEDA multi-mission scientific router
     app.include_router(veda_router)
@@ -88,6 +92,14 @@ def create_app() -> FastAPI:
                 "version": APP_VERSION,
             },
             "settings": SETTINGS.to_dict(),
+            "paths": {
+                "data_root": str(DATA_ROOT),
+                "cache": str(CACHE_DIR),
+                "exports": str(EXPORT_DIR),
+                "logs": str(LOG_DIR),
+                "settings_file": str(SETTINGS_PATH),
+            },
+            "repository": "https://github.com/jovian-explorer/VEDA",
             "lead_researcher": LEAD_RESEARCHER,
             "data_availability": DATA_AVAILABILITY_STATEMENT,
             "variables": list_variables(),
@@ -99,13 +111,22 @@ def create_app() -> FastAPI:
     async def update_settings(request: Request) -> Dict[str, Any]:
         try:
             patch = await request.json()
-            for k, v in patch.items():
-                if hasattr(SETTINGS, k):
-                    setattr(SETTINGS, k, v)
-            SETTINGS.save()
-            return SETTINGS.to_dict()
-        except Exception as exc:
-            raise HTTPException(400, f"Invalid settings payload: {exc}")
+        except ValueError:
+            raise HTTPException(400, "Settings must be sent as a JSON object")
+        if not isinstance(patch, dict):
+            raise HTTPException(400, "Settings must be sent as a JSON object")
+        try:
+            SETTINGS.update(patch)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc))
+        SETTINGS.save()
+        return SETTINGS.to_dict()
+
+    @app.post("/api/settings/reset")
+    def reset_settings() -> Dict[str, Any]:
+        SETTINGS.reset()
+        SETTINGS.save()
+        return SETTINGS.to_dict()
 
     @app.get("/api/exports")
     def list_exports() -> Dict[str, Any]:
@@ -139,8 +160,8 @@ def create_app() -> FastAPI:
         return {"deleted": safe}
 
     @app.get("/api/reveal-folder")
-    def reveal_folder(which: Literal["exports", "cache"] = "exports") -> Dict[str, Any]:
-        target = EXPORT_DIR if which == "exports" else CACHE_DIR
+    def reveal_folder(which: Literal["exports", "cache", "logs", "data"] = "exports") -> Dict[str, Any]:
+        target = {"exports": EXPORT_DIR, "cache": CACHE_DIR, "logs": LOG_DIR, "data": DATA_ROOT}[which]
         ensure_dirs()
         try:
             if os.name == "nt":

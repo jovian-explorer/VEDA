@@ -30,6 +30,7 @@ from .extended_adapters import (
     RosettaAdapter,
 )
 from .isro_adapters import MomAdapter, Chandrayaan2Adapter
+from .uploads_adapter import MISSION_ID as UPLOADS_MISSION_ID, UploadsAdapter
 
 
 class MissionManager:
@@ -37,6 +38,7 @@ class MissionManager:
 
     def __init__(self):
         self._adapters: Dict[str, BaseMissionAdapter] = {}
+        self._uploads = UploadsAdapter()
         self._register_default_adapters()
 
     def _register_default_adapters(self) -> None:
@@ -62,6 +64,9 @@ class MissionManager:
         self._adapters[adapter.mission_id.lower()] = adapter
 
     def get_adapter(self, mission_id: str) -> Optional[BaseMissionAdapter]:
+        # User uploads are served like a mission but are not listed as one.
+        if mission_id.lower() == UPLOADS_MISSION_ID:
+            return self._uploads
         return self._adapters.get(mission_id.lower())
 
     def list_missions(self) -> List[str]:
