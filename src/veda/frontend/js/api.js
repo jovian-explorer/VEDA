@@ -30,6 +30,7 @@ export const api = {
   health:        ()          => call('/api/health'),
   meta:          ()          => call('/api/meta'),
   saveSettings:  (patch)     => call('/api/settings', {method: 'POST', body: patch}),
+  resetSettings: ()          => call('/api/settings/reset', {method: 'POST'}),
 
   archiveDay:    (date, streams) =>
       call(`/api/archive/day?date=${date}` + (streams ? `&streams=${streams}` : '')),

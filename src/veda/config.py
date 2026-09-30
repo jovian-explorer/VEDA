@@ -80,12 +80,9 @@ def ensure_dirs() -> None:
 SETTING_CHOICES: Dict[str, Any] = {
     "ui_theme": ("dark", "light", "system"),
     "ui_font_size": (11, 20),
-    "ui_mode": ("research", "educational"),
-    "plot_theme": ("dark", "light"),
     "plot_dpi": (72, 1200),
     "units_temperature": ("K", "C"),
     "units_pressure": ("hPa", "bar", "Pa"),
-    "auto_download_sample": (False, True),
     "network_enabled": (False, True),
     "network_timeout_s": (5, 300),
     "default_body": None,       # validated against the body registry
@@ -98,12 +95,9 @@ class Settings:
     """Persisted user settings for VEDA planetary laboratory."""
     ui_theme: str = "dark"
     ui_font_size: int = 14
-    ui_mode: str = "research"
-    plot_theme: str = "dark"
     plot_dpi: int = 300
     units_temperature: str = "K"
     units_pressure: str = "hPa"
-    auto_download_sample: bool = True
     network_enabled: bool = True
     network_timeout_s: int = 30
     default_body: str = "venus"

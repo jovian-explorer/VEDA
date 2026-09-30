@@ -2,8 +2,8 @@
  * VEDA: Visualization, Exploration, and Data Analysis
  * Dedicated Planetary Science Laboratory Workstation Controller
  */
-import { api } from './api.js';
-import { renderMath, toast, cleanPlotlyMath } from './ui.js';
+import { api, state } from './api.js';
+import { renderMath, toast, cleanPlotlyMath, themedLayout, plotColors } from './ui.js';
 
 // VEDA Global State
 export const vedaState = {
@@ -30,6 +30,7 @@ export const vedaState = {
   // Units State for Quick Unit Switcher
   unitsTemperature: 'K', // 'K' | 'C'
   unitsPressure: 'hPa',  // 'bar' | 'hPa' | 'Pa'
+  plotDpi: 300,          // publication figure DPI (from Settings)
   // FITS image controls
   imageStretch: 'zscale',
   imageColormap: 'inferno',
@@ -317,6 +318,40 @@ export function renderPlanetaryBodyQuickCard(bodyId, bodyDetails) {
 /**
  * Initialize VEDA UI and event handlers
  */
+// Apply the saved Settings.  On first load they also choose the starting body
+// and mission; later saves only change units and figure defaults.
+export function applyUserPreferences(settings, { initial = false } = {}) {
+  if (!settings) return;
+  if (settings.units_temperature) vedaState.unitsTemperature = settings.units_temperature;
+  if (settings.units_pressure) vedaState.unitsPressure = settings.units_pressure;
+  if (settings.plot_dpi) vedaState.plotDpi = settings.plot_dpi;
+  if (initial) {
+    if (settings.default_body) vedaState.activeBodyId = settings.default_body;
+    if (settings.default_mission) vedaState.activeMissionId = settings.default_mission;
+    vedaState.selectedCompareVariable = vedaState.unitsTemperature === 'C' ? 'temperature_c' : 'temperature_k';
+  }
+  syncUnitButtons();
+  const pub = document.getElementById('veda-btn-download-publication-fig');
+  if (pub) {
+    pub.textContent = `🏛️ Publication Figure (${vedaState.plotDpi} DPI)`;
+    pub.title = `Download a publication-quality figure at ${vedaState.plotDpi} DPI (change in Settings)`;
+  }
+  if (!initial && vedaState.mode === 'body') renderComparisonPlot();
+}
+
+function syncUnitButtons() {
+  const on = (id, active) => document.getElementById(id)?.classList.toggle('active', active);
+  on('btn-comp-unit-k', vedaState.unitsTemperature === 'K');
+  on('btn-comp-unit-c', vedaState.unitsTemperature === 'C');
+  on('btn-comp-unit-hpa', vedaState.unitsPressure === 'hPa');
+  on('btn-comp-unit-bar', vedaState.unitsPressure === 'bar');
+  on('btn-comp-unit-pa', vedaState.unitsPressure === 'Pa');
+  const varSelect = document.getElementById('veda-compare-variable-select');
+  if (varSelect && varSelect.querySelector(`option[value="${vedaState.selectedCompareVariable}"]`)) {
+    varSelect.value = vedaState.selectedCompareVariable;
+  }
+}
+
 export async function initVeda() {
   const container = document.getElementById('veda-container');
   if (!container) return;
@@ -333,6 +368,8 @@ export async function initVeda() {
     console.error('Failed to load VEDA initial registry:', err);
     return;
   }
+
+  applyUserPreferences(state.meta && state.meta.settings, { initial: true });
 
   // Setup DOM Event Listeners
   setupModeSwitching();
@@ -495,7 +532,7 @@ export async function loadAndRenderCelestialBody(bodyId) {
         <span class="checkbox-box"></span>
         <span class="mission-name-span">${m.name}</span>
         ${encBadge}
-        <span class="mission-instruments-hint">${(m.instruments || []).slice(0, 3).join(', ')}</span>
+        <span class="mission-instruments-hint" title="${(m.instruments || []).join(', ')}">${(m.instruments || []).slice(0, 3).join(', ')}</span>
       `;
       const input = label.querySelector('input');
       input.addEventListener('change', () => {
@@ -614,17 +651,34 @@ function setupBodyModeControls() {
     });
   }
 
-  // Publication Figure Generator (DPI 300)
+  // Publication figure at the DPI chosen in Settings.  Fetched first so a
+  // failure shows a message instead of a raw JSON error page.
   const btnPubFig = document.getElementById('veda-btn-download-publication-fig');
   if (btnPubFig) {
-    btnPubFig.addEventListener('click', () => {
+    btnPubFig.addEventListener('click', async () => {
       const mids = Array.from(vedaState.selectedMissionIdsForBody).join(',');
-      const url = api.vedaPublicationFigureUrl(vedaState.activeBodyId, vedaState.selectedCompareVariable, mids, 300, 'png');
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `veda_publication_${vedaState.activeBodyId}_${vedaState.selectedCompareVariable}.png`;
-      a.target = '_blank';
-      a.click();
+      const url = api.vedaPublicationFigureUrl(vedaState.activeBodyId, vedaState.selectedCompareVariable, mids, vedaState.plotDpi, 'png');
+      btnPubFig.disabled = true;
+      toast(`Rendering publication figure at ${vedaState.plotDpi} DPI...`);
+      try {
+        const res = await fetch(url);
+        if (!res.ok) {
+          let detail = `${res.status} ${res.statusText}`;
+          try { detail = (await res.json()).detail || detail; } catch (_) {}
+          throw new Error(detail);
+        }
+        const blobUrl = URL.createObjectURL(await res.blob());
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = `veda_publication_${vedaState.activeBodyId}_${vedaState.selectedCompareVariable}_${vedaState.plotDpi}dpi.png`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+        toast('Publication figure saved', 'good');
+      } catch (err) {
+        toast(`Could not create the figure: ${err.message}`, 'bad');
+      } finally {
+        btnPubFig.disabled = false;
+      }
     });
   }
 
@@ -710,23 +764,36 @@ function renderComparisonPlot() {
   const plotDiv = document.getElementById('veda-comparison-plot');
   if (!plotDiv || !window.Plotly) return;
 
-  const data = vedaState.lastComparisonData;
-  const varCfg = VARIABLE_CONFIGS[vedaState.selectedCompareVariable] || {
+  const raw = vedaState.lastComparisonData;
+  const baseCfg = VARIABLE_CONFIGS[vedaState.selectedCompareVariable] || {
     label: vedaState.selectedCompareVariable,
     units: '',
     axis: vedaState.selectedCompareVariable,
   };
-  if (!data || !data.grid_km || data.grid_km.length === 0 || !data.profile_count) {
+  // Pressure arrives in hPa; the quick unit switcher can show it in bar or Pa.
+  const pUnit = vedaState.selectedCompareVariable === 'pressure_hpa' ? vedaState.unitsPressure : 'hPa';
+  const pScale = { bar: 1e-3, Pa: 100 }[pUnit] || 1;
+  const varCfg = pScale === 1 ? baseCfg : { ...baseCfg, units: pUnit, axis: `Pressure (${pUnit})` };
+  if (!raw || !raw.grid_km || raw.grid_km.length === 0 || !raw.profile_count) {
     if (plotDiv.data) Plotly.purge(plotDiv);
     // varCfg.label is one of the app's own VARIABLE_CONFIGS labels (sub/sup markup).
     plotDiv.innerHTML = `<div class="empty-state">${
-      !data || !(data.grid_km || []).length
+      !raw || !(raw.grid_km || []).length
         ? 'No profile observations are selected or available for this body. Pick missions above to compare.'
         : `None of the selected observations contain ${cleanPlotlyMath(varCfg.label)}. ` +
           'Choose another variable or add missions that measure it.'
     }</div>`;
     return;
   }
+
+  const sc = a => (pScale === 1 || !Array.isArray(a)) ? a : a.map(v => (v === null ? v : v * pScale));
+  const data = pScale === 1 ? raw : {
+    ...raw,
+    composite_mean: sc(raw.composite_mean),
+    composite_plus_1sigma: sc(raw.composite_plus_1sigma),
+    composite_minus_1sigma: sc(raw.composite_minus_1sigma),
+    profiles: (raw.profiles || []).map(pr => ({ ...pr, interpolated_series: sc(pr.interpolated_series) })),
+  };
 
   const traces = [];
   const zGrid = data.grid_km;
@@ -780,7 +847,7 @@ function renderComparisonPlot() {
       y: zGrid,
       type: 'scatter',
       mode: 'lines',
-      line: { color: '#ffffff', width: 3.2 },
+      line: { color: plotColors().ink, width: 3.2 },
       name: 'Composite Mean \u03bc(z)',
       hovertemplate: `<b>Composite Mean</b><br>Alt: %{y:.1f} km<br>${varCfg.label}: %{x:.2f} ${varCfg.units}<extra></extra>`,
     });
@@ -808,18 +875,20 @@ function renderComparisonPlot() {
       zerolinecolor: '#37474f',
       tickfont: { size: Math.round(10.5 * fontScale) },
     },
+    // Legend sits under the x-axis so it never collides with the title.
     legend: {
       orientation: 'h',
       x: 0,
-      y: 1.12,
+      y: -0.16,
+      yanchor: 'top',
       font: { size: Math.round(11 * fontScale) },
     },
-    margin: { l: 65, r: 25, t: 70, b: 55 },
+    margin: { l: 65, r: 25, t: 56, b: 120 },
     hovermode: 'closest',
   };
 
   const config = { responsive: true, displayModeBar: true };
-  window.Plotly.newPlot(plotDiv, traces, layout, config);
+  window.Plotly.newPlot(plotDiv, traces, themedLayout(layout), config);
 }
 
 function renderComparisonTable() {
@@ -996,7 +1065,7 @@ export function renderPlanetaryMap(projection = '2d') {
       hovermode: 'closest',
     };
 
-    window.Plotly.newPlot(mapDiv, traces, layout, { responsive: true });
+    window.Plotly.newPlot(mapDiv, traces, themedLayout(layout), { responsive: true });
 
   } else {
     // 3D Orthographic Globe Projection
@@ -1106,7 +1175,7 @@ export function renderPlanetaryMap(projection = '2d') {
       margin: { l: 0, r: 0, t: 50, b: 0 },
     };
 
-    window.Plotly.newPlot(mapDiv, traces, layout, { responsive: true });
+    window.Plotly.newPlot(mapDiv, traces, themedLayout(layout), { responsive: true });
   }
 
   // Handle marker clicks to highlight in table
@@ -1572,7 +1641,7 @@ function renderSingleProfilePlot(prof, varKey) {
     margin: { l: 65, r: 25, t: 50, b: 50 },
   };
 
-  window.Plotly.newPlot(plotDiv, [trace], layout, { responsive: true });
+  window.Plotly.newPlot(plotDiv, [trace], themedLayout(layout), { responsive: true });
 }
 
 async function inspectImageObservation(obs) {
@@ -1827,7 +1896,7 @@ async function loadTransect(missionId, obsId, x0, y0, x1, y1) {
       yaxis: { title: { text: 'Intensity', font: { size: Math.round(11 * fontScale) } }, gridcolor: '#2a3441' },
       margin: { l: 45, r: 15, t: 30, b: 35 },
     };
-    window.Plotly.newPlot(plotDiv, [trace], layout, { responsive: true, displayModeBar: false });
+    window.Plotly.newPlot(plotDiv, [trace], themedLayout(layout), { responsive: true, displayModeBar: false });
   } catch (err) {
     plotDiv.innerHTML = `<div class="text-muted" style="padding: 10px;">Transect: ${err.message}</div>`;
   }
@@ -1858,7 +1927,7 @@ async function loadImageHistogram(missionId, obsId) {
       yaxis: { title: { text: 'Count', font: { size: Math.round(11 * fontScale) } }, gridcolor: '#2a3441' },
       margin: { l: 45, r: 15, t: 30, b: 35 },
     };
-    window.Plotly.newPlot(plotDiv, [trace], layout, { responsive: true, displayModeBar: false });
+    window.Plotly.newPlot(plotDiv, [trace], themedLayout(layout), { responsive: true, displayModeBar: false });
   } catch (err) {
     plotDiv.innerHTML = `<div class="text-muted" style="padding: 10px;">Histogram: ${err.message}</div>`;
   }

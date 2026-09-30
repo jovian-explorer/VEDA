@@ -244,6 +244,59 @@ export function cleanPlotlyMath(str) {
 /**
  * Dynamically relayout all active Plotly plots when universal font scale changes.
  */
+// ---------------------------------------------------------------- plot theme
+
+// Plot colours follow the active UI theme (read from the CSS variables).
+export function plotColors() {
+  const css = getComputedStyle(document.documentElement);
+  const v = (name, fallback) => (css.getPropertyValue(name) || '').trim() || fallback;
+  const dark = document.documentElement.dataset.theme !== 'light';
+  return {
+    ink: v('--ink', dark ? '#f1f5f9' : '#0f172a'),
+    inkSoft: v('--ink-soft', dark ? '#94a3b8' : '#475569'),
+    grid: dark ? '#2a3441' : '#e2e8f0',
+    zero: dark ? '#37474f' : '#cbd5e1',
+    plotBg: dark ? 'rgba(25, 30, 36, 0.6)' : 'rgba(255, 255, 255, 0.9)',
+  };
+}
+
+function themeAxis(axis, c) {
+  if (!axis) return;
+  axis.gridcolor = c.grid;
+  axis.zerolinecolor = c.zero;
+  axis.linecolor = c.zero;
+  axis.tickfont = { ...(axis.tickfont || {}), color: c.inkSoft };
+  if (axis.title && typeof axis.title === 'object') {
+    axis.title.font = { ...(axis.title.font || {}), color: c.ink };
+  }
+}
+
+// Return the layout with its text, grid and background colours set for the
+// current theme.  Plot-specific settings (sizes, ranges, legends) are kept.
+export function themedLayout(layout) {
+  const c = plotColors();
+  const l = { ...layout };
+  l.paper_bgcolor = 'transparent';
+  if (l.plot_bgcolor !== 'transparent') l.plot_bgcolor = c.plotBg;
+  l.font = { ...(l.font || {}), color: c.inkSoft };
+  if (l.title && typeof l.title === 'object') l.title = { ...l.title, font: { ...(l.title.font || {}), color: c.ink } };
+  if (l.legend) l.legend = { ...l.legend, font: { ...(l.legend.font || {}), color: c.ink } };
+  Object.keys(l).filter(k => /^[xy]axis\d*$/.test(k)).forEach(k => {
+    l[k] = { ...l[k], title: l[k].title && typeof l[k].title === 'object' ? { ...l[k].title } : l[k].title };
+    themeAxis(l[k], c);
+  });
+  return l;
+}
+
+// Recolour every plot already on screen (after the theme changes).
+export function rethemePlots() {
+  if (!window.Plotly) return;
+  document.querySelectorAll('.js-plotly-plot').forEach(p => {
+    if (!p.layout) return;
+    try { window.Plotly.relayout(p, themedLayout(p.layout)); } catch (_) {}
+  });
+}
+
 export function updatePlotlyFonts() {
   const root = document.documentElement;
   const fontScale = parseFloat(getComputedStyle(root).getPropertyValue('--font-scale') || '1.0');

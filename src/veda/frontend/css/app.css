@@ -34,6 +34,16 @@
   --mono: "Cascadia Code", "Fira Code", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --ui-font-size: 14px;
   --font-scale: 1.0;
+
+  /* Aliases used across components and inline styles; they follow the theme
+     because they resolve against --ink / --line on the same element. */
+  --text: var(--ink);
+  --text-primary: var(--ink);
+  --text-secondary: var(--ink-soft);
+  --text-muted: var(--ink-soft);
+  --text-dim: var(--ink-soft);
+  --border-color: var(--line);
+  --card-bg: var(--surface-elevated);
 }
 
 :root[data-theme="dark"] {
@@ -138,7 +148,8 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 16px 0; }
   box-shadow: 0 0 22px rgba(0, 229, 255, 0.75);
 }
 .sub { margin: 0; font-size: calc(11.5px * var(--font-scale, 1.0)); color: var(--ink-soft); }
-.topright { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.topright { margin-left: auto; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+.topright > button, .mode-btn { white-space: nowrap; }
 
 .tabs {
   display: inline-flex;
@@ -633,9 +644,11 @@ body.no-curious [data-curious] { display: none; }
   overflow-y: auto;
 }
 .mission-checkbox-label {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
   align-items: center;
-  gap: 10px;
+  column-gap: 10px;
+  row-gap: 2px;
   padding: 7px 10px;
   border-radius: 6px;
   border: 1px solid var(--line);
@@ -646,7 +659,17 @@ body.no-curious [data-curious] { display: none; }
 }
 .mission-checkbox-label:hover { background: var(--bg); }
 .mission-name-span { font-weight: 600; }
-.mission-instruments-hint { margin-left: auto; font-size: calc(11px * var(--font-scale, 1.0)); color: var(--ink-soft); }
+.mission-instruments-hint {
+  grid-column: 1 / -1;
+  padding-left: 24px;
+  font-size: calc(11px * var(--font-scale, 1.0));
+  color: var(--ink-soft);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 
 /* Badges */
 .badge {
@@ -790,11 +813,12 @@ body.no-curious [data-curious] { display: none; }
   color: var(--text);
   border-color: var(--accent);
 }
-.view-subtab-btn.active {
-  background: var(--accent);
+.view-subtab-btn.active,
+.view-subtab-btn.active:hover {
+  background: var(--focal-gradient);
   color: #fff;
-  border-color: var(--accent);
-  box-shadow: 0 2px 8px rgba(30, 136, 229, 0.35);
+  border-color: var(--focal);
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);
 }
 
 /* Planetary Map Controls */
@@ -1218,8 +1242,8 @@ body.no-curious [data-curious] { display: none; }
   align-items: center;
   gap: 16px;
   padding: 10px 14px;
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--surface-elevated);
+  border: 1px solid var(--line);
   border-radius: 8px;
   margin-bottom: 12px;
   flex-wrap: wrap;
@@ -1227,7 +1251,7 @@ body.no-curious [data-curious] { display: none; }
 .switcher-label {
   font-size: calc(12px * var(--font-scale, 1.0));
   font-weight: 700;
-  color: #38bdf8;
+  color: var(--focal);
   display: flex;
   align-items: center;
   gap: 5px;
@@ -1240,19 +1264,19 @@ body.no-curious [data-curious] { display: none; }
 .unit-type-tag {
   font-size: calc(11.5px * var(--font-scale, 1.0));
   font-weight: 600;
-  color: #94a3b8;
+  color: var(--ink-soft);
 }
 .pill-group {
   display: inline-flex;
-  background: rgba(0, 0, 0, 0.35);
+  background: var(--focal-soft);
   padding: 2px;
   border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--line);
 }
 .unit-pill {
   border: 0;
   background: transparent;
-  color: #94a3b8;
+  color: var(--ink-soft);
   padding: 4px 10px;
   font-size: calc(11.5px * var(--font-scale, 1.0));
   font-weight: 600;
@@ -1260,14 +1284,17 @@ body.no-curious [data-curious] { display: none; }
   cursor: pointer;
   transition: all 0.15s ease;
 }
-.unit-pill:hover {
-  color: #f8fafc;
-  background: rgba(255, 255, 255, 0.08);
+button.unit-pill:hover:not(:disabled) {
+  color: var(--ink);
+  background: var(--focal-soft);
+  border-color: transparent;
 }
-.unit-pill.active {
-  background: #0284c7;
+/* Beats the generic button:hover rule so the active pill stays readable. */
+button.unit-pill.active,
+button.unit-pill.active:hover:not(:disabled) {
+  background: var(--focal-gradient);
   color: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 .quick-unit-switcher-row {
   display: flex;
@@ -1414,3 +1441,71 @@ body.no-curious [data-curious] { display: none; }
 .zoom-label:hover {
   color: var(--focal);
 }
+
+/* ---------- Settings / Help / About drawers ---------- */
+.settings-form fieldset { margin: 0 0 14px; }
+.settings-field { display: grid; gap: 4px; margin-bottom: 12px; }
+.settings-field .hint { margin: 0; }
+.settings-label { color: var(--ink); font-weight: 600; }
+.settings-field input, .settings-field select { width: 100%; }
+.settings-check { display: flex; align-items: flex-start; gap: 8px; color: var(--ink); cursor: pointer; }
+.settings-check input { margin-top: 3px; }
+.settings-folder {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 6px 0; border-bottom: 1px solid var(--line);
+}
+.settings-folder:last-child { border-bottom: 0; }
+.settings-folder > div { flex: 1; min-width: 0; }
+.settings-folder > button { flex: none; }
+.settings-path {
+  display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--ink-soft); font-size: calc(11px * var(--font-scale, 1.0));
+}
+.settings-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+.settings-error {
+  margin-bottom: 12px; padding: 8px 12px; border-radius: var(--radius-sm);
+  background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent);
+}
+.settings-error.hidden { display: none; }
+
+.help-search { width: 100%; margin-bottom: 14px; }
+.help-body section { margin-bottom: 6px; }
+.help-body ol, .help-body ul { padding-left: 20px; }
+.help-faq dt { font-weight: 600; color: var(--ink); margin-top: 10px; }
+.help-faq dd { margin: 2px 0 0; color: var(--ink-soft); }
+kbd {
+  font-family: var(--mono); font-size: 0.85em; padding: 1px 5px; border-radius: 4px;
+  border: 1px solid var(--line); background: var(--surface-elevated); color: var(--ink);
+}
+
+.about-hero { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 8px; }
+.about-hero img { border-radius: 50%; flex: none; }
+.about-hero h2 { display: flex; align-items: center; gap: 8px; }
+.about-hero .badge { background: var(--focal-soft); color: var(--focal); }
+.about-missions { color: var(--ink-soft); }
+.about-bibtex {
+  background: var(--surface-elevated); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: 10px; overflow-x: auto; color: var(--ink);
+}
+.about-paths { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; }
+.about-paths dt { color: var(--ink-soft); }
+.about-paths dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+
+/* Light theme: the capsule behind the mode buttons must stay light. */
+:root:not([data-theme="dark"]) .mode-switcher-wrap {
+  background: rgba(15, 23, 42, 0.05);
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+:root:not([data-theme="dark"]) .mode-btn:not(.active):hover { background: rgba(15, 23, 42, 0.06); }
+
+/* Keep the header on one row on typical laptop widths. */
+@media (max-width: 1600px) {
+  .brand .sub { display: none; }
+  .brand { min-width: 0; }
+}
+.version-tag { font-size: 0.6em; font-weight: 600; color: var(--ink-soft); vertical-align: middle; margin-left: 4px; }
+
+/* Mission view observation list: keep short columns on one line and let the
+   long observation id wrap instead of squeezing the date. */
+.obs-table-wrap td, .obs-table-wrap th { white-space: nowrap; vertical-align: top; }
+.obs-table-wrap td:first-child { white-space: normal; overflow-wrap: anywhere; min-width: 140px; }

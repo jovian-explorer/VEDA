@@ -3,8 +3,8 @@
  * Main Application Shell and Orchestrator
  */
 import { api, state } from './api.js';
-import { $, $$, el, banner, toast, drawer, closeDrawer, renderMath, updatePlotlyFonts } from './ui.js';
-import { initVeda, switchMode } from './veda_app.js';
+import { $, $$, el, banner, toast, drawer, closeDrawer, renderMath, updatePlotlyFonts, rethemePlots } from './ui.js';
+import { initVeda, switchMode, vedaState, applyUserPreferences } from './veda_app.js';
 
 const FONT_SCALES = [0.85, 0.92, 1.0, 1.10, 1.20, 1.32, 1.45];
 let currentScaleIdx = 2; // Default 1.0 (100%)
@@ -97,7 +97,7 @@ function wireChrome() {
 
   const btnHelp = $('#btn-help');
   if (btnHelp) {
-    btnHelp.addEventListener('click', () => drawer('Planetary Science Guide', helpBody()));
+    btnHelp.addEventListener('click', () => drawer('Help', helpBody()));
   }
 
   const closeBtn = $('#drawer-close');
@@ -119,221 +119,316 @@ function wireChrome() {
   }
 }
 
+const REPO_URL = 'https://github.com/jovian-explorer/VEDA';
+
+function appVersion() {
+  return (state.meta && state.meta.app && state.meta.app.version) || '';
+}
+
+function vedaBibtex() {
+  return `@software{Aggarwal_VEDA_${new Date().getFullYear()},
+  author    = {Keshav Aggarwal},
+  title     = {{VEDA: Visualization, Exploration, and Data Analysis - A Multi-Mission Planetary Science Data Laboratory}},
+  year      = {${new Date().getFullYear()}},
+  publisher = {Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO},
+  version   = {${appVersion()}},
+  url       = {${REPO_URL}},
+  address   = {Thiruvananthapuram, Kerala, India}
+}`;
+}
+
+// "system" follows the operating system's light/dark preference.
+const systemDark = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+
+function resolvedTheme(theme) {
+  if (theme === 'system') return systemDark && !systemDark.matches ? 'light' : 'dark';
+  return theme === 'light' ? 'light' : 'dark';
+}
+
 function applySettings(settings) {
-  if (settings.ui_theme) {
-    document.documentElement.dataset.theme = settings.ui_theme;
-  }
+  if (!settings) return;
+  document.documentElement.dataset.theme = resolvedTheme(settings.ui_theme);
   if (settings.ui_font_size) {
     document.documentElement.style.setProperty('--ui-font-size', `${settings.ui_font_size}px`);
+    applyFontScale(FONT_SCALES[currentScaleIdx]);
   }
+  rethemePlots();
+}
+
+if (systemDark) {
+  systemDark.addEventListener('change', () => {
+    const s = state.meta && state.meta.settings;
+    if (s && s.ui_theme === 'system') applySettings(s);
+  });
+}
+
+function choice(id, current, options) {
+  return el('select', { id },
+    ...options.map(([value, label]) => el('option', { value, selected: String(current) === String(value) }, label)));
+}
+
+function field(label, control, hint) {
+  return el('label', { class: 'settings-field' },
+    el('span', { class: 'settings-label' }, label),
+    control,
+    hint ? el('span', { class: 'hint' }, hint) : null);
 }
 
 function settingsBody() {
-  const container = el('div', { class: 'stack' });
-  const curSettings = (state.meta && state.meta.settings) || {};
+  const s = (state.meta && state.meta.settings) || {};
+  const paths = (state.meta && state.meta.paths) || {};
+  const bodies = (vedaState.bodies || []).map(b => [b.id, b.name]);
+  const missions = (vedaState.missions || []).map(m => [m.id, m.name]);
+  const currentScale = FONT_SCALES[currentScaleIdx];
+
+  const errorBox = el('div', { class: 'settings-error hidden', role: 'alert' });
+  const showError = (msg) => {
+    errorBox.textContent = msg;
+    errorBox.classList.toggle('hidden', !msg);
+  };
+
+  const commit = async (request, okMessage) => {
+    showError('');
+    try {
+      const updated = await request();
+      if (state.meta) state.meta.settings = updated;
+      applySettings(updated);
+      applyUserPreferences(updated);
+      toast(okMessage, 'good');
+      return updated;
+    } catch (err) {
+      showError(err.message);
+      return null;
+    }
+  };
 
   const form = el('form', {
+    class: 'settings-form',
     onsubmit: async (e) => {
       e.preventDefault();
       const patch = {
         ui_theme: $('#s-theme').value,
         ui_font_size: parseInt($('#s-font').value, 10),
-        ui_mode: $('#s-mode').value,
-        plot_theme: $('#s-plot-theme').value,
-        plot_dpi: parseInt($('#s-plot-dpi').value, 10),
         units_temperature: $('#s-units-temp').value,
+        units_pressure: $('#s-units-pres').value,
+        plot_dpi: parseInt($('#s-plot-dpi').value, 10),
+        network_enabled: $('#s-network').checked,
+        network_timeout_s: parseInt($('#s-timeout').value, 10),
       };
-      try {
-        const updated = await api.saveSettings(patch);
-        if (state.meta) state.meta.settings = updated;
-        applySettings(updated);
-        toast('Settings saved');
-      } catch (err) {
-        toast('Error saving settings: ' + err, 'bad');
-      }
-    }
+      if ($('#s-default-body')) patch.default_body = $('#s-default-body').value;
+      if ($('#s-default-mission')) patch.default_mission = $('#s-default-mission').value;
+      await commit(() => api.saveSettings(patch), 'Settings saved');
+    },
   });
 
+  const folderRow = (which, label, path) => el('div', { class: 'settings-folder' },
+    el('div', {},
+      el('div', { class: 'settings-label' }, label),
+      el('code', { class: 'settings-path', title: path || '' }, path || 'unknown')),
+    el('button', {
+      type: 'button', class: 'ghost small',
+      onclick: async () => {
+        try { await api.revealFolder(which); } catch (err) { toast(err.message, 'bad'); }
+      },
+    }, 'Open'));
+
   form.append(
-    el('label', {}, 'Interface Theme ',
-      el('select', { id: 's-theme' },
-        el('option', { value: 'dark', selected: curSettings.ui_theme !== 'light' }, 'Dark / Deep Space'),
-        el('option', { value: 'light', selected: curSettings.ui_theme === 'light' }, 'Light / Day')
-      )
-    ),
-    el('label', {}, 'Base Font Size (px) ',
-      el('input', { type: 'number', id: 's-font', value: curSettings.ui_font_size || 14, min: 10, max: 24 })
-    ),
-    el('label', {}, 'Universal UI Zoom / Scale ',
-      el('select', { id: 's-font-scale', onchange: (e) => applyFontScale(parseFloat(e.target.value)) },
-        el('option', { value: '0.85', selected: Math.round(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--font-scale') || '1') * 100) === 85 }, 'Compact (85%)'),
-        el('option', { value: '0.92', selected: Math.round(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--font-scale') || '1') * 100) === 92 }, 'Small (92%)'),
-        el('option', { value: '1.0', selected: Math.round(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--font-scale') || '1') * 100) === 100 }, 'Standard (100%)'),
-        el('option', { value: '1.10', selected: Math.round(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--font-scale') || '1') * 100) === 110 }, 'Medium Large (110%)'),
-        el('option', { value: '1.20', selected: Math.round(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--font-scale') || '1') * 100) === 120 }, 'Large (120%)'),
-        el('option', { value: '1.32', selected: Math.round(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--font-scale') || '1') * 100) === 132 }, 'Extra Large (132%)'),
-        el('option', { value: '1.45', selected: Math.round(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--font-scale') || '1') * 100) === 145 }, 'Maximum Accessibility (145%)')
-      )
-    ),
-    el('label', {}, 'Interface Mode ',
-      el('select', { id: 's-mode' },
-        el('option', { value: 'research', selected: curSettings.ui_mode !== 'educational' }, 'Research (Scientific Workstation)'),
-        el('option', { value: 'educational', selected: curSettings.ui_mode === 'educational' }, 'Educational (Extended Guidance)')
-      )
-    ),
-    el('hr'),
-    el('h3', {}, 'Visualization Defaults'),
-    el('label', {}, 'Plot Theme ',
-      el('select', { id: 's-plot-theme' },
-        el('option', { value: 'dark', selected: curSettings.plot_theme !== 'light' }, 'Deep Space (Dark)'),
-        el('option', { value: 'light', selected: curSettings.plot_theme === 'light' }, 'Publication Clean (Light)')
-      )
-    ),
-    el('label', {}, 'Publication Plot DPI ',
-      el('input', { type: 'number', id: 's-plot-dpi', value: curSettings.plot_dpi || 300, min: 72, max: 1200, step: 50 })
-    ),
-    el('label', {}, 'Temperature Units ',
-      el('select', { id: 's-units-temp' },
-        el('option', { value: 'K', selected: curSettings.units_temperature !== 'C' }, 'Kelvin (K)'),
-        el('option', { value: 'C', selected: curSettings.units_temperature === 'C' }, 'Celsius (°C)')
-      )
-    ),
-    el('hr'),
-    el('button', { class: 'primary', type: 'submit' }, 'Save Settings')
+    errorBox,
+    el('fieldset', {},
+      el('legend', {}, 'Appearance'),
+      field('Theme', choice('s-theme', s.ui_theme || 'dark',
+        [['dark', 'Dark'], ['light', 'Light'], ['system', 'Follow system']])),
+      field('Base font size (px)',
+        el('input', { type: 'number', id: 's-font', value: s.ui_font_size || 14, min: 11, max: 20, required: true }),
+        '11 to 20. Use A- / A+ in the toolbar to zoom the whole interface.'),
+      field('Interface zoom', el('select', {
+        id: 's-font-scale',
+        onchange: (e) => {
+          const v = parseFloat(e.target.value);
+          currentScaleIdx = Math.max(0, FONT_SCALES.indexOf(v));
+          applyFontScale(v);
+        },
+      }, ...FONT_SCALES.map(v => el('option', { value: String(v), selected: v === currentScale }, `${Math.round(v * 100)}%`))),
+        'Saved on this computer only.')),
+    el('fieldset', {},
+      el('legend', {}, 'Units'),
+      field('Temperature', choice('s-units-temp', s.units_temperature || 'K', [['K', 'Kelvin (K)'], ['C', 'Celsius (°C)']])),
+      field('Pressure', choice('s-units-pres', s.units_pressure || 'hPa', [['hPa', 'Hectopascal (hPa)'], ['bar', 'bar'], ['Pa', 'Pascal (Pa)']]))),
+    el('fieldset', {},
+      el('legend', {}, 'Start-up'),
+      bodies.length ? field('Open on body', choice('s-default-body', s.default_body || 'venus', bodies)) : null,
+      missions.length ? field('Default mission', choice('s-default-mission', s.default_mission || 'akatsuki', missions),
+        'Used the next time VEDA starts.') : null),
+    el('fieldset', {},
+      el('legend', {}, 'Figures'),
+      field('Publication figure DPI',
+        el('input', { type: 'number', id: 's-plot-dpi', value: s.plot_dpi || 300, min: 72, max: 1200, step: 1, required: true }),
+        '72 to 1200. Journals usually ask for 300 or 600.')),
+    el('fieldset', {},
+      el('legend', {}, 'Network'),
+      el('label', { class: 'settings-check' },
+        el('input', { type: 'checkbox', id: 's-network', checked: s.network_enabled !== false }),
+        el('span', {}, 'Allow downloads from online archives (NASA PDS, ESA PSA, JAXA DARTS, ISRO ISSDC)')),
+      field('Download timeout (seconds)',
+        el('input', { type: 'number', id: 's-timeout', value: s.network_timeout_s || 30, min: 5, max: 300, required: true }),
+        'How long to wait for a slow archive before giving up.')),
+    el('fieldset', {},
+      el('legend', {}, 'Data folders'),
+      folderRow('data', 'VEDA data', paths.data_root),
+      folderRow('cache', 'Downloads & uploads cache', paths.cache),
+      folderRow('exports', 'Exports', paths.exports),
+      folderRow('logs', 'Logs', paths.logs)),
+    el('div', { class: 'settings-actions' },
+      el('button', { class: 'primary', type: 'submit' }, 'Save settings'),
+      el('button', {
+        class: 'ghost', type: 'button',
+        onclick: async () => {
+          if (!confirm('Reset all settings to their defaults?')) return;
+          const updated = await commit(() => api.resetSettings(), 'Settings reset to defaults');
+          if (updated) drawer('Settings', settingsBody());
+        },
+      }, 'Reset to defaults')),
   );
 
-  container.append(form);
-  return container;
+  return el('div', { class: 'stack' }, form);
 }
 
 function helpBody() {
-  const container = el('div', { class: 'stack' });
+  const container = el('div', { class: 'stack help-body' });
   container.innerHTML = `
-    <h3>VEDA Planetary Science Handbook</h3>
-    
-    <h4>1. Exploration Paradigms</h4>
-    <p><strong>🪐 By Celestial Body:</strong> Select any non-Earth target in our Solar System (Venus, Mars, Jupiter, Saturn, Titan, Pluto, Mercury, Moon, Ceres, Vesta, Comet 67P) to discover and simultaneously compare observations from all spacecraft that investigated it.</p>
-    <p><strong>🛰️ By Planetary Mission:</strong> Delve into specific orbiter and flyby encounter data products across 15 premier robotic missions (Akatsuki, Cassini, New Horizons, Juno, MAVEN, BepiColombo, Venus Express, Galileo, MESSENGER, Magellan, Pioneer Venus, MRO, LRO, Dawn, Rosetta).</p>
-    
-    <h4>2. Physical Diagnostics and Equations</h4>
-    <ul>
-      <li>
-        <strong>Hydrostatic Balance and Ideal Gas State:</strong>
-        <p>$$\\frac{dP}{dz} = -\\rho(z) g(z), \\quad P(z) = \\rho(z) R_{spec} T(z)$$</p>
-        where specific gas constant $R_{spec} = R_{univ} / \\mu$ and altitude-dependent gravity is $g(z) = g_0 (R_p / (R_p + z))^2$.
-      </li>
-      <li>
-        <strong>Poisson Potential Temperature ($\\theta$):</strong>
-        <p>$$\\theta(z) = T(z) \\left(\\frac{P_0}{P(z)}\\right)^{\\frac{R_{spec}}{C_p}}$$</p>
-        where $P_0$ is the target reference pressure level and $C_p$ is isobaric heat capacity.
-      </li>
-      <li>
-        <strong>Brunt-Vaisala Static Stability Frequency ($N^2$):</strong>
-        <p>$$N^2(z) = \\frac{g(z)}{T(z)}\\left(\\frac{dT}{dz} + \\Gamma_d\\right) = \\frac{g(z)}{\\theta(z)}\\frac{d\\theta}{dz}$$</p>
-        where dry adiabatic lapse rate $\\Gamma_d = g(z) / C_p$. Negative $N^2$ values identify dynamically unstable convective regions, whereas positive values represent buoyant oscillatory stability.
-      </li>
-      <li>
-        <strong>Gravity Wave Potential Energy ($E_p$):</strong>
-        <p>$$E_p(z) = \\frac{1}{2}\\left(\\frac{g(z)}{N(z)}\\right)^2 \\overline{\\left(\\frac{T'(z)}{\\overline{T}(z)}\\right)^2}$$</p>
-        evaluated via vertical background-detrending to quantify atmospheric gravity wave breaking and momentum deposition.
-      </li>
-      <li>
-        <strong>Radio Occultation Abel Inversion:</strong>
-        <p>$$\\mu(r) - 1 = \\frac{1}{\\pi} \\int_r^{r_{top}} \\frac{\\alpha(a)}{\\sqrt{a^2 - r^2}}\\,da$$</p>
-        retrieving neutral atmospheric refractive index $\\mu(r)$ and ionospheric electron density $N_e(r)$ from spacecraft radio Doppler shifts.
-      </li>
-      <li>
-        <strong>Vertical Total Electron Content (VTEC):</strong>
-        <p>$$\\text{VTEC} = 10^{-7} \\int N_e(z)\\,dz \\quad [\\text{TECU}]$$</p>
-        integrating vertical electron density to quantify ionospheric plasma content.
-      </li>
-      <li>
-        <strong>1D Photometric Line Transects:</strong>
-        <p>Real-time cross-section slicing across calibrated scientific FITS images $(x_0, y_0) \\to (x_1, y_1)$ with dynamic percentile and ZScale stretch algorithms.</p>
-      </li>
-    </ul>
+    <input type="search" id="help-search" class="help-search" placeholder="Search help..." aria-label="Search help" />
 
-    <h4>3. Remote Planetary Data Archives</h4>
-    <p>Direct live search and streaming acquisition from NASA Planetary Data System (PDS), ESA Planetary Science Archive (PSA), and JAXA DARTS. Downloads feature chunked transfer, progress tracking, and SHA-256 cryptographic verification.</p>
+    <section data-help>
+      <h3>Quick start</h3>
+      <ol>
+        <li>Pick a planet, moon or comet under <strong>By Celestial Body</strong>.</li>
+        <li>Tick the missions to compare and choose a variable (temperature, pressure, density...).</li>
+        <li>Read the composite profile and the &plusmn;1&sigma; spread; open any row of the table with <strong>Deep Dive</strong>.</li>
+        <li>Export the comparison as CSV, a PNG snapshot, or a publication figure.</li>
+      </ol>
+    </section>
 
-    <h4>4. Data Provenance and Scientific Validation</h4>
-    <p>Researchers utilizing VEDA for publication must verify derived profiles against official PDS3/PDS4 labels and calibration documentation. VEDA performs deterministic mathematical operations and does not alter underlying archived data points.</p>
+    <section data-help>
+      <h3>Exploring by mission</h3>
+      <p><strong>By Planetary Mission</strong> lists each spacecraft's observations. Open one to plot a profile or to view an image with stretch, colour map, histogram and line-transect tools. <strong>Remote Archives</strong> searches the official catalogue for that mission and downloads files into the cache.</p>
+    </section>
+
+    <section data-help>
+      <h3>Loading your own files</h3>
+      <p>Use <strong>Load File</strong> or drag files onto the window. Supported: PDS3 tables (<code>.lbl</code> + <code>.tab</code>), CSV and plain-text tables (<code>.csv</code>, <code>.txt</code>, <code>.dat</code>, <code>.asc</code>), FITS images (<code>.fit</code>, <code>.fits</code>, <code>.fts</code>) and PNG/JPEG images.</p>
+      <p>For a PDS3 product, select the <code>.lbl</code> label <em>and</em> its <code>.tab</code> table together: the label describes the columns. Text tables need an altitude column (ALTITUDE, ALT, HEIGHT, Z or RADIUS); temperature, pressure, electron density and refractivity columns are detected by name. Loaded files appear under the <em>user_imported</em> mission so you can reopen them.</p>
+    </section>
+
+    <section data-help>
+      <h3>Units and settings</h3>
+      <p>The quick unit switcher (K / &deg;C, bar / hPa / Pa) changes the comparison plot straight away. Default units, the start-up body, figure DPI, network access and the theme are in <strong>Settings</strong>.</p>
+    </section>
+
+    <section data-help>
+      <h3>Keyboard</h3>
+      <ul>
+        <li><kbd>Esc</kbd> closes this panel.</li>
+        <li><kbd>Tab</kbd> / <kbd>Shift</kbd>+<kbd>Tab</kbd> move between controls; <kbd>Enter</kbd> or <kbd>Space</kbd> activates them.</li>
+        <li>Plots: drag to zoom, double-click to reset, use the toolbar to pan or save a PNG.</li>
+      </ul>
+    </section>
+
+    <section data-help>
+      <h3>Troubleshooting</h3>
+      <dl class="help-faq">
+        <dt>"... is a PDS3 label and its data table was not included"</dt>
+        <dd>Select the <code>.lbl</code> and <code>.tab</code> files together in the file dialog (Ctrl/Cmd-click) or drop both at once.</dd>
+        <dt>"No altitude column found"</dt>
+        <dd>The table has no recognisable altitude axis. Rename the column (e.g. <code>altitude</code>) or load the PDS3 label with it.</dd>
+        <dt>The comparison plot is empty</dt>
+        <dd>None of the ticked missions measured the chosen variable. Pick another variable or tick more missions.</dd>
+        <dt>A download fails or times out</dt>
+        <dd>Check your internet connection, make sure downloads are allowed in Settings &gt; Network, or raise the timeout. Archives are sometimes offline for maintenance.</dd>
+        <dt>The window is blank or does not open</dt>
+        <dd>VEDA also runs in your web browser: start it with <code>veda-server</code> and open the address it prints. On Linux the desktop window needs GTK or Qt (see the README).</dd>
+        <dt>Where are my files?</dt>
+        <dd>Settings &gt; Data folders shows the cache, export and log folders and opens them. The log file helps when reporting a problem.</dd>
+      </dl>
+      <p>Still stuck? <a href="${REPO_URL}/issues" target="_blank" rel="noopener">Open an issue on GitHub</a> and attach the log file.</p>
+    </section>
+
+    <section data-help>
+      <h3>The science: diagnostics and equations</h3>
+      <ul>
+        <li><strong>Hydrostatic balance and ideal gas:</strong>
+          <p>$$\\frac{dP}{dz} = -\\rho(z) g(z), \\quad P(z) = \\rho(z) R_{spec} T(z)$$</p>
+          with $R_{spec} = R_{univ} / \\mu$ and $g(z) = g_0 (R_p / (R_p + z))^2$.</li>
+        <li><strong>Potential temperature ($\\theta$):</strong>
+          <p>$$\\theta(z) = T(z) \\left(\\frac{P_0}{P(z)}\\right)^{R_{spec}/C_p}$$</p></li>
+        <li><strong>Brunt-V&auml;is&auml;l&auml; frequency ($N^2$):</strong>
+          <p>$$N^2(z) = \\frac{g(z)}{T(z)}\\left(\\frac{dT}{dz} + \\Gamma_d\\right), \\quad \\Gamma_d = g/C_p$$</p>
+          Negative $N^2$ marks convectively unstable layers.</li>
+        <li><strong>Gravity-wave potential energy:</strong>
+          <p>$$E_p(z) = \\frac{1}{2}\\left(\\frac{g}{N}\\right)^2 \\overline{\\left(\\frac{T'}{\\overline{T}}\\right)^2}$$</p></li>
+        <li><strong>Radio occultation (Abel inversion):</strong>
+          <p>$$\\mu(r) - 1 = \\frac{1}{\\pi} \\int_r^{r_{top}} \\frac{\\alpha(a)}{\\sqrt{a^2 - r^2}}\\,da$$</p></li>
+        <li><strong>Vertical total electron content:</strong>
+          <p>$$\\text{VTEC} = 10^{-7} \\int N_e(z)\\,dz \\quad [\\text{TECU}]$$</p></li>
+      </ul>
+      <p>The <strong>Variables</strong> panel lists every variable with its formula, reference and DOI. VEDA does not alter archived values; check derived profiles against the official PDS labels and calibration documents before publishing.</p>
+    </section>
   `;
+  const search = container.querySelector('#help-search');
+  search.addEventListener('input', () => {
+    const q = search.value.trim().toLowerCase();
+    container.querySelectorAll('[data-help]').forEach(sec => {
+      sec.style.display = !q || sec.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+  renderMath(container);
   return container;
 }
 
 function aboutBody() {
-  const container = el('div', { class: 'stack' });
+  const version = appVersion();
+  const paths = (state.meta && state.meta.paths) || {};
+  const container = el('div', { class: 'stack about-body' });
   container.innerHTML = `
-    <h2>VEDA: Visualization, Exploration, and Data Analysis</h2>
-    <p>VEDA is an open multi-mission planetary science computational platform built for discovering, downloading, processing, analyzing, visualizing, and comparing scientific observations from robotic planetary spacecraft across the Solar System.</p>
+    <div class="about-hero">
+      <img src="img/veda_logo.png" alt="" width="56" height="56" />
+      <div>
+        <h2>VEDA ${version ? `<span class="badge">v${version}</span>` : ''}</h2>
+        <p>Visualization, Exploration, and Data Analysis: a multi-mission planetary science laboratory for discovering, processing, comparing and plotting spacecraft observations across the Solar System.</p>
+        <p><a href="${REPO_URL}" target="_blank" rel="noopener">Source code &amp; releases</a> &middot;
+           <a href="${REPO_URL}/issues" target="_blank" rel="noopener">Report a problem</a> &middot;
+           <a href="https://jovian-explorer.github.io/" target="_blank" rel="noopener">Author's website</a></p>
+      </div>
+    </div>
 
-    <h3>Primary Missions Supported</h3>
-    <ul>
-      <li><strong>Akatsuki (VCO)</strong>: Venus Climate Orbiter (JAXA)</li>
-      <li><strong>Venus Express (VEX)</strong>: Atmospheric Orbiter (ESA)</li>
-      <li><strong>Magellan</strong>: Radar and Radio Science Orbiter (NASA)</li>
-      <li><strong>Pioneer Venus Orbiter (PVO)</strong>: Long-term In-situ Sounder (NASA)</li>
-      <li><strong>BepiColombo</strong>: Mercury Planetary and Magnetospheric Orbiters (ESA / JAXA)</li>
-      <li><strong>MESSENGER</strong>: Mercury Surface and Exosphere Orbiter (NASA)</li>
-      <li><strong>MAVEN</strong>: Mars Atmospheric and Volatile Evolution Orbiter (NASA)</li>
-      <li><strong>Mars Reconnaissance Orbiter (MRO)</strong>: Climate Sounder and Reconnaissance (NASA)</li>
-      <li><strong>Juno</strong>: Polar Jovian Orbiter (NASA)</li>
-      <li><strong>Galileo</strong>: Jovian System Orbiter and Probe (NASA)</li>
-      <li><strong>Cassini-Huygens</strong>: Saturn, Ring System, and Titan Orbiter (NASA / ESA)</li>
-      <li><strong>New Horizons</strong>: Pluto System and Kuiper Belt Encounter (NASA)</li>
-      <li><strong>Lunar Reconnaissance Orbiter (LRO)</strong>: High-Resolution Lunar Orbiter (NASA)</li>
-      <li><strong>Dawn</strong>: Vesta and Ceres Protoplanet Orbiter (NASA)</li>
-      <li><strong>Rosetta</strong>: Comet 67P/Churyumov-Gerasimenko Rendezvous and Lander (ESA)</li>
-      <li><strong>Mars Orbiter Mission (MOM / Mangalyaan)</strong>: Mars Exospheric and Imaging Orbiter (ISRO)</li>
-      <li><strong>Chandrayaan-2 Orbiter (CH2O)</strong>: Lunar Exosphere, Ionosphere, and High-Resolution Mapping (ISRO)</li>
-    </ul>
+    <h3>Author</h3>
+    <p><strong>Keshav Aggarwal</strong>, Research Associate, Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO, Thiruvananthapuram, India. Formerly Prime Minister's Research Fellow, DAASE, IIT Indore.</p>
 
-    <hr/>
+    <h3>Missions</h3>
+    <p class="about-missions">${(vedaState.missions || []).map(m => m.name).join(' &middot; ') || 'Akatsuki, Venus Express, Magellan, Pioneer Venus, BepiColombo, MESSENGER, MAVEN, MRO, Juno, Galileo, Cassini-Huygens, New Horizons, LRO, Dawn, Rosetta, Mars Orbiter Mission, Chandrayaan-2'}</p>
 
-    <h3>Third-Party Planetary Data Policy and Archives</h3>
-    <p>VEDA ingests and visualizes public planetary science data from international space agency archives. VEDA does not claim ownership of underlying raw or calibrated telemetry.</p>
-    <ul>
-      <li><strong>NASA Planetary Data System (PDS):</strong> Public domain datasets provided by NASA SMD (Atmospheres, PPI, Geosciences, Small Bodies, and Imaging nodes).</li>
-      <li><strong>ESA Planetary Science Archive (PSA):</strong> Open-access research data provided by ESA ESAC. Publications must include standard ESA PSA acknowledgments.</li>
-      <li><strong>JAXA DARTS / ISAS:</strong> Open-access scientific data provided by JAXA. Publications must credit JAXA and the Akatsuki / mission teams.</li>
-      <li><strong>ISRO ISSDC:</strong> Planetary datasets provided under ISRO science data terms.</li>
-    </ul>
+    <h3>How to cite</h3>
+    <p>Cite both the mission dataset (instrument team and archive DOI) and VEDA:</p>
+    <pre class="about-bibtex">${vedaBibtex()}</pre>
+    <button type="button" class="ghost small" id="btn-copy-bibtex">Copy citation</button>
 
-    <h4>Mandatory Dual-Attribution for Academic Publications</h4>
-    <p>When publishing scientific research that uses data, figures, or analyses produced with VEDA, researchers are required to cite both:</p>
-    <ol>
-      <li>The primary space agency dataset, instrument PI team, and archive DOI.</li>
-      <li>The VEDA software platform.</li>
-    </ol>
+    <h3>Data &amp; license</h3>
+    <p>VEDA reads public data from NASA PDS, ESA PSA, JAXA DARTS and ISRO ISSDC and does not claim ownership of it; see <strong>Data &amp; Licenses</strong> for each archive's terms. VEDA itself is released under the MIT License. Bundled libraries: KaTeX, Plotly.js, Three.js (MIT); FastAPI, Pydantic (MIT); Uvicorn, NumPy, SciPy, Astropy, PyWebView (BSD-3-Clause); Matplotlib (PSF).</p>
 
-    <p><strong>BibTeX Citation for VEDA:</strong></p>
-    <pre style="background: rgba(0,0,0,0.4); padding: 10px; border-radius: 6px; font-size: calc(11px * var(--font-scale, 1.0)); overflow-x: auto;">
-@software{Aggarwal_VEDA_2026,
-  author    = {Keshav Aggarwal},
-  title     = {{VEDA: Visualization, Exploration, and Data Analysis - A Multi-Mission Planetary Science Data Laboratory}},
-  year      = {2026},
-  publisher = {Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO},
-  version   = {1.0.0},
-  url       = {https://jovian-explorer.github.io/},
-  address   = {Thiruvananthapuram, Kerala, India}
-}</pre>
-
-    <hr/>
-
-    <h3>Software License and Open-Source Attributions</h3>
-    <p><strong>License:</strong> VEDA is open-source software released under the <strong>MIT License</strong>. Copyright (c) 2026 Keshav Aggarwal, Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO.</p>
-    <p><strong>Third-Party Libraries:</strong> VEDA utilizes and bundles permissive open-source libraries: KaTeX (MIT), Plotly.js (MIT), Three.js (MIT), FastAPI (MIT), Pydantic (MIT), Uvicorn (BSD-3-Clause), NumPy (BSD-3-Clause), SciPy (BSD-3-Clause), Astropy (BSD-3-Clause), Matplotlib (PSF), and PyWebView (BSD-3-Clause). Full license notices are available in the repository documentation.</p>
-
-    <hr/>
-
-    <h3>Lead Researcher and Developer</h3>
-    <p><strong>Keshav Aggarwal</strong></p>
-    <p>Research Associate, Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), Indian Space Research Organisation (ISRO), Thiruvananthapuram, Kerala, India.</p>
-    <p>Former Prime Minister's Research Fellow (PMRF Scholar), Department of Astronomy, Astrophysics and Space Engineering (DAASE), Indian Institute of Technology (IIT) Indore.</p>
-    <p>Research Specialization: Planetary Radio Occultation, Space Physics, Solar Wind Velocity and Turbulence, Coronal Electron Density, and Planetary Atmospheric and Ionospheric Structure.</p>
-    <p><a href="https://jovian-explorer.github.io/" target="_blank" rel="noopener">🌐 Visit Researcher Website ↗</a></p>
+    <h3>This installation</h3>
+    <dl class="about-paths">
+      <dt>Data folder</dt><dd><code>${paths.data_root || 'unknown'}</code></dd>
+      <dt>Settings file</dt><dd><code>${paths.settings_file || 'unknown'}</code></dd>
+      <dt>Logs</dt><dd><code>${paths.logs || 'unknown'}</code></dd>
+    </dl>
   `;
+  container.querySelector('#btn-copy-bibtex').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(vedaBibtex());
+      toast('Citation copied', 'good');
+    } catch (_) {
+      toast('Could not copy; select the text and copy it manually', 'bad');
+    }
+  });
   return container;
 }
 
@@ -345,7 +440,7 @@ function variablesCatalogBody() {
   vars.forEach(v => {
     const formulaHtml = v.formula ? `<div class="guide-formula-box" style="margin: 6px 0; padding: 6px 10px; background: rgba(0,0,0,0.18); border: 1px solid var(--border-color); border-radius: 4px;">$$${v.formula}$$</div>` : '';
     const doiLink = v.doi ? `<a href="https://doi.org/${v.doi}" target="_blank" rel="noopener" class="link" style="color: var(--accent);">DOI: ${v.doi} ↗</a>` : '';
-    const archiveHtml = v.archive ? `<span class="badge" style="font-size: calc(10px * var(--font-scale, 1.0)); padding: 2px 6px; background: rgba(0, 229, 255, 0.12); color: #00e5ff;">${v.archive}</span>` : '';
+    const archiveHtml = v.archive ? `<span class="badge" style="font-size: calc(10px * var(--font-scale, 1.0)); padding: 2px 6px; background: rgba(0, 229, 255, 0.12); color: var(--focal);">${v.archive}</span>` : '';
     const refHtml = v.reference ? `<p style="font-size: calc(11px * var(--font-scale, 1.0)); color: var(--text-secondary); margin: 4px 0;"><strong>Reference:</strong> ${v.reference} ${doiLink}</p>` : '';
     const catBadge = v.category ? `<span class="badge" style="font-size: calc(10px * var(--font-scale, 1.0)); padding: 2px 6px; text-transform: uppercase;">${v.category}</span>` : '';
 
@@ -353,7 +448,7 @@ function variablesCatalogBody() {
       <div class="card" style="margin-bottom: 10px; padding: 12px; background: rgba(0,0,0,0.18); border: 1px solid var(--border-color); border-radius: 6px;">
         <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px;">
           <div>
-            <strong style="font-size: calc(14px * var(--font-scale, 1.0)); color: #00e5ff;">${v.label || v.id}</strong>
+            <strong style="font-size: calc(14px * var(--font-scale, 1.0)); color: var(--focal);">${v.label || v.id}</strong>
             <code style="margin-left: 6px; font-size: calc(11px * var(--font-scale, 1.0)); background: rgba(0,0,0,0.3); padding: 2px 4px; border-radius: 3px;">${v.id}</code>
             ${v.units && v.units !== '-' ? `<span style="margin-left: 6px; font-size: calc(11px * var(--font-scale, 1.0)); color: var(--text-secondary);">[${v.units}]</span>` : ''}
           </div>
@@ -383,7 +478,7 @@ function dataPolicyBody() {
   const container = el('div', { class: 'stack' });
   const portals = (state.meta && state.meta.data_portals) || [];
   const stmt = (state.meta && state.meta.data_availability) ||
-    'The planetary spacecraft observations and radio occultation profiles analyzed in this study were retrieved from international planetary data archives: NASA Planetary Data System (PDS) Atmospheres Node (https://pds-atmospheres.nmsu.edu/), European Space Agency (ESA) Planetary Science Archive (PSA) (https://archives.esac.esa.int/psa/), JAXA Data Archives and Transmission System (DARTS) (https://data.darts.isas.jaxa.jp/), and ISRO Indian Space Science Data Centre (ISSDC / PRADAN) (https://pradan.issdc.gov.in/). Cross-mission calibration, thermodynamic profiling, and comparative analysis were conducted using VEDA (Version 2.0.0), available open-source at https://github.com/jovian-explorer/VEDA.';
+    'The planetary spacecraft observations and radio occultation profiles analyzed in this study were retrieved from international planetary data archives: NASA Planetary Data System (PDS) Atmospheres Node (https://pds-atmospheres.nmsu.edu/), European Space Agency (ESA) Planetary Science Archive (PSA) (https://archives.esac.esa.int/psa/), JAXA Data Archives and Transmission System (DARTS) (https://data.darts.isas.jaxa.jp/), and ISRO Indian Space Science Data Centre (ISSDC / PRADAN) (https://pradan.issdc.gov.in/). Cross-mission calibration, thermodynamic profiling, and comparative analysis were conducted using VEDA (Version ' + appVersion() + '), available open-source at ' + REPO_URL + '.';
 
   let portalsHtml = '';
   portals.forEach(p => {
@@ -391,13 +486,13 @@ function dataPolicyBody() {
     portalsHtml += `
       <div class="card" style="margin-bottom: 8px; padding: 10px; background: rgba(0,0,0,0.18); border: 1px solid var(--border-color); border-radius: 6px;">
         <div style="display: flex; justify-content: space-between; align-items: baseline;">
-          <strong style="font-size: calc(13px * var(--font-scale, 1.0)); color: #00e5ff;">${p.name}</strong>
+          <strong style="font-size: calc(13px * var(--font-scale, 1.0)); color: var(--focal);">${p.name}</strong>
           <span class="badge" style="font-size: calc(10px * var(--font-scale, 1.0));">${p.agency}</span>
         </div>
         <p style="font-size: calc(11px * var(--font-scale, 1.0)); margin: 4px 0; color: var(--text-primary);">${p.description}</p>
         ${missions}
         <div style="margin-top: 6px;">
-          <a href="${p.url}" target="_blank" rel="noopener" class="link" style="font-size: calc(11px * var(--font-scale, 1.0)); color: #00e5ff;">Official Archive Portal ↗</a>
+          <a href="${p.url}" target="_blank" rel="noopener" class="link" style="font-size: calc(11px * var(--font-scale, 1.0)); color: var(--focal);">Official Archive Portal ↗</a>
         </div>
       </div>
     `;
@@ -410,7 +505,7 @@ function dataPolicyBody() {
     <p style="font-size: calc(12px * var(--font-scale, 1.0)); color: var(--text-secondary);">
       Authors utilizing VEDA for academic peer-reviewed publications are requested to include the following Data Availability Statement:
     </p>
-    <blockquote style="background: rgba(0,0,0,0.2); border-left: 4px solid #00e5ff; margin: 8px 0; padding: 10px 14px; font-size: calc(12px * var(--font-scale, 1.0)); color: var(--text-secondary); line-height: 1.5;">
+    <blockquote style="background: rgba(0,0,0,0.2); border-left: 4px solid var(--focal); margin: 8px 0; padding: 10px 14px; font-size: calc(12px * var(--font-scale, 1.0)); color: var(--text-secondary); line-height: 1.5;">
       "${stmt}"
     </blockquote>
 
@@ -426,16 +521,7 @@ function dataPolicyBody() {
     <p style="font-size: calc(12px * var(--font-scale, 1.0)); color: var(--text-secondary); margin-bottom: 8px;">
       In accordance with open science practices, academic publications must cite both the primary spacecraft instrument dataset (via DOI) and the VEDA computational platform:
     </p>
-    <pre style="background: rgba(0,0,0,0.4); padding: 10px; border-radius: 6px; font-size: calc(11px * var(--font-scale, 1.0)); overflow-x: auto; color: var(--text-primary);">
-@software{Aggarwal_VEDA_2026,
-  author    = {Keshav Aggarwal},
-  title     = {{VEDA: Visualization, Exploration, and Data Analysis - A Multi-Mission Planetary Science Data Laboratory}},
-  year      = {2026},
-  publisher = {Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO},
-  version   = {2.0.0},
-  url       = {https://jovian-explorer.github.io/},
-  address   = {Thiruvananthapuram, Kerala, India}
-}</pre>
+    <pre class="about-bibtex">${vedaBibtex()}</pre>
 
     <h3 style="margin-top: 16px;">4. Software & Open-Source Licenses</h3>
     <p style="font-size: calc(12px * var(--font-scale, 1.0)); color: var(--text-secondary);">
@@ -447,7 +533,7 @@ function dataPolicyBody() {
 
     <h3 style="margin-top: 16px;">5. Lead Researcher and Principal Architect</h3>
     <div class="card" style="padding: 12px; background: rgba(0,0,0,0.18); border: 1px solid var(--border-color); border-radius: 6px;">
-      <strong style="font-size: calc(14px * var(--font-scale, 1.0)); color: #00e5ff;">Keshav Aggarwal</strong>
+      <strong style="font-size: calc(14px * var(--font-scale, 1.0)); color: var(--focal);">Keshav Aggarwal</strong>
       <p style="font-size: calc(12px * var(--font-scale, 1.0)); margin: 4px 0; color: var(--text-secondary);">
         Research Associate, Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), Indian Space Research Organisation (ISRO), Thiruvananthapuram, Kerala, India.
       </p>
@@ -458,7 +544,7 @@ function dataPolicyBody() {
         Research Specialization: Planetary Radio Occultation, Space Physics, Solar Wind Velocity and Turbulence, Coronal Electron Density, and Planetary Atmospheric and Ionospheric Structure.
       </p>
       <div style="margin-top: 6px;">
-        <a href="https://jovian-explorer.github.io/" target="_blank" rel="noopener" class="link" style="font-size: calc(11px * var(--font-scale, 1.0)); color: #00e5ff;">🌐 Researcher Website ↗</a>
+        <a href="https://jovian-explorer.github.io/" target="_blank" rel="noopener" class="link" style="font-size: calc(11px * var(--font-scale, 1.0)); color: var(--focal);">🌐 Researcher Website ↗</a>
       </div>
     </div>
   `;

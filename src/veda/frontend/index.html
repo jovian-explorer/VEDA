@@ -17,8 +17,8 @@
   <div class="brand veda-brand">
     <img src="img/veda_logo.png" class="veda-brand-logo" alt="VEDA Emblem" />
     <div>
-      <h1>VEDA</h1>
-      <p class="sub">Visualization, Exploration, and Data Analysis &bull; Planetary Science Lab <span id="version-tag"></span></p>
+      <h1>VEDA <span id="version-tag" class="version-tag"></span></h1>
+      <p class="sub">Visualization, Exploration, and Data Analysis &bull; Planetary Science Lab</p>
     </div>
   </div>
 
@@ -46,8 +46,8 @@
     <button class="ghost" id="btn-veda-vars" title="Explore registered planetary analysis variables, KaTeX formulas, and DOIs">Variables</button>
     <button class="ghost" id="btn-veda-data-policy" title="Authoritative planetary data archives, availability statement, and open-source licenses">Data & Licenses</button>
     <button class="ghost" id="btn-settings">Settings</button>
-    <button class="ghost" id="btn-about">About VEDA</button>
-    <button class="ghost" id="btn-help">Science Docs</button>
+    <button class="ghost" id="btn-about" title="Version, citation, license and data folders">About</button>
+    <button class="ghost" id="btn-help" title="How to use VEDA, the science behind it, and troubleshooting">Help</button>
   </div>
 </header>
 
@@ -240,7 +240,7 @@
         </label>
       </div>
 
-      <div style="max-height: 440px; overflow-y: auto; margin-top: 10px;">
+      <div class="obs-table-wrap" style="max-height: 440px; overflow: auto; margin-top: 10px;">
         <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: calc(12px * var(--font-scale, 1.0));">
           <thead>
             <tr style="border-bottom: 1px solid var(--line); text-align: left;">

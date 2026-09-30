@@ -25,7 +25,7 @@ from typing import Any, Callable, Dict, List, Optional
 from ..core.registry import MISSIONS, BODIES, get_mission, get_body
 
 
-from ..config import CACHE_DIR, sampledata_dir
+from ..config import CACHE_DIR, SETTINGS, sampledata_dir
 
 
 @dataclass
@@ -318,12 +318,21 @@ class ArchivePipeline:
                 progress_cb(task)
             return task
 
+        if not SETTINGS.network_enabled:
+            task.status = "failed"
+            task.error_message = ("Online downloads are turned off (Settings > Network). "
+                                  "Turn them on to fetch this file from the archive.")
+            task.completed_at = time.time()
+            if progress_cb:
+                progress_cb(task)
+            return task
+
         # Stream download
         req = urllib.request.Request(remote_url, headers={"User-Agent": "VEDA-Planetary-Science/2.0"})
         hasher = hashlib.sha256()
 
         try:
-            with urllib.request.urlopen(req, timeout=30) as resp, dest_file.open("wb") as out_f:
+            with urllib.request.urlopen(req, timeout=SETTINGS.network_timeout_s) as resp, dest_file.open("wb") as out_f:
                 total_len = resp.headers.get("Content-Length")
                 if total_len:
                     task.total_bytes = int(total_len)
@@ -350,7 +359,7 @@ class ArchivePipeline:
 
         except Exception as e:
             task.status = "failed"
-            task.error_message = str(e)
+            task.error_message = _describe_download_error(e, remote_url, SETTINGS.network_timeout_s)
             task.completed_at = time.time()
             if dest_file.exists():
                 try:
@@ -406,6 +415,24 @@ class ArchivePipeline:
 
 
 _GLOBAL_PIPELINE: Optional[ArchivePipeline] = None
+
+def _describe_download_error(exc: Exception, url: str, timeout_s: int) -> str:
+    """Plain-language reason a download failed."""
+    import socket
+    from urllib.parse import urlparse
+    host = urlparse(url).netloc or url
+    if isinstance(exc, urllib.error.HTTPError):
+        if exc.code == 404:
+            return f"The archive ({host}) no longer has this file (HTTP 404)."
+        return f"The archive ({host}) refused the request (HTTP {exc.code} {exc.reason})."
+    reason = getattr(exc, "reason", exc)
+    if isinstance(exc, (TimeoutError, socket.timeout)) or isinstance(reason, (TimeoutError, socket.timeout)):
+        return (f"No response from {host} within {timeout_s} s. The archive may be slow or offline; "
+                "try again later or raise the timeout in Settings > Network.")
+    if isinstance(exc, urllib.error.URLError):
+        return f"Could not connect to {host}: {reason}. Check your internet connection."
+    return f"Download failed: {exc}"
+
 
 def get_archive_pipeline() -> ArchivePipeline:
     global _GLOBAL_PIPELINE
