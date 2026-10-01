@@ -151,6 +151,56 @@ MGN_UNITS = {   # from catalog/mgn_rtpd.cat and mgn_abs.cat (the labels give non
 
 DATASETS: List[Dataset] = [
     Dataset(
+        id="jno-x-mwr", mission_id="juno", instrument="MWR (Microwave Radiometer)", level="EDR + derived",
+        title="Juno microwave radiometer: raw records, antenna and brightness temperatures, NH3/H2O distributions",
+        body_ids=("jupiter",), archive="NASA PDS Atmospheres Node",
+        base_url="https://pds-atmospheres.nmsu.edu/PDS/data/",
+        volume_pattern=r"^jnomwr_\d{4}$",
+        rules=(
+            (r"/atm-bright-temp/", "Atmospheric brightness temperature", "other"),
+            (r"/antenna-temp/", "Antenna temperature", "other"),
+            (r"/nh3-distribution/", "NH3 distribution (derived)", "other"),
+            (r"/h2o-distribution/", "H2O distribution (derived)", "other"),
+            (r"/synchrotron/", "Synchrotron emission", "other"),
+            (r"/edr/", "Raw science record (EDR)", "other"),
+            (r"/irdr/", "IRDR record", "other"),
+            (r"/grdr/", "GRDR record", "other"),
+        ),
+        citation="Janssen, M. A., et al. (2017). MWR: Microwave Radiometer for the Juno mission to Jupiter. Space Sci. Rev., 213, 139-185.",
+    ),
+    Dataset(
+        id="vex-v-rss-1-ent-v1.0", mission_id="vex", instrument="VeRa (Radio Science)", level="L1 + ancillary",
+        title="Venus Express radio science (PDS copy): raw records, Earth ionosphere/troposphere calibrations, SPICE",
+        body_ids=("venus",), archive="NASA PDS Atmospheres Node",
+        base_url="https://pds-atmospheres.nmsu.edu/PDS/data/",
+        volume_pattern=r"^VXRS_\d{4}$",
+        rules=(
+            (r"(^|/)rsr/", "Radio science receiver (open-loop) record", "other"),
+            (r"(^|/)odf/", "Orbit data file (closed loop)", "other"),
+            (r"(^|/)tnf/", "Tracking and navigation file", "other"),
+            (r"(^|/)ion/", "Earth ionosphere calibration", "other"),
+            (r"(^|/)tro/", "Earth troposphere calibration", "other"),
+            (r"(^|/)wea/", "DSN weather", "other"),
+            (r"(^|/)(bsp|bck|brs|bro)/", "Ephemeris / attitude (SPICE)", "other"),
+        ),
+        citation="Hausler, B., et al. (2006). Radio science investigations by VeRa onboard the Venus Express spacecraft. PSS, 54, 1315-1335.",
+    ),
+    Dataset(
+        id="vex-v-vra-1-2-3", mission_id="vex", instrument="VeRa (Radio Science)", level="L1A-L2",
+        title="Venus Express VeRa (ESA PSA): open- and closed-loop Doppler and power, levels 1A to 2, per orbit",
+        body_ids=("venus",), archive="ESA PSA",
+        base_url="https://archives.esac.esa.int/psa/ftp/VENUS-EXPRESS/VRA/",
+        volume_pattern=r"^VEX-[VX]-VRA-1-2-3-",
+        rules=(
+            (r"/level02/", "Level 2 (calibrated) record", "other"),
+            (r"/level1b/", "Level 1B record", "other"),
+            (r"/level1a/", "Level 1A record", "other"),
+        ),
+        # e.g. V32ICL2L1B_AG1_073610303_00.LBL -> 2007 day 361 03:03 (the index has no times)
+        time_from_name=r"_(?P<yy>\d{2})(?P<doy>\d{3})(?P<hh>\d{2})(?P<mm>\d{2})_\d+\.",
+        citation="Hausler, B., et al. (2006). Radio science investigations by VeRa onboard the Venus Express spacecraft. PSS, 54, 1315-1335.",
+    ),
+    Dataset(
         id="mgn-v-rss-5-occ-prof-rtpd-v1.0", mission_id="magellan", instrument="RSS (Radio Science)", level="L5",
         title="Magellan radio occultation, October 1991: refractivity, temperature, pressure and density profiles",
         body_ids=("venus",), archive="NASA PDS Atmospheres Node",

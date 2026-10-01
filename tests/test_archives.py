@@ -116,3 +116,9 @@ def test_records_split_by_stray_newlines_are_rejoined():
     assert _rejoin_broken_records(lines) == [rec] * 41 + ["short tail ok"]
     free_text = ["a", "bb", "ccc", "dddd"]          # not fixed-length: left alone
     assert _rejoin_broken_records(free_text) == free_text
+
+
+def test_venus_express_vera_time_from_file_name():
+    ds = get_dataset("vex-v-vra-1-2-3")
+    assert ds.time_from_filename("V32ICL2L1B_AG1_073610303_00.LBL") == "2007-12-27T03:03:00"
+    assert ds.classify("DATA/LEVEL02/CLOSED_LOOP/IFMS/DP1/V32ICL2L02_D1X_073610303_00.LBL")[0] == "Level 2 (calibrated) record"
