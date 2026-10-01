@@ -66,6 +66,19 @@ class Dataset:
     # public index): VEDA links to the login page and imports what is downloaded.
     portal_only: bool = False
     portal_help: str = ""
+    # Index rows giving PATH + FILENAME relative to a data folder (MRO MCS: "DATA/")
+    data_prefix: str = ""
+    # Read one cumulative index (in the newest volume) instead of every volume's index
+    cumulative_index: Optional[str] = None
+    # Index automatically on first search; False for very large indexes (indexed on request)
+    auto_index: bool = True
+    index_note: str = ""
+    # Live search (no index copy): "psa_tap" | "pds_api" | "opus", with the service query
+    # (see veda.archives.services).  Products are listed per date window.
+    service: Optional[str] = None
+    service_query: Dict[str, object] = field(default_factory=dict)
+    # Reference keys (veda/archives/references.json): instrument papers first, then the mission paper.
+    refs: Tuple[str, ...] = ()
 
     def classify(self, file_name: str) -> Tuple[str, str]:
         name = file_name.lower()
@@ -97,6 +110,8 @@ class Dataset:
             "archive": self.archive, "url": self.base_url, "citation": self.citation,
             "doi": self.doi, "needs_login": bool(self.login_url), "login_url": self.login_url,
             "portal_only": self.portal_only, "portal_help": self.portal_help,
+            "live": bool(self.service), "service": self.service, "refs": list(self.refs),
+            "auto_index": self.auto_index, "index_note": self.index_note,
         }
 
 
@@ -388,6 +403,38 @@ DATASETS: List[Dataset] = [
         citation=AKATSUKI_CITATION,
     ),
 ]
+
+
+# Further data sets: every Akatsuki camera, more NASA PDS3 volumes, and live search for all
+# payloads served by the ESA PSA, the NASA PDS Registry and OPUS.
+from .indexed_datasets import INDEXED_DATASETS  # noqa: E402
+from .service_datasets import SERVICE_DATASETS  # noqa: E402
+
+DATASETS.extend(INDEXED_DATASETS)
+DATASETS.extend(SERVICE_DATASETS)
+
+# Reference papers of the original data sets (keys in references.json)
+_REFS = {
+    "corss_occul_el_dens": ("kliore2008", "kliore2004", "matson2002"),
+    "jno-x-mwr": ("janssen2017", "bolton2017"),
+    "vex-v-rss-1-ent-v1.0": ("hausler2006", "svedhem2007"),
+    "vex-v-vra-1-2-3": ("hausler2006", "svedhem2007"),
+    "mgn-v-rss-5-occ-prof-rtpd-v1.0": ("jenkins1994", "steffes1994", "saunders1992"),
+    "mgn-v-rss-5-occ-prof-abs-h2so4-v1.0": ("jenkins1994", "steffes1994", "saunders1992"),
+    "mgn-v-rss-1-rocc-v2.0": ("jenkins1994", "saunders1992"),
+    "gp-j-entry-v1.0": ("seiff1998", "johnson1992"),
+    "hp-ssa-hasi-2-3-4-mission-v1.1": ("fulchignoni2005", "fulchignoni2002", "matson2002"),
+    "mgs-m-rss-5-sdp-v1.0": ("tyler2001", "hinson1999", "albee2001"),
+    "mex-m-mrs-5-occ": ("patzold2016", "patzold2004", "chicarro2004"),
+    "vco-v-rs-5-occ-v1.0": ("imamura2017", "nakamura2016"),
+    "vco-v-rs-3-occ-v1.0": ("imamura2017", "nakamura2016"),
+    "issdc-mom": ("arunan2015",),
+    "issdc-ch2": (),
+}
+for _i, _d in enumerate(DATASETS):
+    if _d.id in _REFS and not _d.refs:
+        import dataclasses as _dc
+        DATASETS[_i] = _dc.replace(_d, refs=_REFS[_d.id])
 
 
 def get_dataset(dataset_id: str) -> Optional[Dataset]:

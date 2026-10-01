@@ -231,6 +231,7 @@ export function orient(values, coord) {
 /** Download a plot at journal column width, or at its on-screen size. */
 export function exportFigure(gd, filename) {
   if (!window.Plotly || !gd) return;
+  import('./citations.js').then(m => m.recordFeature('figure_export')).catch(() => {});
   const j = JOURNALS[style.journal] || JOURNALS.agu;
   const mm = style.exportColumns === 'double' ? j.double_mm : j.single_mm;
   const widthPx = Math.round(mm / 25.4 * 96);           // CSS px at 96 per inch

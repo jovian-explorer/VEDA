@@ -216,37 +216,82 @@ def index_volume(ds: Dataset, volume: str) -> List[Dict[str, Any]]:
             continue
     label = _with_structure(label, tab_url.rsplit("/", 1)[0] + "/", ds.login_url)
     table = http.get_text(tab_url, login_url=ds.login_url)
-    out = []
-    for row in parse_index(label, table):
-        path = _pick(row, "FILE_SPECIFICATION_NAME", "PATH_NAME", "FILE_NAME")
-        if row.get("PATH_NAME") and row.get("FILE_NAME"):
-            path = row["PATH_NAME"].rstrip("/") + "/" + row["FILE_NAME"]
-        if not path:
+    return [r for r in (_index_row(ds, volume, vol_url, row) for row in parse_index(label, table)) if r]
+
+
+def _index_row(ds: Dataset, volume: str, vol_url: str, row: Dict[str, str]) -> Optional[Dict[str, Any]]:
+    """One index-table row as a catalogue row (None when it names no product)."""
+    path = _pick(row, "FILE_SPECIFICATION_NAME", "PATH_NAME", "FILE_NAME")
+    if row.get("PATH_NAME") and row.get("FILE_NAME"):
+        path = row["PATH_NAME"].rstrip("/") + "/" + row["FILE_NAME"]
+    elif row.get("PATH") and row.get("FILENAME"):           # MRO MCS
+        path = ds.data_prefix + row["PATH"].strip("/") + "/" + row["FILENAME"]
+    if not path:
+        return None
+    path = path.replace("\\", "/").lstrip("/")
+    if ds.label_from_data and not path.lower().endswith(".lbl"):
+        stem = path.rsplit(".", 1)[0]
+        path = stem + (".LBL" if path[-3:].isupper() else ".lbl")
+    if ".." in PurePosixPath(path).parts:
+        return None  # never let an index entry point outside the volume
+    product_id = PurePosixPath(path).stem
+    ptype, kind = ds.classify(path)   # full path: some archives encode the type in the folder
+    extra = {k: v for k, v in row.items()
+             if k not in ("FILE_SPECIFICATION_NAME", "PATH_NAME", "FILE_NAME") and v}
+    return {
+        "dataset_id": ds.id, "product_id": product_id, "volume": volume, "path": path,
+        # Never fall back to PRODUCT_CREATION_TIME: that is when the archive
+        # file was made, not when the observation was taken.
+        "start_time": _normalise_time(_pick(row, "START_TIME", "OBSERVATION_TIME", "IMAGE_TIME",
+                                            "SPACECRAFT_EVENT_TIME", "UTC_START_TIME"))
+                      or ds.time_from_filename(PurePosixPath(path).name)
+                      or (_label_start_time(vol_url, path, ds.login_url) if ds.times_from_labels else "")
+                      or (ds.fixed_time or ""),
+        "stop_time": _normalise_time(_pick(row, "STOP_TIME")),
+        # Single-body data sets often omit TARGET_NAME from their index.
+        "target": (_pick(row, "TARGET_NAME", "TARGET*") or
+                   (ds.body_ids[0] if len(ds.body_ids) == 1 else "")).upper(),
+        "product_type": ptype, "kind": kind, "extra": json.dumps(extra),
+    }
+
+
+def index_cumulative(ds: Dataset, latest: str, progress=None) -> Dict[str, List[Dict[str, Any]]]:
+    """Rows of a cumulative index (streamed from disk, not held in memory), by volume."""
+    from ..readers.pds3_reader import parse_pds3_label
+    vol_url = f"{ds.base_url}{latest}/"
+    tab_url = vol_url + ds.cumulative_index
+    stem = tab_url.rsplit(".", 1)[0]
+    label = ""
+    for lbl_url in (stem + ".lbl", stem + ".LBL"):
+        try:
+            label = http.get_text(lbl_url, login_url=ds.login_url)
+            break
+        except http.ArchiveError:
             continue
-        path = path.replace("\\", "/").lstrip("/")
-        if ds.label_from_data and not path.lower().endswith(".lbl"):
-            stem = path.rsplit(".", 1)[0]
-            path = stem + (".LBL" if path[-3:].isupper() else ".lbl")
-        if ".." in PurePosixPath(path).parts:
-            continue  # never let an index entry point outside the volume
-        product_id = PurePosixPath(path).stem
-        ptype, kind = ds.classify(path)   # full path: some archives encode the type in the folder
-        extra = {k: v for k, v in row.items()
-                 if k not in ("FILE_SPECIFICATION_NAME", "PATH_NAME", "FILE_NAME") and v}
-        out.append({
-            "dataset_id": ds.id, "product_id": product_id, "volume": volume, "path": path,
-            # Never fall back to PRODUCT_CREATION_TIME: that is when the archive
-            # file was made, not when the observation was taken.
-            "start_time": _normalise_time(_pick(row, "START_TIME", "OBSERVATION_TIME"))
-                          or ds.time_from_filename(PurePosixPath(path).name)
-                          or (_label_start_time(vol_url, path, ds.login_url) if ds.times_from_labels else "")
-                          or (ds.fixed_time or ""),
-            "stop_time": _normalise_time(_pick(row, "STOP_TIME")),
-            # Single-body data sets often omit TARGET_NAME from their index.
-            "target": (_pick(row, "TARGET_NAME", "TARGET*") or
-                       (ds.body_ids[0] if len(ds.body_ids) == 1 else "")).upper(),
-            "product_type": ptype, "kind": kind, "extra": json.dumps(extra),
-        })
+    _, cols = parse_pds3_label(_with_structure(label, tab_url.rsplit("/", 1)[0] + "/", ds.login_url))
+    want = {"VOLUME_ID", "FILE_SPECIFICATION_NAME", "PATH_NAME", "FILE_NAME", "PATH", "FILENAME", "PRODUCT_ID", "START_TIME",
+            "IMAGE_TIME", "STOP_TIME", "TARGET_NAME", "ORBIT_NUMBER", "MISSION_PHASE_NAME"}
+    cols = [c for c in cols if c.name.strip('"').upper() in want and c.start_byte and c.bytes_count]
+    if not cols:
+        raise http.ArchiveError(f"Cannot read the cumulative index of {ds.id}")
+    tmp = PRODUCT_ROOT / "_index" / f"{ds.id}.tab"
+    http.download(tab_url, tmp, login_url=ds.login_url,
+                  progress=(lambda d, t: progress(d, t, f"Downloading the index ({d / 1e6:.0f} of {t / 1e6:.0f} MB)"))
+                  if progress else None)
+    out: Dict[str, List[Dict[str, Any]]] = {}
+    try:
+        with open(tmp, "r", encoding="latin-1", errors="replace") as fh:
+            for line in fh:
+                if not line.strip():
+                    continue
+                row = {c.name.strip('"').upper(): line[c.start_byte - 1:c.start_byte - 1 + c.bytes_count].strip().strip('"').strip()
+                       for c in cols}
+                vol = row.get("VOLUME_ID") or latest
+                r = _index_row(ds, vol.lower() if latest.islower() else vol, f"{ds.base_url}{vol}/", row)
+                if r:
+                    out.setdefault(r["volume"], []).append(r)
+    finally:
+        tmp.unlink(missing_ok=True)
     return out
 
 
@@ -314,6 +359,8 @@ def refresh_dataset(ds: Dataset, force: bool = False,
     """(Re)index every volume of ``ds``; returns the number of products."""
     if ds.portal_only:
         raise http.LoginRequired(ds.archive, ds.login_url or ds.base_url)
+    if ds.service:
+        raise http.ArchiveError(f"{ds.id} is searched live by date; it has no index to download")
     volumes = http.list_directory(ds.base_url, ds.volume_pattern, dirs_only=True, login_url=ds.login_url)
     if not volumes:
         raise http.ArchiveError(f"No volumes found at {ds.base_url}")
@@ -321,19 +368,52 @@ def refresh_dataset(ds: Dataset, force: bool = False,
         known = {r["volume"]: r["indexed_at"] for r in
                  conn.execute("SELECT volume, indexed_at FROM volumes WHERE dataset_id=?", (ds.id,))}
     now = time.time()
-    for i, vol in enumerate(volumes):
+    if ds.cumulative_index:
+        by_volume = index_cumulative(ds, volumes[-1], progress=progress)
+        with _db_lock, _connect() as conn:
+            conn.execute("DELETE FROM products WHERE dataset_id=?", (ds.id,))
+            for vol, rows in by_volume.items():
+                conn.executemany(
+                    "INSERT OR REPLACE INTO products VALUES (:dataset_id,:product_id,:volume,:path,"
+                    ":start_time,:stop_time,:target,:product_type,:kind,:extra)", rows)
+                conn.execute("INSERT OR REPLACE INTO volumes VALUES (?,?,?,?)", (ds.id, vol, now, len(rows)))
         if progress:
-            progress(i, len(volumes), vol)
-        if not force and vol in known and now - known[vol] < INDEX_MAX_AGE_S:
-            continue
-        rows = (index_pds4(ds, vol) if ds.pds4_product_dir else
-                index_static(ds, vol) if ds.static_labels else index_volume(ds, vol))
+            progress(len(volumes), len(volumes), "done")
+        with _db_lock, _connect() as conn:
+            return conn.execute("SELECT COUNT(*) FROM products WHERE dataset_id=?", (ds.id,)).fetchone()[0]
+    todo = [v for v in volumes if force or v not in known or now - known[v] >= INDEX_MAX_AGE_S]
+
+    def read(vol):
+        return vol, (index_pds4(ds, vol) if ds.pds4_product_dir else
+                     index_static(ds, vol) if ds.static_labels else index_volume(ds, vol))
+
+    def store(vol, rows):
         with _db_lock, _connect() as conn:
             conn.execute("DELETE FROM products WHERE dataset_id=? AND volume=?", (ds.id, vol))
             conn.executemany(
                 "INSERT OR REPLACE INTO products VALUES (:dataset_id,:product_id,:volume,:path,"
                 ":start_time,:stop_time,:target,:product_type,:kind,:extra)", rows)
-            conn.execute("INSERT OR REPLACE INTO volumes VALUES (?,?,?,?)", (ds.id, vol, now, len(rows)))
+            conn.execute("INSERT OR REPLACE INTO volumes VALUES (?,?,?,?)", (ds.id, vol, time.time(), len(rows)))
+
+    done = len(volumes) - len(todo)
+    if ds.static_labels or len(todo) < 3:
+        for vol in todo:
+            if progress:
+                progress(done, len(volumes), vol)
+            store(*read(vol))
+            done += 1
+    else:
+        # A few index files at a time: large data sets (MRO CTX, MCS, Akatsuki cameras)
+        # have hundreds of volumes.  Four parallel requests stay polite to the archive.
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            futures = [pool.submit(read, v) for v in todo]
+            for fut in as_completed(futures):
+                vol, rows = fut.result()
+                store(vol, rows)
+                done += 1
+                if progress:
+                    progress(done, len(volumes), vol)
     if progress:
         progress(len(volumes), len(volumes), "done")
     with _db_lock, _connect() as conn:
@@ -341,6 +421,16 @@ def refresh_dataset(ds: Dataset, force: bool = False,
 
 
 def dataset_status(ds: Dataset) -> Dict[str, Any]:
+    if ds.service:
+        from .services import _windows_schema
+        with _db_lock, _connect() as conn:
+            _windows_schema(conn)
+            r = conn.execute("SELECT COUNT(*) n, MIN(start_time) t0, MAX(start_time) t1 FROM products "
+                             "WHERE dataset_id=?", (ds.id,)).fetchone()
+            w = conn.execute("SELECT COUNT(*) n, MAX(queried_at) at FROM service_windows WHERE dataset_id=?",
+                             (ds.id,)).fetchone()
+        return {"indexed_products": r["n"], "first_time": r["t0"], "last_time": r["t1"],
+                "indexed_volumes": 0, "indexed_at": w["at"], "live": True, "searched_windows": w["n"]}
     with _db_lock, _connect() as conn:
         r = conn.execute("SELECT COUNT(*) n, MIN(start_time) t0, MAX(start_time) t1 FROM products "
                          "WHERE dataset_id=?", (ds.id,)).fetchone()
@@ -422,7 +512,8 @@ def product_dict(r: sqlite3.Row) -> Dict[str, Any]:
         "level": ds.level if ds else None,
         "path": r["path"], "start_time": r["start_time"], "stop_time": r["stop_time"],
         "target": r["target"], "product_type": r["product_type"], "kind": r["kind"],
-        "url": f"{ds.base_url}{r['volume']}/{r['path']}" if ds else None,
+        "url": r["path"] if r["path"].startswith("http") else (f"{ds.base_url}{r['volume']}/{r['path']}" if ds else None),
+        "live": bool(ds and ds.service),
         "downloaded": local.is_file(),
         "orbit": extra.get("ORBIT_NUMBER") or extra.get("REVOLUTION_NUMBER"),
         "split": extra.get("SPLIT"),
@@ -439,6 +530,15 @@ def get_product(dataset_id: str, product_id: str) -> Optional[Dict[str, Any]]:
 # ------------------------------------------------------------------ download
 
 def local_label_path(dataset_id: str, volume: str, path: str) -> Path:
+    if path.startswith(("http://", "https://")) or len(volume) + len(path) > 120:
+        # Live-search products (and very long index paths) go to a short folder named
+        # after their archive folder: Windows paths must stay under 260 characters.
+        import hashlib
+        folder, _, name = path.replace("\\", "/").rpartition("/")
+        key = hashlib.sha1(f"{volume}|{folder}".encode("utf-8")).hexdigest()[:16]
+        if not name or name in (".", ".."):
+            raise http.ArchiveError("Refusing a product path outside the archive")
+        return PRODUCT_ROOT / dataset_id / key / name
     return PRODUCT_ROOT / dataset_id / volume / PurePosixPath(path)
 
 
@@ -464,10 +564,12 @@ def _case_variants(name: str) -> List[str]:
     return list(dict.fromkeys([name, name.upper(), name.lower()]))
 
 
-def _fetch_first(urls: List[str], dest: Path, login_url: Optional[str], progress=None) -> bool:
+def _fetch_first(urls: List[str], dest: Path, login_url: Optional[str], progress=None, found=None) -> bool:
     for u in urls:
         try:
             http.download(u, dest, login_url=login_url, progress=progress)
+            if found:
+                found(u)
             return True
         except http.LoginRequired:
             raise
@@ -491,10 +593,21 @@ def fetch_product(dataset_id: str, product_id: str,
     if not ds or not prod:
         raise http.ArchiveError(f"Unknown product {dataset_id}/{product_id}; refresh the dataset index.")
     label_path = local_label_path(ds.id, prod["volume"], prod["path"])
-    volume_url = f"{ds.base_url}{prod['volume']}/"
-    # Indexes often list upper-case paths for volumes served in lower case
-    # (MGS mors_1xxx) or the reverse, so try the path as listed, then both cases.
-    candidates = [volume_url + p for p in dict.fromkeys([prod["path"], prod["path"].lower(), prod["path"].upper()])]
+    if prod["path"].startswith(("http://", "https://")):
+        # Live-search product: the label URL is known exactly; format files live in a
+        # LABEL/ folder of the volume, at some level above the label.
+        url = prod["path"]
+        stem, ext = url.rsplit(".", 1) if "." in url.rsplit("/", 1)[1] else (url, "")
+        candidates = list(dict.fromkeys([url] + ([f"{stem}.{ext.lower()}", f"{stem}.{ext.upper()}"] if ext else [])))
+        parts = url.split("/")
+        volume_url = "/".join(parts[:-1]) + "/"
+        ancestors = ["/".join(parts[:-k]) + "/" for k in range(2, min(8, len(parts) - 3))]
+    else:
+        volume_url = f"{ds.base_url}{prod['volume']}/"
+        ancestors = []
+        # Indexes often list upper-case paths for volumes served in lower case
+        # (MGS mors_1xxx) or the reverse, so try the path as listed, then both cases.
+        candidates = [volume_url + p for p in dict.fromkeys([prod["path"], prod["path"].lower(), prod["path"].upper()])]
     product_dirs = list(dict.fromkeys(u.rsplit("/", 1)[0] + "/" for u in candidates))
     if not label_path.is_file():
         for url in candidates:
@@ -509,7 +622,7 @@ def fetch_product(dataset_id: str, product_id: str,
                 continue
         else:
             raise http.ArchiveError(f"{prod['path']} is not on the archive server ({volume_url})")
-    if label_path.suffix.lower() not in (".lbl", ".xml"):
+    if label_path.suffix.lower() not in (".lbl", ".xml", ".lblx") and not _has_attached_label(label_path):
         return label_path
 
     pending = label_pointers(label_path.read_text(encoding="latin-1", errors="replace"))
@@ -525,21 +638,49 @@ def fetch_product(dataset_id: str, product_id: str,
         if dest.is_file():
             continue
         is_format = name.lower().endswith(".fmt") or pointer == "STRUCTURE"
-        is_doc = "DESCRIPTION" in pointer or name.lower().endswith((".txt", ".asc", ".cat"))
+        is_doc = "DESCRIPTION" in pointer or name.lower().endswith(
+            (".txt", ".asc", ".cat", ".pdf", ".htm", ".html", ".doc", ".docx", ".ps", ".tex"))
+        if is_doc and ancestors:
+            continue      # live products: description texts are optional and every miss costs a request
         folders = list(product_dirs)
         if is_format:
-            folders += [volume_url + d for d in ("LABEL/", "label/")]
+            label_dirs = [b + d for b in [volume_url, *ancestors] for d in ("LABEL/", "label/")]
+            # The data set's own LABEL/ folder (its root is named after the volume) first,
+            # then wherever format files of this volume were found before.
+            root = [a for a in ancestors if a.rstrip("/").rsplit("/", 1)[-1].upper() == prod["volume"].upper()]
+            first = [_FORMAT_DIRS[prod["volume"]]] if prod["volume"] in _FORMAT_DIRS else []
+            folders = first + [r + d for r in root for d in ("LABEL/", "label/")] + folders + label_dirs
         if is_doc:
-            folders += [volume_url + d for d in ("DOCUMENT/", "document/")]
+            folders += [b + d for b in [volume_url, *ancestors[:3]] for d in ("DOCUMENT/", "document/")]
         folders.append(volume_url)
-        urls = [f + n for f in folders for n in _case_variants(name)]
-        ok = _fetch_first(urls, dest, ds.login_url, progress=progress if not (is_format or is_doc) else None)
+        folders = list(dict.fromkeys(folders))
+        if ancestors:      # one spelling per folder: the case the label itself uses
+            variant = name.upper() if label_path.name.isupper() else name
+            names = list(dict.fromkeys([name, variant]))
+        else:
+            names = _case_variants(name)
+        urls = [f + n for f in folders for n in names]
+        ok = _fetch_first(urls, dest, ds.login_url, progress=progress if not (is_format or is_doc) else None,
+                          found=(lambda u: _FORMAT_DIRS.__setitem__(prod["volume"], u.rsplit("/", 1)[0] + "/"))
+                          if is_format else None)
         if not ok and not is_doc:
             raise http.ArchiveError(f"{name} (referenced by {label_path.name}) is missing from the archive.")
         if ok and is_format:
             # Format files can include further format files.
             pending += label_pointers(dest.read_text(encoding="latin-1", errors="replace"))
     return label_path
+
+
+def _has_attached_label(p: Path) -> bool:
+    try:
+        with p.open("rb") as fh:
+            return b"PDS_VERSION_ID" in fh.read(200).upper()
+    except OSError:
+        return False
+
+
+# volume -> archive folder where its format (.FMT) files were last found
+_FORMAT_DIRS: Dict[str, str] = {}
 
 
 def downloaded_products(dataset_ids: Optional[Iterable[str]] = None) -> List[Dict[str, Any]]:

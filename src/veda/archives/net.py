@@ -79,12 +79,14 @@ def _describe(exc: Exception, url: str) -> ArchiveError:
 RETRIES = 3
 
 
-def get(url: str, *, login_url: Optional[str] = None, stream: bool = False) -> requests.Response:
+def get(url: str, *, login_url: Optional[str] = None, stream: bool = False,
+        params: Optional[dict] = None, timeout: Optional[float] = None) -> requests.Response:
     """GET with retries: archives drop connections when many index files are read."""
     _check_network()
     for attempt in range(RETRIES + 1):
         try:
-            r = session().get(url, timeout=SETTINGS.network_timeout_s, stream=stream, allow_redirects=True)
+            r = session().get(url, timeout=timeout or SETTINGS.network_timeout_s, stream=stream,
+                              allow_redirects=True, params=params)
             if r.status_code in (401, 403) and login_url:
                 raise LoginRequired(urlparse(url).netloc, login_url)
             if r.status_code in (429, 502, 503, 504) and attempt < RETRIES:

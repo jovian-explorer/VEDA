@@ -44,6 +44,7 @@
     <button class="ghost" id="btn-load-file" title="Load any local PDS3 (.lbl/.tab), CSV, or FITS (.fit/.fits) file">📁 Load File</button>
     <input type="file" id="veda-file-input" style="display: none;" multiple accept=".tab,.lbl,.xml,.csv,.txt,.dat,.asc,.fit,.fits,.fts,.png,.jpg,.jpeg" />
     <button class="ghost" id="btn-veda-vars" title="Explore registered planetary analysis variables, KaTeX formulas, and DOIs">Variables</button>
+    <button class="ghost" id="btn-cite" title="References for exactly the data and tools you used, with BibTeX">Cite</button>
     <button class="ghost" id="btn-veda-data-policy" title="Authoritative planetary data archives, availability statement, and open-source licenses">Data & Licenses</button>
     <button class="ghost" id="btn-settings">Settings</button>
     <button class="ghost" id="btn-about" title="Version, citation, license and data folders">About</button>
@@ -90,8 +91,10 @@
       <label>From <input type="date" id="bs-start" /></label>
       <label>To <input type="date" id="bs-end" /></label>
       <label>Show <select id="bs-kind">
-        <option value="profile">Profiles (plottable)</option>
-        <option value="">Everything (incl. raw data)</option>
+        <option value="">Everything, all payloads</option>
+        <option value="profile">Atmosphere / ionosphere profiles</option>
+        <option value="image">Images</option>
+        <option value="timeseries">Time series</option>
       </select></label>
       <button type="submit" class="primary">Search all missions</button>
     </form>

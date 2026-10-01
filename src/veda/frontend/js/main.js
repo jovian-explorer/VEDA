@@ -80,6 +80,10 @@ function wireChrome() {
     btnVars.addEventListener('click', () => drawer('Planetary Science Variables & Algorithm Catalog', variablesCatalogBody()));
   }
 
+  $('#btn-cite')?.addEventListener('click', async () => {
+    const { citeBody } = await import('./citations.js');
+    drawer('What to cite', citeBody());
+  });
   const btnDataPolicy = $('#btn-veda-data-policy');
   if (btnDataPolicy) {
     btnDataPolicy.addEventListener('click', () => drawer('Data & Licenses', dataPolicyBody()));
@@ -214,6 +218,8 @@ function settingsBody() {
         plot_dpi: parseInt($('#s-plot-dpi').value, 10),
         network_enabled: $('#s-network').checked,
         network_timeout_s: parseInt($('#s-timeout').value, 10),
+        spice_auto_download: $('#s-spice-auto').checked,
+        spice_auto_limit_mb: parseInt($('#s-spice-limit').value, 10),
       };
       if ($('#s-default-body')) patch.default_body = $('#s-default-body').value;
       if ($('#s-default-mission')) patch.default_mission = $('#s-default-mission').value;
@@ -273,6 +279,14 @@ function settingsBody() {
         el('input', { type: 'number', id: 's-timeout', value: s.network_timeout_s || 30, min: 5, max: 300, required: true }),
         'How long to wait for a slow archive before giving up.')),
     el('fieldset', {},
+      el('legend', {}, 'Observation geometry (SPICE)'),
+      el('label', { class: 'settings-check' },
+        el('input', { type: 'checkbox', id: 's-spice-auto', checked: s.spice_auto_download !== false }),
+        el('span', {}, 'Download the SPICE kernels for the opened mission and observation automatically')),
+      field('Ask first when the kernels are larger than (MB)',
+        el('input', { type: 'number', id: 's-spice-limit', value: s.spice_auto_limit_mb || 400, min: 10, max: 5000, required: true }),
+        'Generic kernels are about 100 MB; spacecraft ephemerides are 1 to 200 MB. Downloaded kernels are kept and reused.')),
+    el('fieldset', {},
       el('legend', {}, 'Data folders'),
       folderRow('data', 'VEDA data', paths.data_root),
       folderRow('cache', 'Downloads & uploads cache', paths.cache),
@@ -316,6 +330,21 @@ function helpBody() {
     </section>
 
     <section data-help>
+      <h3>Live data sets (every payload)</h3>
+      <p>Chips marked <span class="badge badge-live">live search</span> cover a whole instrument archive that is searched on the server for the dates you give: the ESA PSA for Mars Express, Venus Express, Rosetta, BepiColombo and Huygens, the NASA PDS Registry for MAVEN, Juno, New Horizons, MESSENGER, LRO, Galileo, Magellan, MGS, MRO, Pioneer Venus and Dawn, and OPUS for Cassini, Galileo and New Horizons imaging and spectra. Give <em>From</em> and <em>To</em> dates to include them; up to 5,000 products per data set and window are listed (narrow the dates if VEDA says there are more). Results are remembered for a week.</p>
+    </section>
+
+    <section data-help>
+      <h3>Viewing any product</h3>
+      <p><strong>View</strong> opens anything that is not an atmosphere profile, and <strong>All fields</strong> opens a profile's whole table. Tables: choose the X field and up to 8 Y fields, one plot or one panel per field, log axes; large tables are drawn at a few thousand points keeping every minimum and maximum. Vector fields become spectrograms; tables with a profile in each row (e.g. MRO MCS) can be shown as <em>Profiles (one per row)</em>. Images and maps: stretch, colours, bands, click for the value, two clicks for a transect. Cubes: click a pixel for its spectrum.</p>
+    </section>
+
+    <section data-help>
+      <h3>What to cite</h3>
+      <p><strong>Cite</strong> lists the references for exactly the data sets and features you used on this computer (data sets with the archive identifiers of the products you opened, instrument and mission papers, archive acknowledgements, SPICE if you used geometry, the libraries behind derived quantities and figures, and VEDA), with BibTeX and a data availability statement to copy. <em>Start a new list</em> clears it for a new paper.</p>
+    </section>
+
+    <section data-help>
       <h3>Plotting, derived parameters and comparison</h3>
       <p>An opened profile shows every quantity the product contains (temperature, pressure, number or electron density, refractivity, absorptivity, H<sub>2</sub>SO<sub>4</sub>, &hellip;) with the archived &plusmn;1&sigma; uncertainty where the product gives one. VEDA also derives lapse rate, scale height, potential temperature, mass density, Brunt-V&auml;is&auml;l&auml; frequency, gravity-wave perturbations, tropopause and, for ionospheres, the peak and VTEC, using the body's constants. The time, latitude, longitude, solar zenith angle and local time come from the product.</p>
       <p>In a comparison the profiles are put on a common altitude grid with their mean and &plusmn;1&sigma; spread; colour the curves by mission, date or latitude.</p>
@@ -328,7 +357,8 @@ function helpBody() {
 
     <section data-help>
       <h3>Observation geometry (SPICE)</h3>
-      <p><strong>&#128752; Geometry</strong> on an opened profile computes the occultation geometry with NAIF SPICE: <em>Orbit (planet-fixed)</em>, <em>Orbit (inertial J2000)</em>, <em>View from Earth</em> (sky plane), <em>Tangent-point map</em> (cylindrical, north or south polar, or orthographic) and <em>Angles along profile</em> (SZA, local solar time, Sun-Earth-probe angle). The first time, VEDA lists the kernels it needs with their size and downloads them when you agree. Times are treated as Earth-received, so light time is corrected. Geometry is available for Akatsuki and Mars Express; other missions show the track stored in the product.</p>
+      <p><strong>&#128752; Geometry</strong> works for every mission with public SPICE kernels (all except the Mars Orbiter Mission and Chandrayaan-2). For radio occultations: <em>Orbit (planet-fixed)</em>, <em>Orbit (inertial J2000)</em>, <em>View from Earth</em>, <em>Tangent-point map</em> (cylindrical, polar or orthographic) and <em>Angles along profile</em>; times are Earth-received and light-time corrected. For any other observation: the orbit, the sub-spacecraft <em>Ground track</em>, and altitude, solar zenith, emission and phase angles and local time over the observation.</p>
+      <p>Kernels download by themselves: a mission's generic and body kernels when you open it, the spacecraft ephemeris when you open an observation. <strong>Settings &gt; Observation geometry</strong> turns this off or sets the size above which VEDA asks first. Kernels are kept and reused.</p>
     </section>
 
     <section data-help>
@@ -543,7 +573,7 @@ function dataPolicyBody() {
   const licenses = (state.meta && state.meta.licenses) || {};
   const stmt = (state.meta && state.meta.data_availability) ||
     `The spacecraft observations analysed in this study are publicly available from the NASA Planetary Data System (PDS) Atmospheres Node (https://pds-atmospheres.nmsu.edu/), the ESA Planetary Science Archive (PSA) (https://archives.esac.esa.int/psa/) and the JAXA Data Archives and Transmission System (DARTS) (https://data.darts.isas.jaxa.jp/). Archived values were read, unit-converted and compared with VEDA version ${appVersion()} (${REPO_URL}).`;
-  const licenseKey = { nasa_pds_atm: 'nasa_pds', esa_psa: 'esa_psa', jaxa_darts: 'jaxa_darts', isro_issdc: 'isro_issdc', naif_spice: 'naif_spice' };
+  const licenseKey = { nasa_pds_atm: 'nasa_pds', pds_opus: 'nasa_pds', esa_psa: 'esa_psa', jaxa_darts: 'jaxa_darts', isro_issdc: 'isro_issdc', naif_spice: 'naif_spice' };
 
   const portalsHtml = portals.map(p => {
     const lic = licenses[licenseKey[p.id]];

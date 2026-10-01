@@ -36,9 +36,9 @@ The top-left switch has three modes: **By Celestial Body**, **By Planetary Missi
 
 ### Search a body by date (all missions)
 1. Choose a planet or moon in **By Celestial Body**. The banner shows its radius, gravity, mean molecular weight, gas constant and composition, which VEDA uses for derived quantities.
-2. In **Find observations of ...**, set **From** and **To** (leave both empty for the whole archive). **Show** chooses *Profiles (plottable)* or *Everything (incl. raw data)*.
-3. Press **Search all missions**. The first time, VEDA reads the index of every connected data set for that body from its archive (progress is shown); afterwards searches use the local catalogue and work offline.
-4. The table lists mission, UTC time, product id, product type, payload and level, and whether the product is downloaded. Press **Open** to download and plot one profile, tick rows and press **Compare selected** to overlay them, or **Download selected** to cache them.
+2. In **Find observations of ...**, set **From** and **To**. Leave both empty to list only the indexed data sets; live data sets need dates. **Show** narrows the list to everything, atmosphere/ionosphere profiles, images or time series.
+3. Press **Search all missions**. The first time, VEDA reads the index of every indexed data set for that body (progress is shown), then asks the live archive services for your dates; afterwards the same searches use the local catalogue and work offline.
+4. The table lists mission, UTC time, product id, product type, payload and level, and whether the product is downloaded. Press **Open** (profiles) or **View** (anything else) to download and plot it, tick rows and press **Compare selected** to overlay them, or **Download selected** to cache them.
 
 Example: Mars, 2005-07-01 to 2005-07-31 returns several hundred profiles from Mars Express MaRS and Mars Global Surveyor.
 
@@ -51,16 +51,7 @@ Example: Mars, 2005-07-01 to 2005-07-31 returns several hundred profiles from Ma
 Mars Orbiter Mission and Chandrayaan-2 data are on ISRO's PRADAN portal, which requires a free registered account and its own download pages. Their mission views show **Sign in to ISRO ISSDC**, which opens PRADAN in your browser. Download the products there, then press **Import downloaded files** and select them (PDS3 `.lbl` + data, or PDS4 `.xml` + data). VEDA never sees your password.
 
 ### Connected data sets
-
-| Body | Mission and data | Archive |
-|---|---|---|
-| Venus | Akatsuki RS L2, L3, L4; Venus Express VeRa L1A to L2; Magellan radio occultation profiles, absorptivity/H2SO4 and raw records | JAXA DARTS, ESA PSA, NASA PDS |
-| Mars | Mars Express MaRS L4; Mars Global Surveyor RS profiles; MOM (import) | ESA PSA, NASA PDS, ISRO ISSDC |
-| Moon | Chandrayaan-2 (import) | ISRO ISSDC |
-| Jupiter | Galileo probe descent; Juno MWR | NASA PDS |
-| Titan | Cassini RSS ionosphere (PDS4); Huygens HASI | NASA PDS |
-
-See [DATA_POLICY.md](DATA_POLICY.md) for data set ids, terms and citations.
+All 19 missions are connected, with 141 data sets covering nearly all of their payloads: indexed data sets (Akatsuki RS and cameras, Mars Express MaRS, Venus Express VeRa, Magellan, MGS, MRO MCS, Juno MWR/JunoCam/MAG, Galileo probe, Huygens HASI, Cassini Titan ionosphere and INMS, Pioneer Venus ONMS) and live data sets for the rest (ESA PSA, NASA PDS Registry, OPUS). The README has an overview and [DATA_POLICY.md](DATA_POLICY.md) the complete list with references and the few payloads not available yet.
 
 ### What an opened profile shows
 * Every quantity in the product (temperature, pressure, number density, electron density, refractivity, absorptivity, H2SO4 and others) in its own panel, with the archived 1-sigma uncertainty as a band or error bars where the product provides it.
@@ -72,6 +63,27 @@ Units are read from the label and converted to VEDA's display units: pressure fr
 
 ### Comparing observations
 Selected profiles, from one mission or many, are interpolated onto a common altitude grid. The comparison shows each profile, the mean $\mu(z) = \frac{1}{M}\sum_m X_m(z)$ and the spread $\mu(z) \pm 1\sigma(z)$. Choose the variable and units on the left, colour the curves by mission, date or latitude, and toggle the mean and spread. **Export Comparison CSV** writes the gridded table.
+
+### Live data sets
+Data sets marked **live search** are not copied as an index: when you give **From** and **To** dates, VEDA asks the archive server for that instrument and window (ESA PSA EPN-TAP for Mars Express, Venus Express, Rosetta, BepiColombo and Huygens; the NASA PDS Registry API for MAVEN, Juno, New Horizons, MESSENGER, LRO, Galileo, Magellan, MGS, MRO, Pioneer Venus and Dawn; OPUS for Cassini, Galileo and New Horizons imaging and spectra). Up to 5,000 products per data set and window are listed; if there are more, VEDA says so and you can narrow the dates. Windows already searched in the last week are answered from the local catalogue.
+
+Very large indexes (MRO CTX and MARCI, about 95 MB each) are read only when you press **Index now** on their data set.
+
+### Viewing any product
+**View** opens the product viewer for anything that is not an atmosphere profile (and **All fields** opens it from a profile):
+
+| Product | What you can do |
+|---|---|
+| Table or time series | Pick the X field (time, row, any number) and up to 8 Y fields; one plot or one panel per field; log Y. Millions of rows are drawn at a few thousand points, keeping each minimum and maximum. **CSV of shown fields** saves what is plotted. |
+| Vector fields (spectra, energy channels per row) | Spectrogram (log colour optional) with the mean spectrum underneath. |
+| Profiles per row (e.g. MRO MCS DDR) | **View: Profiles (one per row)**: plot one vector against another (temperature against pressure, dust against altitude ...), step through rows with the arrows, overlay up to 12. |
+| Image or map | Stretch, colour map, band slider, value read-out at a click, transects (two clicks) and the histogram. Maps keep their longitude and latitude axes. |
+| Spectral cube | Band slider; clicking a pixel plots its spectrum (3 x 3 pixel mean), keeping the last few for comparison. |
+
+Products with several data objects (an image and its housekeeping table, several tables) show one tab per object. Products described only as raw bytes in their label can be downloaded but not plotted; the viewer says so.
+
+### What to cite
+**Cite** in the toolbar lists the references for what you have opened and used on this computer: each data set with the archive data set identifiers of the products you opened, the instrument and mission papers, the archive acknowledgements, SPICE and SpiceyPy if you used geometry, the libraries behind derived quantities and figures, and VEDA. Copy everything as BibTeX or text, or copy the data availability statement. **Start a new list** clears it (for a new paper).
 
 ---
 
@@ -129,7 +141,11 @@ where $1 \text{ TECU} = 10^{16} \text{ electrons}/\text{m}^2$.
 
 ## 5. Observation Geometry (SPICE)
 
-Press **Geometry** on an opened profile. The first time for a given date, VEDA lists the SPICE kernels it needs with their sizes (leap seconds, planetary constants, planetary ephemeris and the spacecraft trajectory) and downloads them only when you press the download button. Generic kernels come from NASA NAIF, Mars Express kernels from the ESA SPICE service and Akatsuki kernels from JAXA DARTS. They are cached and shared by later observations.
+Press **Geometry** on any opened product. VEDA computes it with NAIF SPICE for every mission with public kernels (all except the Mars Orbiter Mission and Chandrayaan-2).
+
+**Kernels are downloaded for you.** Opening a mission fetches its generic and body kernels in the background; opening an observation fetches the spacecraft ephemeris covering its date. VEDA knows each mission's kernel archive (NAIF operational and PDS SPICE archives, the ESA SPICE service, the Akatsuki archive) and how its files map to dates: from the file names, from the PDS3 archive's coverage table, or from the archive's read-me. In **Settings > Observation geometry** you can turn this off or set the size above which VEDA asks first (400 MB by default). Kernels are kept in the cache and reused.
+
+**Radio occultations** (profiles with per-sample ephemeris times):
 
 | View | What it shows |
 |---|---|
@@ -141,7 +157,13 @@ Press **Geometry** on an opened profile. The first time for a given date, VEDA l
 
 Radio-science times are Earth-received times, so positions are corrected for light time. Where the product gives its own refracted tangent track, VEDA uses it and reports the straight-line minus refracted radius as ray bending. For Mars Express the computed tangent radii agree with the archived ones to about 1 km; for Akatsuki the SZA and local time agree with the published values to about 0.01 degrees.
 
-Geometry is currently set up for Akatsuki and Mars Express. For other missions the latitude, longitude, SZA and local time stored in the product are still shown.
+**Every other observation** (in situ, images, spectra, cubes):
+
+| View | What it shows |
+|---|---|
+| Orbit (planet-fixed) | the spacecraft orbit over the observation (at least the hour around it, at most a month), with the part during the observation highlighted and the Sun and Earth directions |
+| Ground track | the sub-spacecraft track coloured by altitude, with the terminator and subsolar point, in the same projections as above |
+| Altitude, angles and local time | altitude, solar zenith, emission and phase angles at the sub-spacecraft point, local solar time and latitude against time |
 
 ---
 
@@ -203,6 +225,7 @@ Open **Settings** in the toolbar. Changes apply as soon as you save; **Reset to 
 | Start-up | Open on body, Default mission | Where VEDA opens next time. |
 | Figures | Publication figure DPI | Resolution of exported publication figures. |
 | Network | Allow downloads, Timeout | Turn online archive downloads off (offline work) and set how long to wait for a slow archive. |
+| Observation geometry | Automatic SPICE downloads, size limit | Download the kernels for opened missions and observations by themselves, and ask first above the limit. |
 | Data folders | Open | Shows and opens the data, cache, export and log folders. |
 
 Settings are stored in `settings.json` inside the VEDA data folder (see the README). A damaged or hand-edited file never stops VEDA from starting: invalid entries fall back to their defaults.

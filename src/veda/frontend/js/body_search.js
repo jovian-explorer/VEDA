@@ -36,10 +36,12 @@ export async function showBodySearch(bodyId, bodyName) {
   try {
     const ds = (await api.archiveDatasets(null, bodyId)).datasets || [];
     const real = ds.filter(d => !d.portal_only);
+    st.liveCount = real.filter(d => d.live).length;
     const missions = [...new Set(real.map(d => d.mission_id))];
     const span = real.filter(d => d.indexed_volumes && d.first_time);
     $('bs-coverage').textContent = real.length
       ? `${real.length} data set${real.length > 1 ? 's' : ''} from ${missions.length} mission${missions.length > 1 ? 's' : ''}` +
+        (st.liveCount ? ` (${st.liveCount} searched live on the archive servers when you give dates)` : '') +
         (span.length ? `; indexed coverage ${span.map(d => d.first_time.slice(0, 4)).sort()[0]} to ${span.map(d => d.last_time.slice(0, 4)).sort().slice(-1)[0]}` : '')
       : 'No archive data set is connected for this body yet.';
     $('bs-form').hidden = !real.length;
@@ -65,7 +67,7 @@ async function poll(jobId, label) {
 }
 
 async function ensureIndexed() {
-  const ds = ((await api.archiveDatasets(null, st.bodyId)).datasets || []).filter(d => !d.portal_only && !d.indexed_volumes);
+  const ds = ((await api.archiveDatasets(null, st.bodyId)).datasets || []).filter(d => !d.portal_only && !d.indexed_volumes && !d.live && d.auto_index !== false);
   for (const d of ds) {
     const { job_id } = await api.archiveIndex(d.id);
     await poll(job_id, `Indexing ${d.mission_id.toUpperCase()} ${d.instrument} (${d.level})`);
@@ -79,6 +81,16 @@ async function run(reset) {
   const token = ++st.token;
   try {
     if (reset) await ensureIndexed();
+    if (reset && start && end && st.liveCount) {
+      const key = `${st.bodyId}|${start}|${end}`;
+      if (key !== st.liveKey) {
+        st.liveKey = key;
+        const { job_id } = await api.archiveLive({ start, end, body_id: st.bodyId });
+        const j = await poll(job_id, 'Searching the archive servers');
+        if (j.status === 'completed' && j.message) toast(j.message, j.result?.truncated?.length ? '' : 'good');
+      }
+    }
+    if (token !== st.token) return;
     const res = await api.archiveSearch({
       body_id: st.bodyId, start, end, kind: $('bs-kind').value,
       limit: PAGE, offset: reset ? 0 : st.results.length,
@@ -117,7 +129,9 @@ function rows() {
     body.querySelectorAll('button[data-open]').forEach(b => b.addEventListener('click', () => st.onOpen?.(st.results[+b.dataset.open])));
   }
   const missions = new Set(st.results.map(p => p.mission_id));
-  $('bs-count').textContent = st.total ? `${st.results.length.toLocaleString()} of ${st.total.toLocaleString()} from ${missions.size} mission${missions.size > 1 ? 's' : ''}` : '';
+  const noDates = !($('bs-start').value && $('bs-end').value);
+  $('bs-count').textContent = (st.total ? `${st.results.length.toLocaleString()} of ${st.total.toLocaleString()} from ${missions.size} mission${missions.size > 1 ? 's' : ''}` : '') +
+    (noDates && st.liveCount ? `${st.total ? ' · ' : ''}Give From and To dates to include the ${st.liveCount} live data sets` : '');
   $('bs-more').hidden = st.results.length >= st.total;
   buttons();
 }

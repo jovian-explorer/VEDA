@@ -422,6 +422,9 @@ def _binary_table_reader(buf_path: Path, offset: int, rows: int, row_stride: int
             # The data end exactly at another record length (labels sometimes omit a
             # few pad or checksum bytes per record, e.g. SPICAV IR): trust the file.
             stride = tail // rows
+        # Files shorter than their label (seen in PSA PFS): read the complete rows there are.
+        if stride and n * stride > tail:
+            n = max(tail // stride, 0)
         if limit is not None:
             n = min(n, limit)
         out: Dict[str, Any] = {}
@@ -466,14 +469,22 @@ def _ascii_table_reader(data_path: Path, offset: int, rows: int, row_bytes: int,
             raw = raw[:rows * row_bytes + 4]
         text = raw.decode("latin-1", errors="replace")
         lines = [ln for ln in text.splitlines()]
-        lines = _rejoin_broken_records(lines)
+        multiline = False
+        if rows and row_bytes and not delimited and lines and \
+                sorted(len(x) for x in lines[:200])[min(len(lines), 200) // 2] < 0.8 * row_bytes:
+            # Records spanning several lines (MRO MCS DDR: 106 lines per profile): START_BYTE
+            # counts across the line breaks, so cut the stream into ROW_BYTES records.
+            lines = [text[i * row_bytes:(i + 1) * row_bytes] for i in range(min(rows, len(text) // row_bytes))]
+            multiline = True
+        else:
+            lines = _rejoin_broken_records(lines)
         lines = [ln for ln in lines if ln.strip()]
         if rows:
             lines = lines[:rows]
         if limit is not None:
             lines = lines[:limit]
         cells_by_row = None
-        if delimited or (lines and "," in lines[0] and len(next(csv.reader([lines[0]]))) >= len(specs) > 1
+        if delimited or (not multiline and lines and "," in lines[0] and len(next(csv.reader([lines[0]]))) >= len(specs) > 1
                          and all(s["items"] == 1 for _, s in specs)):
             cells_by_row = list(csv.reader(lines))
         out: Dict[str, Any] = {}
@@ -521,8 +532,51 @@ def _ascii_table_reader(data_path: Path, offset: int, rows: int, row_bytes: int,
 _DATE_PARTS = ("YEAR", "MONTH", "DAY", "HOUR", "MINUTE", "SECOND")
 
 
+def _date_text_iso(d: str) -> Optional[str]:
+    """'01-Jan-2016', '2016-01-01', '2016/01/01' or '2016-001' -> '2016-01-01'."""
+    import datetime as _dt
+    d = d.strip().strip('"')
+    for fmt in ("%d-%b-%Y", "%Y-%m-%d", "%Y/%m/%d", "%d/%m/%Y", "%Y-%j"):
+        try:
+            return _dt.datetime.strptime(d, fmt).date().isoformat()
+        except ValueError:
+            continue
+    return None
+
+
+def _add_date_plus_time(obj: DataObject) -> bool:
+    """A text DATE column and a time-of-day column (MRO MCS: "01-Jan-2016", "00:00:29.499") -> UTC."""
+    names = {f.name.upper(): f for f in obj.fields}
+    date_f = names.get("DATE") or names.get("OBS_DATE") or names.get("UTC_DATE")
+    time_f = next((names[k] for k in ("UTC", "TIME", "UTC_TIME", "TIME_UTC", "OBS_TIME") if k in names), None)
+    if not date_f or not time_f or date_f.kind == "number" or "UTC (assembled)" in names:
+        return False
+    inner = obj._reader
+    try:
+        sample = inner([date_f.name, time_f.name], 3)
+    except Exception:          # noqa: BLE001
+        return False
+    d0, t0 = (sample.get(date_f.name) or [""])[0], (sample.get(time_f.name) or [""])[0]
+    if not isinstance(d0, str) or not _date_text_iso(d0) or not re.match(r"^\s*\d{1,2}:\d{2}", str(t0)):
+        return False
+
+    def read(sel=None, limit=None):
+        want = None if sel is None else [s for s in sel if s != "UTC (assembled)"]
+        out = inner(want, limit) if want is None or want else {}
+        if sel is None or "UTC (assembled)" in sel:
+            src = inner([date_f.name, time_f.name], limit)
+            out["UTC (assembled)"] = [f"{_date_text_iso(d) or ''}T{str(t).strip()}" if _date_text_iso(d) else ""
+                                      for d, t in zip(src[date_f.name], src[time_f.name])]
+        return out
+    obj._reader = read
+    obj.fields.insert(0, Field("UTC (assembled)", description=f"{date_f.name} + {time_f.name}", kind="time"))
+    return True
+
+
 def _add_assembled_time(obj: DataObject) -> None:
     """Tables storing the date as YEAR, MONTH, DAY, HOUR, MINUTE, SECOND numbers get a UTC column."""
+    if _add_date_plus_time(obj):
+        return
     names = {f.name.upper(): f.name for f in obj.fields}
     have = [p for p in _DATE_PARTS if p in names]
     doy = names.get("DAY_OF_YEAR") or names.get("DOY")
@@ -944,6 +998,8 @@ def _pds4_binary_reader(path: Path, offset: int, rows: int, rec_len: int,
         buf = _mmap(path)
         out: Dict[str, Any] = {}
         n = rows if limit is None else min(rows, limit)
+        if rec_len and n * rec_len > buf.size - offset:
+            n = max((buf.size - offset) // rec_len, 0)
         for f, s in specs:
             if names is not None and f.name not in names:
                 continue
@@ -1047,7 +1103,10 @@ def _open_pds4(label: Path) -> Product:
         data = _find(label.parent, fname) if fname else None
         for el in list(fao):
             tag = el.tag
-            if tag in ("File", "Header", "Stream_Text", "Encoded_Header", "Encoded_Image", "Encoded_Binary"):
+            if tag in ("File", "Header", "Encoded_Header", "Encoded_Image", "Encoded_Binary"):
+                continue
+            if tag == "Stream_Text":
+                errors.append(f"{fname} is a text document (no table or array to plot)")
                 continue
             if data is None:
                 errors.append(f"{fname} (named in {label.name}) is not here; download the product again")
@@ -1355,7 +1414,7 @@ def open_product(path: str) -> Product:
     if key in _CACHE:
         return _CACHE[key]
     suf = p.suffix.lower()
-    if suf == ".xml":
+    if suf in (".xml", ".lblx"):
         prod = _open_pds4(p)
     elif suf in (".fit", ".fits", ".fts"):
         prod = _open_fits(p)
@@ -1373,6 +1432,10 @@ def open_product(path: str) -> Product:
                 return prod
             lbl = cand
         prod = _open_pds3(lbl)
+    # Images and cubes first: a product holding an image and a small telemetry
+    # table (Cassini ISS, Rosetta OSIRIS) should open on the image.
+    has_array = any(x.kind != "table" for x in prod.objects)   # (computed before sorting: the list is empty during sort)
+    prod.objects.sort(key=lambda o: o.kind == "table" and has_array)
     if len(_CACHE) > 64:
         _CACHE.clear()
     _CACHE[key] = prod

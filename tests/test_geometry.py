@@ -27,7 +27,7 @@ def listings(monkeypatch):
     ("akatsuki", dt.date(2016, 3, 3), "vco_2016_v01.bsp"),
     ("mex", dt.date(2004, 4, 2), "MEX_ROB_040101_041231_003.BSP"),
     ("mex", dt.date(2013, 12, 31), "MEX_ROB_130101_131231_001.BSP"),
-    ("mex", dt.date(2026, 8, 15), "ORMM__260801000000_01973.BSP"),
+    ("mex", dt.date(2026, 8, 15), "ORMM_T19_260801000000_01973.BSP"),   # type 19 preferred over the older type 18
 ])
 def test_spk_chosen_by_coverage_in_file_name(listings, mission, date, expected):
     assert kernels.mission_spk_for(mission, date).endswith("/" + expected)

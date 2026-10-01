@@ -20,6 +20,7 @@ VEDA (Visualization, Exploration, and Data Analysis) bundles or depends on the t
 | **Matplotlib** | Backend (Python) | PSF / BSD Compatible | Server-side generation of 300-DPI publication figures |
 | **PyWebView** | Backend (Python) | BSD 3-Clause | Native desktop window binding with Edge WebView2 runtime |
 | **Requests** | Backend (Python) | Apache 2.0 | HTTP client for archive indexes, product and kernel downloads |
+| **netCDF4-python** and **cftime** | Backend (Python) | MIT License | Reading netCDF products (Akatsuki L3 maps, COSMIC-2); the wheels bundle the HDF5 and netCDF-C libraries (BSD-style licenses) |
 | **Pillow** | Backend (Python) | MIT-CMU (HPND) | Image rendering and PNG thumbnails |
 | **SpiceyPy** | Backend (Python) | MIT License | Python interface to the NAIF CSPICE toolkit |
 | **NAIF CSPICE** | Backend (C library, via SpiceyPy) | NAIF rules (free to use) | Ephemerides, frames, light time and illumination angles for observation geometry |

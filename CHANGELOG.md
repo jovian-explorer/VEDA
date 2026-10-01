@@ -4,6 +4,32 @@ All notable changes to VEDA. Versions follow [semantic versioning](https://semve
 
 ## 0.3.0 (unreleased)
 
+VEDA now covers nearly every payload of every mission, searchable by date, plottable, with geometry and tailored citations.
+
+### Every payload, searched by date
+- Live search of whole instrument archives for the dates you give: ESA PSA EPN-TAP (Mars Express, Venus Express, Rosetta, BepiColombo, Huygens), the NASA PDS Registry API (MAVEN, Juno, New Horizons, MESSENGER, LRO, Galileo, Magellan, MGS, MRO, Pioneer Venus, Dawn) and OPUS (Cassini, Galileo and New Horizons imaging and spectra). 106 live data sets; answers are cached per window.
+- New indexed data sets: all Akatsuki cameras (UVI, IR1, IR2, LIR: raw, calibrated, geometry), MRO MCS DDR/EDR/RDR from cumulative indexes, CTX and MARCI on request, JunoCam, Juno magnetometer, Cassini INMS, Pioneer Venus ONMS. 141 data sets in all.
+- Index files are read four at a time; cumulative indexes are streamed from disk.
+
+### Plot any product
+- New reader for PDS3 (ASCII and binary tables, containers, record arrays, multi-line records, images, qubes, arrays), PDS4 (binary, character and delimited tables, arrays), FITS and netCDF, memory-mapped.
+- Product viewer: fields against fields and time, spectrograms, profiles per row (MCS), images and maps with stretch, transects and value read-out, cubes with per-pixel spectra. Peak-preserving decimation for large tables.
+- Tolerant of common label errors (record lengths, integers labelled as floats, files shorter than their label) and clear messages when a product has no plottable layout.
+
+### Observation geometry for all missions
+- SPICE kernel sources for 17 missions (file-name coverage, PDS3 coverage tables or archive read-me tables); Pluto, Ceres, Vesta and 67P body kernels and frames.
+- Kernels download automatically when a mission or observation is opened (Settings: on/off and a size limit).
+- Orbit geometry for any observation: 3D orbit, ground track, altitude, local time, solar zenith, emission and phase angles.
+
+### What to cite
+- Cite panel: references for exactly the data sets and features you used (174 Crossref-verified references), archive acknowledgements, BibTeX, text and a data availability statement.
+
+### Speed and stability
+- Plots removed from the page are purged (they leaked resize handlers and memory); image-viewer listeners no longer accumulate; no backdrop blur on cards and the top bar.
+- Thread-safe publication figures; SQLite WAL; Windows paths kept short for long archive URLs; folder builds instead of a onefile exe (start-up in seconds instead of a minute).
+
+### Earlier in 0.3.0
+
 VEDA now works only with real archive data and can search it by body, mission, payload and date.
 
 ### Breaking

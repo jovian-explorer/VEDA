@@ -1,11 +1,22 @@
 /**
- * Observation geometry (SPICE): orbit, view from Earth, tangent-point map and
- * solar angles for one radio-occultation product.
+ * Observation geometry (SPICE).
+ *
+ * Radio occultations: orbit, view from Earth, tangent-point map and solar
+ * angles along the profile.  Every other observation (in situ, images,
+ * spectra): the spacecraft orbit, the sub-spacecraft ground track and the
+ * altitude, local time and illumination angles over the observation.
+ * Kernels are downloaded automatically when Settings allow it.
  */
 import { api } from './api.js';
 import { toast, themedLayout, plotColors } from './ui.js';
 import { style as plotStyle, paletteColor } from './plot_style.js';
+import { pendingFor } from './spice_auto.js';
 
+const ORBIT_VIEWS = [
+  ['orbit-fixed', 'Orbit (planet-fixed)'],
+  ['map', 'Ground track'],
+  ['timeline', 'Altitude, angles and local time'],
+];
 const VIEWS = [
   ['orbit-fixed', 'Orbit (planet-fixed)'],
   ['orbit-inertial', 'Orbit (inertial J2000)'],
@@ -32,11 +43,20 @@ export async function showGeometry(box, { dataset_id, product_id }) {
     box.innerHTML = '<div class="hint">Geometry is available for archive products (it needs the data set and observation time).</div>';
     return;
   }
-  box.innerHTML = '<div class="hint">Computing observation geometry...</div>';
+  const pending = pendingFor({ dataset_id, product_id });
+  box.innerHTML = `<div class="hint">${pending ? 'Waiting for the SPICE kernels to finish downloading...' : 'Computing observation geometry...'}</div>`;
   try {
+    if (pending) await pending;
     const r = await fetchGeometry(dataset_id, product_id);
-    if (r.needKernels) return renderKernelPrompt(box, dataset_id, product_id, r.needKernels);
+    if (r.needKernels) {
+      renderKernelPrompt(box, dataset_id, product_id, r.needKernels);
+      if (r.needKernels.auto) box.querySelector('#geo-download')?.click();     // within the automatic limit
+      return;
+    }
     state.data = r.data;
+    import('./citations.js').then(m => m.recordFeature('geometry')).catch(() => {});
+    if (state.data.mode === 'orbit' && !ORBIT_VIEWS.some(([k]) => k === state.view)) state.view = 'orbit-fixed';
+    if (state.data.mode !== 'orbit' && !VIEWS.some(([k]) => k === state.view)) state.view = 'orbit-fixed';
     render(box);
   } catch (err) {
     box.innerHTML = `<div class="hint text-danger">Geometry unavailable: ${esc(err.message)}</div>`;
@@ -78,8 +98,40 @@ function renderKernelPrompt(box, ds, pid, info) {
   });
 }
 
+function renderOrbit(box) {
+  const g = state.data, t = g.track;
+  const obs = t.alt_km.filter((_, i) => t.in_observation[i]);
+  const alt = obs.length ? obs : t.alt_km;
+  const lo = Math.min(...alt), hi = Math.max(...alt);
+  const mid = Math.floor(t.utc.length / 2);
+  box.innerHTML = `
+    <div class="geo-head">
+      <div class="geo-tabs" role="tablist">
+        ${ORBIT_VIEWS.map(([k, l]) => `<button type="button" class="view-subtab-btn ${state.view === k ? 'active' : ''}" data-view="${k}">${l}</button>`).join('')}
+      </div>
+      <label class="geo-proj" ${state.view === 'map' ? '' : 'hidden'}>Projection
+        <select id="geo-projection">${PROJECTIONS.map(([k, l]) => `<option value="${k}" ${state.projection === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
+      </label>
+    </div>
+    <div id="geo-plot" class="geo-plot"></div>
+    <div class="diagnostics-bar geo-facts">
+      <div class="diag-chip"><strong>Observation (UTC):</strong> ${esc(g.utc_range[0])} to ${esc(g.utc_range[1].slice(11))}</div>
+      <div class="diag-chip"><strong>Altitude:</strong> ${fmtKm(lo)}${hi - lo > 1 ? ` to ${fmtKm(hi)}` : ''}</div>
+      <div class="diag-chip"><strong>Sub-spacecraft point:</strong> ${t.lat[mid].toFixed(1)}°, ${t.lon[mid].toFixed(1)}°E, LST ${t.lst_h[mid].toFixed(2)} h</div>
+      <div class="diag-chip"><strong>Solar zenith / emission / phase:</strong> ${t.sza[mid].toFixed(1)}° / ${t.emission[mid].toFixed(1)}° / ${t.phase[mid].toFixed(1)}°</div>
+      <div class="diag-chip"><strong>Subsolar point:</strong> ${g.subsolar.lat.toFixed(1)}°, ${g.subsolar.lon.toFixed(1)}°E</div>
+    </div>
+    <p class="hint">Ephemeris: ${esc(g.ephemeris_source)}; kernels ${esc(g.kernels.join(', '))}. Spacecraft times; positions light-time corrected (frame ${esc(g.frame_fixed)}). ${t.in_observation.every(Boolean) ? '' : 'The thick part of the track is the observation itself.'}</p>`;
+  box.querySelectorAll('[data-view]').forEach(btn => btn.addEventListener('click', () => { state.view = btn.dataset.view; renderOrbit(box); }));
+  box.querySelector('#geo-projection')?.addEventListener('change', (e) => { state.projection = e.target.value; draw(); });
+  draw();
+}
+
+const fmtKm = (v) => (v >= 1e5 ? `${(v / 1e3).toFixed(0)} thousand km` : `${v.toFixed(v < 100 ? 1 : 0)} km`);
+
 function render(box) {
   const g = state.data;
+  if (g.mode === 'orbit') return renderOrbit(box);
   const b = g.straight_line_minus_product_radius;
   box.innerHTML = `
     <div class="geo-head">
@@ -110,8 +162,96 @@ const avg = (a) => a.reduce((s, v) => s + v, 0) / Math.max(1, a.length);
 function draw() {
   const div = document.getElementById('geo-plot');
   if (!div || !window.Plotly || !state.data) return;
+  if (state.data.mode === 'orbit') {
+    ({ 'orbit-fixed': () => orbitTrack3d(div), map: () => groundTrack(div), timeline: () => timeline(div) })[state.view]();
+    return;
+  }
   ({ 'orbit-fixed': () => orbit3d(div, 'fixed'), 'orbit-inertial': () => orbit3d(div, 'j2000'), earth: () => earthView(div),
     map: () => trackMap(div), angles: () => angles(div) })[state.view]();
+}
+
+function split(arr, mask) {
+  return [arr.map((v, i) => (mask[i] ? null : v)), arr.map((v, i) => (mask[i] ? v : null))];
+}
+
+function orbitTrack3d(div) {
+  const g = state.data, t = g.track, R = g.radius_km;
+  const col = (i) => t.sc_fixed.map(p => p[i]);
+  const [xo, xi] = split(col(0), t.in_observation), [yo, yi] = split(col(1), t.in_observation), [zo, zi] = split(col(2), t.in_observation);
+  const hover = t.utc.map((u, i) => `${u}<br>alt ${fmtKm(t.alt_km[i])}<br>${t.lat[i].toFixed(1)}°, ${t.lon[i].toFixed(1)}°E`);
+  const traces = [
+    sphere(R, g.directions_fixed.sun),
+    { type: 'scatter3d', mode: 'lines', x: xo, y: yo, z: zo, name: 'Orbit', line: { color: paletteColor(0), width: 3 }, text: hover, hoverinfo: 'text' },
+    { type: 'scatter3d', mode: 'lines', x: xi, y: yi, z: zi, name: 'During the observation', line: { color: '#ef4444', width: 8 }, text: hover, hoverinfo: 'text' },
+    arrow(g.directions_fixed.sun, Math.min(R, Math.max(...t.alt_km) / 2 + R), '#f59e0b', 'Sun'),
+    arrow(g.directions_fixed.earth, Math.min(R, Math.max(...t.alt_km) / 2 + R), '#22c55e', 'Earth'),
+  ];
+  const ax = (s) => ({ title: { text: s }, showbackground: false, gridcolor: plotColors().grid, zerolinecolor: plotColors().zero });
+  window.Plotly.newPlot(div, traces, themedLayout({
+    title: { text: `${g.body_name}: spacecraft orbit (${g.frame_fixed}, km)` },
+    scene: { aspectmode: 'data', xaxis: ax('x'), yaxis: ax('y'), zaxis: ax('z') },
+    legend: { orientation: 'h', y: -0.05 }, margin: { l: 0, r: 0, t: 40, b: 0 },
+  }), { responsive: true });
+}
+
+function geoLayout(centerLat, centerLon) {
+  const proj = state.projection;
+  return {
+    showland: false, showocean: false, showcoastlines: false, showcountries: false, showlakes: false, showrivers: false,
+    bgcolor: 'rgba(0,0,0,0)', showframe: true, framecolor: plotColors().zero,
+    lataxis: { showgrid: true, gridcolor: plotColors().grid, dtick: 15 }, lonaxis: { showgrid: true, gridcolor: plotColors().grid, dtick: 30 },
+    projection: proj === 'north' ? { type: 'stereographic', rotation: { lat: 90 } }
+      : proj === 'south' ? { type: 'stereographic', rotation: { lat: -90 } }
+      : proj === 'orthographic' ? { type: 'orthographic', rotation: { lat: centerLat, lon: centerLon } }
+      : { type: 'equirectangular' },
+  };
+}
+
+function groundTrack(div) {
+  const g = state.data, t = g.track;
+  const lon = t.lon.map(v => ((v + 540) % 360) - 180);
+  // break the line where it wraps around the map edge
+  const lonW = lon.map((v, i) => (i && Math.abs(v - lon[i - 1]) > 180 ? null : v));
+  const [lonOut, lonIn] = split(lonW, t.in_observation);
+  const term = terminator(g.subsolar);
+  const hover = t.utc.map((u, i) => `${u}<br>alt ${fmtKm(t.alt_km[i])}, SZA ${t.sza[i].toFixed(1)}°, LST ${t.lst_h[i].toFixed(2)} h`);
+  const mid = Math.floor(t.lat.length / 2);
+  window.Plotly.newPlot(div, [
+    { type: 'scattergeo', mode: 'lines', lat: term.lat, lon: term.lon, name: 'Terminator', line: { color: '#f59e0b', width: 2, dash: 'dash' } },
+    { type: 'scattergeo', mode: 'markers', lat: [g.subsolar.lat], lon: [((g.subsolar.lon + 540) % 360) - 180],
+      name: 'Subsolar point', marker: { size: 12, color: '#f59e0b', symbol: 'star' } },
+    { type: 'scattergeo', mode: 'lines', lat: t.lat, lon: lonOut, name: 'Ground track', line: { color: paletteColor(0), width: 2 }, text: hover, hoverinfo: 'text' },
+    { type: 'scattergeo', mode: 'lines+markers', lat: t.lat, lon: lonIn, name: 'During the observation',
+      line: { color: '#ef4444', width: 4 }, marker: { size: 3, color: t.alt_km, colorscale: 'Viridis', showscale: true,
+        colorbar: { title: { text: 'Altitude (km)' }, thickness: 12, len: 0.6 } }, text: hover, hoverinfo: 'text' },
+  ], themedLayout({
+    title: { text: `${g.body_name}: sub-spacecraft ground track (planetocentric, east longitude)` },
+    geo: geoLayout(t.lat[mid], lon[mid]), legend: { orientation: 'h', y: -0.05 }, margin: { l: 10, r: 10, t: 50, b: 40 },
+  }), { responsive: true });
+}
+
+function timeline(div) {
+  const t = state.data.track;
+  const x = t.utc;
+  const tr = (y, name, i, ya) => ({ type: 'scatter', mode: 'lines', x, y, name, yaxis: ya, line: { color: paletteColor(i), width: plotStyle.lineWidth } });
+  const shapes = [];
+  const i0 = t.in_observation.indexOf(true), i1 = t.in_observation.lastIndexOf(true);
+  if (i0 >= 0 && !(i0 === 0 && i1 === x.length - 1)) {
+    shapes.push({ type: 'rect', xref: 'x', yref: 'paper', x0: x[i0], x1: x[i1], y0: 0, y1: 1, fillcolor: 'rgba(239,68,68,0.12)', line: { width: 0 } });
+  }
+  window.Plotly.newPlot(div, [
+    tr(t.alt_km, 'Altitude (km)', 0, 'y'),
+    tr(t.sza, 'Solar zenith (°)', 1, 'y2'), tr(t.emission, 'Emission (°)', 2, 'y2'), tr(t.phase, 'Phase (°)', 3, 'y2'),
+    tr(t.lst_h.map((v, i) => (i && Math.abs(v - t.lst_h[i - 1]) > 12 ? null : v)), 'Local solar time (h)', 4, 'y3'), tr(t.lat, 'Latitude (°)', 5, 'y4'),
+  ], themedLayout({
+    title: { text: 'Spacecraft geometry over the observation' }, shapes,
+    xaxis: { type: 'date', title: { text: 'UTC' }, anchor: 'y4' },
+    yaxis: { domain: [0.76, 1], title: { text: 'Altitude (km)' } },
+    yaxis2: { domain: [0.51, 0.73], title: { text: 'Angle (°)' } },
+    yaxis3: { domain: [0.26, 0.48], title: { text: 'LST (h)' }, range: [0, 24] },
+    yaxis4: { domain: [0, 0.23], title: { text: 'Latitude (°)' } },
+    legend: { orientation: 'h', y: -0.15 }, height: 640, margin: { l: 70, r: 20, t: 50, b: 80 },
+  }), { responsive: true });
 }
 
 function sphere(R, sunDir, n = 40) {

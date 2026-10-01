@@ -27,7 +27,14 @@ _spice_lock = threading.Lock()     # CSPICE is not thread-safe
 _loaded: set = set()
 
 NAIF_BODY = {"venus": 299, "mars": 499, "jupiter": 599, "saturn": 699, "mercury": 199,
-             "moon": 301, "titan": 606, "pluto": 999}
+             "moon": 301, "titan": 606, "pluto": 999, "ceres": 2000001, "vesta": 2000004,
+             "comet_67p": 1000012}
+# Body-fixed frames (IAU_<NAME> from pck00011, except 67P whose frame comes with ROS_V38.TF)
+BODY_FRAME = {"comet_67p": "67P/C-G_FIXED"}
+
+
+def body_frame(body_id: str) -> str:
+    return BODY_FRAME.get(body_id, f"IAU_{body_id.upper()}")
 
 
 def _furnsh(plan: KernelPlan) -> None:
@@ -58,7 +65,7 @@ def observation_geometry(plan: KernelPlan, sc_id: int, body_id: str, et_profile:
     body = get_body(body_id)
     if body is None or body_id not in NAIF_BODY:
         raise ValueError(f"No SPICE body for '{body_id}'")
-    bname, fixed, sc = str(NAIF_BODY[body_id]), f"IAU_{body_id.upper()}", str(sc_id)
+    bname, fixed, sc = str(NAIF_BODY[body_id]), body_frame(body_id), str(sc_id)
     et_all = np.asarray(et_profile, float)
     good = np.isfinite(et_all)
     if not good.any():
@@ -152,6 +159,7 @@ def observation_geometry(plan: KernelPlan, sc_id: int, body_id: str, et_profile:
         bending = {"median_km": float(np.nanmedian(diff)), "max_abs_km": float(np.nanmax(np.abs(diff)))}
 
     return {
+        "mode": "occultation",
         "body_id": body_id, "body_name": body.name, "radius_km": r_eq, "frame_fixed": fixed,
         "utc_range": utc_range, "light_time_s": float(lt_mid), "time_convention": "Earth reception",
         "tangent_source": source, "straight_line_minus_product_radius": bending,
@@ -170,4 +178,78 @@ def observation_geometry(plan: KernelPlan, sc_id: int, body_id: str, et_profile:
         "sky": {"sun_dir": np.round(sky(_unit(sun_j2000_mid)), 5).tolist(), "planet_radius_km": r_eq},
         "subsolar": {"lat": float(np.degrees(ss_lat)), "lon": float(np.degrees(ss_lon) % 360)},
         "subearth": {"lat": float(np.degrees(se_lat)), "lon": float(np.degrees(se_lon) % 360)},
+    }
+
+
+def orbit_geometry(plan: KernelPlan, sc_id: int, body_id: str, utc_start: str, utc_stop: str,
+                   samples: int = 360) -> Dict[str, Any]:
+    """Where the spacecraft was during any observation (in-situ, imaging, spectra...).
+
+    Over the observation (at least an hour, centred on it) the spacecraft's
+    position is given in the body-fixed frame, with the sub-spacecraft point,
+    altitude, local solar time and solar zenith / emission / phase angles at
+    that point.  Epochs are spacecraft times (TDB); positions are corrected for
+    light time between the body and the spacecraft (LT+S).
+    """
+    body = get_body(body_id)
+    if body is None or body_id not in NAIF_BODY:
+        raise ValueError(f"No SPICE body for '{body_id}'")
+    bname, fixed, sc = str(NAIF_BODY[body_id]), body_frame(body_id), str(sc_id)
+    with _spice_lock:
+        _furnsh(plan)
+        try:
+            e0 = sp.str2et(utc_start.replace("Z", ""))
+            e1 = sp.str2et((utc_stop or utc_start).replace("Z", ""))
+            t0, t1 = float(min(e0, e1)), float(max(e0, e1))
+            if t1 - t0 < 3600:                       # short products: show the hour around them
+                mid = 0.5 * (t0 + t1)
+                w0, w1 = mid - 1800, mid + 1800
+            elif t1 - t0 > 30 * 86400:               # long products: at most a month
+                w0, w1 = t0, t0 + 30 * 86400
+            else:
+                w0, w1 = t0, t1
+            ets = np.linspace(w0, w1, samples)
+            radii = sp.bodvrd(bname, "RADII", 3)[1]
+            r_eq = float(radii[0])
+            pos, lat, lon, alt, lst, sza, emi, pha, inside = [], [], [], [], [], [], [], [], []
+            for e in ets:
+                p = sp.spkpos(sc, float(e), fixed, "LT+S", bname)[0]
+                pos.append(p)
+                spoint, trgepc, srfvec = sp.subpnt("INTERCEPT/ELLIPSOID", bname, float(e), fixed, "LT+S", sc)
+                _, lo, la = sp.reclat(spoint)
+                lat.append(np.degrees(la)); lon.append(np.degrees(lo) % 360)
+                alt.append(float(np.linalg.norm(srfvec)))
+                _, _, ph, inc, em = sp.ilumin("Ellipsoid", bname, float(e), fixed, "LT+S", sc, spoint)
+                sza.append(np.degrees(inc)); emi.append(np.degrees(em)); pha.append(np.degrees(ph))
+                h, m, s, _, _ = sp.et2lst(float(trgepc), NAIF_BODY[body_id], float(lo), "PLANETOCENTRIC")
+                lst.append(h + m / 60 + s / 3600)
+                inside.append(bool(t0 <= e <= t1))
+            mid = 0.5 * (t0 + t1)
+            sun = sp.spkpos("10", mid, fixed, "LT+S", bname)[0]
+            earth = sp.spkpos("399", mid, fixed, "LT+S", bname)[0]
+            _, ss_lon, ss_lat = sp.reclat(sp.subslr("INTERCEPT/ELLIPSOID", bname, mid, fixed, "LT+S", sc)[0])
+            utc = [sp.et2utc(float(e), "ISOC", 0) for e in ets]
+            utc_range = [sp.et2utc(t0, "ISOC", 0), sp.et2utc(t1, "ISOC", 0)]
+        except sp.stypes.SpiceyError as exc:
+            text = str(exc)
+            if "SPKINSUFFDATA" in text or "Insufficient ephemeris" in text:
+                raise LookupError("The spacecraft ephemeris has a gap at this time "
+                                  "(no orbit data for the observation).") from exc
+            if "FRAMEDATANOTFOUND" in text or "NOFRAME" in text or "UNKNOWNFRAME" in text:
+                raise LookupError(f"No body-fixed frame for {body.name} in the loaded kernels") from exc
+            raise LookupError(f"SPICE error: {text.splitlines()[0][:200]}") from exc
+    pos = np.array(pos)
+    return {
+        "mode": "orbit", "body_id": body_id, "body_name": body.name, "radius_km": r_eq, "frame_fixed": fixed,
+        "utc_range": utc_range, "time_convention": "spacecraft (TDB, light-time corrected positions)",
+        "track": {
+            "utc": utc, "in_observation": inside, "sc_fixed": _vec(pos),
+            "lat": np.round(lat, 4).tolist(), "lon": np.round(lon, 4).tolist(),
+            "alt_km": np.round(alt, 3).tolist(), "lst_h": np.round(lst, 4).tolist(),
+            "sza": np.round(sza, 3).tolist(), "emission": np.round(emi, 3).tolist(),
+            "phase": np.round(pha, 3).tolist(),
+        },
+        "directions_fixed": {"sun": _unit(sun), "earth": _unit(earth)},
+        "subsolar": {"lat": float(np.degrees(ss_lat)), "lon": float(np.degrees(ss_lon) % 360)},
+        "distance_range_km": [float(np.min(np.linalg.norm(pos, axis=1))), float(np.max(np.linalg.norm(pos, axis=1)))],
     }

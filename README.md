@@ -6,7 +6,7 @@
 
 **VEDA** is a desktop laboratory for planetary atmosphere and ionosphere data. Pick a planet or moon and a date range, and VEDA finds every product the official archives hold for it across all connected missions. You can then download the products, plot them, derive physical parameters, compare observations and compute the observation geometry with SPICE.
 
-All data shown in VEDA come straight from the mission archives (NASA PDS, ESA PSA, JAXA DARTS, ISRO ISSDC). Nothing is simulated.
+All data shown in VEDA come straight from the mission archives (NASA PDS, ESA PSA, JAXA DARTS, ISRO ISSDC, OPUS). Nothing is simulated. Nearly every payload of every mission in VEDA can be searched by date and plotted; the few that cannot (no searchable archive route yet) are listed in DATA_POLICY.md.
 
 ---
 
@@ -28,36 +28,53 @@ All data shown in VEDA come straight from the mission archives (NASA PDS, ESA PS
 
 ## What you can do
 
-### Find observations by body and date
-In **By Celestial Body**, the *Find observations of ...* panel searches every connected data set for that body over the dates you give, for example all Mars occultations from Mars Express and Mars Global Surveyor in July 2005. Results show mission, UTC time, product, type, payload and level, and whether the product is already downloaded. Open one to plot it, tick several to compare them, or download them for offline work.
+### Find everything observed on a date
+In **By Celestial Body**, *Find observations of ...* searches every connected data set of every mission for that body over the dates you give. Two kinds of data set are searched together:
+
+* **Indexed data sets**: VEDA reads the archive's own catalogue (PDS3 volume and cumulative indexes, PDS4 bundles) into a local SQLite index the first time, so later searches are instant and work offline.
+* **Live data sets**: whole instrument archives too large to copy are searched on the archive servers for your dates (ESA PSA EPN-TAP, the NASA PDS Registry API, the PDS Rings node OPUS). What is found is kept in the local catalogue.
+
+For example, Mars on 2016-01-01 lists MAVEN NGIMS and IUVS, MRO CRISM, SHARAD and MCS products and Mars Express ASPERA-3, SPICAM, PFS, OMEGA and MARSIS products in one table. **Show** narrows the list to profiles, images or time series. Open any row to plot it, tick several profiles to compare them, or download them for offline work.
 
 ### Browse a mission by payload
-In **By Planetary Mission**, *Archive data* lists the mission's payloads and data sets (instrument, processing level, archive). Choose the ones you want and filter by date, product type, free text (product id, orbit), profiles only or downloaded only, oldest or newest first.
+In **By Planetary Mission**, *Archive data* lists every payload and data set of the mission (instrument, level, archive, live or indexed). Choose the ones you want and filter by date, product type, free text, profiles only or downloaded only, oldest or newest first.
 
-VEDA reads each archive's own catalogue (PDS3 volume indexes, PDS4 bundles) into a local SQLite index the first time, so later searches are instant and work offline. Products are downloaded on demand into a cache, with retries, and each file is written in full before it is used.
+### Connected archives and payloads
 
-### Connected data sets
+All 19 missions in VEDA are connected (141 data sets). Highlights:
 
-| Body | Mission | Data | Archive |
+| Body | Mission | Payloads | Route |
 |---|---|---|---|
-| Venus | Akatsuki | Radio occultation L2 (frequency, power), L3 refractivity, L4 temperature, pressure, density | JAXA DARTS |
-| Venus | Venus Express | VeRa radio science L1A to L2 (ESA PSA) and the PDS copy with calibration files | ESA PSA, NASA PDS |
-| Venus | Magellan | Radio occultation (Oct 1991): T, P, density, refractivity; 13 cm absorptivity and H2SO4; raw ODR/TDF | NASA PDS |
-| Mars | Mars Express | MaRS L4 neutral atmosphere and ionosphere profiles | ESA PSA |
-| Mars | Mars Global Surveyor | Radio science T-P and electron density profiles | NASA PDS |
-| Mars | Mars Orbiter Mission | All payloads, via sign-in and import | ISRO ISSDC |
-| Moon | Chandrayaan-2 | Orbiter payloads incl. DFRS and CHACE-2, via sign-in and import | ISRO ISSDC |
-| Jupiter | Galileo probe | Atmospheric structure descent profile and probe instrument data | NASA PDS |
-| Jupiter | Juno | MWR raw records, antenna and brightness temperatures, NH3/H2O | NASA PDS |
-| Titan | Cassini RSS | Ionospheric electron density profiles (PDS4) | NASA PDS |
-| Titan | Huygens | HASI entry and descent profiles | NASA PDS |
+| Venus | Akatsuki | RS (L2-L4), UVI, IR1, IR2 and LIR (raw, calibrated, geometry) | JAXA DARTS, indexed |
+| Venus | Venus Express | VeRa (indexed), VMC, VIRTIS, SPICAV/SOIR, ASPERA-4, MAG | ESA PSA, live |
+| Venus | Magellan, Pioneer Venus | Radio occultation profiles, radar, gravity; PVO ORO, OIMS, ONMS, probes | NASA PDS |
+| Mars | Mars Express | MaRS L4 profiles (indexed); SPICAM, PFS, OMEGA, ASPERA-3, MARSIS, HRSC, VMC | ESA PSA |
+| Mars | MRO | MCS DDR/EDR/RDR (indexed), CRISM, SHARAD; CTX and MARCI on request | NASA PDS |
+| Mars | MAVEN, MGS | NGIMS, IUVS, ACC; MGS RS profiles, TES, MOLA | NASA PDS |
+| Jupiter | Juno, Galileo | MWR, JIRAM, UVS, JunoCam, MAG, gravity; Galileo SSI, NIMS, UVS, PPR, MAG, PLS, EPD, probe | NASA PDS, OPUS |
+| Saturn, Titan | Cassini-Huygens | ISS, VIMS, UVIS, CIRS (OPUS), INMS, RSS Titan ionosphere; Huygens HASI, DISR, GCMS, ACP, DWE, SSP | NASA PDS, OPUS, ESA PSA |
+| Pluto | New Horizons | REX, Alice, LORRI, Ralph MVIC/LEISA, SWAP, PEPSSI, SDC | NASA PDS |
+| Mercury | MESSENGER, BepiColombo | MLA, GRS, NS, XRS, MAG, MASCS, RS; BepiColombo MPO-MAG, MCAM, SERENA, PHEBUS, MERTIS, MORE ... | NASA PDS, ESA PSA |
+| Moon | LRO | Diviner, LOLA, LEND, Mini-RF, radio science | NASA PDS |
+| Ceres, Vesta | Dawn | GRaND, gravity | NASA PDS |
+| 67P | Rosetta | OSIRIS, VIRTIS, ALICE, MIRO, ROSINA, RPC, RSI, GIADA, COSIMA and the lander instruments | ESA PSA |
+| Mars, Moon | MOM, Chandrayaan-2 | All payloads, via sign-in and import (ISRO PRADAN requires an account) | ISRO ISSDC |
 
-ISRO's PRADAN portal requires a free account, so VEDA opens it for you to sign in; you download there and use **Import downloaded files**. VEDA never sees your password.
+DATA_POLICY.md lists every data set. ISRO's PRADAN portal requires a free account, so VEDA opens it for you to sign in; you download there and use **Import downloaded files**. VEDA never sees your password.
 
-### Plot and derive
-An opened profile shows every quantity in the product (temperature, pressure, number or electron density, refractivity, absorptivity, H2SO4 and so on) with the archived 1-sigma uncertainty where the product gives one, and the time, latitude, longitude, solar zenith angle and local time stored with it. Units are read from the label and converted (Pa, hPa, bar, mbar; K and degrees C; m^-3 and cm^-3, including scaled units).
+### Plot any product
+Any product VEDA lists can be opened: **Open** for atmosphere profiles, **View** for everything else. The product viewer reads PDS3, PDS4, FITS and netCDF:
 
-From temperature and pressure VEDA derives, with the body's own constants ($R_{spec}, c_p, g_0, P_{ref}$):
+* **Tables and time series**: plot any field against any other (time axes, one plot or one panel per field, log scales). Large products are drawn at a few thousand points with every minimum and maximum kept.
+* **Spectra per row** (energy channels, spectrometer frames): spectrograms with the mean spectrum.
+* **Profiles per row** (e.g. MRO MCS, about 370 temperature, pressure, dust and ice profiles per file): plot one vector against another for any row, and overlay up to 12.
+* **Images and maps**: stretch (percentile, ZScale, linear, log, sqrt, asinh, histogram), colour maps, bands, value read-out, line transects and histograms; netCDF maps (e.g. Akatsuki L3) keep their longitude-latitude axes.
+* **Spectral cubes** (VIRTIS, OMEGA, VIMS, CRISM, IUVS ...): band slider and the spectrum at any clicked pixel.
+
+Binary data are memory-mapped and images are read at screen resolution, so very large files do not fill your memory.
+
+### Derived parameters for profiles
+An opened profile shows every quantity in the product with the archived 1-sigma uncertainty where the product gives one, and its time, latitude, longitude, solar zenith angle and local time. Units are read from the label and converted (Pa, hPa, bar, mbar; K and degrees C; m^-3 and cm^-3, including scaled units). From temperature and pressure VEDA derives, with the body's own constants ($R_{spec}, c_p, g_0, P_{ref}$):
 
 * Lapse rate $\Gamma = -dT/dz$ and gravity $g(z) = g_0 (R_p/(R_p+z))^2$
 * Scale height $H = R_{spec} T / g$ and speed of sound
@@ -70,16 +87,28 @@ From temperature and pressure VEDA derives, with the body's own constants ($R_{s
 Selected profiles from any missions are interpolated onto a common altitude grid and drawn with their mean and 1-sigma spread. Colour the curves by mission, date or latitude, switch the variable and units, and export the comparison table as CSV.
 
 ### Style and export figures
-**Plot style** controls lines, markers, palettes, uncertainty bands or error bars, linear or log axes, swapped axes, altitude or pressure as the vertical axis, grid, ticks, fonts and legend, with journal templates for AGU, Elsevier (Icarus/PSS), A&A and MNRAS. **Export figure** writes PNG at a chosen DPI or vector SVG at the journal's single- or double-column width. The body view also renders a Matplotlib publication figure.
+**Plot style** controls lines, markers, palettes, uncertainty bands or error bars, linear or log axes, swapped axes, altitude or pressure as the vertical axis, grid, ticks, fonts and legend, with journal templates for AGU, Elsevier (Icarus/PSS), A&A and MNRAS. It applies to profiles, comparisons, time series, spectra and images. **Export figure** writes PNG at a chosen DPI or vector SVG at the journal's single- or double-column width.
 
-### Observation geometry with SPICE
-**Geometry** on an opened profile computes, with NAIF SPICE, the spacecraft orbit around the occultation (planet-fixed and inertial J2000), the view from Earth in the sky plane, the tangent-point track on a map (cylindrical, north or south polar, orthographic) and SZA, local solar time and Sun-Earth-probe angle along the profile. VEDA lists the kernels it needs and downloads them when you agree (generic kernels from NAIF, mission kernels from ESA and JAXA). Radio-science times are treated as Earth-received and corrected for light time; the result agrees with the archived tangent radii to about 1 km for Mars Express and with Akatsuki's published SZA and local time to about 0.01 degrees. Available for Akatsuki and Mars Express; other missions show the track stored in the product.
+### Observation geometry with SPICE, kernels downloaded for you
+**Geometry** works for every mission with public SPICE kernels (17 of 19; MOM and Chandrayaan-2 publish none):
+
+* **Radio occultations**: the orbit around the occultation (planet-fixed and J2000), the view from Earth, the tangent-point track (cylindrical, polar or orthographic) and SZA, local time and Sun-Earth-probe angle along the profile. Times are Earth-received and light-time corrected; tangent radii agree with Mars Express's archived values to about 1 km.
+* **Any other observation**: the spacecraft orbit, the sub-spacecraft ground track and altitude, local solar time and solar zenith, emission and phase angles over the observation.
+
+When you open a mission, its generic and body kernels download in the background; when you open an observation, the spacecraft ephemeris for that date follows. VEDA knows each mission's kernel archive (NAIF, ESA SPICE service, JAXA DARTS) and how its files map to dates. Settings > Observation geometry turns this off or sets the size above which VEDA asks first. Kernels are kept and reused.
+
+### What to cite
+**Cite** lists the references for exactly what you used on this computer:
+* the data sets (with the archive data set identifiers of the products you opened);
+* the instrument and mission papers (checked against Crossref);
+* the archive acknowledgements;
+* SPICE and SpiceyPy if you used geometry, and NumPy, SciPy, Astropy, Matplotlib or Plotly for the features you used;
+* VEDA itself.
+
+It gives BibTeX, plain text and a matching data availability statement, all ready to copy.
 
 ### Your own files
-**Load File** or drag and drop: PDS3 (`.lbl` + `.tab`), PDS4 (`.xml` + table), CSV and text tables, FITS images and PNG/JPEG. FITS images open in a viewer with ZScale, percentile, linear, log, sqrt, asinh and histogram-equalised stretches, colour maps, a pixel inspector, line transects and histograms.
-
-### Readers
-Pure-Python PDS3 and PDS4 table readers: nested objects, `^STRUCTURE` format files, multiple tables per file, fixed-width and delimited records, character columns, declared missing constants, repaired broken records, and whole-word column matching that prefers the nominal retrieval and skips uncertainty columns.
+**Load File** or drag and drop: PDS3 (`.lbl` + data), PDS4 (`.xml` + data), FITS, netCDF, CSV and text tables, PNG/JPEG.
 
 ---
 
@@ -90,9 +119,9 @@ Open the [latest release](https://github.com/jovian-explorer/VEDA/releases/lates
 
 | OS | Asset | Run |
 |---|---|---|
-| Windows 10/11 (x64) | `VEDA-<version>-windows-x86_64.zip` | unzip, double-click `VEDA.exe` |
+| Windows 10/11 (x64) | `VEDA-<version>-windows-x86_64.zip` | unzip, open the folder, double-click `VEDA.exe` (keep the `_internal` folder next to it) |
 | macOS (Apple Silicon) | `VEDA-<version>-macos-arm64.zip` | unzip, right-click `VEDA.app` > Open the first time (the app is not notarized) |
-| Linux (x86_64) | `VEDA-<version>-linux-x86_64.zip` | unzip, `chmod +x VEDA && ./VEDA` |
+| Linux (x86_64) | `VEDA-<version>-linux-x86_64.zip` | unzip, `cd VEDA-*; chmod +x VEDA && ./VEDA` |
 
 While the repository is private you need to be signed in to GitHub with access to it.
 
@@ -104,7 +133,7 @@ veda --browser        # always use the default browser
 veda-server           # headless API + web UI, prints the URL
 python -m veda        # same as `veda`
 ```
-Add `[netcdf]` (`pip install "veda[netcdf] @ git+https://github.com/jovian-explorer/VEDA.git"`) to read HDF5-backed netCDF4 files; classic netCDF3 files work without it.
+netCDF files (classic and HDF5-based netCDF4) are read with the netCDF4 package, which is installed with VEDA.
 
 ### Option C: development setup
 ```bash

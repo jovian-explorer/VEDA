@@ -68,9 +68,12 @@ def _assert_healthy(cwd: Path) -> Path:
     return home
 
 
-def test_exe_size() -> None:
-    size_mb = EXE.stat().st_size / 1024 / 1024
-    assert size_mb > 50, f"{size_mb:.1f} MB"
+def test_folder_build_layout() -> None:
+    """Folder build: the launcher plus _internal/ with the frontend and data files."""
+    internal = EXE.parent / "_internal"
+    assert (internal / "veda" / "frontend" / "index.html").is_file()
+    assert (internal / "veda" / "archives" / "references.json").is_file()
+    assert (internal / "veda" / "sampledata").is_dir()
 
 
 def test_launch_from_exe_dir() -> None:

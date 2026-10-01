@@ -79,7 +79,7 @@ def minmax_indices(y: np.ndarray, max_points: int) -> np.ndarray:
 _NOT_A_MEASUREMENT = re.compile(
     r"(^|[ _.])(SAMPLE|RECORD|ROW|INDEX|PACKET|SEQUENCE|FRAME|COUNTER)([ _]?(NUMBER|NO|ID|COUNT))?$|"
     r"EPHEMERIS|SCLK|SPACECRAFT[ _]CLOCK|(^|[ _])(ET|TIME|UTC|JD|MJD|DOY|YEAR|MONTH|DAY|HOUR|MINUTE|SECOND)"
-    r"([ _]|$)|^(ET|UTC|SCET|ERT)[A-Z]{0,4}$|QUALITY|FLAG|MODE|STATUS|CHECKSUM|SPARE", re.I)
+    r"([ _]|$)|^(ET|UTC|SCET|ERT|OBT|SCLK)([A-Z]{0,4}|[ _].*)$|(^|[ _])(ID|TYPE|VERSION|COUNTER)$|QUALITY|FLAG|MODE|STATUS|CHECKSUM|SPARE", re.I)
 
 
 def default_y(obj: DataObject, x: Optional[str]) -> Optional[str]:
@@ -249,3 +249,39 @@ def cube_spectrum(dataset_id: str, product_id: str, line: int, sample: int,
         spec = np.nanmean(a.reshape(a.shape[0], -1), axis=1)
     return {"object": obj.name, "line": line, "sample": sample, "box": box, "unit": obj.unit,
             "band": list(range(bands)), "values": _finite_list(spec)}
+
+
+@router.get("/{dataset_id}/{product_id}/rows")
+def table_rows(dataset_id: str, product_id: str, fields: List[str] = Query(...), rows: List[int] = Query(...),
+               object: Optional[str] = None, label: Optional[str] = None) -> Dict[str, Any]:
+    """Vector fields of selected rows at full resolution (e.g. MCS DDR: one profile per row)."""
+    prod = _product(dataset_id, product_id)
+    obj = _object(prod, object, ("table",))
+    names = {f.name: f for f in obj.fields}
+    for f in fields:
+        if f not in names:
+            raise HTTPException(400, f"{obj.name} has no field {f!r}")
+    if len(rows) > 50:
+        raise HTTPException(400, "At most 50 rows at a time")
+    want = list(dict.fromkeys(fields + ([label] if label and label in names else [])))
+    try:
+        data = obj.read_table(want)
+    except (ProductError, OSError, ValueError) as exc:
+        raise HTTPException(422, str(exc))
+    n = len(next(iter(data.values()))) if data else 0
+    out = []
+    for r in rows:
+        if not 0 <= r < n:
+            continue
+        item = {"row": r, "label": (data[label][r] if label and isinstance(data.get(label), list)
+                                    else (_finite_list(np.asarray([data[label][r]]))[0] if label and label in data else None))}
+        for f in fields:
+            v = data[f]
+            if isinstance(v, list):
+                item[f] = v[r]
+            else:
+                a = np.asarray(v)
+                item[f] = _finite_list(a[r] if a.ndim > 1 else a[r:r + 1])
+        out.append(item)
+    return {"object": obj.name, "rows_total": n, "rows": out,
+            "units": {f: names[f].unit for f in fields}}

@@ -1024,12 +1024,24 @@ DATA_AVAILABILITY_STATEMENT = (
 DATA_PORTALS = [
     {
         "id": "nasa_pds_atm",
-        "name": "NASA Planetary Data System (PDS) Atmospheres Node",
+        "name": "NASA Planetary Data System (PDS)",
         "agency": "NASA",
-        "url": "https://pds-atmospheres.nmsu.edu/",
-        "description": "Radio occultation profiles, entry-probe descent data and microwave radiometry. "
-                       "VEDA reads the PDS3 volume indexes and PDS4 bundles directly; no account is needed.",
-        "missions": ["magellan", "vex", "mgs", "galileo", "cassini", "juno"],
+        "url": "https://pds.nasa.gov/",
+        "description": "All PDS nodes (Atmospheres, Geosciences, Imaging, PPI, Small Bodies). VEDA reads PDS3 volume "
+                       "and cumulative indexes and searches PDS4 products by instrument and date with the PDS "
+                       "Registry API; no account is needed.",
+        "missions": ["magellan", "pvo", "vex", "mgs", "mro", "maven", "galileo", "cassini", "juno", "new_horizons",
+                     "messenger", "lro", "dawn"],
+        "login": False,
+    },
+    {
+        "id": "pds_opus",
+        "name": "PDS Ring-Moon Systems Node (OPUS)",
+        "agency": "NASA",
+        "url": "https://opus.pds-rings.seti.org/",
+        "description": "OPUS finds Cassini ISS, VIMS, UVIS and CIRS, Galileo SSI and New Horizons LORRI/MVIC products "
+                       "by instrument and date; VEDA downloads them from the node's holdings.",
+        "missions": ["cassini", "galileo", "new_horizons"],
         "login": False,
     },
     {
@@ -1037,9 +1049,10 @@ DATA_PORTALS = [
         "name": "ESA Planetary Science Archive (PSA)",
         "agency": "ESA",
         "url": "https://archives.esac.esa.int/psa/",
-        "description": "European mission archives. VEDA reads the Mars Express MaRS and Venus Express VeRa "
-                       "radio-science volumes from the PSA FTP mirror; no account is needed.",
-        "missions": ["mex", "vex"],
+        "description": "European mission archives. VEDA finds products of every Mars Express, Venus Express, "
+                       "Rosetta, BepiColombo and Huygens instrument by date with the PSA EPN-TAP service and "
+                       "downloads them from the PSA FTP mirror; no account is needed.",
+        "missions": ["mex", "vex", "rosetta", "bepicolombo", "cassini"],
         "login": False,
     },
     {
@@ -1047,8 +1060,8 @@ DATA_PORTALS = [
         "name": "JAXA Data Archives and Transmission System (DARTS)",
         "agency": "ISAS / JAXA",
         "url": "https://data.darts.isas.jaxa.jp/pub/pds3/",
-        "description": "Akatsuki radio occultation (L2 to L4) and camera products, plus the Akatsuki SPICE "
-                       "kernels VEDA uses for observation geometry; no account is needed.",
+        "description": "Akatsuki radio occultation (L2 to L4) and UVI, IR1, IR2 and LIR camera products (raw, "
+                       "calibrated, geometry), read from the archive's index tables over HTTPS; no account is needed.",
         "missions": ["akatsuki"],
         "login": False,
     },
@@ -1067,8 +1080,9 @@ DATA_PORTALS = [
         "name": "NASA NAIF SPICE archive",
         "agency": "NASA / JPL",
         "url": "https://naif.jpl.nasa.gov/naif/data.html",
-        "description": "Leap-second, planetary-constant and planetary ephemeris kernels (with the mission "
-                       "SPICE archives at ESA and JAXA). Downloaded on request for observation geometry.",
+        "description": "Generic and mission SPICE kernels (NAIF, the ESA SPICE service and the Akatsuki archive) "
+                       "for 17 missions, downloaded automatically for the missions and observations you open "
+                       "(Settings can turn this off).",
         "missions": [],
         "login": False,
     },

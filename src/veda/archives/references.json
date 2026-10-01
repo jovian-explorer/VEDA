@@ -1,0 +1,5466 @@
+{
+ "refs": [
+  {
+   "key": "nakamura2016",
+   "authors": [
+    "Nakamura, M.",
+    "Imamura, T.",
+    "Ishii, N.",
+    "Abe, T.",
+    "Kawakatsu, Y.",
+    "Hirose, C.",
+    "Satoh, T.",
+    "Suzuki, M.",
+    "Ueno, M.",
+    "Yamazaki, A."
+   ],
+   "et_al": true,
+   "year": 2016,
+   "title": "AKATSUKI returns to Venus",
+   "journal": "Earth, Planets and Space",
+   "volume": "68",
+   "issue": "1",
+   "pages": "75",
+   "doi": "10.1186/s40623-016-0457-6",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "akatsuki",
+     "payload": "mission"
+    }
+   ],
+   "note": "Akatsuki mission paper after Venus orbit insertion. Nakamura et al. 2011 (nakamura2011) is the pre-launch overview."
+  },
+  {
+   "key": "nakamura2011",
+   "authors": [
+    "Nakamura, M.",
+    "Imamura, T.",
+    "Ishii, N.",
+    "Abe, T.",
+    "Satoh, T.",
+    "Suzuki, M.",
+    "Ueno, M.",
+    "Yamazaki, A.",
+    "Iwagami, N.",
+    "Watanabe, S."
+   ],
+   "et_al": true,
+   "year": 2011,
+   "title": "Overview of Venus orbiter, Akatsuki",
+   "journal": "Earth, Planets and Space",
+   "volume": "63",
+   "issue": "5",
+   "pages": "443-457",
+   "doi": "10.5047/eps.2011.02.009",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "akatsuki",
+     "payload": "mission"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "imamura2017",
+   "authors": [
+    "Imamura, T.",
+    "Ando, H.",
+    "Tellmann, S.",
+    "Pätzold, M.",
+    "Häusler, B.",
+    "Yamazaki, A.",
+    "Sato, T. M.",
+    "Noguchi, K.",
+    "Futaana, Y.",
+    "Oschlisniok, J."
+   ],
+   "et_al": true,
+   "year": 2017,
+   "title": "Initial performance of the radio occultation experiment in the Venus orbiter mission Akatsuki",
+   "journal": "Earth, Planets and Space",
+   "volume": "69",
+   "issue": "1",
+   "pages": "137",
+   "doi": "10.1186/s40623-017-0722-3",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "akatsuki",
+     "payload": "RS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "yamazaki2018",
+   "authors": [
+    "Yamazaki, A.",
+    "Yamada, M.",
+    "Lee, Y. J.",
+    "Watanabe, S.",
+    "Horinouchi, T.",
+    "Murakami, S.-y.",
+    "Kouyama, T.",
+    "Ogohara, K.",
+    "Imamura, T.",
+    "Sato, T. M."
+   ],
+   "et_al": true,
+   "year": 2018,
+   "title": "Ultraviolet imager on Venus orbiter Akatsuki and its initial results",
+   "journal": "Earth, Planets and Space",
+   "volume": "70",
+   "issue": "1",
+   "pages": "23",
+   "doi": "10.1186/s40623-017-0772-6",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "akatsuki",
+     "payload": "UVI"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "iwagami2011",
+   "authors": [
+    "Iwagami, N.",
+    "Takagi, S.",
+    "Ohtsuki, S.",
+    "Ueno, M.",
+    "Uemizu, K.",
+    "Satoh, T.",
+    "Sakanoi, T.",
+    "Hashimoto, G. L."
+   ],
+   "et_al": false,
+   "year": 2011,
+   "title": "Science requirements and description of the 1 εm camera onboard the Akatsuki Venus Orbiter",
+   "journal": "Earth, Planets and Space",
+   "volume": "63",
+   "issue": "6",
+   "pages": "487-492",
+   "doi": "10.5047/eps.2011.03.007",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "akatsuki",
+     "payload": "IR1"
+    },
+    {
+     "mission": "akatsuki",
+     "payload": "IR2"
+    }
+   ],
+   "note": "IR1/IR2 pre-launch description. Crossref renders the title \"1 εm camera\"; the published title reads \"1 μm camera\"."
+  },
+  {
+   "key": "iwagami2018",
+   "authors": [
+    "Iwagami, N.",
+    "Sakanoi, T.",
+    "Hashimoto, G. L.",
+    "Sawai, K.",
+    "Ohtsuki, S.",
+    "Takagi, S.",
+    "Uemizu, K.",
+    "Ueno, M.",
+    "Kameda, S.",
+    "Murakami, S.-y."
+   ],
+   "et_al": true,
+   "year": 2018,
+   "title": "Initial products of Akatsuki 1-μm camera",
+   "journal": "Earth, Planets and Space",
+   "volume": "70",
+   "issue": "1",
+   "pages": "6",
+   "doi": "10.1186/s40623-017-0773-5",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "akatsuki",
+     "payload": "IR1"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "satoh2016",
+   "authors": [
+    "Satoh, T.",
+    "Nakamura, M.",
+    "Ueno, M.",
+    "Uemizu, K.",
+    "Suzuki, M.",
+    "Imamura, T.",
+    "Kasaba, Y.",
+    "Yoshida, S.",
+    "Kimata, M."
+   ],
+   "et_al": false,
+   "year": 2016,
+   "title": "Development and in-flight calibration of IR2: 2-μm camera onboard Japan’s Venus orbiter, Akatsuki",
+   "journal": "Earth, Planets and Space",
+   "volume": "68",
+   "issue": "1",
+   "pages": "74",
+   "doi": "10.1186/s40623-016-0451-z",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "akatsuki",
+     "payload": "IR2"
+    }
+   ],
+   "note": "Hint said \"Satoh et al. 2016 EPS\": this is the IR2 development and calibration paper (EPS 68:74). The first-year performance paper is Satoh et al. 2017, EPS 69:154 (satoh2017)."
+  },
+  {
+   "key": "satoh2017",
+   "authors": [
+    "Satoh, T.",
+    "Sato, T. M.",
+    "Nakamura, M.",
+    "Kasaba, Y.",
+    "Ueno, M.",
+    "Suzuki, M.",
+    "Hashimoto, G. L.",
+    "Horinouchi, T.",
+    "Imamura, T.",
+    "Yamazaki, A."
+   ],
+   "et_al": true,
+   "year": 2017,
+   "title": "Performance of Akatsuki/IR2 in Venus orbit: the first year",
+   "journal": "Earth, Planets and Space",
+   "volume": "69",
+   "issue": "1",
+   "pages": "154",
+   "doi": "10.1186/s40623-017-0736-x",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "akatsuki",
+     "payload": "IR2"
+    }
+   ],
+   "note": "IR2 performance in Venus orbit. See also satoh2016."
+  },
+  {
+   "key": "taguchi2007",
+   "authors": [
+    "Taguchi, M.",
+    "Fukuhara, T.",
+    "Imamura, T.",
+    "Nakamura, M.",
+    "Iwagami, N.",
+    "Ueno, M.",
+    "Suzuki, M.",
+    "Hashimoto, G.",
+    "Mitsuyama, K."
+   ],
+   "et_al": false,
+   "year": 2007,
+   "title": "Longwave Infrared Camera onboard the Venus Climate Orbiter",
+   "journal": "Advances in Space Research",
+   "volume": "40",
+   "issue": "6",
+   "pages": "861-868",
+   "doi": "10.1016/j.asr.2007.05.085",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "akatsuki",
+     "payload": "LIR"
+    }
+   ],
+   "note": "Published in Advances in Space Research 40(6), not EPS."
+  },
+  {
+   "key": "fukuhara2011",
+   "authors": [
+    "Fukuhara, T.",
+    "Taguchi, M.",
+    "Imamura, T.",
+    "Nakamura, M.",
+    "Ueno, M.",
+    "Suzuki, M.",
+    "Iwagami, N.",
+    "Sato, M.",
+    "Mitsuyama, K.",
+    "Hashimoto, G. L."
+   ],
+   "et_al": true,
+   "year": 2011,
+   "title": "LIR: Longwave Infrared Camera onboard the Venus orbiter Akatsuki",
+   "journal": "Earth, Planets and Space",
+   "volume": "63",
+   "issue": "9",
+   "pages": "1009-1018",
+   "doi": "10.5047/eps.2011.06.019",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "akatsuki",
+     "payload": "LIR"
+    }
+   ],
+   "note": "LIR instrument description paper."
+  },
+  {
+   "key": "fukuhara2017",
+   "authors": [
+    "Fukuhara, T.",
+    "Taguchi, M.",
+    "Imamura, T.",
+    "Hayashitani, A.",
+    "Yamada, T.",
+    "Futaguchi, M.",
+    "Kouyama, T.",
+    "Sato, T. M.",
+    "Takamura, M.",
+    "Iwagami, N."
+   ],
+   "et_al": true,
+   "year": 2017,
+   "title": "Absolute calibration of brightness temperature of the Venus disk observed by the Longwave Infrared Camera onboard Akatsuki",
+   "journal": "Earth, Planets and Space",
+   "volume": "69",
+   "issue": "1",
+   "pages": "141",
+   "doi": "10.1186/s40623-017-0727-y",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "akatsuki",
+     "payload": "LIR"
+    }
+   ],
+   "note": "Hint said Fukuhara et al. 2017 EPS. Crossref: this is the LIR absolute brightness-temperature calibration paper (EPS 69:141). The instrument description is fukuhara2011."
+  },
+  {
+   "key": "takahashi2008",
+   "authors": [
+    "Takahashi, Y.",
+    "Yoshida, J.",
+    "Yair, Y.",
+    "Imamura, T.",
+    "Nakamura, M."
+   ],
+   "et_al": false,
+   "year": 2008,
+   "title": "Lightning Detection by LAC Onboard the Japanese Venus Climate Orbiter, Planet-C",
+   "journal": "Space Science Reviews",
+   "volume": "137",
+   "issue": "1-4",
+   "pages": "317-334",
+   "doi": "10.1007/s11214-008-9400-x",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "akatsuki",
+     "payload": "LAC"
+    }
+   ],
+   "note": "LAC instrument description paper (SSR 137:317)."
+  },
+  {
+   "key": "takahashi2018",
+   "authors": [
+    "Takahashi, Y.",
+    "Sato, M.",
+    "Imai, M.",
+    "Lorenz, R.",
+    "Yair, Y.",
+    "Aplin, K.",
+    "Fischer, G.",
+    "Nakamura, M.",
+    "Ishii, N.",
+    "Abe, T."
+   ],
+   "et_al": true,
+   "year": 2018,
+   "title": "Initiation of a lightning search using the lightning and airglow camera onboard the Venus orbiter Akatsuki",
+   "journal": "Earth, Planets and Space",
+   "volume": "70",
+   "issue": "1",
+   "pages": "88",
+   "doi": "10.1186/s40623-018-0836-2",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "akatsuki",
+     "payload": "LAC"
+    }
+   ],
+   "note": "Hint said \"Takahashi et al. 2018 EPS\". Crossref title: \"Initiation of a lightning search using the lightning and airglow camera onboard the Venus orbiter Akatsuki\" (EPS 70:88). The instrument description is takahashi2008."
+  },
+  {
+   "key": "svedhem2007",
+   "authors": [
+    "Svedhem, H.",
+    "Titov, D.",
+    "McCoy, D.",
+    "Lebreton, J.-P.",
+    "Barabash, S.",
+    "Bertaux, J.-L.",
+    "Drossart, P.",
+    "Formisano, V.",
+    "Häusler, B.",
+    "Korablev, O."
+   ],
+   "et_al": true,
+   "year": 2007,
+   "title": "Venus Express-The first European mission to Venus",
+   "journal": "Planetary and Space Science",
+   "volume": "55",
+   "issue": "12",
+   "pages": "1636-1652",
+   "doi": "10.1016/j.pss.2007.01.013",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "vex",
+     "payload": "mission"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "hausler2006",
+   "authors": [
+    "Häusler, B.",
+    "Pätzold, M.",
+    "Tyler, G.",
+    "Simpson, R.",
+    "Bird, M.",
+    "Dehant, V.",
+    "Barriot, J.-P.",
+    "Eidel, W.",
+    "Mattei, R.",
+    "Remus, S."
+   ],
+   "et_al": true,
+   "year": 2006,
+   "title": "Radio science investigations by VeRa onboard the Venus Express spacecraft",
+   "journal": "Planetary and Space Science",
+   "volume": "54",
+   "issue": "13-14",
+   "pages": "1315-1335",
+   "doi": "10.1016/j.pss.2006.04.032",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "vex",
+     "payload": "VeRa"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "markiewicz2007",
+   "authors": [
+    "Markiewicz, W.",
+    "Titov, D.",
+    "Ignatiev, N.",
+    "Keller, H.",
+    "Crisp, D.",
+    "Limaye, S.",
+    "Jaumann, R.",
+    "Moissl, R.",
+    "Thomas, N.",
+    "Esposito, L."
+   ],
+   "et_al": true,
+   "year": 2007,
+   "title": "Venus Monitoring Camera for Venus Express",
+   "journal": "Planetary and Space Science",
+   "volume": "55",
+   "issue": "12",
+   "pages": "1701-1711",
+   "doi": "10.1016/j.pss.2007.01.004",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "vex",
+     "payload": "VMC"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "drossart2007",
+   "authors": [
+    "Drossart, P.",
+    "Piccioni, G.",
+    "Adriani, A.",
+    "Angrilli, F.",
+    "Arnold, G.",
+    "Baines, K.",
+    "Bellucci, G.",
+    "Benkhoff, J.",
+    "Bézard, B.",
+    "Bibring, J.-P."
+   ],
+   "et_al": true,
+   "year": 2007,
+   "title": "Scientific goals for the observation of Venus by VIRTIS on ESA/Venus express mission",
+   "journal": "Planetary and Space Science",
+   "volume": "55",
+   "issue": "12",
+   "pages": "1653-1672",
+   "doi": "10.1016/j.pss.2007.01.003",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "vex",
+     "payload": "VIRTIS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "bertaux2007",
+   "authors": [
+    "Bertaux, J.-L.",
+    "Nevejans, D.",
+    "Korablev, O.",
+    "Villard, E.",
+    "Quémerais, E.",
+    "Neefs, E.",
+    "Montmessin, F.",
+    "Leblanc, F.",
+    "Dubois, J.",
+    "Dimarellis, E."
+   ],
+   "et_al": true,
+   "year": 2007,
+   "title": "SPICAV on Venus Express: Three spectrometers to study the global structure and composition of the Venus atmosphere",
+   "journal": "Planetary and Space Science",
+   "volume": "55",
+   "issue": "12",
+   "pages": "1673-1700",
+   "doi": "10.1016/j.pss.2007.01.016",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "vex",
+     "payload": "SPICAV"
+    },
+    {
+     "mission": "vex",
+     "payload": "SOIR"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "barabash2007",
+   "authors": [
+    "Barabash, S.",
+    "Sauvaud, J.-A.",
+    "Gunell, H.",
+    "Andersson, H.",
+    "Grigoriev, A.",
+    "Brinkfeldt, K.",
+    "Holmström, M.",
+    "Lundin, R.",
+    "Yamauchi, M.",
+    "Asamura, K."
+   ],
+   "et_al": true,
+   "year": 2007,
+   "title": "The Analyser of Space Plasmas and Energetic Atoms (ASPERA-4) for the Venus Express mission",
+   "journal": "Planetary and Space Science",
+   "volume": "55",
+   "issue": "12",
+   "pages": "1772-1792",
+   "doi": "10.1016/j.pss.2007.01.014",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "vex",
+     "payload": "ASPERA-4"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "zhang2006",
+   "authors": [
+    "Zhang, T.",
+    "Baumjohann, W.",
+    "Delva, M.",
+    "Auster, H.-U.",
+    "Balogh, A.",
+    "Russell, C.",
+    "Barabash, S.",
+    "Balikhin, M.",
+    "Berghofer, G.",
+    "Biernat, H."
+   ],
+   "et_al": true,
+   "year": 2006,
+   "title": "Magnetic field investigation of the Venus plasma environment: Expected new results from Venus Express",
+   "journal": "Planetary and Space Science",
+   "volume": "54",
+   "issue": "13-14",
+   "pages": "1336-1343",
+   "doi": "10.1016/j.pss.2006.04.018",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "vex",
+     "payload": "MAG"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "chicarro2004",
+   "authors": [
+    "Chicarro, A.",
+    "Martin, P.",
+    "Trautner, R."
+   ],
+   "et_al": false,
+   "year": 2004,
+   "title": "The Mars Express mission: an overview",
+   "journal": "Mars Express: The Scientific Payload, ESA SP-1240 (ed. A. Wilson), ESA Publications Division, Noordwijk",
+   "volume": "SP-1240",
+   "issue": "",
+   "pages": "",
+   "doi": "",
+   "verified": false,
+   "type": "inproceedings",
+   "used_for": [
+    {
+     "mission": "mex",
+     "payload": "mission"
+    }
+   ],
+   "note": "ESA SP volume with no DOI and no Crossref record. Not machine-verified: check the page range against the ESA SP-1240 table of contents. Page range not verified; check the ESA SP-1240 contents."
+  },
+  {
+   "key": "patzold2016",
+   "authors": [
+    "Pätzold, M.",
+    "Häusler, B.",
+    "Tyler, G.",
+    "Andert, T.",
+    "Asmar, S.",
+    "Bird, M.",
+    "Dehant, V.",
+    "Hinson, D.",
+    "Rosenblatt, P.",
+    "Simpson, R."
+   ],
+   "et_al": true,
+   "year": 2016,
+   "title": "Mars Express 10 years at Mars: Observations by the Mars Express Radio Science Experiment (MaRS)",
+   "journal": "Planetary and Space Science",
+   "volume": "127",
+   "issue": "",
+   "pages": "44-90",
+   "doi": "10.1016/j.pss.2016.02.013",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mex",
+     "payload": "MaRS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "bertaux2006",
+   "authors": [
+    "Bertaux, J.",
+    "Korablev, O.",
+    "Perrier, S.",
+    "Quémerais, E.",
+    "Montmessin, F.",
+    "Leblanc, F.",
+    "Lebonnois, S.",
+    "Rannou, P.",
+    "Lefèvre, F.",
+    "Forget, F."
+   ],
+   "et_al": true,
+   "year": 2006,
+   "title": "SPICAM on Mars Express: Observing modes and overview of UV spectrometer data and scientific results",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "111",
+   "issue": "E10",
+   "pages": "2006JE002690",
+   "doi": "10.1029/2006je002690",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mex",
+     "payload": "SPICAM"
+    }
+   ],
+   "note": "Crossref stores the page as the DOI suffix (2006JE002690). The citation article number is E10S90 (taken from the publisher citation, not from Crossref)."
+  },
+  {
+   "key": "formisano2005",
+   "authors": [
+    "Formisano, V.",
+    "Angrilli, F.",
+    "Arnold, G.",
+    "Atreya, S.",
+    "Bianchini, G.",
+    "Biondi, D.",
+    "Blanco, A.",
+    "Blecka, M.",
+    "Coradini, A.",
+    "Colangeli, L."
+   ],
+   "et_al": true,
+   "year": 2005,
+   "title": "The Planetary Fourier Spectrometer (PFS) onboard the European Mars Express mission",
+   "journal": "Planetary and Space Science",
+   "volume": "53",
+   "issue": "10",
+   "pages": "963-974",
+   "doi": "10.1016/j.pss.2004.12.006",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mex",
+     "payload": "PFS"
+    }
+   ],
+   "note": "PSS 53(10):963-974."
+  },
+  {
+   "key": "barabash2006",
+   "authors": [
+    "Barabash, S.",
+    "Lundin, R.",
+    "Andersson, H.",
+    "Brinkfeldt, K.",
+    "Grigoriev, A.",
+    "Gunell, H.",
+    "Holmström, M.",
+    "Yamauchi, M.",
+    "Asamura, K.",
+    "Bochsler, P."
+   ],
+   "et_al": true,
+   "year": 2006,
+   "title": "The Analyzer of Space Plasmas and Energetic Atoms (ASPERA-3) for the Mars Express Mission",
+   "journal": "Space Science Reviews",
+   "volume": "126",
+   "issue": "1-4",
+   "pages": "113-164",
+   "doi": "10.1007/s11214-006-9124-8",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mex",
+     "payload": "ASPERA-3"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "picardi2005",
+   "authors": [
+    "Picardi, G.",
+    "Plaut, J. J.",
+    "Biccari, D.",
+    "Bombaci, O.",
+    "Calabrese, D.",
+    "Cartacci, M.",
+    "Cicchetti, A.",
+    "Clifford, S. M.",
+    "Edenhofer, P.",
+    "Farrell, W. M."
+   ],
+   "et_al": true,
+   "year": 2005,
+   "title": "Radar Soundings of the Subsurface of Mars",
+   "journal": "Science",
+   "volume": "310",
+   "issue": "5756",
+   "pages": "1925-1928",
+   "doi": "10.1126/science.1122165",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mex",
+     "payload": "MARSIS"
+    }
+   ],
+   "note": "Science 310:1925-1928."
+  },
+  {
+   "key": "jordan2009",
+   "authors": [
+    "Jordan, R.",
+    "Picardi, G.",
+    "Plaut, J.",
+    "Wheeler, K.",
+    "Kirchner, D.",
+    "Safaeinili, A.",
+    "Johnson, W.",
+    "Seu, R.",
+    "Calabrese, D.",
+    "Zampolini, E."
+   ],
+   "et_al": true,
+   "year": 2009,
+   "title": "The Mars express MARSIS sounder instrument",
+   "journal": "Planetary and Space Science",
+   "volume": "57",
+   "issue": "14-15",
+   "pages": "1975-1986",
+   "doi": "10.1016/j.pss.2009.09.016",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mex",
+     "payload": "MARSIS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "jaumann2007",
+   "authors": [
+    "Jaumann, R.",
+    "Neukum, G.",
+    "Behnke, T.",
+    "Duxbury, T.",
+    "Eichentopf, K.",
+    "Flohrer, J.",
+    "Gasselt, S.",
+    "Giese, B.",
+    "Gwinner, K.",
+    "Hauber, E."
+   ],
+   "et_al": true,
+   "year": 2007,
+   "title": "The high-resolution stereo camera (HRSC) experiment on Mars Express: Instrument aspects and experiment conduct from interplanetary cruise through the nominal mission",
+   "journal": "Planetary and Space Science",
+   "volume": "55",
+   "issue": "7-8",
+   "pages": "928-952",
+   "doi": "10.1016/j.pss.2006.12.003",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mex",
+     "payload": "HRSC"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "bibring2004",
+   "authors": [
+    "Bibring, J.-P.",
+    "Soufflot, A.",
+    "Berthé, M."
+   ],
+   "et_al": true,
+   "year": 2004,
+   "title": "OMEGA: Observatoire pour la Minéralogie, l'Eau, les Glaces et l'Activité",
+   "journal": "Mars Express: The Scientific Payload, ESA SP-1240 (ed. A. Wilson), ESA Publications Division, Noordwijk",
+   "volume": "SP-1240",
+   "issue": "",
+   "pages": "",
+   "doi": "",
+   "verified": false,
+   "type": "inproceedings",
+   "used_for": [
+    {
+     "mission": "mex",
+     "payload": "OMEGA"
+    }
+   ],
+   "note": "ESA SP volume with no DOI and no Crossref record. Not machine-verified: check the page range against the ESA SP-1240 table of contents. Page range not verified; check the ESA SP-1240 contents."
+  },
+  {
+   "key": "patzold2004",
+   "authors": [
+    "Pätzold, M.",
+    "Neubauer, F. M.",
+    "Carone, L."
+   ],
+   "et_al": true,
+   "year": 2004,
+   "title": "MaRS: Mars Express Orbiter Radio Science",
+   "journal": "Mars Express: The Scientific Payload, ESA SP-1240 (ed. A. Wilson), ESA Publications Division, Noordwijk",
+   "volume": "SP-1240",
+   "issue": "",
+   "pages": "",
+   "doi": "",
+   "verified": false,
+   "type": "inproceedings",
+   "used_for": [
+    {
+     "mission": "mex",
+     "payload": "MaRS"
+    }
+   ],
+   "note": "ESA SP volume with no DOI and no Crossref record. Not machine-verified: check the page range against the ESA SP-1240 table of contents. See also patzold2016 (PSS 127:44-90). Page range not verified; check the ESA SP-1240 contents."
+  },
+  {
+   "key": "saunders1992",
+   "authors": [
+    "Saunders, R. S.",
+    "Spear, A. J.",
+    "Allin, P. C.",
+    "Austin, R. S.",
+    "Berman, A. L.",
+    "Chandlee, R. C.",
+    "Clark, J.",
+    "Decharon, A. V.",
+    "De Jong, E. M.",
+    "Griffith, D. G."
+   ],
+   "et_al": true,
+   "year": 1992,
+   "title": "Magellan mission summary",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "97",
+   "issue": "E8",
+   "pages": "13067-13090",
+   "doi": "10.1029/92je01397",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "magellan",
+     "payload": "mission"
+    },
+    {
+     "mission": "magellan",
+     "payload": "radar"
+    }
+   ],
+   "note": "JGR Planets 97(E8):13067-13090."
+  },
+  {
+   "key": "steffes1994",
+   "authors": [
+    "Steffes, P. G.",
+    "Jenkins, J. M.",
+    "Austin, R. S.",
+    "Asmar, S. W.",
+    "Lyons, D. T.",
+    "Seale, E. H.",
+    "Tyler, G."
+   ],
+   "et_al": false,
+   "year": 1994,
+   "title": "Radio Occultation Studies of the Venus Atmosphere with the Magellan Spacecraft",
+   "journal": "Icarus",
+   "volume": "110",
+   "issue": "1",
+   "pages": "71-78",
+   "doi": "10.1006/icar.1994.1107",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "magellan",
+     "payload": "RS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "jenkins1994",
+   "authors": [
+    "Jenkins, J. M.",
+    "Steffes, P. G.",
+    "Hinson, D. P.",
+    "Twicken, J. D.",
+    "Tyler, G."
+   ],
+   "et_al": false,
+   "year": 1994,
+   "title": "Radio Occultation Studies of the Venus Atmosphere with the Magellan Spacecraft",
+   "journal": "Icarus",
+   "volume": "110",
+   "issue": "1",
+   "pages": "79-94",
+   "doi": "10.1006/icar.1994.1108",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "magellan",
+     "payload": "RS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "colin1980",
+   "authors": [
+    "Colin, L."
+   ],
+   "et_al": false,
+   "year": 1980,
+   "title": "The Pioneer Venus Program",
+   "journal": "Journal of Geophysical Research: Space Physics",
+   "volume": "85",
+   "issue": "A13",
+   "pages": "7575-7598",
+   "doi": "10.1029/ja085ia13p07575",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "pvo",
+     "payload": "mission"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "kliore1980",
+   "authors": [
+    "Kliore, A. J.",
+    "Patel, I. R."
+   ],
+   "et_al": false,
+   "year": 1980,
+   "title": "Vertical structure of the atmosphere of Venus from Pioneer Venus Orbiter radio occultations",
+   "journal": "Journal of Geophysical Research: Space Physics",
+   "volume": "85",
+   "issue": "A13",
+   "pages": "7957-7962",
+   "doi": "10.1029/ja085ia13p07957",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "pvo",
+     "payload": "ORO"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "kliore1985",
+   "authors": [
+    "Kliore, A. J."
+   ],
+   "et_al": false,
+   "year": 1985,
+   "title": "Recent results on the Venus atmosphere from pioneer Venus radio occultations",
+   "journal": "Advances in Space Research",
+   "volume": "5",
+   "issue": "9",
+   "pages": "41-49",
+   "doi": "10.1016/0273-1177(85)90269-8",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "pvo",
+     "payload": "ORO"
+    }
+   ],
+   "note": "Adv. Space Res. 5(9):41-49 (sole author)."
+  },
+  {
+   "key": "niemann1980",
+   "authors": [
+    "Niemann, H. B.",
+    "Booth, J. R.",
+    "Cooley, J. E.",
+    "Hartle, R. E.",
+    "Kasprzak, W. T.",
+    "Spencer, N. W.",
+    "Way, S. H.",
+    "Hunten, D. M.",
+    "Carignan, G. R."
+   ],
+   "et_al": false,
+   "year": 1980,
+   "title": "Pioneer Venus Orbiter Neutral Gas Mass Spectrometer Experiment",
+   "journal": "IEEE Transactions on Geoscience and Remote Sensing",
+   "volume": "GE-18",
+   "issue": "1",
+   "pages": "60-65",
+   "doi": "10.1109/tgrs.1980.350282",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "pvo",
+     "payload": "ONMS"
+    }
+   ],
+   "note": "ONMS instrument paper in IEEE Trans. Geosci. Remote Sens. GE-18(1):60-65."
+  },
+  {
+   "key": "niemann1980jgr",
+   "authors": [
+    "Niemann, H. B.",
+    "Kasprzak, W. T.",
+    "Hedin, A. E.",
+    "Hunten, D. M.",
+    "Spencer, N. W."
+   ],
+   "et_al": false,
+   "year": 1980,
+   "title": "Mass spectrometric measurements of the neutral gas composition of the thermosphere and exosphere of Venus",
+   "journal": "Journal of Geophysical Research: Space Physics",
+   "volume": "85",
+   "issue": "A13",
+   "pages": "7817-7827",
+   "doi": "10.1029/ja085ia13p07817",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "pvo",
+     "payload": "ONMS"
+    }
+   ],
+   "note": "Hint said \"Niemann et al. 1980 JGR\". The JGR paper is \"Mass spectrometric measurements of the neutral gas composition of the thermosphere and exosphere of Venus\", 85(A13):7817. The ONMS instrument description is niemann1980."
+  },
+  {
+   "key": "albee2001",
+   "authors": [
+    "Albee, A. L.",
+    "Arvidson, R. E.",
+    "Palluconi, F.",
+    "Thorpe, T."
+   ],
+   "et_al": false,
+   "year": 2001,
+   "title": "Overview of the Mars Global Surveyor mission",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "106",
+   "issue": "E10",
+   "pages": "23291-23316",
+   "doi": "10.1029/2000je001306",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mgs",
+     "payload": "mission"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "tyler2001",
+   "authors": [
+    "Tyler, G. L.",
+    "Balmino, G.",
+    "Hinson, D. P.",
+    "Sjogren, W. L.",
+    "Smith, D. E.",
+    "Simpson, R. A.",
+    "Asmar, S. W.",
+    "Priest, P.",
+    "Twicken, J. D."
+   ],
+   "et_al": false,
+   "year": 2001,
+   "title": "Radio science observations with Mars Global Surveyor: Orbit insertion through one Mars year in mapping orbit",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "106",
+   "issue": "E10",
+   "pages": "23327-23348",
+   "doi": "10.1029/2000je001348",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mgs",
+     "payload": "RS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "hinson1999",
+   "authors": [
+    "Hinson, D. P.",
+    "Simpson, R. A.",
+    "Twicken, J. D.",
+    "Tyler, G. L.",
+    "Flasar, F. M."
+   ],
+   "et_al": false,
+   "year": 1999,
+   "title": "Initial results from radio occultation measurements with Mars Global Surveyor",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "104",
+   "issue": "E11",
+   "pages": "26997-27012",
+   "doi": "10.1029/1999je001069",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mgs",
+     "payload": "RS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "christensen2001",
+   "authors": [
+    "Christensen, P. R.",
+    "Bandfield, J. L.",
+    "Hamilton, V. E.",
+    "Ruff, S. W.",
+    "Kieffer, H. H.",
+    "Titus, T. N.",
+    "Malin, M. C.",
+    "Morris, R. V.",
+    "Lane, M. D.",
+    "Clark, R. L."
+   ],
+   "et_al": true,
+   "year": 2001,
+   "title": "Mars Global Surveyor Thermal Emission Spectrometer experiment: Investigation description and surface science results",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "106",
+   "issue": "E10",
+   "pages": "23823-23871",
+   "doi": "10.1029/2000je001370",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mgs",
+     "payload": "TES"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "smith2001",
+   "authors": [
+    "Smith, D. E.",
+    "Zuber, M. T.",
+    "Frey, H. V.",
+    "Garvin, J. B.",
+    "Head, J. W.",
+    "Muhleman, D. O.",
+    "Pettengill, G. H.",
+    "Phillips, R. J.",
+    "Solomon, S. C.",
+    "Zwally, H. J."
+   ],
+   "et_al": true,
+   "year": 2001,
+   "title": "Mars Orbiter Laser Altimeter: Experiment summary after the first year of global mapping of Mars",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "106",
+   "issue": "E10",
+   "pages": "23689-23722",
+   "doi": "10.1029/2000je001364",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mgs",
+     "payload": "MOLA"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "acuna1992",
+   "authors": [
+    "Acuña, M. H.",
+    "Connerney, J. E. P.",
+    "Wasilewski, P.",
+    "Lin, R. P.",
+    "Anderson, K. A.",
+    "Carlson, C. W.",
+    "McFadden, J.",
+    "Curtis, D. W.",
+    "Réme, H.",
+    "Cros, A."
+   ],
+   "et_al": true,
+   "year": 1992,
+   "title": "Mars Observer magnetic fields investigation",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "97",
+   "issue": "E5",
+   "pages": "7799-7814",
+   "doi": "10.1029/92je00344",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mgs",
+     "payload": "MAG/ER"
+    }
+   ],
+   "note": "Mars Observer MAG/ER instrument paper. MGS flew the Mars Observer spare instrument."
+  },
+  {
+   "key": "acuna2001",
+   "authors": [
+    "Acuña, M. H.",
+    "Connerney, J. E. P.",
+    "Wasilewski, P.",
+    "Lin, R. P.",
+    "Mitchell, D.",
+    "Anderson, K. A.",
+    "Carlson, C. W.",
+    "McFadden, J.",
+    "Rème, H.",
+    "Mazelle, C."
+   ],
+   "et_al": true,
+   "year": 2001,
+   "title": "Magnetic field of Mars: Summary of results from the aerobraking and mapping orbits",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "106",
+   "issue": "E10",
+   "pages": "23403-23417",
+   "doi": "10.1029/2000je001404",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mgs",
+     "payload": "MAG/ER"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "zurek2007",
+   "authors": [
+    "Zurek, R. W.",
+    "Smrekar, S. E."
+   ],
+   "et_al": false,
+   "year": 2007,
+   "title": "An overview of the Mars Reconnaissance Orbiter (MRO) science mission",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "112",
+   "issue": "E5",
+   "pages": "2006JE002701",
+   "doi": "10.1029/2006je002701",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mro",
+     "payload": "mission"
+    }
+   ],
+   "note": "Crossref stores the page as the DOI suffix (2006JE002701). The citation article number is E05S01 (taken from the publisher citation, not from Crossref)."
+  },
+  {
+   "key": "mccleese2007",
+   "authors": [
+    "McCleese, D. J.",
+    "Schofield, J. T.",
+    "Taylor, F. W.",
+    "Calcutt, S. B.",
+    "Foote, M. C.",
+    "Kass, D. M.",
+    "Leovy, C. B.",
+    "Paige, D. A.",
+    "Read, P. L.",
+    "Zurek, R. W."
+   ],
+   "et_al": false,
+   "year": 2007,
+   "title": "Mars Climate Sounder: An investigation of thermal and water vapor structure, dust and condensate distributions in the atmosphere, and energy balance of the polar regions",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "112",
+   "issue": "E5",
+   "pages": "2006JE002790",
+   "doi": "10.1029/2006je002790",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mro",
+     "payload": "MCS"
+    }
+   ],
+   "note": "Crossref stores the page as the DOI suffix (2006JE002790). The citation article number is E05S06 (taken from the publisher citation, not from Crossref)."
+  },
+  {
+   "key": "kleinbohl2009",
+   "authors": [
+    "Kleinböhl, A.",
+    "Schofield, J. T.",
+    "Kass, D. M.",
+    "Abdou, W. A.",
+    "Backus, C. R.",
+    "Sen, B.",
+    "Shirley, J. H.",
+    "Lawson, W. G.",
+    "Richardson, M. I.",
+    "Taylor, F. W."
+   ],
+   "et_al": true,
+   "year": 2009,
+   "title": "Mars Climate Sounder limb profile retrieval of atmospheric temperature, pressure, and dust and water ice opacity",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "114",
+   "issue": "E10",
+   "pages": "2009JE003358",
+   "doi": "10.1029/2009je003358",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mro",
+     "payload": "MCS"
+    }
+   ],
+   "note": "Crossref stores the page as the DOI suffix (2009JE003358). The citation article number is E10006 (taken from the publisher citation, not from Crossref)."
+  },
+  {
+   "key": "murchie2007",
+   "authors": [
+    "Murchie, S.",
+    "Arvidson, R.",
+    "Bedini, P.",
+    "Beisser, K.",
+    "Bibring, J.",
+    "Bishop, J.",
+    "Boldt, J.",
+    "Cavender, P.",
+    "Choo, T.",
+    "Clancy, R. T."
+   ],
+   "et_al": true,
+   "year": 2007,
+   "title": "Compact Reconnaissance Imaging Spectrometer for Mars (CRISM) on Mars Reconnaissance Orbiter (MRO)",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "112",
+   "issue": "E5",
+   "pages": "2006JE002682",
+   "doi": "10.1029/2006je002682",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mro",
+     "payload": "CRISM"
+    }
+   ],
+   "note": "Crossref stores the page as the DOI suffix (2006JE002682). The citation article number is E05S03 (taken from the publisher citation, not from Crossref)."
+  },
+  {
+   "key": "mcewen2007",
+   "authors": [
+    "McEwen, A. S.",
+    "Eliason, E. M.",
+    "Bergstrom, J. W.",
+    "Bridges, N. T.",
+    "Hansen, C. J.",
+    "Delamere, W. A.",
+    "Grant, J. A.",
+    "Gulick, V. C.",
+    "Herkenhoff, K. E.",
+    "Keszthelyi, L."
+   ],
+   "et_al": true,
+   "year": 2007,
+   "title": "Mars Reconnaissance Orbiter's High Resolution Imaging Science Experiment (HiRISE)",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "112",
+   "issue": "E5",
+   "pages": "2005JE002605",
+   "doi": "10.1029/2005je002605",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mro",
+     "payload": "HiRISE"
+    }
+   ],
+   "note": "Crossref stores the page as the DOI suffix (2005JE002605). The citation article number is E05S02 (taken from the publisher citation, not from Crossref)."
+  },
+  {
+   "key": "malin2007",
+   "authors": [
+    "Malin, M. C.",
+    "Bell, J. F.",
+    "Cantor, B. A.",
+    "Caplinger, M. A.",
+    "Calvin, W. M.",
+    "Clancy, R. T.",
+    "Edgett, K. S.",
+    "Edwards, L.",
+    "Haberle, R. M.",
+    "James, P. B."
+   ],
+   "et_al": true,
+   "year": 2007,
+   "title": "Context Camera Investigation on board the Mars Reconnaissance Orbiter",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "112",
+   "issue": "E5",
+   "pages": "2006JE002808",
+   "doi": "10.1029/2006je002808",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mro",
+     "payload": "CTX"
+    }
+   ],
+   "note": "Crossref stores the page as the DOI suffix (2006JE002808). The citation article number is E05S04 (taken from the publisher citation, not from Crossref)."
+  },
+  {
+   "key": "malin2001",
+   "authors": [
+    "Malin, M. C.",
+    "Bell, J. F.",
+    "Calvin, W.",
+    "Clancy, R. T.",
+    "Haberle, R. M.",
+    "James, P. B.",
+    "Lee, S. W.",
+    "Thomas, P. C.",
+    "Caplinger, M. A."
+   ],
+   "et_al": false,
+   "year": 2001,
+   "title": "Mars Color Imager (MARCI) on the Mars Climate Orbiter",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "106",
+   "issue": "E8",
+   "pages": "17651-17672",
+   "doi": "10.1029/1999je001145",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mro",
+     "payload": "MARCI"
+    }
+   ],
+   "note": "Corrected: published in JGR 106(E8):17651-17672, not Icarus. Title: \"Mars Color Imager (MARCI) on the Mars Climate Orbiter\"."
+  },
+  {
+   "key": "bell2009",
+   "authors": [
+    "Bell, J. F.",
+    "Wolff, M. J.",
+    "Malin, M. C.",
+    "Calvin, W. M.",
+    "Cantor, B. A.",
+    "Caplinger, M. A.",
+    "Clancy, R. T.",
+    "Edgett, K. S.",
+    "Edwards, L. J.",
+    "Fahle, J."
+   ],
+   "et_al": true,
+   "year": 2009,
+   "title": "Mars Reconnaissance Orbiter Mars Color Imager (MARCI): Instrument description, calibration, and performance",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "114",
+   "issue": "E8",
+   "pages": "2008JE003315",
+   "doi": "10.1029/2008je003315",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mro",
+     "payload": "MARCI"
+    }
+   ],
+   "note": "MRO MARCI instrument, calibration and performance. Crossref stores the page as the DOI suffix (2008JE003315). The citation article number is E08S92 (taken from the publisher citation, not from Crossref)."
+  },
+  {
+   "key": "seu2007",
+   "authors": [
+    "Seu, R.",
+    "Phillips, R. J.",
+    "Biccari, D.",
+    "Orosei, R.",
+    "Masdea, A.",
+    "Picardi, G.",
+    "Safaeinili, A.",
+    "Campbell, B. A.",
+    "Plaut, J. J.",
+    "Marinangeli, L."
+   ],
+   "et_al": true,
+   "year": 2007,
+   "title": "SHARAD sounding radar on the Mars Reconnaissance Orbiter",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "112",
+   "issue": "E5",
+   "pages": "2006JE002745",
+   "doi": "10.1029/2006je002745",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mro",
+     "payload": "SHARAD"
+    }
+   ],
+   "note": "Crossref stores the page as the DOI suffix (2006JE002745). The citation article number is E05S05 (taken from the publisher citation, not from Crossref)."
+  },
+  {
+   "key": "jakosky2015",
+   "authors": [
+    "Jakosky, B. M.",
+    "Lin, R. P.",
+    "Grebowsky, J. M.",
+    "Luhmann, J. G.",
+    "Mitchell, D. F.",
+    "Beutelschies, G.",
+    "Priser, T.",
+    "Acuna, M.",
+    "Andersson, L.",
+    "Baird, D."
+   ],
+   "et_al": true,
+   "year": 2015,
+   "title": "The Mars Atmosphere and Volatile Evolution (MAVEN) Mission",
+   "journal": "Space Science Reviews",
+   "volume": "195",
+   "issue": "1-4",
+   "pages": "3-48",
+   "doi": "10.1007/s11214-015-0139-x",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "maven",
+     "payload": "mission"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "mahaffy2015",
+   "authors": [
+    "Mahaffy, P. R.",
+    "Benna, M.",
+    "King, T.",
+    "Harpold, D. N.",
+    "Arvey, R.",
+    "Barciniak, M.",
+    "Bendt, M.",
+    "Carrigan, D.",
+    "Errigo, T.",
+    "Holmes, V."
+   ],
+   "et_al": true,
+   "year": 2015,
+   "title": "The Neutral Gas and Ion Mass Spectrometer on the Mars Atmosphere and Volatile Evolution Mission",
+   "journal": "Space Science Reviews",
+   "volume": "195",
+   "issue": "1-4",
+   "pages": "49-73",
+   "doi": "10.1007/s11214-014-0091-1",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "maven",
+     "payload": "NGIMS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "mcclintock2015",
+   "authors": [
+    "McClintock, W. E.",
+    "Schneider, N. M.",
+    "Holsclaw, G. M.",
+    "Clarke, J. T.",
+    "Hoskins, A. C.",
+    "Stewart, I.",
+    "Montmessin, F.",
+    "Yelle, R. V.",
+    "Deighan, J."
+   ],
+   "et_al": false,
+   "year": 2015,
+   "title": "The Imaging Ultraviolet Spectrograph (IUVS) for the MAVEN Mission",
+   "journal": "Space Science Reviews",
+   "volume": "195",
+   "issue": "1-4",
+   "pages": "75-124",
+   "doi": "10.1007/s11214-014-0098-7",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "maven",
+     "payload": "IUVS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "mcfadden2015",
+   "authors": [
+    "McFadden, J. P.",
+    "Kortmann, O.",
+    "Curtis, D.",
+    "Dalton, G.",
+    "Johnson, G.",
+    "Abiad, R.",
+    "Sterling, R.",
+    "Hatch, K.",
+    "Berg, P.",
+    "Tiu, C."
+   ],
+   "et_al": true,
+   "year": 2015,
+   "title": "MAVEN SupraThermal and Thermal Ion Compostion (STATIC) Instrument",
+   "journal": "Space Science Reviews",
+   "volume": "195",
+   "issue": "1-4",
+   "pages": "199-256",
+   "doi": "10.1007/s11214-015-0175-6",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "maven",
+     "payload": "STATIC"
+    }
+   ],
+   "note": "Crossref title has the published typo \"Compostion\"."
+  },
+  {
+   "key": "mitchell2016",
+   "authors": [
+    "Mitchell, D. L.",
+    "Mazelle, C.",
+    "Sauvaud, J.-A.",
+    "Thocaven, J.-J.",
+    "Rouzaud, J.",
+    "Fedorov, A.",
+    "Rouger, P.",
+    "Toublanc, D.",
+    "Taylor, E.",
+    "Gordon, D."
+   ],
+   "et_al": true,
+   "year": 2016,
+   "title": "The MAVEN Solar Wind Electron Analyzer",
+   "journal": "Space Science Reviews",
+   "volume": "200",
+   "issue": "1-4",
+   "pages": "495-528",
+   "doi": "10.1007/s11214-015-0232-1",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "maven",
+     "payload": "SWEA"
+    }
+   ],
+   "note": "SSR 200:495 (2016)."
+  },
+  {
+   "key": "halekas2015",
+   "authors": [
+    "Halekas, J. S.",
+    "Taylor, E. R.",
+    "Dalton, G.",
+    "Johnson, G.",
+    "Curtis, D. W.",
+    "McFadden, J. P.",
+    "Mitchell, D. L.",
+    "Lin, R. P.",
+    "Jakosky, B. M."
+   ],
+   "et_al": false,
+   "year": 2015,
+   "title": "The Solar Wind Ion Analyzer for MAVEN",
+   "journal": "Space Science Reviews",
+   "volume": "195",
+   "issue": "1-4",
+   "pages": "125-151",
+   "doi": "10.1007/s11214-013-0029-z",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "maven",
+     "payload": "SWIA"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "connerney2015",
+   "authors": [
+    "Connerney, J. E. P.",
+    "Espley, J.",
+    "Lawton, P.",
+    "Murphy, S.",
+    "Odom, J.",
+    "Oliversen, R.",
+    "Sheppard, D."
+   ],
+   "et_al": false,
+   "year": 2015,
+   "title": "The MAVEN Magnetic Field Investigation",
+   "journal": "Space Science Reviews",
+   "volume": "195",
+   "issue": "1-4",
+   "pages": "257-291",
+   "doi": "10.1007/s11214-015-0169-4",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "maven",
+     "payload": "MAG"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "andersson2015",
+   "authors": [
+    "Andersson, L.",
+    "Ergun, R. E.",
+    "Delory, G. T.",
+    "Eriksson, A.",
+    "Westfall, J.",
+    "Reed, H.",
+    "McCauly, J.",
+    "Summers, D.",
+    "Meyers, D."
+   ],
+   "et_al": false,
+   "year": 2015,
+   "title": "The Langmuir Probe and Waves (LPW) Instrument for MAVEN",
+   "journal": "Space Science Reviews",
+   "volume": "195",
+   "issue": "1-4",
+   "pages": "173-198",
+   "doi": "10.1007/s11214-015-0194-3",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "maven",
+     "payload": "LPW"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "eparvier2015",
+   "authors": [
+    "Eparvier, F. G.",
+    "Chamberlin, P. C.",
+    "Woods, T. N.",
+    "Thiemann, E. M. B."
+   ],
+   "et_al": false,
+   "year": 2015,
+   "title": "The Solar Extreme Ultraviolet Monitor for MAVEN",
+   "journal": "Space Science Reviews",
+   "volume": "195",
+   "issue": "1-4",
+   "pages": "293-301",
+   "doi": "10.1007/s11214-015-0195-2",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "maven",
+     "payload": "EUV"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "larson2015",
+   "authors": [
+    "Larson, D. E.",
+    "Lillis, R. J.",
+    "Lee, C. O.",
+    "Dunn, P. A.",
+    "Hatch, K.",
+    "Robinson, M.",
+    "Glaser, D.",
+    "Chen, J.",
+    "Curtis, D.",
+    "Tiu, C."
+   ],
+   "et_al": true,
+   "year": 2015,
+   "title": "The MAVEN Solar Energetic Particle Investigation",
+   "journal": "Space Science Reviews",
+   "volume": "195",
+   "issue": "1-4",
+   "pages": "153-172",
+   "doi": "10.1007/s11214-015-0218-z",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "maven",
+     "payload": "SEP"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "withers2020",
+   "authors": [
+    "Withers, P.",
+    "Felici, M.",
+    "Mendillo, M.",
+    "Moore, L.",
+    "Narvaez, C.",
+    "Vogt, M. F.",
+    "Oudrhiri, K.",
+    "Kahan, D.",
+    "Jakosky, B. M."
+   ],
+   "et_al": false,
+   "year": 2020,
+   "title": "The MAVEN Radio Occultation Science Experiment (ROSE)",
+   "journal": "Space Science Reviews",
+   "volume": "216",
+   "issue": "4",
+   "pages": "61",
+   "doi": "10.1007/s11214-020-00687-6",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "maven",
+     "payload": "ROSE"
+    }
+   ],
+   "note": "ROSE description paper, SSR 216:61 (2020)."
+  },
+  {
+   "key": "bolton2017",
+   "authors": [
+    "Bolton, S. J.",
+    "Lunine, J.",
+    "Stevenson, D.",
+    "Connerney, J. E. P.",
+    "Levin, S.",
+    "Owen, T. C.",
+    "Bagenal, F.",
+    "Gautier, D.",
+    "Ingersoll, A. P.",
+    "Orton, G. S."
+   ],
+   "et_al": true,
+   "year": 2017,
+   "title": "The Juno Mission",
+   "journal": "Space Science Reviews",
+   "volume": "213",
+   "issue": "1-4",
+   "pages": "5-37",
+   "doi": "10.1007/s11214-017-0429-6",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "juno",
+     "payload": "mission"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "janssen2017",
+   "authors": [
+    "Janssen, M. A.",
+    "Oswald, J. E.",
+    "Brown, S. T.",
+    "Gulkis, S.",
+    "Levin, S. M.",
+    "Bolton, S. J.",
+    "Allison, M. D.",
+    "Atreya, S. K.",
+    "Gautier, D.",
+    "Ingersoll, A. P."
+   ],
+   "et_al": true,
+   "year": 2017,
+   "title": "MWR: Microwave Radiometer for the Juno Mission to Jupiter",
+   "journal": "Space Science Reviews",
+   "volume": "213",
+   "issue": "1-4",
+   "pages": "139-185",
+   "doi": "10.1007/s11214-017-0349-5",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "juno",
+     "payload": "MWR"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "connerney2017",
+   "authors": [
+    "Connerney, J. E. P.",
+    "Benn, M.",
+    "Bjarno, J. B.",
+    "Denver, T.",
+    "Espley, J.",
+    "Jorgensen, J. L.",
+    "Jorgensen, P. S.",
+    "Lawton, P.",
+    "Malinnikova, A.",
+    "Merayo, J. M."
+   ],
+   "et_al": true,
+   "year": 2017,
+   "title": "The Juno Magnetic Field Investigation",
+   "journal": "Space Science Reviews",
+   "volume": "213",
+   "issue": "1-4",
+   "pages": "39-138",
+   "doi": "10.1007/s11214-017-0334-z",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "juno",
+     "payload": "MAG"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "mccomas2017",
+   "authors": [
+    "McComas, D. J.",
+    "Alexander, N.",
+    "Allegrini, F.",
+    "Bagenal, F.",
+    "Beebe, C.",
+    "Clark, G.",
+    "Crary, F.",
+    "Desai, M. I.",
+    "De Los Santos, A.",
+    "Demkee, D."
+   ],
+   "et_al": true,
+   "year": 2017,
+   "title": "The Jovian Auroral Distributions Experiment (JADE) on the Juno Mission to Jupiter",
+   "journal": "Space Science Reviews",
+   "volume": "213",
+   "issue": "1-4",
+   "pages": "547-643",
+   "doi": "10.1007/s11214-013-9990-9",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "juno",
+     "payload": "JADE"
+    }
+   ],
+   "note": "Online first in 2013; print issue SSR 213 (2017)."
+  },
+  {
+   "key": "mauk2017",
+   "authors": [
+    "Mauk, B. H.",
+    "Haggerty, D. K.",
+    "Jaskulek, S. E.",
+    "Schlemm, C. E.",
+    "Brown, L. E.",
+    "Cooper, S. A.",
+    "Gurnee, R. S.",
+    "Hammock, C. M.",
+    "Hayes, J. R.",
+    "Ho, G. C."
+   ],
+   "et_al": true,
+   "year": 2017,
+   "title": "The Jupiter Energetic Particle Detector Instrument (JEDI) Investigation for the Juno Mission",
+   "journal": "Space Science Reviews",
+   "volume": "213",
+   "issue": "1-4",
+   "pages": "289-346",
+   "doi": "10.1007/s11214-013-0025-3",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "juno",
+     "payload": "JEDI"
+    }
+   ],
+   "note": "Online first in 2013; print issue SSR 213 (2017)."
+  },
+  {
+   "key": "kurth2017",
+   "authors": [
+    "Kurth, W. S.",
+    "Hospodarsky, G. B.",
+    "Kirchner, D. L.",
+    "Mokrzycki, B. T.",
+    "Averkamp, T. F.",
+    "Robison, W. T.",
+    "Piker, C. W.",
+    "Sampl, M.",
+    "Zarka, P."
+   ],
+   "et_al": false,
+   "year": 2017,
+   "title": "The Juno Waves Investigation",
+   "journal": "Space Science Reviews",
+   "volume": "213",
+   "issue": "1-4",
+   "pages": "347-392",
+   "doi": "10.1007/s11214-017-0396-y",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "juno",
+     "payload": "Waves"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "gladstone2017",
+   "authors": [
+    "Gladstone, G. R.",
+    "Persyn, S. C.",
+    "Eterno, J. S.",
+    "Walther, B. C.",
+    "Slater, D. C.",
+    "Davis, M. W.",
+    "Versteeg, M. H.",
+    "Persson, K. B.",
+    "Young, M. K.",
+    "Dirks, G. J."
+   ],
+   "et_al": true,
+   "year": 2017,
+   "title": "The Ultraviolet Spectrograph on NASA’s Juno Mission",
+   "journal": "Space Science Reviews",
+   "volume": "213",
+   "issue": "1-4",
+   "pages": "447-473",
+   "doi": "10.1007/s11214-014-0040-z",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "juno",
+     "payload": "UVS"
+    }
+   ],
+   "note": "Online first in 2014; print issue SSR 213 (2017)."
+  },
+  {
+   "key": "adriani2017",
+   "authors": [
+    "Adriani, A.",
+    "Filacchione, G.",
+    "Di Iorio, T.",
+    "Turrini, D.",
+    "Noschese, R.",
+    "Cicchetti, A.",
+    "Grassi, D.",
+    "Mura, A.",
+    "Sindoni, G.",
+    "Zambelli, M."
+   ],
+   "et_al": true,
+   "year": 2017,
+   "title": "JIRAM, the Jovian Infrared Auroral Mapper",
+   "journal": "Space Science Reviews",
+   "volume": "213",
+   "issue": "1-4",
+   "pages": "393-446",
+   "doi": "10.1007/s11214-014-0094-y",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "juno",
+     "payload": "JIRAM"
+    }
+   ],
+   "note": "Online first in 2014; print issue SSR 213 (2017)."
+  },
+  {
+   "key": "hansen2017",
+   "authors": [
+    "Hansen, C. J.",
+    "Caplinger, M. A.",
+    "Ingersoll, A.",
+    "Ravine, M. A.",
+    "Jensen, E.",
+    "Bolton, S.",
+    "Orton, G."
+   ],
+   "et_al": false,
+   "year": 2017,
+   "title": "Junocam: Juno’s Outreach Camera",
+   "journal": "Space Science Reviews",
+   "volume": "213",
+   "issue": "1-4",
+   "pages": "475-506",
+   "doi": "10.1007/s11214-014-0079-x",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "juno",
+     "payload": "JunoCam"
+    }
+   ],
+   "note": "Online first in 2014; print issue SSR 213 (2017)."
+  },
+  {
+   "key": "asmar2017",
+   "authors": [
+    "Asmar, S. W.",
+    "Bolton, S. J.",
+    "Buccino, D. R.",
+    "Cornish, T. P.",
+    "Folkner, W. M.",
+    "Formaro, R.",
+    "Iess, L.",
+    "Jongeling, A. P.",
+    "Lewis, D. K.",
+    "Mittskus, A. P."
+   ],
+   "et_al": true,
+   "year": 2017,
+   "title": "The Juno Gravity Science Instrument",
+   "journal": "Space Science Reviews",
+   "volume": "213",
+   "issue": "1-4",
+   "pages": "205-218",
+   "doi": "10.1007/s11214-017-0428-7",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "juno",
+     "payload": "gravity"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "johnson1992",
+   "authors": [
+    "Johnson, T.",
+    "Yeates, C.",
+    "Young, R."
+   ],
+   "et_al": false,
+   "year": 1992,
+   "title": "The Galileo mission",
+   "journal": "Space Science Reviews",
+   "volume": "60",
+   "issue": "1-4",
+   "pages": "",
+   "doi": "10.1007/bf00216848",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "galileo",
+     "payload": "mission"
+    }
+   ],
+   "note": "Crossref lists this DOI under the odd title \"Space science reviews volume on Galileo Mission overview\". The published title is \"The Galileo mission\" (SSR 60:3-38). The page range is missing in Crossref."
+  },
+  {
+   "key": "seiff1998",
+   "authors": [
+    "Seiff, A.",
+    "Kirk, D. B.",
+    "Knight, T. C. D.",
+    "Young, R. E.",
+    "Mihalov, J. D.",
+    "Young, L. A.",
+    "Milos, F. S.",
+    "Schubert, G.",
+    "Blanchard, R. C.",
+    "Atkinson, D."
+   ],
+   "et_al": false,
+   "year": 1998,
+   "title": "Thermal structure of Jupiter's atmosphere near the edge of a 5‐μm hot spot in the north equatorial belt",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "103",
+   "issue": "E10",
+   "pages": "22857-22889",
+   "doi": "10.1029/98je01766",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "galileo",
+     "payload": "ASI"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "belton1992",
+   "authors": [
+    "Belton, M. J. S.",
+    "Klaasen, K. P.",
+    "Clary, M. C.",
+    "Anderson, J. L.",
+    "Anger, C. D.",
+    "Carr, M. H.",
+    "Chapman, C. R.",
+    "Davies, M. E.",
+    "Greeley, R.",
+    "Anderson, D."
+   ],
+   "et_al": true,
+   "year": 1992,
+   "title": "The Galileo Solid-State Imaging experiment",
+   "journal": "Space Science Reviews",
+   "volume": "60",
+   "issue": "1-4",
+   "pages": "413-455",
+   "doi": "10.1007/bf00216864",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "galileo",
+     "payload": "SSI"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "carlson1992",
+   "authors": [
+    "Carlson, R.",
+    "Weissman, P.",
+    "Smythe, W.",
+    "Mahoney, J.",
+    "The NIMS Science and Engineering Teams"
+   ],
+   "et_al": false,
+   "year": 1992,
+   "title": "Near-Infrared Mapping Spectrometer experiment on Galileo",
+   "journal": "Space Science Reviews",
+   "volume": "60",
+   "issue": "1-4",
+   "pages": "",
+   "doi": "10.1007/bf00216865",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "galileo",
+     "payload": "NIMS"
+    }
+   ],
+   "note": "Page range missing in Crossref metadata (SSR 60)."
+  },
+  {
+   "key": "kivelson1992",
+   "authors": [
+    "Kivelson, M.",
+    "Khurana, K.",
+    "Means, J.",
+    "Russell, C.",
+    "Snare, R."
+   ],
+   "et_al": false,
+   "year": 1992,
+   "title": "The Galileo magnetic field investigation",
+   "journal": "Space Science Reviews",
+   "volume": "60",
+   "issue": "1-4",
+   "pages": "",
+   "doi": "10.1007/bf00216862",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "galileo",
+     "payload": "MAG"
+    }
+   ],
+   "note": "Page range missing in Crossref metadata (SSR 60)."
+  },
+  {
+   "key": "frank1992",
+   "authors": [
+    "Frank, L.",
+    "Ackerson, K.",
+    "Lee, J.",
+    "English, M.",
+    "Pickett, G."
+   ],
+   "et_al": false,
+   "year": 1992,
+   "title": "The plasma instrumentation for the Galileo Mission",
+   "journal": "Space Science Reviews",
+   "volume": "60",
+   "issue": "1-4",
+   "pages": "",
+   "doi": "10.1007/bf00216858",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "galileo",
+     "payload": "PLS"
+    }
+   ],
+   "note": "Page range missing in Crossref metadata (SSR 60)."
+  },
+  {
+   "key": "gurnett1992",
+   "authors": [
+    "Gurnett, D.",
+    "Kurth, W.",
+    "Shaw, R.",
+    "Roux, A.",
+    "Gendrin, R.",
+    "Kennel, C.",
+    "Scarf, F.",
+    "Shawhan, S."
+   ],
+   "et_al": false,
+   "year": 1992,
+   "title": "The Galileo Plasma wave investigation",
+   "journal": "Space Science Reviews",
+   "volume": "60",
+   "issue": "1-4",
+   "pages": "",
+   "doi": "10.1007/bf00216861",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "galileo",
+     "payload": "PWS"
+    }
+   ],
+   "note": "Page range missing in Crossref metadata (SSR 60)."
+  },
+  {
+   "key": "williams1992",
+   "authors": [
+    "Williams, D.",
+    "McEntire, R.",
+    "Jaskulek, S.",
+    "Wilken, B."
+   ],
+   "et_al": false,
+   "year": 1992,
+   "title": "The Galileo Energetic Particles Detector",
+   "journal": "Space Science Reviews",
+   "volume": "60",
+   "issue": "1-4",
+   "pages": "",
+   "doi": "10.1007/bf00216863",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "galileo",
+     "payload": "EPD"
+    }
+   ],
+   "note": "Page range missing in Crossref metadata (SSR 60)."
+  },
+  {
+   "key": "hord1992",
+   "authors": [
+    "Hord, C.",
+    "McClintock, W.",
+    "Stewart, A.",
+    "Barth, C.",
+    "Esposito, L.",
+    "Thomas, G.",
+    "Sandel, B.",
+    "Hunten, D.",
+    "Broadfoot, A.",
+    "Shemansky, D."
+   ],
+   "et_al": true,
+   "year": 1992,
+   "title": "Galileo Ultraviolet Spectrometer experiment",
+   "journal": "Space Science Reviews",
+   "volume": "60",
+   "issue": "1-4",
+   "pages": "",
+   "doi": "10.1007/bf00216866",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "galileo",
+     "payload": "UVS"
+    }
+   ],
+   "note": "Page range missing in Crossref metadata (SSR 60)."
+  },
+  {
+   "key": "howard1992",
+   "authors": [
+    "Howard, H.",
+    "Eshleman, V.",
+    "Hinson, D.",
+    "Kliore, A.",
+    "Lindal, G.",
+    "Woo, R.",
+    "Bird, M.",
+    "Volland, H.",
+    "Edenhofer, P.",
+    "P�tzold, M."
+   ],
+   "et_al": true,
+   "year": 1992,
+   "title": "Galileo radio science investigations",
+   "journal": "Space Science Reviews",
+   "volume": "60",
+   "issue": "1-4",
+   "pages": "",
+   "doi": "10.1007/bf00216868",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "galileo",
+     "payload": "RS"
+    }
+   ],
+   "note": "Page range missing in Crossref metadata (SSR 60)."
+  },
+  {
+   "key": "matson2002",
+   "authors": [
+    "Matson, D. L.",
+    "Spilker, L. J.",
+    "Lebreton, J.-P."
+   ],
+   "et_al": false,
+   "year": 2002,
+   "title": "The Cassini/Huygens Mission to the Saturnian System",
+   "journal": "Space Science Reviews",
+   "volume": "104",
+   "issue": "1-4",
+   "pages": "1-58",
+   "doi": "10.1023/a:1023609211620",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "cassini",
+     "payload": "mission"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "kliore2004",
+   "authors": [
+    "Kliore, A. J.",
+    "Anderson, J. D.",
+    "Armstrong, J. W.",
+    "Asmar, S. W.",
+    "Hamilton, C. L.",
+    "Rappaport, N. J.",
+    "Wahlquist, H. D.",
+    "Ambrosini, R.",
+    "Flasar, F. M.",
+    "French, R. G."
+   ],
+   "et_al": true,
+   "year": 2004,
+   "title": "Cassini Radio Science",
+   "journal": "Space Science Reviews",
+   "volume": "115",
+   "issue": "1-4",
+   "pages": "1-70",
+   "doi": "10.1007/s11214-004-1436-y",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "cassini",
+     "payload": "RSS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "kliore2008",
+   "authors": [
+    "Kliore, A. J.",
+    "Nagy, A. F.",
+    "Marouf, E. A.",
+    "French, R. G.",
+    "Flasar, F. M.",
+    "Rappaport, N. J.",
+    "Anabttawi, A.",
+    "Asmar, S. W.",
+    "Kahann, D. S.",
+    "Barbinis, E."
+   ],
+   "et_al": true,
+   "year": 2008,
+   "title": "First results from the Cassini radio occultations of the Titan ionosphere",
+   "journal": "Journal of Geophysical Research: Space Physics",
+   "volume": "113",
+   "issue": "A9",
+   "pages": "2007JA012965",
+   "doi": "10.1029/2007ja012965",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "cassini",
+     "payload": "RSS"
+    }
+   ],
+   "note": "JGR Space Physics 113(A9), article A09317. Crossref stores the page as the DOI suffix (2007JA012965). The citation article number is A09317 (taken from the publisher citation, not from Crossref)."
+  },
+  {
+   "key": "flasar2004",
+   "authors": [
+    "Flasar, F. M.",
+    "Kunde, V. G.",
+    "Abbas, M. M.",
+    "Achterberg, R. K.",
+    "Ade, P.",
+    "Barucci, A.",
+    "B’ezard, B.",
+    "Bjoraker, G. L.",
+    "Brasunas, J. C.",
+    "Calcutt, S."
+   ],
+   "et_al": true,
+   "year": 2004,
+   "title": "Exploring The Saturn System In The Thermal Infrared: The Composite Infrared Spectrometer",
+   "journal": "Space Science Reviews",
+   "volume": "115",
+   "issue": "1-4",
+   "pages": "169-297",
+   "doi": "10.1007/s11214-004-1454-9",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "cassini",
+     "payload": "CIRS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "esposito2004",
+   "authors": [
+    "Esposito, L. W.",
+    "Barth, C. A.",
+    "Colwell, J. E.",
+    "Lawrence, G. M.",
+    "McClintock, W. E.",
+    "Stewart, A. I. F.",
+    "Keller, H. U.",
+    "Korth, A.",
+    "Lauche, H.",
+    "Festou, M. C."
+   ],
+   "et_al": true,
+   "year": 2004,
+   "title": "The Cassini Ultraviolet Imaging Spectrograph Investigation",
+   "journal": "Space Science Reviews",
+   "volume": "115",
+   "issue": "1-4",
+   "pages": "299-361",
+   "doi": "10.1007/s11214-004-1455-8",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "cassini",
+     "payload": "UVIS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "waite2004",
+   "authors": [
+    "Waite, J. H.",
+    "Lewis, W. S.",
+    "Kasprzak, W. T.",
+    "Anicich, V. G.",
+    "Block, B. P.",
+    "Cravens, T. E.",
+    "Fletcher, G. G.",
+    "Ip, W.-H.",
+    "Luhmann, J. G.",
+    "Mcnutt, R. L."
+   ],
+   "et_al": true,
+   "year": 2004,
+   "title": "The Cassini Ion and Neutral Mass Spectrometer (INMS) Investigation",
+   "journal": "Space Science Reviews",
+   "volume": "114",
+   "issue": "1-4",
+   "pages": "113-231",
+   "doi": "10.1007/s11214-004-1408-2",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "cassini",
+     "payload": "INMS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "dougherty2004",
+   "authors": [
+    "Dougherty, M. K.",
+    "Kellock, S.",
+    "Southwood, D. J.",
+    "Balogh, A.",
+    "Smith, E. J.",
+    "Tsurutani, B. T.",
+    "Gerlach, B.",
+    "Glassmeier, K.-H.",
+    "Gleim, F.",
+    "Russell, C. T."
+   ],
+   "et_al": true,
+   "year": 2004,
+   "title": "The Cassini Magnetic Field Investigation",
+   "journal": "Space Science Reviews",
+   "volume": "114",
+   "issue": "1-4",
+   "pages": "331-383",
+   "doi": "10.1007/s11214-004-1432-2",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "cassini",
+     "payload": "MAG"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "young2004",
+   "authors": [
+    "Young, D. T.",
+    "Berthelier, J. J.",
+    "Blanc, M.",
+    "Burch, J. L.",
+    "Coates, A. J.",
+    "Goldstein, R.",
+    "Grande, M.",
+    "Hill, T. W.",
+    "Johnson, R. E.",
+    "Kelha, V."
+   ],
+   "et_al": true,
+   "year": 2004,
+   "title": "Cassini Plasma Spectrometer Investigation",
+   "journal": "Space Science Reviews",
+   "volume": "114",
+   "issue": "1-4",
+   "pages": "1-112",
+   "doi": "10.1007/s11214-004-1406-4",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "cassini",
+     "payload": "CAPS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "gurnett2004",
+   "authors": [
+    "Gurnett, D. A.",
+    "Kurth, W. S.",
+    "Kirchner, D. L.",
+    "Hospodarsky, G. B.",
+    "Averkamp, T. F.",
+    "Zarka, P.",
+    "Lecacheux, A.",
+    "Manning, R.",
+    "Roux, A.",
+    "Canu, P."
+   ],
+   "et_al": true,
+   "year": 2004,
+   "title": "The Cassini Radio and Plasma Wave Investigation",
+   "journal": "Space Science Reviews",
+   "volume": "114",
+   "issue": "1-4",
+   "pages": "395-463",
+   "doi": "10.1007/s11214-004-1434-0",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "cassini",
+     "payload": "RPWS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "krimigis2004",
+   "authors": [
+    "Krimigis, S. M.",
+    "Mitchell, D. G.",
+    "Hamilton, D. C.",
+    "Livi, S.",
+    "Dandouras, J.",
+    "Jaskulek, S.",
+    "Armstrong, T. P.",
+    "Boldt, J. D.",
+    "Cheng, A. F.",
+    "Gloeckler, G."
+   ],
+   "et_al": true,
+   "year": 2004,
+   "title": "Magnetosphere Imaging Instrument (MIMI) on the Cassini Mission to Saturn/Titan",
+   "journal": "Space Science Reviews",
+   "volume": "114",
+   "issue": "1-4",
+   "pages": "233-329",
+   "doi": "10.1007/s11214-004-1410-8",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "cassini",
+     "payload": "MIMI"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "porco2004",
+   "authors": [
+    "Porco, C. C.",
+    "West, R. A.",
+    "Squyres, S.",
+    "Mcewen, A.",
+    "Thomas, P.",
+    "Murray, C. D.",
+    "Delgenio, A.",
+    "Ingersoll, A. P.",
+    "Johnson, T. V.",
+    "Neukum, G."
+   ],
+   "et_al": true,
+   "year": 2004,
+   "title": "Cassini Imaging Science: Instrument Characteristics And Anticipated Scientific Investigations At Saturn",
+   "journal": "Space Science Reviews",
+   "volume": "115",
+   "issue": "1-4",
+   "pages": "363-497",
+   "doi": "10.1007/s11214-004-1456-7",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "cassini",
+     "payload": "ISS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "brown2004",
+   "authors": [
+    "Brown, R. H.",
+    "Baines, K. H.",
+    "Bellucci, G.",
+    "Bibring, J.-P.",
+    "Buratti, B. J.",
+    "Capaccioni, F.",
+    "Cerroni, P.",
+    "Clark, R. N.",
+    "Coradini, A.",
+    "Cruikshank, D. P."
+   ],
+   "et_al": true,
+   "year": 2004,
+   "title": "The Cassini Visual And Infrared Mapping Spectrometer (Vims) Investigation",
+   "journal": "Space Science Reviews",
+   "volume": "115",
+   "issue": "1-4",
+   "pages": "111-168",
+   "doi": "10.1007/s11214-004-1453-x",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "cassini",
+     "payload": "VIMS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "elachi2004",
+   "authors": [
+    "Elachi, C.",
+    "Allison, M. D.",
+    "Borgarelli, L.",
+    "Encrenaz, P.",
+    "Im, E.",
+    "Janssen, M. A.",
+    "Johnson, W. T. K.",
+    "Kirk, R. L.",
+    "Lorenz, R. D.",
+    "Lunine, J. I."
+   ],
+   "et_al": true,
+   "year": 2004,
+   "title": "Radar: The Cassini Titan Radar Mapper",
+   "journal": "Space Science Reviews",
+   "volume": "115",
+   "issue": "1-4",
+   "pages": "71-110",
+   "doi": "10.1007/s11214-004-1438-9",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "cassini",
+     "payload": "RADAR"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "fulchignoni2002",
+   "authors": [
+    "Fulchignoni, M.",
+    "Ferri, F.",
+    "Angrilli, F.",
+    "Bar-Nun, A.",
+    "Barucci, M.",
+    "Bianchini, G.",
+    "Borucki, W.",
+    "Coradini, M.",
+    "Coustenis, A.",
+    "Falkner, P."
+   ],
+   "et_al": true,
+   "year": 2002,
+   "title": "The Characterisation of Titan's Atmospheric Physical Properties by the Huygens Atmospheric Structure Instrument (Hasi)",
+   "journal": "Space Science Reviews",
+   "volume": "104",
+   "issue": "1-4",
+   "pages": "395-431",
+   "doi": "10.1023/a:1023688607077",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "huygens",
+     "payload": "HASI"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "fulchignoni2005",
+   "authors": [
+    "Fulchignoni, M.",
+    "Ferri, F.",
+    "Angrilli, F.",
+    "Ball, A. J.",
+    "Bar-Nun, A.",
+    "Barucci, M. A.",
+    "Bettanini, C.",
+    "Bianchini, G.",
+    "Borucki, W.",
+    "Colombatti, G."
+   ],
+   "et_al": true,
+   "year": 2005,
+   "title": "In situ measurements of the physical characteristics of Titan's environment",
+   "journal": "Nature",
+   "volume": "438",
+   "issue": "7069",
+   "pages": "785-791",
+   "doi": "10.1038/nature04314",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "huygens",
+     "payload": "HASI"
+    }
+   ],
+   "note": "Nature 438:785-791."
+  },
+  {
+   "key": "tomasko2002",
+   "authors": [
+    "Tomasko, M.",
+    "Buchhauser, D.",
+    "Bushroe, M.",
+    "Dafoe, L.",
+    "Doose, L.",
+    "Eibl, A.",
+    "Fellows, C.",
+    "Farlane, E. M.",
+    "Prout, G.",
+    "Pringle, M."
+   ],
+   "et_al": true,
+   "year": 2002,
+   "title": "The Descent Imager/Spectral Radiometer (DISR) Experiment on the Huygens Entry Probe of Titan",
+   "journal": "Space Science Reviews",
+   "volume": "104",
+   "issue": "1-4",
+   "pages": "469-551",
+   "doi": "10.1023/a:1023632422098",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "huygens",
+     "payload": "DISR"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "niemann2002",
+   "authors": [
+    "Niemann, H.",
+    "Atreya, S.",
+    "Bauer, S.",
+    "Biemann, K.",
+    "Block, B.",
+    "Carignan, G.",
+    "Donahue, T.",
+    "Frost, R.",
+    "Gautier, D.",
+    "Haberman, J."
+   ],
+   "et_al": true,
+   "year": 2002,
+   "title": "The Gas Chromatograph Mass Spectrometer for the Huygens Probe",
+   "journal": "Space Science Reviews",
+   "volume": "104",
+   "issue": "1-4",
+   "pages": "553-591",
+   "doi": "10.1023/a:1023680305259",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "huygens",
+     "payload": "GCMS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "stern2008",
+   "authors": [
+    "Stern, S. A."
+   ],
+   "et_al": false,
+   "year": 2008,
+   "title": "The New Horizons Pluto Kuiper Belt Mission: An Overview with Historical Context",
+   "journal": "Space Science Reviews",
+   "volume": "140",
+   "issue": "1-4",
+   "pages": "3-21",
+   "doi": "10.1007/s11214-007-9295-y",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "newhorizons",
+     "payload": "mission"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "tyler2008",
+   "authors": [
+    "Tyler, G. L.",
+    "Linscott, I. R.",
+    "Bird, M. K.",
+    "Hinson, D. P.",
+    "Strobel, D. F.",
+    "Pätzold, M.",
+    "Summers, M. E.",
+    "Sivaramakrishnan, K."
+   ],
+   "et_al": false,
+   "year": 2008,
+   "title": "The New Horizons Radio Science Experiment (REX)",
+   "journal": "Space Science Reviews",
+   "volume": "140",
+   "issue": "1-4",
+   "pages": "217-259",
+   "doi": "10.1007/s11214-007-9302-3",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "newhorizons",
+     "payload": "REX"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "stern2008alice",
+   "authors": [
+    "Stern, S. A.",
+    "Slater, D. C.",
+    "Scherrer, J.",
+    "Stone, J.",
+    "Dirks, G.",
+    "Versteeg, M.",
+    "Davis, M.",
+    "Gladstone, G. R.",
+    "Parker, J. W.",
+    "Young, L. A."
+   ],
+   "et_al": true,
+   "year": 2008,
+   "title": "ALICE: The Ultraviolet Imaging Spectrograph Aboard the New Horizons Pluto-Kuiper Belt Mission",
+   "journal": "Space Science Reviews",
+   "volume": "140",
+   "issue": "1-4",
+   "pages": "155-187",
+   "doi": "10.1007/s11214-008-9407-3",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "newhorizons",
+     "payload": "Alice"
+    }
+   ],
+   "note": "New Horizons Alice."
+  },
+  {
+   "key": "cheng2008",
+   "authors": [
+    "Cheng, A. F.",
+    "Weaver, H. A.",
+    "Conard, S. J.",
+    "Morgan, M. F.",
+    "Barnouin-Jha, O.",
+    "Boldt, J. D.",
+    "Cooper, K. A.",
+    "Darlington, E. H.",
+    "Grey, M. P.",
+    "Hayes, J. R."
+   ],
+   "et_al": true,
+   "year": 2008,
+   "title": "Long-Range Reconnaissance Imager on New Horizons",
+   "journal": "Space Science Reviews",
+   "volume": "140",
+   "issue": "1-4",
+   "pages": "189-215",
+   "doi": "10.1007/s11214-007-9271-6",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "newhorizons",
+     "payload": "LORRI"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "reuter2008",
+   "authors": [
+    "Reuter, D. C.",
+    "Stern, S. A.",
+    "Scherrer, J.",
+    "Jennings, D. E.",
+    "Baer, J. W.",
+    "Hanley, J.",
+    "Hardaway, L.",
+    "Lunsford, A.",
+    "McMuldroch, S.",
+    "Moore, J."
+   ],
+   "et_al": true,
+   "year": 2008,
+   "title": "Ralph: A Visible/Infrared Imager for the New Horizons Pluto/Kuiper Belt Mission",
+   "journal": "Space Science Reviews",
+   "volume": "140",
+   "issue": "1-4",
+   "pages": "129-154",
+   "doi": "10.1007/s11214-008-9375-7",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "newhorizons",
+     "payload": "Ralph"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "mccomas2008",
+   "authors": [
+    "McComas, D.",
+    "Allegrini, F.",
+    "Bagenal, F.",
+    "Casey, P.",
+    "Delamere, P.",
+    "Demkee, D.",
+    "Dunn, G.",
+    "Elliott, H.",
+    "Hanley, J.",
+    "Johnson, K."
+   ],
+   "et_al": true,
+   "year": 2008,
+   "title": "The Solar Wind Around Pluto (SWAP) Instrument Aboard New Horizons",
+   "journal": "Space Science Reviews",
+   "volume": "140",
+   "issue": "1-4",
+   "pages": "261-313",
+   "doi": "10.1007/s11214-007-9205-3",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "newhorizons",
+     "payload": "SWAP"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "mcnutt2008",
+   "authors": [
+    "McNutt, R. L.",
+    "Livi, S. A.",
+    "Gurnee, R. S.",
+    "Hill, M. E.",
+    "Cooper, K. A.",
+    "Andrews, G. B.",
+    "Keath, E. P.",
+    "Krimigis, S. M.",
+    "Mitchell, D. G.",
+    "Tossman, B."
+   ],
+   "et_al": true,
+   "year": 2008,
+   "title": "The Pluto Energetic Particle Spectrometer Science Investigation (PEPSSI) on the New Horizons Mission",
+   "journal": "Space Science Reviews",
+   "volume": "140",
+   "issue": "1-4",
+   "pages": "315-385",
+   "doi": "10.1007/s11214-008-9436-y",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "newhorizons",
+     "payload": "PEPSSI"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "horanyi2008",
+   "authors": [
+    "Horányi, M.",
+    "Hoxie, V.",
+    "James, D.",
+    "Poppe, A.",
+    "Bryant, C.",
+    "Grogan, B.",
+    "Lamprecht, B.",
+    "Mack, J.",
+    "Bagenal, F.",
+    "Batiste, S."
+   ],
+   "et_al": true,
+   "year": 2008,
+   "title": "The Student Dust Counter on the New Horizons Mission",
+   "journal": "Space Science Reviews",
+   "volume": "140",
+   "issue": "1-4",
+   "pages": "387-402",
+   "doi": "10.1007/s11214-007-9250-y",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "newhorizons",
+     "payload": "SDC"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "gladstone2016",
+   "authors": [
+    "Gladstone, G. R.",
+    "Stern, S. A.",
+    "Ennico, K.",
+    "Olkin, C. B.",
+    "Weaver, H. A.",
+    "Young, L. A.",
+    "Summers, M. E.",
+    "Strobel, D. F.",
+    "Hinson, D. P.",
+    "Kammer, J. A."
+   ],
+   "et_al": true,
+   "year": 2016,
+   "title": "The atmosphere of Pluto as observed by New Horizons",
+   "journal": "Science",
+   "volume": "351",
+   "issue": "6279",
+   "pages": "aad8866",
+   "doi": "10.1126/science.aad8866",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "newhorizons",
+     "payload": "Alice"
+    },
+    {
+     "mission": "newhorizons",
+     "payload": "REX"
+    }
+   ],
+   "note": "Science 351(6279), article aad8866. The Crossref record has 161 authors."
+  },
+  {
+   "key": "hinson2017",
+   "authors": [
+    "Hinson, D.",
+    "Linscott, I.",
+    "Young, L.",
+    "Tyler, G.",
+    "Stern, S.",
+    "Beyer, R.",
+    "Bird, M.",
+    "Ennico, K.",
+    "Gladstone, G.",
+    "Olkin, C."
+   ],
+   "et_al": true,
+   "year": 2017,
+   "title": "Radio occultation measurements of Pluto’s neutral atmosphere with New Horizons",
+   "journal": "Icarus",
+   "volume": "290",
+   "issue": "",
+   "pages": "96-111",
+   "doi": "10.1016/j.icarus.2017.02.031",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "newhorizons",
+     "payload": "REX"
+    }
+   ],
+   "note": "Icarus 290:96-111."
+  },
+  {
+   "key": "solomon2001",
+   "authors": [
+    "Solomon, S. C.",
+    "McNutt, R. L.",
+    "Gold, R. E.",
+    "Acuña, M. H.",
+    "Baker, D. N.",
+    "Boynton, W. V.",
+    "Chapman, C. R.",
+    "Cheng, A. F.",
+    "Gloeckler, G.",
+    "Head III, J. W."
+   ],
+   "et_al": true,
+   "year": 2001,
+   "title": "The MESSENGER mission to Mercury: scientific objectives and implementation",
+   "journal": "Planetary and Space Science",
+   "volume": "49",
+   "issue": "14-15",
+   "pages": "1445-1465",
+   "doi": "10.1016/s0032-0633(01)00085-x",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "messenger",
+     "payload": "mission"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "hawkins2007",
+   "authors": [
+    "Hawkins, S. E.",
+    "Boldt, J. D.",
+    "Darlington, E. H.",
+    "Espiritu, R.",
+    "Gold, R. E.",
+    "Gotwols, B.",
+    "Grey, M. P.",
+    "Hash, C. D.",
+    "Hayes, J. R.",
+    "Jaskulek, S. E."
+   ],
+   "et_al": true,
+   "year": 2007,
+   "title": "The Mercury Dual Imaging System on the MESSENGER Spacecraft",
+   "journal": "Space Science Reviews",
+   "volume": "131",
+   "issue": "1-4",
+   "pages": "247-338",
+   "doi": "10.1007/s11214-007-9266-3",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "messenger",
+     "payload": "MDIS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "mcclintock2007",
+   "authors": [
+    "McClintock, W. E.",
+    "Lankton, M. R."
+   ],
+   "et_al": false,
+   "year": 2007,
+   "title": "The Mercury Atmospheric and Surface Composition Spectrometer for the MESSENGER Mission",
+   "journal": "Space Science Reviews",
+   "volume": "131",
+   "issue": "1-4",
+   "pages": "481-521",
+   "doi": "10.1007/s11214-007-9264-5",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "messenger",
+     "payload": "MASCS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "anderson2007",
+   "authors": [
+    "Anderson, B. J.",
+    "Acuña, M. H.",
+    "Lohr, D. A.",
+    "Scheifele, J.",
+    "Raval, A.",
+    "Korth, H.",
+    "Slavin, J. A."
+   ],
+   "et_al": false,
+   "year": 2007,
+   "title": "The Magnetometer Instrument on MESSENGER",
+   "journal": "Space Science Reviews",
+   "volume": "131",
+   "issue": "1-4",
+   "pages": "417-450",
+   "doi": "10.1007/s11214-007-9246-7",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "messenger",
+     "payload": "MAG"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "andrews2007",
+   "authors": [
+    "Andrews, G. B.",
+    "Zurbuchen, T. H.",
+    "Mauk, B. H.",
+    "Malcom, H.",
+    "Fisk, L. A.",
+    "Gloeckler, G.",
+    "Ho, G. C.",
+    "Kelley, J. S.",
+    "Koehn, P. L.",
+    "LeFevere, T. W."
+   ],
+   "et_al": true,
+   "year": 2007,
+   "title": "The Energetic Particle and Plasma Spectrometer Instrument on the MESSENGER Spacecraft",
+   "journal": "Space Science Reviews",
+   "volume": "131",
+   "issue": "1-4",
+   "pages": "523-556",
+   "doi": "10.1007/s11214-007-9272-5",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "messenger",
+     "payload": "EPPS"
+    },
+    {
+     "mission": "messenger",
+     "payload": "FIPS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "cavanaugh2007",
+   "authors": [
+    "Cavanaugh, J. F.",
+    "Smith, J. C.",
+    "Sun, X.",
+    "Bartels, A. E.",
+    "Ramos-Izquierdo, L.",
+    "Krebs, D. J.",
+    "McGarry, J. F.",
+    "Trunzo, R.",
+    "Novo-Gradac, A. M.",
+    "Britt, J. L."
+   ],
+   "et_al": true,
+   "year": 2007,
+   "title": "The Mercury Laser Altimeter Instrument for the MESSENGER Mission",
+   "journal": "Space Science Reviews",
+   "volume": "131",
+   "issue": "1-4",
+   "pages": "451-479",
+   "doi": "10.1007/s11214-007-9273-4",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "messenger",
+     "payload": "MLA"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "goldsten2007",
+   "authors": [
+    "Goldsten, J. O.",
+    "Rhodes, E. A.",
+    "Boynton, W. V.",
+    "Feldman, W. C.",
+    "Lawrence, D. J.",
+    "Trombka, J. I.",
+    "Smith, D. M.",
+    "Evans, L. G.",
+    "White, J.",
+    "Madden, N. W."
+   ],
+   "et_al": true,
+   "year": 2007,
+   "title": "The MESSENGER Gamma-Ray and Neutron Spectrometer",
+   "journal": "Space Science Reviews",
+   "volume": "131",
+   "issue": "1-4",
+   "pages": "339-391",
+   "doi": "10.1007/s11214-007-9262-7",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "messenger",
+     "payload": "GRS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "srinivasan2007",
+   "authors": [
+    "Srinivasan, D. K.",
+    "Perry, M. E.",
+    "Fielhauer, K. B.",
+    "Smith, D. E.",
+    "Zuber, M. T."
+   ],
+   "et_al": false,
+   "year": 2007,
+   "title": "The Radio Frequency Subsystem and Radio Science on the MESSENGER Mission",
+   "journal": "Space Science Reviews",
+   "volume": "131",
+   "issue": "1-4",
+   "pages": "557-571",
+   "doi": "10.1007/s11214-007-9270-7",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "messenger",
+     "payload": "RS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "chin2007",
+   "authors": [
+    "Chin, G.",
+    "Brylow, S.",
+    "Foote, M.",
+    "Garvin, J.",
+    "Kasper, J.",
+    "Keller, J.",
+    "Litvak, M.",
+    "Mitrofanov, I.",
+    "Paige, D.",
+    "Raney, K."
+   ],
+   "et_al": true,
+   "year": 2007,
+   "title": "Lunar Reconnaissance Orbiter Overview: The Instrument Suite and Mission",
+   "journal": "Space Science Reviews",
+   "volume": "129",
+   "issue": "4",
+   "pages": "391-419",
+   "doi": "10.1007/s11214-007-9153-y",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "lro",
+     "payload": "mission"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "vondrak2010",
+   "authors": [
+    "Vondrak, R.",
+    "Keller, J.",
+    "Chin, G.",
+    "Garvin, J."
+   ],
+   "et_al": false,
+   "year": 2010,
+   "title": "Lunar Reconnaissance Orbiter (LRO): Observations for Lunar Exploration and Science",
+   "journal": "Space Science Reviews",
+   "volume": "150",
+   "issue": "1-4",
+   "pages": "7-22",
+   "doi": "10.1007/s11214-010-9631-5",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "lro",
+     "payload": "mission"
+    }
+   ],
+   "note": "LRO mission paper (2010). See also chin2007."
+  },
+  {
+   "key": "robinson2010",
+   "authors": [
+    "Robinson, M. S.",
+    "Brylow, S. M.",
+    "Tschimmel, M.",
+    "Humm, D.",
+    "Lawrence, S. J.",
+    "Thomas, P. C.",
+    "Denevi, B. W.",
+    "Bowman-Cisneros, E.",
+    "Zerr, J.",
+    "Ravine, M. A."
+   ],
+   "et_al": true,
+   "year": 2010,
+   "title": "Lunar Reconnaissance Orbiter Camera (LROC) Instrument Overview",
+   "journal": "Space Science Reviews",
+   "volume": "150",
+   "issue": "1-4",
+   "pages": "81-124",
+   "doi": "10.1007/s11214-010-9634-2",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "lro",
+     "payload": "LROC"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "paige2010",
+   "authors": [
+    "Paige, D. A.",
+    "Foote, M. C.",
+    "Greenhagen, B. T.",
+    "Schofield, J. T.",
+    "Calcutt, S.",
+    "Vasavada, A. R.",
+    "Preston, D. J.",
+    "Taylor, F. W.",
+    "Allen, C. C.",
+    "Snook, K. J."
+   ],
+   "et_al": true,
+   "year": 2010,
+   "title": "The Lunar Reconnaissance Orbiter Diviner Lunar Radiometer Experiment",
+   "journal": "Space Science Reviews",
+   "volume": "150",
+   "issue": "1-4",
+   "pages": "125-160",
+   "doi": "10.1007/s11214-009-9529-2",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "lro",
+     "payload": "Diviner"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "gladstone2010",
+   "authors": [
+    "Gladstone, G. R.",
+    "Stern, S. A.",
+    "Retherford, K. D.",
+    "Black, R. K.",
+    "Slater, D. C.",
+    "Davis, M. W.",
+    "Versteeg, M. H.",
+    "Persson, K. B.",
+    "Parker, J. W.",
+    "Kaufmann, D. E."
+   ],
+   "et_al": true,
+   "year": 2010,
+   "title": "LAMP: The Lyman Alpha Mapping Project on NASA’s Lunar Reconnaissance Orbiter Mission",
+   "journal": "Space Science Reviews",
+   "volume": "150",
+   "issue": "1-4",
+   "pages": "161-181",
+   "doi": "10.1007/s11214-009-9578-6",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "lro",
+     "payload": "LAMP"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "smith2010",
+   "authors": [
+    "Smith, D. E.",
+    "Zuber, M. T.",
+    "Jackson, G. B.",
+    "Cavanaugh, J. F.",
+    "Neumann, G. A.",
+    "Riris, H.",
+    "Sun, X.",
+    "Zellar, R. S.",
+    "Coltharp, C.",
+    "Connelly, J."
+   ],
+   "et_al": true,
+   "year": 2010,
+   "title": "The Lunar Orbiter Laser Altimeter Investigation on the Lunar Reconnaissance Orbiter Mission",
+   "journal": "Space Science Reviews",
+   "volume": "150",
+   "issue": "1-4",
+   "pages": "209-241",
+   "doi": "10.1007/s11214-009-9512-y",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "lro",
+     "payload": "LOLA"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "spence2010",
+   "authors": [
+    "Spence, H. E.",
+    "Case, A. W.",
+    "Golightly, M. J.",
+    "Heine, T.",
+    "Larsen, B. A.",
+    "Blake, J. B.",
+    "Caranza, P.",
+    "Crain, W. R.",
+    "George, J.",
+    "Lalic, M."
+   ],
+   "et_al": true,
+   "year": 2010,
+   "title": "CRaTER: The Cosmic Ray Telescope for the Effects of Radiation Experiment on the Lunar Reconnaissance Orbiter Mission",
+   "journal": "Space Science Reviews",
+   "volume": "150",
+   "issue": "1-4",
+   "pages": "243-284",
+   "doi": "10.1007/s11214-009-9584-8",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "lro",
+     "payload": "CRaTER"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "mitrofanov2010",
+   "authors": [
+    "Mitrofanov, I. G.",
+    "Bartels, A.",
+    "Bobrovnitsky, Y. I.",
+    "Boynton, W.",
+    "Chin, G.",
+    "Enos, H.",
+    "Evans, L.",
+    "Floyd, S.",
+    "Garvin, J.",
+    "Golovin, D. V."
+   ],
+   "et_al": true,
+   "year": 2010,
+   "title": "Lunar Exploration Neutron Detector for the NASA Lunar Reconnaissance Orbiter",
+   "journal": "Space Science Reviews",
+   "volume": "150",
+   "issue": "1-4",
+   "pages": "183-207",
+   "doi": "10.1007/s11214-009-9608-4",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "lro",
+     "payload": "LEND"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "nozette2010",
+   "authors": [
+    "Nozette, S.",
+    "Spudis, P.",
+    "Bussey, B.",
+    "Jensen, R.",
+    "Raney, K.",
+    "Winters, H.",
+    "Lichtenberg, C. L.",
+    "Marinelli, W.",
+    "Crusan, J.",
+    "Gates, M."
+   ],
+   "et_al": true,
+   "year": 2010,
+   "title": "The Lunar Reconnaissance Orbiter Miniature Radio Frequency (Mini-RF) Technology Demonstration",
+   "journal": "Space Science Reviews",
+   "volume": "150",
+   "issue": "1-4",
+   "pages": "285-302",
+   "doi": "10.1007/s11214-009-9607-5",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "lro",
+     "payload": "Mini-RF"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "russell2011",
+   "authors": [
+    "Russell, C. T.",
+    "Raymond, C. A."
+   ],
+   "et_al": false,
+   "year": 2011,
+   "title": "The Dawn Mission to Vesta and Ceres",
+   "journal": "Space Science Reviews",
+   "volume": "163",
+   "issue": "1-4",
+   "pages": "3-23",
+   "doi": "10.1007/s11214-011-9836-2",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "dawn",
+     "payload": "mission"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "sierks2011",
+   "authors": [
+    "Sierks, H.",
+    "Keller, H. U.",
+    "Jaumann, R.",
+    "Michalik, H.",
+    "Behnke, T.",
+    "Bubenhagen, F.",
+    "Büttner, I.",
+    "Carsenty, U.",
+    "Christensen, U.",
+    "Enge, R."
+   ],
+   "et_al": true,
+   "year": 2011,
+   "title": "The Dawn Framing Camera",
+   "journal": "Space Science Reviews",
+   "volume": "163",
+   "issue": "1-4",
+   "pages": "263-327",
+   "doi": "10.1007/s11214-011-9745-4",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "dawn",
+     "payload": "FC"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "desanctis2011",
+   "authors": [
+    "De Sanctis, M. C.",
+    "Coradini, A.",
+    "Ammannito, E.",
+    "Filacchione, G.",
+    "Capria, M. T.",
+    "Fonte, S.",
+    "Magni, G.",
+    "Barbis, A.",
+    "Bini, A.",
+    "Dami, M."
+   ],
+   "et_al": true,
+   "year": 2011,
+   "title": "The VIR Spectrometer",
+   "journal": "Space Science Reviews",
+   "volume": "163",
+   "issue": "1-4",
+   "pages": "329-369",
+   "doi": "10.1007/s11214-010-9668-5",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "dawn",
+     "payload": "VIR"
+    }
+   ],
+   "note": "Crossref lists \"VIR Team\" as an extra first author entry. It is dropped here, so the first author is De Sanctis, M. C., as the paper is usually cited."
+  },
+  {
+   "key": "prettyman2011",
+   "authors": [
+    "Prettyman, T. H.",
+    "Feldman, W. C.",
+    "McSween, H. Y.",
+    "Dingler, R. D.",
+    "Enemark, D. C.",
+    "Patrick, D. E.",
+    "Storms, S. A.",
+    "Hendricks, J. S.",
+    "Morgenthaler, J. P.",
+    "Pitman, K. M."
+   ],
+   "et_al": true,
+   "year": 2011,
+   "title": "Dawn’s Gamma Ray and Neutron Detector",
+   "journal": "Space Science Reviews",
+   "volume": "163",
+   "issue": "1-4",
+   "pages": "371-459",
+   "doi": "10.1007/s11214-011-9862-0",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "dawn",
+     "payload": "GRaND"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "glassmeier2007",
+   "authors": [
+    "Glassmeier, K.-H.",
+    "Boehnhardt, H.",
+    "Koschny, D.",
+    "Kührt, E.",
+    "Richter, I."
+   ],
+   "et_al": false,
+   "year": 2007,
+   "title": "The Rosetta Mission: Flying Towards the Origin of the Solar System",
+   "journal": "Space Science Reviews",
+   "volume": "128",
+   "issue": "1-4",
+   "pages": "1-21",
+   "doi": "10.1007/s11214-006-9140-8",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "rosetta",
+     "payload": "mission"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "keller2007",
+   "authors": [
+    "Keller, H. U.",
+    "Barbieri, C.",
+    "Lamy, P.",
+    "Rickman, H.",
+    "Rodrigo, R.",
+    "Wenzel, K.-P.",
+    "Sierks, H.",
+    "A’Hearn, M. F.",
+    "Angrilli, F.",
+    "Angulo, M."
+   ],
+   "et_al": true,
+   "year": 2007,
+   "title": "OSIRIS - The Scientific Camera System Onboard Rosetta",
+   "journal": "Space Science Reviews",
+   "volume": "128",
+   "issue": "1-4",
+   "pages": "433-506",
+   "doi": "10.1007/s11214-006-9128-4",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "rosetta",
+     "payload": "OSIRIS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "gulkis2007",
+   "authors": [
+    "Gulkis, S.",
+    "Frerking, M.",
+    "Crovisier, J.",
+    "Beaudin, G.",
+    "Hartogh, P.",
+    "Encrenaz, P.",
+    "Koch, T.",
+    "Kahn, C.",
+    "Salinas, Y.",
+    "Nowicki, R."
+   ],
+   "et_al": true,
+   "year": 2007,
+   "title": "MIRO: Microwave Instrument for Rosetta Orbiter",
+   "journal": "Space Science Reviews",
+   "volume": "128",
+   "issue": "1-4",
+   "pages": "561-597",
+   "doi": "10.1007/s11214-006-9032-y",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "rosetta",
+     "payload": "MIRO"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "patzold2007",
+   "authors": [
+    "Pätzold, M.",
+    "Häusler, B.",
+    "Aksnes, K.",
+    "Anderson, J. D.",
+    "Asmar, S. W.",
+    "Barriot, J.-P.",
+    "Bird, M. K.",
+    "Boehnhardt, H.",
+    "Eidel, W.",
+    "Grün, E."
+   ],
+   "et_al": true,
+   "year": 2007,
+   "title": "Rosetta Radio Science Investigations (RSI)",
+   "journal": "Space Science Reviews",
+   "volume": "128",
+   "issue": "1-4",
+   "pages": "599-627",
+   "doi": "10.1007/s11214-006-9117-7",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "rosetta",
+     "payload": "RSI"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "balsiger2007",
+   "authors": [
+    "Balsiger, H.",
+    "Altwegg, K.",
+    "Bochsler, P.",
+    "Eberhardt, P.",
+    "Fischer, J.",
+    "Graf, S.",
+    "Jäckel, A.",
+    "Kopp, E.",
+    "Langer, U.",
+    "Mildner, M."
+   ],
+   "et_al": true,
+   "year": 2007,
+   "title": "Rosina - Rosetta Orbiter Spectrometer for Ion and Neutral Analysis",
+   "journal": "Space Science Reviews",
+   "volume": "128",
+   "issue": "1-4",
+   "pages": "745-801",
+   "doi": "10.1007/s11214-006-8335-3",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "rosetta",
+     "payload": "ROSINA"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "stern2007",
+   "authors": [
+    "Stern, S. A.",
+    "Slater, D. C.",
+    "Scherrer, J.",
+    "Stone, J.",
+    "Versteeg, M.",
+    "A’hearn, M. F.",
+    "Bertaux, J. L.",
+    "Feldman, P. D.",
+    "Festou, M. C.",
+    "Parker, J. W."
+   ],
+   "et_al": true,
+   "year": 2007,
+   "title": "Alice: The rosetta Ultraviolet Imaging Spectrograph",
+   "journal": "Space Science Reviews",
+   "volume": "128",
+   "issue": "1-4",
+   "pages": "507-527",
+   "doi": "10.1007/s11214-006-9035-8",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "rosetta",
+     "payload": "Alice"
+    }
+   ],
+   "note": "Rosetta Alice."
+  },
+  {
+   "key": "coradini2007",
+   "authors": [
+    "Coradini, A.",
+    "Capaccioni, F.",
+    "Drossart, P.",
+    "Arnold, G.",
+    "Ammannito, E.",
+    "Angrilli, F.",
+    "Barucci, A.",
+    "Bellucci, G.",
+    "Benkhoff, J.",
+    "Bianchini, G."
+   ],
+   "et_al": true,
+   "year": 2007,
+   "title": "Virtis: An Imaging Spectrometer for the Rosetta Mission",
+   "journal": "Space Science Reviews",
+   "volume": "128",
+   "issue": "1-4",
+   "pages": "529-559",
+   "doi": "10.1007/s11214-006-9127-5",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "rosetta",
+     "payload": "VIRTIS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "carr2007",
+   "authors": [
+    "Carr, C.",
+    "Cupido, E.",
+    "Lee, C. G. Y.",
+    "Balogh, A.",
+    "Beek, T.",
+    "Burch, J. L.",
+    "Dunford, C. N.",
+    "Eriksson, A. I.",
+    "Gill, R.",
+    "Glassmeier, K. H."
+   ],
+   "et_al": true,
+   "year": 2007,
+   "title": "RPC: The Rosetta Plasma Consortium",
+   "journal": "Space Science Reviews",
+   "volume": "128",
+   "issue": "1-4",
+   "pages": "629-647",
+   "doi": "10.1007/s11214-006-9136-4",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "rosetta",
+     "payload": "RPC"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "benkhoff2021",
+   "authors": [
+    "Benkhoff, J.",
+    "Murakami, G.",
+    "Baumjohann, W.",
+    "Besse, S.",
+    "Bunce, E.",
+    "Casale, M.",
+    "Cremosese, G.",
+    "Glassmeier, K.-H.",
+    "Hayakawa, H.",
+    "Heyner, D."
+   ],
+   "et_al": true,
+   "year": 2021,
+   "title": "BepiColombo - Mission Overview and Science Goals",
+   "journal": "Space Science Reviews",
+   "volume": "217",
+   "issue": "8",
+   "pages": "90",
+   "doi": "10.1007/s11214-021-00861-4",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "bepicolombo",
+     "payload": "mission"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "iess2021",
+   "authors": [
+    "Iess, L.",
+    "Asmar, S. W.",
+    "Cappuccio, P.",
+    "Cascioli, G.",
+    "De Marchi, F.",
+    "di Stefano, I.",
+    "Genova, A.",
+    "Ashby, N.",
+    "Barriot, J. P.",
+    "Bender, P."
+   ],
+   "et_al": true,
+   "year": 2021,
+   "title": "Gravity, Geodesy and Fundamental Physics with BepiColombo’s MORE Investigation",
+   "journal": "Space Science Reviews",
+   "volume": "217",
+   "issue": "1",
+   "pages": "21",
+   "doi": "10.1007/s11214-021-00800-3",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "bepicolombo",
+     "payload": "MORE"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "hiesinger2020",
+   "authors": [
+    "Hiesinger, H.",
+    "Helbert, J.",
+    "Alemanno, G.",
+    "Bauch, K. E.",
+    "D’Amore, M.",
+    "Maturilli, A.",
+    "Morlok, A.",
+    "Reitze, M. P.",
+    "Stangarone, C.",
+    "Stojic, A. N."
+   ],
+   "et_al": true,
+   "year": 2020,
+   "title": "Studying the Composition and Mineralogy of the Hermean Surface with the Mercury Radiometer and Thermal Infrared Spectrometer (MERTIS) for the BepiColombo Mission: An Update",
+   "journal": "Space Science Reviews",
+   "volume": "216",
+   "issue": "6",
+   "pages": "110",
+   "doi": "10.1007/s11214-020-00732-4",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "bepicolombo",
+     "payload": "MERTIS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "quemerais2020",
+   "authors": [
+    "Quémerais, E.",
+    "Chaufray, J.-Y.",
+    "Koutroumpa, D.",
+    "Leblanc, F.",
+    "Reberac, A.",
+    "Lustrement, B.",
+    "Montaron, C.",
+    "Mariscal, J.-F.",
+    "Rouanet, N.",
+    "Yoshikawa, I."
+   ],
+   "et_al": true,
+   "year": 2020,
+   "title": "PHEBUS on Bepi-Colombo: Post-launch Update and Instrument Performance",
+   "journal": "Space Science Reviews",
+   "volume": "216",
+   "issue": "4",
+   "pages": "67",
+   "doi": "10.1007/s11214-020-00695-6",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "bepicolombo",
+     "payload": "PHEBUS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "heyner2021",
+   "authors": [
+    "Heyner, D.",
+    "Auster, H.-U.",
+    "Fornaçon, K.-H.",
+    "Carr, C.",
+    "Richter, I.",
+    "Mieth, J. Z. D.",
+    "Kolhey, P.",
+    "Exner, W.",
+    "Motschmann, U.",
+    "Baumjohann, W."
+   ],
+   "et_al": true,
+   "year": 2021,
+   "title": "The BepiColombo Planetary Magnetometer MPO-MAG: What Can We Learn from the Hermean Magnetic Field?",
+   "journal": "Space Science Reviews",
+   "volume": "217",
+   "issue": "4",
+   "pages": "52",
+   "doi": "10.1007/s11214-021-00822-x",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "bepicolombo",
+     "payload": "MPO-MAG"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "arunan2015",
+   "authors": [
+    "Arunan, S.",
+    "Satish, R."
+   ],
+   "et_al": false,
+   "year": 2015,
+   "title": "Mars Orbiter Mission spacecraft and its challenges",
+   "journal": "Current Science",
+   "volume": "109",
+   "issue": "6",
+   "pages": "1061-1069",
+   "doi": "10.18520/cs/v109/i6/1061-1069",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mom",
+     "payload": "mission"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "bhardwaj2015",
+   "authors": [
+    "Bhardwaj, A.",
+    "Mohankumar, S. V.",
+    "Das, T. P.",
+    "Pradeepkumar, P.",
+    "Sreelatha, P.",
+    "Sundar, B.",
+    "Nandi, A.",
+    "Vajja, D. P.",
+    "Dhanya, M. B.",
+    "Naik, N."
+   ],
+   "et_al": true,
+   "year": 2015,
+   "title": "MENCA experiment aboard India’s Mars Orbiter Mission",
+   "journal": "Current Science",
+   "volume": "109",
+   "issue": "6",
+   "pages": "1106-1113",
+   "doi": "10.18520/cs/v109/i6/1106-1113",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mom",
+     "payload": "MENCA"
+    }
+   ],
+   "note": "MENCA instrument paper, Current Science 109(6):1106-1113."
+  },
+  {
+   "key": "bhardwaj2017",
+   "authors": [
+    "Bhardwaj, A.",
+    "Thampi, S. V.",
+    "Das, T. P.",
+    "Dhanya, M. B.",
+    "Naik, N.",
+    "Vajja, D. P.",
+    "Pradeepkumar, P.",
+    "Sreelatha, P.",
+    "K., A. J.",
+    "Thampi, R. S."
+   ],
+   "et_al": true,
+   "year": 2017,
+   "title": "Observation of suprathermal argon in the exosphere of Mars",
+   "journal": "Geophysical Research Letters",
+   "volume": "44",
+   "issue": "5",
+   "pages": "2088-2095",
+   "doi": "10.1002/2016gl072001",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mom",
+     "payload": "MENCA"
+    }
+   ],
+   "note": "MENCA science result, GRL 44:2088-2095 (2017)."
+  },
+  {
+   "key": "bhardwaj2016",
+   "authors": [
+    "Bhardwaj, A.",
+    "Thampi, S. V.",
+    "Das, T. P.",
+    "Dhanya, M. B.",
+    "Naik, N.",
+    "Vajja, D. P.",
+    "Pradeepkumar, P.",
+    "Sreelatha, P.",
+    "Supriya, G.",
+    "K., A. J."
+   ],
+   "et_al": true,
+   "year": 2016,
+   "title": "On the evening time exosphere of Mars: Result from MENCA aboard Mars Orbiter Mission",
+   "journal": "Geophysical Research Letters",
+   "volume": "43",
+   "issue": "5",
+   "pages": "1862-1867",
+   "doi": "10.1002/2016gl067707",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mom",
+     "payload": "MENCA"
+    }
+   ],
+   "note": "MENCA science result, GRL 43:1862-1867 (2016)."
+  },
+  {
+   "key": "arya2015",
+   "authors": [
+    "Arya, A. S.",
+    "Sarkar, S. S.",
+    "Srinivas, A. R.",
+    "Manthira Moorthi, S.",
+    "Patel, V. D.",
+    "Singh, R. B.",
+    "Rajasekhar, R. P.",
+    "Roy, S.",
+    "Misra, I.",
+    "Paul, S. K."
+   ],
+   "et_al": true,
+   "year": 2015,
+   "title": "Mars Colour Camera: the payload characterization/calibration and data analysis from Earth imaging phase",
+   "journal": "Current Science",
+   "volume": "109",
+   "issue": "6",
+   "pages": "1076-1086",
+   "doi": "10.18520/cs/v109/i6/1076-1086",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mom",
+     "payload": "MCC"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "mathew2015",
+   "authors": [
+    "Mathew, K.",
+    "Sarkar, S. S.",
+    "Srinivas, A. R.",
+    "Dutta, M.",
+    "Minal Rohit, M. x.",
+    "Seth, H.",
+    "Kumaran, R.",
+    "Pandya, K.",
+    "Kumar, A.",
+    "Sharma, J."
+   ],
+   "et_al": true,
+   "year": 2015,
+   "title": "Methane Sensor for Mars",
+   "journal": "Current Science",
+   "volume": "109",
+   "issue": "6",
+   "pages": "1087-1096",
+   "doi": "10.18520/cs/v109/i6/1087-1096",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mom",
+     "payload": "MSM"
+    }
+   ],
+   "note": "MOM Methane Sensor for Mars (MSM)."
+  },
+  {
+   "key": "choudhary2020",
+   "authors": [
+    "Choudhary, R. K.",
+    "Bindu, K. R.",
+    "Harshit, K.",
+    "Karkara, R.",
+    "Ambili, K. M.",
+    "Pant, T. K.",
+    "Shenoy, D.",
+    "Kumar, C.",
+    "Hemanth Kumar Reddy, N.",
+    "Rajendran, T. K."
+   ],
+   "et_al": true,
+   "year": 2020,
+   "title": "Dual Frequency Radio Science Experiment Onboard Chandrayaan-2:A Radio Occultation Technique to Study Temporal and Spatial Variations in the Surface-Bound Ionosphere of the Moon",
+   "journal": "Current Science",
+   "volume": "118",
+   "issue": "2",
+   "pages": "210-218",
+   "doi": "10.18520/cs/v118/i2/210-218",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "chandrayaan2",
+     "payload": "DFRS"
+    }
+   ],
+   "note": "Crossref title: \"Dual Frequency Radio Science Experiment Onboard Chandrayaan-2: A Radio Occultation Technique to Study Temporal and Spatial Variations in the Surface Bound Lunar Ionosphere\"."
+  },
+  {
+   "key": "das2020",
+   "authors": [
+    "Das, T. P.",
+    "Thampi, S. V.",
+    "Dhanya, M. B.",
+    "Naik, N.",
+    "Sreelatha, P.",
+    "Pradeepkumar, P.",
+    "Padma Padmanabhan, G.",
+    "Sundar, B.",
+    "Vajja, D. P.",
+    "Nandi, A."
+   ],
+   "et_al": true,
+   "year": 2020,
+   "title": "Chandra’s Atmospheric Composition Explorer-2 Onboard Chandrayaan-2 to Study the Lunar Neutral Exosphere",
+   "journal": "Current Science",
+   "volume": "118",
+   "issue": "2",
+   "pages": "202-209",
+   "doi": "10.18520/cs/v118/i2/202-209",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "chandrayaan2",
+     "payload": "CHACE-2"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "radhakrishna2020",
+   "authors": [
+    "Radhakrishna, V.",
+    "Tyagi, A.",
+    "Narendranath, S.",
+    "Vadodariya, K.",
+    "Yadav, R.",
+    "Singh, B.",
+    "Balaji, G.",
+    "Satya, N.",
+    "Shetty, A.",
+    "Suresha Kumar, H. N."
+   ],
+   "et_al": true,
+   "year": 2020,
+   "title": "Chandrayaan-2 Large Area Soft X-ray Spectrometer",
+   "journal": "Current Science",
+   "volume": "118",
+   "issue": "2",
+   "pages": "219-225",
+   "doi": "10.18520/cs/v118/i2/219-225",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "chandrayaan2",
+     "payload": "CLASS"
+    }
+   ],
+   "note": "CLASS instrument description, Current Science 118(2):219-225."
+  },
+  {
+   "key": "pillai2021",
+   "authors": [
+    "Pillai, N. S.",
+    "Narendranath, S.",
+    "Vadodariya, K.",
+    "Tadepalli, S. P.",
+    "V., R.",
+    "Tyagi, A.",
+    "Yadav, R.",
+    "Singh, B.",
+    "Sharan, V.",
+    "Athiray, P."
+   ],
+   "et_al": true,
+   "year": 2021,
+   "title": "Chandrayaan-2 Large Area Soft X-ray Spectrometer (CLASS): Calibration, In-flight performance and first results",
+   "journal": "Icarus",
+   "volume": "363",
+   "issue": "",
+   "pages": "114436",
+   "doi": "10.1016/j.icarus.2021.114436",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "chandrayaan2",
+     "payload": "CLASS"
+    }
+   ],
+   "note": "CLASS calibration and in-flight performance (Icarus 363:114436)."
+  },
+  {
+   "key": "chowdhury2020iirs",
+   "authors": [
+    "Chowdhury, A. R.",
+    "Banerjee, A.",
+    "Joshi, S. R.",
+    "Dutta, M.",
+    "Kumar, A.",
+    "Bhattacharya, S.",
+    "Amitabh, .",
+    "Rehman, S. U.",
+    "Bhati, S.",
+    "Karelia, J. C."
+   ],
+   "et_al": true,
+   "year": 2020,
+   "title": "Imaging Infrared Spectrometer onboard Chandrayaan-2 Orbiter",
+   "journal": "Current Science",
+   "volume": "118",
+   "issue": "3",
+   "pages": "368-375",
+   "doi": "10.18520/cs/v118/i3/368-375",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "chandrayaan2",
+     "payload": "IIRS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "chowdhury2020ohrc",
+   "authors": [
+    "Chowdhury, A. R.",
+    "Saxena, M.",
+    "Kumar, A.",
+    "Joshi, S. R.",
+    "Amitabh, .",
+    "Dagar, A.",
+    "Mittal, M.",
+    "Kirkire, S.",
+    "Desai, J.",
+    "Shah, D."
+   ],
+   "et_al": true,
+   "year": 2020,
+   "title": "Orbiter High Resolution Camera onboard Chandrayaan-2 Orbiter",
+   "journal": "Current Science",
+   "volume": "118",
+   "issue": "4",
+   "pages": "560-565",
+   "doi": "10.18520/cs/v118/i4/560-565",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "chandrayaan2",
+     "payload": "OHRC"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "chowdhury2020tmc2",
+   "authors": [
+    "Chowdhury, A. R.",
+    "Patel, V. D.",
+    "Joshi, S. R.",
+    "Arya, A. S.",
+    "Kumar, A.",
+    "Paul, S.",
+    "Shah, D.",
+    "Soni, P.",
+    "Karelia, J. C.",
+    "Sampat, M."
+   ],
+   "et_al": true,
+   "year": 2020,
+   "title": "Terrain Mapping Camera-2 onboard Chandrayaan-2 Orbiter",
+   "journal": "Current Science",
+   "volume": "118",
+   "issue": "4",
+   "pages": "566-572",
+   "doi": "10.18520/cs/v118/i4/566-572",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "chandrayaan2",
+     "payload": "TMC-2"
+    }
+   ],
+   "note": "Extra: Chandrayaan-2 TMC-2 instrument paper."
+  },
+  {
+   "key": "putrevu2020",
+   "authors": [
+    "Putrevu, D.",
+    "Trivedi, S.",
+    "Das, A.",
+    "Pandey, D.",
+    "Mehrotra, P.",
+    "Garg, S. K.",
+    "Reddy, V.",
+    "Gangele, S.",
+    "Patel, H.",
+    "Sharma, D."
+   ],
+   "et_al": true,
+   "year": 2020,
+   "title": "L- and S-band Polarimetric Synthetic Aperture Radar on Chandrayaan-2 Mission",
+   "journal": "Current Science",
+   "volume": "118",
+   "issue": "2",
+   "pages": "226-233",
+   "doi": "10.18520/cs/v118/i2/226-233",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "chandrayaan2",
+     "payload": "DFSAR"
+    }
+   ],
+   "note": "DFSAR description. Crossref title: \"L- and S-band Polarimetric Synthetic Aperture Radar on Chandrayaan-2 Mission\"."
+  },
+  {
+   "key": "bhiravarasu2021",
+   "authors": [
+    "Bhiravarasu, S. S.",
+    "Chakraborty, T.",
+    "Putrevu, D.",
+    "Pandey, D. K.",
+    "Das, A. K.",
+    "Ramanujam, V. M.",
+    "Mehra, R.",
+    "Parasher, P.",
+    "Agrawal, K. M.",
+    "Gupta, S."
+   ],
+   "et_al": true,
+   "year": 2021,
+   "title": "Chandrayaan-2 Dual-frequency Synthetic Aperture Radar (DFSAR): Performance Characterization and Initial Results",
+   "journal": "The Planetary Science Journal",
+   "volume": "2",
+   "issue": "4",
+   "pages": "134",
+   "doi": "10.3847/psj/abfdbf",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "chandrayaan2",
+     "payload": "DFSAR"
+    }
+   ],
+   "note": "DFSAR in-flight performance (Planetary Science Journal 2:134)."
+  },
+  {
+   "key": "shanmugam2020",
+   "authors": [
+    "Shanmugam, M.",
+    "Vadawale, S. V.",
+    "Patel, A. R.",
+    "Adalaja, H. K.",
+    "Mithun, N. P. S.",
+    "Ladiya, T.",
+    "Goyal, S. K.",
+    "Tiwari, N. K.",
+    "Singh, N.",
+    "Kumar, S."
+   ],
+   "et_al": true,
+   "year": 2020,
+   "title": "Solar X-ray Monitor Onboard Chandrayaan-2 Orbiter",
+   "journal": "Current Science",
+   "volume": "118",
+   "issue": "1",
+   "pages": "45-52",
+   "doi": "10.18520/cs/v118/i1/45-52",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "chandrayaan2",
+     "payload": "XSM"
+    }
+   ],
+   "note": "Extra: Chandrayaan-2 XSM instrument paper."
+  },
+  {
+   "key": "schreiner2020",
+   "authors": [
+    "Schreiner, W.",
+    "Weiss, J.",
+    "Anthes, R.",
+    "Braun, J.",
+    "Chu, V.",
+    "Fong, J.",
+    "Hunt, D.",
+    "Kuo, Y.",
+    "Meehan, T.",
+    "Serafino, W."
+   ],
+   "et_al": true,
+   "year": 2020,
+   "title": "COSMIC‐2 Radio Occultation Constellation: First Results",
+   "journal": "Geophysical Research Letters",
+   "volume": "47",
+   "issue": "4",
+   "pages": "e2019GL086841",
+   "doi": "10.1029/2019gl086841",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "cosmic2",
+     "payload": "RO"
+    }
+   ],
+   "note": "GRL 47(4), article e2019GL086841."
+  },
+  {
+   "key": "ho2020",
+   "authors": [
+    "Ho, S.-p.",
+    "Anthes, R. A.",
+    "Ao, C. O.",
+    "Healy, S.",
+    "Horanyi, A.",
+    "Hunt, D.",
+    "Mannucci, A. J.",
+    "Pedatella, N.",
+    "Randel, W. J.",
+    "Simmons, A."
+   ],
+   "et_al": true,
+   "year": 2020,
+   "title": "The COSMIC/FORMOSAT-3 Radio Occultation Mission after 12 Years: Accomplishments, Remaining Challenges, and Potential Impacts of COSMIC-2",
+   "journal": "Bulletin of the American Meteorological Society",
+   "volume": "101",
+   "issue": "7",
+   "pages": "E1107-E1136",
+   "doi": "10.1175/bams-d-18-0290.1",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "cosmic2",
+     "payload": "RO"
+    }
+   ],
+   "note": "Hint said \"Ho et al. 2020 BAMS\". Crossref title is about COSMIC/FORMOSAT-3 after 12 years and the potential impacts of COSMIC-2 (BAMS 101(7):E1107-E1136)."
+  },
+  {
+   "key": "acton1996",
+   "authors": [
+    "Acton, C. H."
+   ],
+   "et_al": false,
+   "year": 1996,
+   "title": "Ancillary data services of NASA's Navigation and Ancillary Information Facility",
+   "journal": "Planetary and Space Science",
+   "volume": "44",
+   "issue": "1",
+   "pages": "65-70",
+   "doi": "10.1016/0032-0633(95)00107-7",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "software",
+     "payload": "SPICE"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "acton2018",
+   "authors": [
+    "Acton, C.",
+    "Bachman, N.",
+    "Semenov, B.",
+    "Wright, E."
+   ],
+   "et_al": false,
+   "year": 2018,
+   "title": "A look towards the future in the handling of space science mission geometry",
+   "journal": "Planetary and Space Science",
+   "volume": "150",
+   "issue": "",
+   "pages": "9-12",
+   "doi": "10.1016/j.pss.2017.02.013",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "software",
+     "payload": "SPICE"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "annex2020",
+   "authors": [
+    "Annex, A.",
+    "Pearson, B.",
+    "Seignovert, B.",
+    "Carcich, B.",
+    "Eichhorn, H.",
+    "Mapel, J.",
+    "von Forstner, J.",
+    "McAuliffe, J.",
+    "del Rio, J.",
+    "Berry, K."
+   ],
+   "et_al": true,
+   "year": 2020,
+   "title": "SpiceyPy: a Pythonic Wrapper for the SPICE Toolkit",
+   "journal": "Journal of Open Source Software",
+   "volume": "5",
+   "issue": "46",
+   "pages": "2050",
+   "doi": "10.21105/joss.02050",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "software",
+     "payload": "SpiceyPy"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "harris2020",
+   "authors": [
+    "Harris, C. R.",
+    "Millman, K. J.",
+    "van der Walt, S. J.",
+    "Gommers, R.",
+    "Virtanen, P.",
+    "Cournapeau, D.",
+    "Wieser, E.",
+    "Taylor, J.",
+    "Berg, S.",
+    "Smith, N. J."
+   ],
+   "et_al": true,
+   "year": 2020,
+   "title": "Array programming with NumPy",
+   "journal": "Nature",
+   "volume": "585",
+   "issue": "7825",
+   "pages": "357-362",
+   "doi": "10.1038/s41586-020-2649-2",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "software",
+     "payload": "NumPy"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "virtanen2020",
+   "authors": [
+    "Virtanen, P.",
+    "Gommers, R.",
+    "Oliphant, T. E.",
+    "Haberland, M.",
+    "Reddy, T.",
+    "Cournapeau, D.",
+    "Burovski, E.",
+    "Peterson, P.",
+    "Weckesser, W.",
+    "Bright, J."
+   ],
+   "et_al": true,
+   "year": 2020,
+   "title": "SciPy 1.0: fundamental algorithms for scientific computing in Python",
+   "journal": "Nature Methods",
+   "volume": "17",
+   "issue": "3",
+   "pages": "261-272",
+   "doi": "10.1038/s41592-019-0686-2",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "software",
+     "payload": "SciPy"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "astropy2013",
+   "authors": [
+    "The Astropy Collaboration",
+    "Robitaille, T. P.",
+    "Tollerud, E. J.",
+    "Greenfield, P.",
+    "Droettboom, M.",
+    "Bray, E.",
+    "Aldcroft, T.",
+    "Davis, M.",
+    "Ginsburg, A.",
+    "Price-Whelan, A. M."
+   ],
+   "et_al": true,
+   "year": 2013,
+   "title": "Astropy: A community Python package for astronomy",
+   "journal": "Astronomy & Astrophysics",
+   "volume": "558",
+   "issue": "",
+   "pages": "A33",
+   "doi": "10.1051/0004-6361/201322068",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "software",
+     "payload": "Astropy"
+    }
+   ],
+   "note": "Crossref lists \"The Astropy Collaboration\" as the first author entry."
+  },
+  {
+   "key": "astropy2018",
+   "authors": [
+    "The Astropy Collaboration",
+    "Price-Whelan, A. M.",
+    "Sipőcz, B. M.",
+    "Günther, H. M.",
+    "Lim, P. L.",
+    "Crawford, S. M.",
+    "Conseil, S.",
+    "Shupe, D. L.",
+    "Craig, M. W.",
+    "Dencheva, N."
+   ],
+   "et_al": true,
+   "year": 2018,
+   "title": "The Astropy Project: Building an Open-science Project and Status of the v2.0 Core Package\n                    *",
+   "journal": "The Astronomical Journal",
+   "volume": "156",
+   "issue": "3",
+   "pages": "123",
+   "doi": "10.3847/1538-3881/aabc4f",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "software",
+     "payload": "Astropy"
+    }
+   ],
+   "note": "Crossref lists \"The Astropy Collaboration\" as the first author entry."
+  },
+  {
+   "key": "astropy2022",
+   "authors": [
+    "The Astropy Collaboration",
+    "Price-Whelan, A. M.",
+    "Lim, P. L.",
+    "Earl, N.",
+    "Starkman, N.",
+    "Bradley, L.",
+    "Shupe, D. L.",
+    "Patil, A. A.",
+    "Corrales, L.",
+    "Brasseur, C. E."
+   ],
+   "et_al": true,
+   "year": 2022,
+   "title": "The Astropy Project: Sustaining and Growing a Community-oriented Open-source Project and the Latest Major Release (v5.0) of the Core Package*",
+   "journal": "The Astrophysical Journal",
+   "volume": "935",
+   "issue": "2",
+   "pages": "167",
+   "doi": "10.3847/1538-4357/ac7c74",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "software",
+     "payload": "Astropy"
+    }
+   ],
+   "note": "Crossref lists \"The Astropy Collaboration\" as the first author entry."
+  },
+  {
+   "key": "hunter2007",
+   "authors": [
+    "Hunter, J. D."
+   ],
+   "et_al": false,
+   "year": 2007,
+   "title": "Matplotlib: A 2D Graphics Environment",
+   "journal": "Computing in Science & Engineering",
+   "volume": "9",
+   "issue": "3",
+   "pages": "90-95",
+   "doi": "10.1109/mcse.2007.55",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "software",
+     "payload": "Matplotlib"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "plotly2015",
+   "authors": [
+    "Plotly Technologies Inc."
+   ],
+   "et_al": false,
+   "year": 2015,
+   "title": "Collaborative data science",
+   "journal": "Plotly Technologies Inc., Montréal, QC. https://plot.ly",
+   "volume": "",
+   "issue": "",
+   "pages": "",
+   "doi": "",
+   "verified": false,
+   "type": "software",
+   "used_for": [
+    {
+     "mission": "software",
+     "payload": "Plotly"
+    }
+   ],
+   "note": "Plotly has no DOI. This is the citation Plotly recommends for its software."
+  },
+  {
+   "key": "fjeldbo1971",
+   "authors": [
+    "Fjeldbo, G.",
+    "Kliore, A. J.",
+    "Eshleman, V. R."
+   ],
+   "et_al": false,
+   "year": 1971,
+   "title": "The Neutral Atmosphere of Venus as Studied with the Mariner V Radio Occultation Experiments",
+   "journal": "The Astronomical Journal",
+   "volume": "76",
+   "issue": "",
+   "pages": "123",
+   "doi": "10.1086/111096",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "method",
+     "payload": "abel_inversion"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "tsuda2000",
+   "authors": [
+    "Tsuda, T.",
+    "Nishida, M.",
+    "Rocken, C.",
+    "Ware, R. H."
+   ],
+   "et_al": false,
+   "year": 2000,
+   "title": "A Global Morphology of Gravity Wave Activity in the Stratosphere Revealed by the GPS Occultation Data (GPS/MET)",
+   "journal": "Journal of Geophysical Research: Atmospheres",
+   "volume": "105",
+   "issue": "D6",
+   "pages": "7257-7273",
+   "doi": "10.1029/1999jd901005",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "method",
+     "payload": "gravity_wave_energy"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "chapman1931",
+   "authors": [
+    "Chapman, S."
+   ],
+   "et_al": false,
+   "year": 1931,
+   "title": "The absorption and dissociative or ionizing effect of monochromatic radiation in an atmosphere on a rotating earth",
+   "journal": "Proceedings of the Physical Society",
+   "volume": "43",
+   "issue": "1",
+   "pages": "26-45",
+   "doi": "10.1088/0959-5309/43/1/305",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "method",
+     "payload": "chapman_layer"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "seiff1985",
+   "authors": [
+    "Seiff, A.",
+    "Schofield, J.",
+    "Kliore, A.",
+    "Taylor, F.",
+    "Limaye, S.",
+    "Revercomb, H.",
+    "Sromovsky, L.",
+    "Kerzhanovich, V.",
+    "Moroz, V.",
+    "Marov, M."
+   ],
+   "et_al": false,
+   "year": 1985,
+   "title": "Models of the structure of the atmosphere of Venus from the surface to 100 kilometers altitude",
+   "journal": "Advances in Space Research",
+   "volume": "5",
+   "issue": "11",
+   "pages": "3-58",
+   "doi": "10.1016/0273-1177(85)90197-8",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "method",
+     "payload": "venus_reference_atmosphere"
+    }
+   ],
+   "note": "Adv. Space Res. 5(11):3-58 (VIRA chapter)."
+  }
+ ]
+}

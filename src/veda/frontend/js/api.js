@@ -133,7 +133,12 @@ export const api = {
   productImageStats: (ds, pid, params) => call(`${productBase(ds, pid)}/image/stats?${query(params)}`),
   productTransect: (ds, pid, params) => call(`${productBase(ds, pid)}/image/transect?${query(params)}`),
   productSpectrum: (ds, pid, params) => call(`${productBase(ds, pid)}/cube/spectrum?${query(params)}`),
+  productRows: (ds, pid, params) => call(`${productBase(ds, pid)}/rows?${query(params)}`),
   archiveJob: (jobId) => call(`/api/veda/archive/jobs/${encodeURIComponent(jobId)}`),
+  archiveLive: (req) => call('/api/veda/archive/live', {method: 'POST', body: req}),
+  geometryKernels: (ds, pid) => call(`/api/veda/geometry/${encodeURIComponent(ds)}/${encodeURIComponent(pid)}/kernels`),
+  geometryPrepare: (ds, pid) => call(`/api/veda/geometry/${encodeURIComponent(ds)}/${encodeURIComponent(pid)}/prepare`, {method: 'POST'}),
+  spicePrefetch: (missionId, bodyId) => call('/api/veda/geometry/prefetch', {method: 'POST', body: {mission_id: missionId, body_id: bodyId || null}}),
   vedaPublicationFigureUrl: (bodyId, variable = 'temperature_k', missions, dpi = 300, fmt = 'png') => {
     const q = [`body_id=${encodeURIComponent(bodyId)}`, `variable=${encodeURIComponent(variable)}`, `dpi=${dpi}`, `fmt=${fmt}`];
     if (missions) q.push(`missions=${encodeURIComponent(missions)}`);

@@ -8,6 +8,8 @@ import { setupArchiveBrowser, showMissionArchive } from './archive_browser.js';
 import { showGeometry } from './geometry.js';
 import { setupBodySearch, showBodySearch } from './body_search.js';
 import { showProductViewer } from './product_viewer.js';
+import { prefetchMission, prefetchObservation } from './spice_auto.js';
+import { recordProduct, recordFeature } from './citations.js';
 import { style as plotStyle, styleTrace, styleLayout, sigmaBand, orient, paletteColor, plotStyleBody, exportFigure } from './plot_style.js';
 
 let imageViewerListeners = null;   // AbortController for the open image's window listeners
@@ -689,6 +691,7 @@ function setupBodyModeControls() {
   if (btnPubFig) {
     btnPubFig.addEventListener('click', async () => {
       const mids = Array.from(vedaState.selectedMissionIdsForBody).join(',');
+      recordFeature('publication_figure');
       const url = api.vedaPublicationFigureUrl(vedaState.activeBodyId, vedaState.selectedCompareVariable, mids, vedaState.plotDpi, 'png');
       btnPubFig.disabled = true;
       toast(`Rendering publication figure at ${vedaState.plotDpi} DPI...`);
@@ -762,6 +765,8 @@ function setupBodyModeControls() {
 // Products picked in the archive browser; when set, they replace the
 // automatic one-profile-per-mission selection in the body comparison.
 async function compareSelectedProducts(products) {
+  recordFeature('comparison');
+  (products || []).forEach(recordProduct);
   const bodies = new Set(products.map(p => (p.target || '').toLowerCase()).filter(Boolean));
   if (bodies.size > 1) return toast('Pick profiles of a single body to compare them', 'bad');
   const body = [...bodies][0] || (vedaState.activeMission && vedaState.activeMission.primary_targets[0]);
@@ -1289,6 +1294,8 @@ export async function loadAndRenderMission(missionId) {
   vedaState.activeMissionId = missionId;
   const mission = await api.vedaMissionDetails(missionId);
   vedaState.activeMission = mission;
+  // SPICE: generic and body kernels for this mission, in the background (Settings can turn this off)
+  prefetchMission(missionId, (mission.primary_targets || [])[0]);
 
   // Render Mission Header
   const headEl = document.getElementById('veda-mission-header');
@@ -1333,7 +1340,10 @@ export async function inspectObservation(obs) {
 
 /** Open an archive product: profiles in the profile viewer, everything else in the product viewer. */
 async function openArchiveProduct(p) {
+  prefetchObservation(p);            // spacecraft ephemeris for this date, if automatic downloads are on
+  recordProduct(p);                  // for the Cite panel
   if (p.kind === 'profile') {
+    recordFeature('derived');
     return inspectProfileObservation({
       mission_id: p.mission_id, observation_id: p.product_id, dataset_id: p.dataset_id,
       instrument: p.instrument, data_type: 'profile', time_utc: p.start_time,

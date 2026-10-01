@@ -1,8 +1,8 @@
 # -*- mode: python ; coding: utf-8 -*-
 # VEDA: Visualization, Exploration, and Data Analysis
 # Cross-platform PyInstaller spec.  Build with:  python scripts/build_exe.py
-#   Windows : dist/VEDA.exe        (single file)
-#   Linux   : dist/VEDA            (single file)
+#   Windows : dist/VEDA/VEDA.exe   (folder: VEDA.exe + _internal/)
+#   Linux   : dist/VEDA/VEDA       (folder)
 #   macOS   : dist/VEDA.app        (application bundle)
 import sys
 from pathlib import Path
@@ -21,6 +21,7 @@ a = Analysis(
     datas=[
         (str(PKG / "frontend"), "veda/frontend"),
         (str(PKG / "sampledata"), "veda/sampledata"),
+        (str(PKG / "archives" / "references.json"), "veda/archives"),
     ],
     hiddenimports=(
         collect_submodules("veda")
@@ -28,6 +29,7 @@ a = Analysis(
         + [
             "scipy.signal", "scipy.ndimage", "scipy.interpolate",
             "matplotlib.backends.backend_agg",
+            "netCDF4", "cftime", "spiceypy",
             "astropy.io.fits", "astropy.visualization",
             "anyio._backends._asyncio",
             # imported lazily by veda.desktop; the pywebview hook adds the

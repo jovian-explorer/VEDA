@@ -61,6 +61,10 @@ export async function showMissionArchive(missionId) {
     return;
   }
   st.selectedDatasets = new Set(st.datasets.filter(d => !d.portal_only).map(d => d.id));
+  // "Profiles only" is useful when the mission has profile data sets; otherwise show everything.
+  const prof = $('arch-profiles-only');
+  if (prof) prof.checked = st.datasets.some(d => !d.live && !d.portal_only && d.has_profiles !== false && /occ|rs|profile|hasi|entry/i.test(`${d.id} ${d.title}`));
+  st.liveKey = '';
   renderDatasets();
   if (!st.datasets.length) {
     renderEmpty('No archive data set is connected for this mission yet. Load your own files with Load File, or see the mission archive link above.');
@@ -72,7 +76,7 @@ export async function showMissionArchive(missionId) {
   }
   // Index data sets whose archive index has never been read (bundled samples
   // alone do not count), then search. Index files are small.
-  for (const d of st.datasets.filter(x => !x.indexed_volumes && !x.portal_only)) {
+  for (const d of st.datasets.filter(x => !x.indexed_volumes && !x.portal_only && !x.live && x.auto_index !== false)) {
     await indexDataset(d.id, false, true, gen);
     if (stale()) return;
   }
@@ -80,6 +84,8 @@ export async function showMissionArchive(missionId) {
 }
 
 function coverage(d) {
+  if (d.live) return d.indexed_products ? `searched live by date; ${d.indexed_products.toLocaleString()} products listed so far` : 'searched live by date';
+  if (!d.indexed_volumes && d.auto_index === false) return d.index_note || 'Large index: press Index now to read it';
   if (!d.indexed_volumes) return d.indexed_products ? `${d.indexed_products} bundled sample(s); archive not indexed yet` : 'Not indexed yet';
   const y0 = (d.first_time || '').slice(0, 10), y1 = (d.last_time || '').slice(0, 10);
   return `${d.indexed_products.toLocaleString()} products, ${y0} to ${y1}`;
@@ -107,12 +113,12 @@ function renderDatasets() {
     <label class="arch-ds" title="${esc(d.title)}">
       <input type="checkbox" data-ds="${esc(d.id)}" ${st.selectedDatasets.has(d.id) ? 'checked' : ''} />
       <span class="arch-ds-main">
-        <strong>${esc(d.instrument)}</strong> <span class="badge">${esc(d.level)}</span>
+        <strong>${esc(d.instrument)}</strong> <span class="badge">${esc(d.level)}</span>${d.live ? ' <span class="badge badge-live" title="Products are found on the archive server for the dates you choose">live search</span>' : ''}
         <span class="arch-ds-title">${esc(d.title)}</span>
         <span class="arch-ds-meta">${esc(d.archive)} &middot; <code>${esc(d.id)}</code> &middot; <span data-cov="${esc(d.id)}">${esc(coverage(d))}</span>
           ${d.needs_login ? ' &middot; <span class="badge badge-warn">account needed</span>' : ''}</span>
       </span>
-      <button type="button" class="ghost small" data-index="${esc(d.id)}" title="Re-read the archive's index files">Update index</button>
+      ${d.live ? '' : `<button type="button" class="ghost small" data-index="${esc(d.id)}" title="${d.indexed_volumes ? "Re-read the archive's index files" : esc(d.index_note || 'Read the archive index')}">${d.indexed_volumes || d.auto_index !== false ? 'Update index' : 'Index now'}</button>`}
     </label>`).join('');
   box.querySelectorAll('input[data-ds]').forEach(cb => cb.addEventListener('change', () => {
     cb.checked ? st.selectedDatasets.add(cb.dataset.ds) : st.selectedDatasets.delete(cb.dataset.ds);
@@ -178,7 +184,18 @@ async function runSearch(reset) {
   const start = $('arch-start')?.value, end = $('arch-end')?.value;
   if (start && end && end < start) return toast('The end date is before the start date', 'bad');
   st.busy = true;
+  const live = st.datasets.filter(d => d.live && st.selectedDatasets.has(d.id)).map(d => d.id);
   try {
+    if (reset && live.length && start && end) {
+      const key = `${live.join(',')}|${start}|${end}`;
+      if (key !== st.liveKey) {
+        st.liveKey = key;
+        const { job_id } = await api.archiveLive({ start, end, dataset_ids: live });
+        const job = await pollJob(job_id, 'Searching the archive servers');
+        if (job.status === 'completed' && job.message) toast(job.message, job.result?.truncated?.length ? '' : 'good');
+        if (gen !== st.gen || token !== st.searchToken) return;
+      }
+    }
     const res = await api.archiveSearch({
       dataset_id: ids, start, end,
       kind: $('arch-profiles-only')?.checked ? 'profile' : '',
@@ -193,6 +210,10 @@ async function runSearch(reset) {
     st.total = res.total;
     fillTypes(res.product_types || {});
     renderRows();
+    if (live.length && !(start && end)) {
+      const c = $('arch-count');
+      if (c) c.textContent += `${c.textContent ? ' · ' : ''}Choose From and To dates to search the ${live.length} live data set${live.length > 1 ? 's' : ''} on the archive servers.`;
+    }
   } catch (err) {
     renderEmpty(`Search failed: ${err.message}`);
   } finally {

@@ -35,7 +35,7 @@ from ..config import (
     frontend_dir,
     sampledata_dir,
 )
-from .archive_routes import geometry_router, router as archive_router
+from .archive_routes import citation_router, geometry_router, router as archive_router
 from .product_routes import router as product_router
 from .routes import router as veda_router
 
@@ -70,6 +70,7 @@ def create_app() -> FastAPI:
     app.include_router(archive_router)
     app.include_router(geometry_router)
     app.include_router(product_router)
+    app.include_router(citation_router)
 
     @app.get("/api/health")
     def health_check() -> Dict[str, Any]:

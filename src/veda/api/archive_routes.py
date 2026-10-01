@@ -90,7 +90,7 @@ def search(
     target: Optional[str] = None,
     start: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}"),
     end: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}"),
-    kind: Optional[str] = Query(None, pattern=r"^(profile|timeseries|other)$"),
+    kind: Optional[str] = Query(None, pattern=r"^(profile|timeseries|image|geometry|table|spectrum|cube|other)$"),
     product_type: Optional[str] = None,
     q: Optional[str] = Query(None, max_length=100),
     limit: int = Query(200, ge=1, le=2000),
@@ -108,6 +108,55 @@ def search(
         mission_id=mission_id, body_id=body_id, dataset_ids=dataset_id, target=target, start=start, end=end,
         kind=kind, product_type=product_type, text=q, limit=limit, offset=offset,
         newest_first=newest_first, downloaded_only=downloaded_only))
+
+
+# ------------------------------------------------------------------ live search (PSA, PDS Registry, OPUS)
+
+class LiveRequest(BaseModel):
+    start: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}")
+    end: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}")
+    mission_id: Optional[str] = None
+    body_id: Optional[str] = None
+    dataset_ids: Optional[List[str]] = Field(None, max_length=200)
+    force: bool = False
+
+
+@router.post("/live")
+def live_search(req: LiveRequest) -> Dict[str, Any]:
+    """Query the live archive services for a date window (background job); then use /search as usual."""
+    from ..archives import services
+    if req.end < req.start:
+        raise HTTPException(400, "End date is before start date")
+    if req.dataset_ids:
+        sets = [get_dataset(d) for d in req.dataset_ids]
+        if any(s is None for s in sets):
+            raise HTTPException(404, "Unknown dataset")
+        sets = [s for s in sets if s.service]
+    else:
+        sets = [d for d in datasets_for(req.mission_id, req.body_id) if d.service]
+    job = _new_job("live", total=len(sets))
+
+    def work(j):
+        results = []
+        for i, ds in enumerate(sets):
+            j.update(done=i, message=f"Searching {ds.archive.replace(' (live search)', '')}: "
+                                     f"{ds.mission_id.upper()} {ds.instrument}")
+            try:
+                results.append(services.search_window(ds, req.start, req.end, catalog._connect, catalog._db_lock,
+                                                       force=req.force))
+            except net.LoginRequired:
+                raise
+            except net.ArchiveError as exc:
+                j["errors"].append(f"{ds.mission_id.upper()} {ds.instrument}: {exc}")
+        listed = sum(r["listed"] for r in results)
+        more = [r for r in results if r["available"] > r["listed"]]
+        j.update(done=len(sets), message=f"{listed} products listed from {len(results)} live data sets" +
+                 (f"; {len(more)} have more than {services.MAX_PER_QUERY} in this range, narrow the dates to see all"
+                  if more else ""))
+        return {"results": results, "listed": listed, "truncated": [r["dataset_id"] for r in more]}
+
+    _run(job, work)
+    return {"job_id": job["id"], "datasets": len(sets)}
 
 
 # ------------------------------------------------------------------ download
@@ -177,6 +226,22 @@ def profile(dataset_id: str, product_id: str,
 geometry_router = APIRouter(prefix="/api/veda/geometry", tags=["geometry"])
 
 
+_TARGET_BODY = {"67P": "comet_67p", "CHURYUMOV": "comet_67p", "C-G": "comet_67p"}
+
+
+def target_body(ds, prod) -> str:
+    """The product's target when VEDA knows it (Titan for a Cassini Titan product), else the data set's body."""
+    from ..geometry.compute import NAIF_BODY
+    t = (prod.get("target") or "").upper()
+    for key, body in _TARGET_BODY.items():
+        if key in t:
+            return body
+    for body in NAIF_BODY:
+        if body.upper() == t.strip() or body.upper() in t.split():
+            return body
+    return ds.body_ids[0]
+
+
 def _geometry_inputs(dataset_id: str, product_id: str):
     import datetime as dt
     from ..geometry import kernels
@@ -185,11 +250,12 @@ def _geometry_inputs(dataset_id: str, product_id: str):
     if not ds or not prod:
         raise HTTPException(404, f"Unknown product {dataset_id}/{product_id}")
     if ds.mission_id not in kernels.MISSION_SPICE:
-        raise HTTPException(404, f"No SPICE ephemeris source is set up for {ds.mission_id} yet")
+        raise HTTPException(404, f"No public SPICE kernels are known for {ds.mission_id}, so its geometry "
+                                 "cannot be computed")
     if not prod.get("start_time"):
         raise HTTPException(422, "This product has no observation time")
     try:
-        plan = kernels.plan(ds.mission_id, ds.body_ids[0], dt.date.fromisoformat(prod["start_time"][:10]))
+        plan = kernels.plan(ds.mission_id, target_body(ds, prod), dt.date.fromisoformat(prod["start_time"][:10]))
     except LookupError as exc:
         raise HTTPException(404, str(exc))
     except net.ArchiveError as exc:
@@ -199,25 +265,43 @@ def _geometry_inputs(dataset_id: str, product_id: str):
 
 @geometry_router.get("/{dataset_id}/{product_id}")
 def geometry(dataset_id: str, product_id: str, span_min: float = Query(90, ge=5, le=1440)) -> Dict[str, Any]:
-    """Observation geometry, or {"kernels_needed": true, ...} listing the SPICE kernels to download."""
+    """Observation geometry, or {"kernels_needed": true, ...} listing the SPICE kernels to download.
+
+    Occultation profiles with per-sample ephemeris times get the occultation geometry
+    (tangent points, view from Earth); every other product gets the spacecraft's
+    orbit and the sub-spacecraft geometry over the observation.
+    """
+    from ..config import SETTINGS
     from ..core.registry import get_body
     from ..geometry import kernels
-    from ..geometry.compute import observation_geometry
+    from ..geometry.compute import observation_geometry, orbit_geometry
     ds, prod, plan = _geometry_inputs(dataset_id, product_id)
     if plan.missing:
         files = [{"name": u.rsplit("/", 1)[1], "url": u, "bytes": kernels.remote_size(u)} for u in plan.missing]
-        return {"kernels_needed": True, "kernels": files,
-                "total_mb": round(sum(f["bytes"] for f in files) / 1048576, 1)}
-    try:
-        prof = load_profile(dataset_id, product_id)
-    except (LookupError, ValueError) as exc:
-        raise HTTPException(422, str(exc))
-    tr = prof.track or {}
+        total = sum(f["bytes"] for f in files) / 1048576
+        return {"kernels_needed": True, "kernels": files, "total_mb": round(total, 1),
+                "auto": bool(SETTINGS.spice_auto_download and total <= SETTINGS.spice_auto_limit_mb)}
+    body_id = target_body(ds, prod)
+    tr: Dict[str, Any] = {}
+    prof = None
+    if prod.get("kind") == "profile":
+        try:
+            prof = load_profile(dataset_id, product_id)
+            tr = prof.track or {}
+        except (LookupError, ValueError, net.ArchiveError):
+            prof = None
     if "et" not in tr:
-        raise HTTPException(422, "This product has no ephemeris-time column, so its geometry cannot be computed")
-    body = get_body(ds.body_ids[0])
+        try:
+            g = orbit_geometry(plan, kernels.MISSION_SPICE[ds.mission_id].naif_id, body_id,
+                               prod["start_time"], prod.get("stop_time") or prod["start_time"])
+        except (LookupError, ValueError) as exc:
+            raise HTTPException(422, str(exc))
+        g["kernels"] = [u.rsplit("/", 1)[1] for u in plan.urls]
+        g["ephemeris_source"] = kernels.MISSION_SPICE[ds.mission_id].source
+        return g
+    body = get_body(body_id)
     try:
-        g = observation_geometry(plan, kernels.MISSION_SPICE[ds.mission_id].naif_id, body.id, tr["et"],
+        g = observation_geometry(plan, kernels.MISSION_SPICE[ds.mission_id].naif_id, body_id, tr["et"],
                                  span_min=span_min,
                                  product_track={"latitude": tr.get("latitude"), "longitude": tr.get("longitude"),
                                                 "radius": prof.altitude_km + body.radius_km})
@@ -244,3 +328,72 @@ def prepare_geometry(dataset_id: str, product_id: str) -> Dict[str, Any]:
 
     _run(job, work)
     return {"job_id": job["id"]}
+
+
+@geometry_router.get("/{dataset_id}/{product_id}/kernels")
+def geometry_kernels(dataset_id: str, product_id: str) -> Dict[str, Any]:
+    """Which SPICE kernels this observation needs and which are already here (no computation)."""
+    from ..config import SETTINGS
+    from ..geometry import kernels
+    _, _, plan = _geometry_inputs(dataset_id, product_id)
+    files = [{"name": u.rsplit("/", 1)[1], "bytes": kernels.remote_size(u)} for u in plan.missing]
+    total = sum(f["bytes"] for f in files) / 1048576
+    return {"needed": [u.rsplit("/", 1)[1] for u in plan.urls], "missing": files, "missing_mb": round(total, 1),
+            "auto": bool(SETTINGS.spice_auto_download and total <= SETTINGS.spice_auto_limit_mb)}
+
+
+class PrefetchRequest(BaseModel):
+    mission_id: str = Field(max_length=40)
+    body_id: Optional[str] = Field(None, max_length=40)
+
+
+@geometry_router.post("/prefetch")
+def prefetch_kernels(req: PrefetchRequest) -> Dict[str, Any]:
+    """Download the generic and body kernels for a mission in the background (when automatic
+    downloads are on), so its first geometry is ready sooner.  The spacecraft SPK depends on
+    the observation date and is fetched when an observation is opened."""
+    from ..config import SETTINGS
+    from ..core.registry import get_mission
+    from ..geometry import kernels
+    m = get_mission(req.mission_id)
+    if m is None:
+        raise HTTPException(404, f"Unknown mission '{req.mission_id}'")
+    if req.mission_id not in kernels.MISSION_SPICE:
+        return {"job_id": None, "reason": "no public SPICE kernels for this mission"}
+    if not SETTINGS.spice_auto_download or not SETTINGS.network_enabled:
+        return {"job_id": None, "reason": "automatic SPICE downloads are off"}
+    body = req.body_id or (m.primary_targets[0] if m.primary_targets else "")
+    plan = kernels.base_plan(body)
+    plan.urls += [u for u in kernels.MISSION_SPICE[req.mission_id].extra if u not in plan.urls]
+    plan.missing = [u for u in plan.urls if not plan.local(u).is_file()]
+    if not plan.missing:
+        return {"job_id": None, "reason": "kernels already downloaded"}
+    total = sum(kernels.remote_size(u) for u in plan.missing) / 1048576
+    if total > SETTINGS.spice_auto_limit_mb:
+        return {"job_id": None, "reason": f"{total:.0f} MB is above the automatic download limit"}
+    job = _new_job("kernels", total=len(plan.missing))
+
+    def work(j):
+        kernels.download(plan, progress=lambda i, n, msg: j.update(done=i, total=n, message=f"Downloading {msg}"))
+        j.update(done=j["total"], message="SPICE kernels ready")
+        return {"kernels": [u.rsplit("/", 1)[1] for u in plan.urls]}
+    _run(job, work)
+    return {"job_id": job["id"], "missing_mb": round(total, 1)}
+
+
+# ------------------------------------------------------------------ citations
+
+citation_router = APIRouter(prefix="/api/veda/citations", tags=["citations"])
+
+
+class CitationRequest(BaseModel):
+    datasets: List[str] = Field(default_factory=list, max_length=500)
+    features: List[str] = Field(default_factory=list, max_length=50)
+    volumes: Dict[str, List[str]] = Field(default_factory=dict)
+
+
+@citation_router.post("")
+def citations(req: CitationRequest) -> Dict[str, Any]:
+    """References for exactly the data sets and features a user worked with."""
+    from ..citations import build
+    return build(req.datasets, req.features, req.volumes)

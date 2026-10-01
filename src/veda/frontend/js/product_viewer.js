@@ -13,28 +13,45 @@
 import { api } from './api.js';
 import { toast, themedLayout, plotColors, drawer } from './ui.js';
 import { styleTrace, styleGeneric, paletteColor, plotStyleBody, exportFigure } from './plot_style.js';
+import { showGeometry } from './geometry.js';
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const CMAPS = ['gray', 'inferno', 'viridis', 'magma', 'plasma', 'cividis', 'twilight', 'RdBu_r', 'jet'];
 const STRETCHES = [['percentile', 'Percentile 0.5-99.5%'], ['zscale', 'ZScale'], ['linear', 'Linear (min-max)'],
   ['sqrt', 'Square root'], ['log', 'Log'], ['asinh', 'Asinh'], ['histeq', 'Histogram equalised']];
 
-const st = { box: null, p: null, structure: null, object: null, token: 0, table: null, image: null, onGeometry: null };
+const st = { box: null, p: null, structure: null, object: null, token: 0, table: null, image: null, onGeometry: null,
+             tableMode: undefined, prof: null };
 
 /** Open product ``p`` ({dataset_id, product_id, ...}) in ``box``. */
 export async function showProductViewer(box, p, { onGeometry } = {}) {
-  st.box = box; st.p = p; st.onGeometry = onGeometry || null;
+  st.box = box; st.p = p; st.onGeometry = onGeometry || null; st.tableMode = undefined;
   const token = ++st.token;
   box.innerHTML = `<div class="empty-state">Downloading and reading <code>${esc(p.product_id)}</code>&hellip;</div>`;
   try {
     const s = await api.productStructure(p.dataset_id, p.product_id);
     if (token !== st.token) return;
     st.structure = s;
+    // For the Cite panel: the archive's own data set identifier from the label
+    // (PDS3 DATA_SET_ID, or the PDS4 bundle:collection of the logical identifier).
+    const meta = s.metadata || {};
+    const lid = (meta.LOGICAL_IDENTIFIER || '').split(':');
+    const archiveId = meta.DATA_SET_ID || (lid.length > 4 ? `${lid[3]}:${lid[4]}` : '') || p.volume;
+    import('./citations.js').then(m => m.recordProduct({ dataset_id: p.dataset_id, volume: archiveId })).catch(() => {});
     render(s.objects[0]?.name);
   } catch (err) {
     if (token !== st.token) return;
-    box.innerHTML = `<div class="empty-state">This product could not be plotted: ${esc(err.message)}
-      <br><span class="hint">It is still downloaded in the cache; you can open the folder from Settings &gt; Data folders.</span></div>`;
+    box.innerHTML = `<div class="pv">
+      <div class="viewer-toolbar"><div class="viewer-title"><h3><code>${esc(p.product_id)}</code></h3></div>
+        <div class="toolbar-actions"><button type="button" class="btn small ghost" data-pv="geometry">&#128752;&#65039; Geometry</button></div></div>
+      <div class="empty-state">This product cannot be plotted: ${esc(err.message)}
+        <br><span class="hint">It is downloaded in the cache (Settings &gt; Data folders). Its observation geometry is still available.</span></div>
+      <div class="geo-box pv-geo" hidden></div></div>`;
+    box.querySelector('[data-pv="geometry"]').addEventListener('click', () => {
+      const geo = box.querySelector('.pv-geo');
+      geo.hidden = !geo.hidden;
+      if (!geo.hidden) showGeometry(geo, { dataset_id: p.dataset_id, product_id: p.product_id });
+    });
   }
 }
 
@@ -58,7 +75,7 @@ function render(objectName) {
         <div class="toolbar-actions">
           <button type="button" class="btn small ghost" data-pv="style">&#127912; Plot style</button>
           <button type="button" class="btn small ghost" data-pv="export">&#128444;&#65039; Export figure</button>
-          ${st.onGeometry ? '<button type="button" class="btn small ghost" data-pv="geometry">&#128752;&#65039; Geometry</button>' : ''}
+          <button type="button" class="btn small ghost" data-pv="geometry" title="Where the spacecraft was: orbit, ground track, altitude, illumination (SPICE)">&#128752;&#65039; Geometry</button>
           ${obj.kind === 'table' ? '<button type="button" class="btn small ghost" data-pv="csv">&#128229; CSV of shown fields</button>' : ''}
         </div>
       </div>
@@ -66,6 +83,7 @@ function render(objectName) {
         <button type="button" role="tab" class="view-subtab-btn ${o.name === obj.name ? 'active' : ''}" data-obj="${esc(o.name)}"
           title="${esc(o.description)}">${esc(o.name)} <span class="hint">${esc(o.kind)} ${o.shape.filter(Boolean).join('&times;')}</span></button>`).join('')}</div>` : ''}
       <div class="pv-body"></div>
+      <div class="geo-box pv-geo" hidden></div>
     </div>`;
   st.box.querySelectorAll('[data-obj]').forEach(b => b.addEventListener('click', () => render(b.dataset.obj)));
   st.box.querySelector('[data-pv="style"]').addEventListener('click', () =>
@@ -74,11 +92,21 @@ function render(objectName) {
     const gd = plotDiv();
     if (gd) exportFigure(gd, `veda_${st.p.product_id}_${obj.name}`.replace(/[^\w.-]+/g, '_'));
   });
-  st.box.querySelector('[data-pv="geometry"]')?.addEventListener('click', () => st.onGeometry(st.p));
+  st.box.querySelector('[data-pv="geometry"]')?.addEventListener('click', () => {
+    const geo = st.box.querySelector('.pv-geo');
+    geo.hidden = !geo.hidden;
+    if (!geo.hidden) {
+      showGeometry(geo, { dataset_id: st.p.dataset_id, product_id: st.p.product_id });
+      geo.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  });
   st.box.querySelector('[data-pv="csv"]')?.addEventListener('click', downloadCsv);
   const body = st.box.querySelector('.pv-body');
   if (obj.kind === 'table') renderTableControls(body, obj);
-  else renderImageControls(body, obj);
+  else {
+    import('./citations.js').then(m => m.recordFeature('image')).catch(() => {});
+    renderImageControls(body, obj);
+  }
 }
 
 function plotDiv() { return st.box?.querySelector('.pv-plot.js-plotly-plot') || st.box?.querySelector('.pv-plot'); }
@@ -87,13 +115,105 @@ function redraw() { if (st.object?.kind === 'table') drawTable(); else drawImage
 // ================================================================ tables
 
 function guessY(obj, x) {
-  const skip = /(^|[ _.])(SAMPLE|RECORD|ROW|INDEX|PACKET|SEQUENCE|FRAME|COUNTER)([ _]?(NUMBER|NO|ID|COUNT))?$|EPHEMERIS|SCLK|(^|[ _])(ET|TIME|UTC|YEAR|MONTH|DAY|HOUR|MINUTE|SECOND)([ _]|$)|^(ET|UTC|SCET|ERT)[A-Z]{0,4}$|QUALITY|FLAG|MODE|STATUS|SPARE/i;
+  const skip = /(^|[ _.])(SAMPLE|RECORD|ROW|INDEX|PACKET|SEQUENCE|FRAME|COUNTER)([ _]?(NUMBER|NO|ID|COUNT))?$|EPHEMERIS|SCLK|(^|[ _])(ET|TIME|UTC|YEAR|MONTH|DAY|HOUR|MINUTE|SECOND)([ _]|$)|^(ET|UTC|SCET|ERT|OBT|SCLK)([A-Z]{0,4}|[ _].*)$|(^|[ _])(ID|TYPE|VERSION|COUNTER)$|QUALITY|FLAG|MODE|STATUS|SPARE/i;
   const nums = obj.fields.filter(f => f.kind === 'number' && f.name !== x);
   const pick = nums.find(f => f.items === 1 && !skip.test(f.name)) || nums.find(f => f.items > 1 && !skip.test(f.name)) || nums[0];
   return pick ? [pick.name] : [];
 }
 
+/** Vector fields sharing a length: each row is a profile (MRO MCS DDR, sounders, spectra per row). */
+function profileGroups(obj) {
+  const by = new Map();
+  obj.fields.filter(f => f.items > 1 && f.kind === 'number').forEach(f => by.set(f.items, [...(by.get(f.items) || []), f]));
+  return [...by.values()].filter(g => g.length >= 2).sort((a, b) => b.length - a.length);
+}
+
 function renderTableControls(body, obj) {
+  const groups = profileGroups(obj);
+  if (groups.length && st.tableMode === 'profiles') return renderProfileRows(body, obj, groups[0]);
+  if (groups.length && st.tableMode === undefined && /DDR|PROFILE|SOUNDING/i.test(`${st.p.product_type || ''} ${st.p.product_id}`)) {
+    st.tableMode = 'profiles';
+    return renderProfileRows(body, obj, groups[0]);
+  }
+  renderRowsOverTime(body, obj, groups);
+}
+
+function modeSwitch(groups) {
+  if (!groups.length) return '';
+  return `<label>View <select class="pv-mode">
+    <option value="series" ${st.tableMode !== 'profiles' ? 'selected' : ''}>Fields over rows / time</option>
+    <option value="profiles" ${st.tableMode === 'profiles' ? 'selected' : ''}>Profiles (one per row)</option></select></label>`;
+}
+
+function bindModeSwitch(body, obj) {
+  body.querySelector('.pv-mode')?.addEventListener('change', (e) => { st.tableMode = e.target.value; renderTableControls(body, obj); });
+}
+
+function renderProfileRows(body, obj, group) {
+  const n = obj.shape[0] || 0;
+  const pick = (rx, fallback) => (group.find(f => rx.test(f.name)) || fallback).name;
+  const yDefault = pick(/(^|[ ._])(PRES|PRESSURE|P)$/i, group.find(f => /ALT|HEIGHT|LEVEL/i.test(f.name)) || group[group.length - 1]);
+  const xDefault = pick(/(^|[ ._])(T|TEMP|TEMPERATURE)$/i, group.find(f => f.name !== yDefault) || group[0]);
+  const prof = st.prof && st.prof.object === obj.name && st.prof.product === st.p.product_id ? st.prof
+    : { object: obj.name, product: st.p.product_id, x: xDefault, y: yDefault, rows: [0], step: 1 };
+  st.prof = prof;
+  const label = obj.fields.find(f => f.name === 'UTC (assembled)') || obj.fields.find(f => f.kind === 'time');
+  const opts = (sel) => group.map(f => `<option value="${esc(f.name)}" ${f.name === sel ? 'selected' : ''}>${esc(f.name)}${f.unit ? ` [${esc(f.unit)}]` : ''}</option>`).join('');
+  body.innerHTML = `
+    <div class="pv-table">
+      <div class="pv-controls">
+        ${modeSwitch([group])}
+        <label>Plot <select class="pv-px">${opts(prof.x)}</select></label>
+        <label>against <select class="pv-py">${opts(prof.y)}</select></label>
+        <label>Row <input type="number" class="pv-row" min="0" max="${Math.max(n - 1, 0)}" value="${prof.rows[prof.rows.length - 1]}" style="width:6em" /></label>
+        <button type="button" class="ghost small pv-prev">&larr;</button><button type="button" class="ghost small pv-next">&rarr;</button>
+        <label class="inline"><input type="checkbox" class="pv-overlay" ${prof.rows.length > 1 ? 'checked' : ''} /> Keep previous rows (up to 12)</label>
+        <span class="hint">${n.toLocaleString()} profiles in this file</span>
+      </div>
+      <div class="pv-plot" style="min-height:520px"></div>
+    </div>`;
+  const q = (s) => body.querySelector(s);
+  bindModeSwitch(body, obj);
+  const go = (r) => {
+    r = Math.max(0, Math.min(n - 1, r));
+    q('.pv-row').value = r;
+    prof.rows = q('.pv-overlay').checked ? [...prof.rows.filter(x => x !== r), r].slice(-12) : [r];
+    loadProfileRows(obj, label);
+  };
+  q('.pv-px').addEventListener('change', (e) => { prof.x = e.target.value; loadProfileRows(obj, label); });
+  q('.pv-py').addEventListener('change', (e) => { prof.y = e.target.value; loadProfileRows(obj, label); });
+  q('.pv-row').addEventListener('change', (e) => go(+e.target.value));
+  q('.pv-prev').addEventListener('click', () => go(+q('.pv-row').value - 1));
+  q('.pv-next').addEventListener('click', () => go(+q('.pv-row').value + 1));
+  q('.pv-overlay').addEventListener('change', (e) => { if (!e.target.checked) go(+q('.pv-row').value); });
+  loadProfileRows(obj, label);
+}
+
+async function loadProfileRows(obj, label) {
+  const prof = st.prof, token = st.token, div = plotDiv();
+  div.classList.add('loading');
+  try {
+    const d = await api.productRows(st.p.dataset_id, st.p.product_id,
+      { object: obj.name, fields: [prof.x, prof.y], rows: prof.rows, label: label ? label.name : '' });
+    if (token !== st.token || prof !== st.prof) return;
+    const isP = /PRES|PRESSURE/i.test(prof.y);
+    const traces = d.rows.map((r, i) => styleTrace({ type: 'scatter', x: r[prof.x], y: r[prof.y],
+      name: `Row ${r.row}${r.label ? ` (${String(r.label).replace('T', ' ').slice(0, 19)})` : ''}` }, i));
+    if (!traces.length) { div.innerHTML = '<div class="empty-state">No such row.</div>'; return; }
+    if (div.firstElementChild && !div.classList.contains('js-plotly-plot')) div.innerHTML = '';
+    window.Plotly.react(div, traces, themedLayout(styleGeneric({
+      margin: { l: 70, r: 30, t: 30, b: 50 }, showlegend: true,
+      xaxis: { title: { text: axisTitle(prof.x, d.units[prof.x]) } },
+      yaxis: { title: { text: axisTitle(prof.y, d.units[prof.y]) }, type: isP ? 'log' : 'linear', autorange: isP ? 'reversed' : true },
+    })), { responsive: true, displaylogo: false });
+  } catch (err) {
+    div.innerHTML = `<div class="empty-state">Could not read the profiles: ${esc(err.message)}</div>`;
+  } finally {
+    div.classList.remove('loading');
+  }
+}
+
+function renderRowsOverTime(body, obj, groups) {
   const timeField = obj.fields.find(f => f.kind === 'time');
   const saved = st.table && st.table.object === obj.name && st.table.product === st.p.product_id ? st.table : null;
   const x = saved ? saved.x : (timeField ? timeField.name : '');
@@ -104,6 +224,7 @@ function renderTableControls(body, obj) {
   body.innerHTML = `
     <div class="pv-table">
       <div class="pv-controls">
+        ${modeSwitch(groups)}
         <label>X axis <select class="pv-x">
           <option value="">Row number</option>
           ${obj.fields.filter(f => f.items === 1 && f.kind !== 'text').map(f => `<option value="${esc(f.name)}" ${f.name === x ? 'selected' : ''}>${esc(fieldLabel(f))}${f.kind === 'time' ? ' (time)' : ''}</option>`).join('')}
@@ -128,6 +249,7 @@ function renderTableControls(body, obj) {
       </div>
     </div>`;
   const q = (s) => body.querySelector(s);
+  bindModeSwitch(body, obj);
   q('.pv-panels').value = st.table.panels;
   q('.pv-logy').checked = st.table.logy;
   q('.pv-logz').checked = st.table.logz;

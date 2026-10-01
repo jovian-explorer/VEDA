@@ -1622,3 +1622,10 @@ a.btn:hover { border-color: var(--focal); }
   .pv-split, .pv-image { grid-template-columns: 1fr; }
   .pv-field-list { max-height: 240px; }
 }
+.badge-live { background: rgba(16, 185, 129, 0.16); color: #10b981; }
+.arch-datasets { max-height: 340px; overflow-y: auto; }
+.cite-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 4px; }
+.cite-ds { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 8px 10px; margin: 6px 0; background: var(--surface-elevated); }
+.cite-ds p { margin: 4px 0; }
+.cite-ds ul, .cite-body ul { margin: 4px 0 4px 18px; padding: 0; }
+.cite-body li { margin: 3px 0; font-size: 0.94em; }
