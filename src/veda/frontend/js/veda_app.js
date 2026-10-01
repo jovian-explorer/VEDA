@@ -1995,7 +1995,7 @@ function readFileAsBase64(file) {
 }
 
 // Keep in sync with SUPPORTED_UPLOAD_SUFFIXES in api/routes.py.
-const UPLOAD_EXTENSIONS = ['tab', 'lbl', 'csv', 'txt', 'dat', 'asc', 'fit', 'fits', 'fts', 'jpg', 'jpeg', 'png'];
+const UPLOAD_EXTENSIONS = ['tab', 'lbl', 'xml', 'csv', 'txt', 'dat', 'asc', 'fit', 'fits', 'fts', 'jpg', 'jpeg', 'png'];
 const MAX_COMPANIONS = 8;
 
 function fileExt(file) {
@@ -2019,7 +2019,8 @@ export async function handleUploadedFiles(fileList) {
           `Supported: ${UPLOAD_EXTENSIONS.map(e => '.' + e).join(', ')}`, 'bad');
   }
   const usable = files.filter(f => UPLOAD_EXTENSIONS.includes(fileExt(f)));
-  const label = usable.find(f => fileExt(f) === 'lbl');
+  // A PDS3 (.lbl) or PDS4 (.xml) label is sent with its data table.
+  const label = usable.find(f => fileExt(f) === 'lbl' || fileExt(f) === 'xml');
   if (label) {
     const companions = usable.filter(f => f !== label).slice(0, MAX_COMPANIONS);
     await handleUploadedFile(label, companions);

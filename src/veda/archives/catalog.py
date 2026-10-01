@@ -53,6 +53,8 @@ BUNDLED_SAMPLES = [
      "mars_express", "2004-04-02T11:05:00", "L4 neutral atmosphere profile", "profile", "MARS"),
     ("mex-m-mrs-5-occ", "MEX-M-MRS-5-OCC-9101-V1.0", "DATA/2004_093_0017/LEVEL04/M32ICL2L04_IIX_040931105_60.LBL",
      "mars_express", "2004-04-02T11:05:00", "L4 ionosphere electron density profile", "profile", "MARS"),
+    ("corss_occul_el_dens", "corss_occul_el_dens", "data/s19tioc2006078_0107_n_sx_14_titan_edp_v01_r00.xml",
+     "titan_cassini_rss", "2006-03-19T00:00:13.587", "Ionosphere electron density profile", "profile", "TITAN"),
 ]
 _seeded = False
 
@@ -162,6 +164,37 @@ def _label_start_time(vol_url: str, path: str, login_url: Optional[str]) -> str:
         m = re.search(r"^\s*START_TIME\s*=\s*\"?([0-9T:.\-]+)", text, re.M)
         return _normalise_time(m.group(1)) if m else ""
     return ""
+
+
+def _pds4_times(text: str) -> tuple:
+    def tag(t):
+        m = re.search(rf"<{t}>\s*([^<]+?)\s*</{t}>", text)
+        return _normalise_time(m.group(1)) if m else ""
+    return tag("start_date_time"), tag("stop_date_time")
+
+
+def index_pds4(ds: Dataset, volume: str) -> List[Dict[str, Any]]:
+    """Products of a PDS4 bundle folder: every product XML label in it."""
+    folder = f"{ds.base_url}{volume}/{ds.pds4_product_dir}"
+    names = [n for n in http.list_directory(folder, login_url=ds.login_url)
+             if n.lower().endswith(".xml") and not n.lower().startswith("collection")]
+    out = []
+    for n in names:
+        path = ds.pds4_product_dir + n
+        ptype, kind = ds.classify(path)
+        t0 = t1 = ""
+        if ds.times_from_labels:
+            try:
+                t0, t1 = _pds4_times(http.get_text(folder + n, login_url=ds.login_url))
+            except http.LoginRequired:
+                raise
+            except http.ArchiveError:
+                pass
+        out.append({"dataset_id": ds.id, "product_id": PurePosixPath(n).stem, "volume": volume, "path": path,
+                    "start_time": t0, "stop_time": t1,
+                    "target": (ds.body_ids[0] if len(ds.body_ids) == 1 else "").upper(),
+                    "product_type": ptype, "kind": kind, "extra": "{}"})
+    return out
 
 
 def index_volume(ds: Dataset, volume: str) -> List[Dict[str, Any]]:
@@ -276,6 +309,8 @@ def index_static(ds: Dataset, volume: str) -> List[Dict[str, Any]]:
 def refresh_dataset(ds: Dataset, force: bool = False,
                     progress: Optional[Callable[[int, int, str], None]] = None) -> int:
     """(Re)index every volume of ``ds``; returns the number of products."""
+    if ds.portal_only:
+        raise http.LoginRequired(ds.archive, ds.login_url or ds.base_url)
     volumes = http.list_directory(ds.base_url, ds.volume_pattern, dirs_only=True, login_url=ds.login_url)
     if not volumes:
         raise http.ArchiveError(f"No volumes found at {ds.base_url}")
@@ -288,7 +323,8 @@ def refresh_dataset(ds: Dataset, force: bool = False,
             progress(i, len(volumes), vol)
         if not force and vol in known and now - known[vol] < INDEX_MAX_AGE_S:
             continue
-        rows = index_static(ds, vol) if ds.static_labels else index_volume(ds, vol)
+        rows = (index_pds4(ds, vol) if ds.pds4_product_dir else
+                index_static(ds, vol) if ds.static_labels else index_volume(ds, vol))
         with _db_lock, _connect() as conn:
             conn.execute("DELETE FROM products WHERE dataset_id=? AND volume=?", (ds.id, vol))
             conn.executemany(
@@ -404,7 +440,12 @@ _POINTER = re.compile(r'^\s*\^(\w+)\s*=\s*\(?\s*"?([^",)\s]+\.\w+)"?', re.M)
 
 
 def label_pointers(label_text: str) -> List[tuple]:
-    """(pointer, file) pairs a PDS3 label refers to: ^TABLE = "x.tab", ^SERIES = ("x.dat", 1) ..."""
+    """(pointer, file) pairs a label refers to: PDS3 ^TABLE = "x.tab", ^SERIES = ("x.dat", 1)
+    ..., or the <file_name> entries of a PDS4 XML label."""
+    if label_text.lstrip().startswith("<?xml") or "<Product_" in label_text[:3000]:
+        names = re.findall(r"<file_name>\s*([^<\s]+)\s*</file_name>", label_text)
+        own = re.search(r"<File_Area_Observational>", label_text)
+        return [("FILE", n) for n in dict.fromkeys(names) if own and not n.lower().endswith(".xml")]
     out = []
     for m in _POINTER.finditer(label_text):
         pair = (m.group(1).upper(), m.group(2))
@@ -462,7 +503,7 @@ def fetch_product(dataset_id: str, product_id: str,
                 continue
         else:
             raise http.ArchiveError(f"{prod['path']} is not on the archive server ({volume_url})")
-    if label_path.suffix.lower() != ".lbl":
+    if label_path.suffix.lower() not in (".lbl", ".xml"):
         return label_path
 
     pending = label_pointers(label_path.read_text(encoding="latin-1", errors="replace"))

@@ -60,6 +60,12 @@ class Dataset:
     column_units: Dict[str, str] = field(default_factory=dict)
     # Extra measured variables: key -> (column, uncertainty column or None, label, units)
     extra_variables: Dict[str, Tuple[str, Optional[str]]] = field(default_factory=dict)
+    # PDS4 bundle: folder (inside the bundle) holding the product XML labels.
+    pds4_product_dir: Optional[str] = None
+    # Archive that only works through its own website with an account (no
+    # public index): VEDA links to the login page and imports what is downloaded.
+    portal_only: bool = False
+    portal_help: str = ""
 
     def classify(self, file_name: str) -> Tuple[str, str]:
         name = file_name.lower()
@@ -90,6 +96,7 @@ class Dataset:
             "level": self.level, "title": self.title, "body_ids": list(self.body_ids),
             "archive": self.archive, "url": self.base_url, "citation": self.citation,
             "doi": self.doi, "needs_login": bool(self.login_url), "login_url": self.login_url,
+            "portal_only": self.portal_only, "portal_help": self.portal_help,
         }
 
 
@@ -149,7 +156,44 @@ MGN_UNITS = {   # from catalog/mgn_rtpd.cat and mgn_abs.cat (the labels give non
     "ABSORPTIVITY": "DB/KM", "ABSORP_DEV": "DB/KM", "H2SO4_VOLMIX": "PPM", "H2SO4_VM_DEV": "PPM",
 }
 
+CORSS_CITATION = ("Kliore, A. J., et al. (2008). First results from the Cassini radio occultations of the "
+                  "Titan ionosphere. JGR, 113, A09317.")
+
+ISSDC_HELP = ("ISRO's ISSDC distributes this data through PRADAN, which needs a free account. "
+              "Sign in, search by date and payload, download the products (PDS4 .xml labels with their "
+              ".csv/.tab tables), then load them with Load File: select each .xml together with its table.")
+
 DATASETS: List[Dataset] = [
+    Dataset(
+        id="issdc-mom", mission_id="mom", instrument="MOM payloads (MCC, MENCA, LAP, TIS, MSM)", level="ISSDC",
+        title="Mars Orbiter Mission data at ISSDC (account required)",
+        body_ids=("mars",), archive="ISRO ISSDC (PRADAN)",
+        base_url="https://pradan.issdc.gov.in/", volume_pattern=r"^$",
+        login_url="https://pradan.issdc.gov.in/", portal_only=True, portal_help=ISSDC_HELP,
+    ),
+    Dataset(
+        id="issdc-ch2", mission_id="chandrayaan2", instrument="Chandrayaan-2 orbiter payloads (incl. DFRS, CHACE-2)",
+        level="ISSDC", title="Chandrayaan-2 data at ISSDC (account required)",
+        body_ids=("moon",), archive="ISRO ISSDC (PRADAN)",
+        base_url="https://pradan.issdc.gov.in/ch2/", volume_pattern=r"^$",
+        login_url="https://pradan.issdc.gov.in/ch2/", portal_only=True, portal_help=ISSDC_HELP,
+    ),
+    Dataset(
+        id="corss_occul_el_dens", mission_id="cassini", instrument="RSS (Radio Science)", level="Derived (PDS4)",
+        title="Cassini radio occultations of Titan: ionospheric electron density profiles",
+        body_ids=("titan",), archive="NASA PDS Atmospheres Node (PDS4)",
+        base_url="https://pds-atmospheres.nmsu.edu/PDS/data/PDS4/",
+        volume_pattern=r"^corss_occul_el_dens$",
+        pds4_product_dir="data/",
+        rules=((r"_edp_", "Ionosphere electron density profile", "profile"),
+               (r"summary", "Occultation summary table", "other")),
+        profile_columns={"radius": "OCCPTRADIUS", "electron_density": "ELECDEN",
+                         "electron_density_sigma": "ELECDENERR", "latitude": "OCCPTLAT",
+                         "longitude": "OCCPTLON", "sza": "OCCPTSZA", "lst": "OCCPTLST", "et": "ETRX"},
+        extra_variables={"tec_m2": ("TEC", None)},
+        citation=CORSS_CITATION,
+        times_from_labels=True,
+    ),
     Dataset(
         id="jno-x-mwr", mission_id="juno", instrument="MWR (Microwave Radiometer)", level="EDR + derived",
         title="Juno microwave radiometer: raw records, antenna and brightness temperatures, NH3/H2O distributions",

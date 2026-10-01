@@ -522,7 +522,7 @@ def generate_publication_figure(
 # ---------------------------------------------------------------------------
 
 SUPPORTED_UPLOAD_SUFFIXES = (
-    ".tab", ".lbl", ".csv", ".txt", ".dat", ".asc",
+    ".tab", ".lbl", ".xml", ".csv", ".txt", ".dat", ".asc",
     ".fit", ".fits", ".fts", ".jpg", ".jpeg", ".png",
 )
 MAX_UPLOAD_BYTES = 200 * 1024 * 1024

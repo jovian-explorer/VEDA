@@ -71,12 +71,23 @@ def build_profile(file_path: Path, b, mission_id: Optional[str] = None,
             hit = match_column(tbl.columns.keys(), c)
             if hit is not None:
                 return hit
+        # Second pass for user files with run-together names (e.g. OCCPTRADIUS,
+        # ELECDEN): substring match, long candidates only, never uncertainty
+        # columns, shortest name first.
+        import re as _re
+        plain = [k for k in tbl.columns if not _re.search(r"ERR|SIGMA|DEV|NOISE|UNC", k.upper())]
+        for c in candidates:
+            if len(c) < 5:
+                continue
+            hits = sorted((k for k in plain if c in k.upper().replace(" ", "_")), key=len)
+            if hits:
+                return hits[0]
         return None
 
     alt_col = find_col(["ALTITUDE", "ALT", "HEIGHT", "GEOPOTENTIAL_HEIGHT", "Z", "RADIUS", "RAD"])
     temp_col = find_col(["TEMPERATURE", "TEMP", "T_K", "TK", "TC", "T"])
     pres_col = find_col(["PRESSURE", "PRESS", "P_HPA", "P_PA", "P_BAR", "P"])
-    edens_col = find_col(["ELECTRON_DENSITY", "NE", "EDENS", "ELECTRON_NUMBER_DENSITY"])
+    edens_col = find_col(["ELECTRON_DENSITY", "NE", "EDENS", "ELECTRON_NUMBER_DENSITY", "ELECDEN"])
     ref_col = find_col(["REFRACTIVITY", "REF", "N_UNITS"])
 
     # Altitude mapping.  A vertical profile needs a real altitude axis, so a

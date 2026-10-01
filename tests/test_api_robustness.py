@@ -304,3 +304,22 @@ def test_akatsuki_profile_temperature_is_physical():
     assert 100 < t.min() and t.max() < 400      # Venus 54-95 km: ~150-290 K
     p = prof.pressure_hpa[~np.isnan(prof.pressure_hpa)]
     assert p.max() < 1000                       # below 1 bar at >= 54 km
+
+
+def test_upload_pds4_label_with_its_table(client):
+    """ISSDC (and MAVEN, NH, ...) products are PDS4: an .xml label with a .csv/.tab table."""
+    xml = SAMPLES / "titan_cassini_rss" / "s19tioc2006078_0107_n_sx_14_titan_edp_v01_r00.xml"
+    csv_ = xml.with_suffix(".csv")
+    r = _upload(client, xml.name, _text(xml), body_id="titan",
+                companion_files=[{"filename": csv_.name, "file_content": _text(csv_)}])
+    assert r.status_code == 200, r.text[:300]
+    assert r.json()["type"] == "profile"
+    alone = _upload(client, xml.name, _text(xml), body_id="titan")
+    assert alone.status_code == 422 and "not loaded with the label" in alone.json()["detail"]
+
+
+def test_bundled_cassini_titan_profile_is_real_pds4(client):
+    prof = client.get("/api/veda/archive/profile/corss_occul_el_dens/s19tioc2006078_0107_n_sx_14_titan_edp_v01_r00").json()
+    ne = [v for v in prof["electron_density_cm3"] if v is not None]
+    assert 800 < max(ne) < 5000                       # Titan ionospheric peak, cm^-3
+    assert prof["uncertainty"]["electron_density_cm3"] and prof["track"]["sza"]

@@ -60,15 +60,19 @@ export async function showMissionArchive(missionId) {
     box.innerHTML = `<div class="hint text-danger">Could not load data sets: ${esc(err.message)}</div>`;
     return;
   }
-  st.selectedDatasets = new Set(st.datasets.map(d => d.id));
+  st.selectedDatasets = new Set(st.datasets.filter(d => !d.portal_only).map(d => d.id));
   renderDatasets();
   if (!st.datasets.length) {
     renderEmpty('No archive data set is connected for this mission yet. Load your own files with Load File, or see the mission archive link above.');
     return;
   }
+  if (st.datasets.every(d => d.portal_only)) {
+    renderEmpty('This archive works through its own website. Sign in above, download the products, then use Import downloaded files.');
+    return;
+  }
   // Index data sets whose archive index has never been read (bundled samples
   // alone do not count), then search. Index files are small.
-  for (const d of st.datasets.filter(x => !x.indexed_volumes)) {
+  for (const d of st.datasets.filter(x => !x.indexed_volumes && !x.portal_only)) {
     await indexDataset(d.id, false, true, gen);
     if (stale()) return;
   }
@@ -87,7 +91,19 @@ function renderDatasets() {
     box.innerHTML = '<div class="hint">No data sets for this mission yet.</div>';
     return;
   }
-  box.innerHTML = st.datasets.map(d => `
+  box.innerHTML = st.datasets.map(d => d.portal_only ? `
+    <div class="arch-ds arch-portal">
+      <span></span>
+      <span class="arch-ds-main">
+        <strong>${esc(d.instrument)}</strong> <span class="badge badge-warn">account needed</span>
+        <span class="arch-ds-title">${esc(d.title)}</span>
+        <span class="arch-ds-meta">${esc(d.portal_help)}</span>
+      </span>
+      <span class="arch-portal-actions">
+        <a class="btn small primary" href="${esc(d.login_url)}" target="_blank" rel="noopener">Sign in to ${esc(d.archive)}</a>
+        <button type="button" class="ghost small" data-import="1">Import downloaded files</button>
+      </span>
+    </div>` : `
     <label class="arch-ds" title="${esc(d.title)}">
       <input type="checkbox" data-ds="${esc(d.id)}" ${st.selectedDatasets.has(d.id) ? 'checked' : ''} />
       <span class="arch-ds-main">
@@ -102,6 +118,8 @@ function renderDatasets() {
     cb.checked ? st.selectedDatasets.add(cb.dataset.ds) : st.selectedDatasets.delete(cb.dataset.ds);
     runSearch(true);
   }));
+  box.querySelectorAll('button[data-import]').forEach(b => b.addEventListener('click', () =>
+    document.getElementById('veda-file-input')?.click()));
   box.querySelectorAll('button[data-index]').forEach(b => b.addEventListener('click', async (e) => {
     e.preventDefault();
     await indexDataset(b.dataset.index, true);

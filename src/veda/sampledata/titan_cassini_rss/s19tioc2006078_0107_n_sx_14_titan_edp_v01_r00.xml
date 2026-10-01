@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="https://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1800.sch" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<Product_Observational xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://pds.nasa.gov/pds4/pds/v1"
+    xsi:schemaLocation="http://pds.nasa.gov/pds4/pds/v1 https://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1800.xsd">
+    <Identification_Area>
+        <logical_identifier>urn:nasa:pds:corss_occul_el_dens:data_derived:s19tioc2006078_0107_n_sx_14_titan_edp</logical_identifier>
+        <version_id>1.0</version_id>
+        <title>Cassini Orbiter Radio Science Subsystem Occultation and Electron Density Derived Data</title>
+        <information_model_version>1.8.0.0</information_model_version>
+        <product_class>Product_Observational</product_class>
+    </Identification_Area>
+    <Observation_Area>
+        <Time_Coordinates>
+            <start_date_time>2006-03-19T00:00:13.587Z</start_date_time>
+            <stop_date_time>2006-03-19T00:05:16.569Z</stop_date_time>
+        </Time_Coordinates>
+        <Primary_Result_Summary>
+            <purpose>Science</purpose>
+            <processing_level>Derived</processing_level>
+      		<Science_Facets>
+                <domain>Atmosphere</domain>
+                <discipline_name>Atmospheres</discipline_name>
+      		    <facet1>Structure</facet1>
+      		</Science_Facets>
+        </Primary_Result_Summary>
+        <Investigation_Area>
+            <name>Cassini</name>
+            <type>Mission</type>
+            <Internal_Reference>
+                <lid_reference>urn:nasa:pds:context:investigation:mission.cassini-huygens</lid_reference>
+                <reference_type>data_to_investigation</reference_type>
+            </Internal_Reference>
+        </Investigation_Area>
+        <Observing_System>
+            <name>Cassini</name>
+            <Observing_System_Component>
+                <name>Cassini Orbiter</name>
+                <type>Spacecraft</type>
+                <Internal_Reference>
+                    <lid_reference>urn:nasa:pds:context:instrument_host:spacecraft.co</lid_reference>
+                    <reference_type>is_instrument_host</reference_type>
+                </Internal_Reference>
+            </Observing_System_Component>
+            <Observing_System_Component>
+                <name>Radio Science Subsystem</name>
+                <type>Instrument</type>
+                <Internal_Reference>
+                    <lid_reference>urn:nasa:pds:context:instrument:rss.co</lid_reference>
+                    <reference_type>is_instrument</reference_type>
+                </Internal_Reference>
+            </Observing_System_Component>
+        </Observing_System>
+        <Target_Identification>
+            <name>Titan</name>
+            <type>Satellite</type>
+            <Internal_Reference>
+                <lid_reference>urn:nasa:pds:context:target:satellite.saturn.titan</lid_reference>
+                <reference_type>data_to_target</reference_type>
+            </Internal_Reference>
+        </Target_Identification>
+    </Observation_Area>
+    <Reference_List>
+        <Internal_Reference>
+            <lid_reference>urn:nasa:pds:corss_occul_el_dens:document:userguide</lid_reference>
+            <reference_type>data_to_document</reference_type>
+        </Internal_Reference>
+    </Reference_List>
+    <File_Area_Observational>
+        <File>
+            <file_name>s19tioc2006078_0107_n_sx_14_titan_edp_v01_r00.csv</file_name>
+            <local_identifier>s19tioc2006078_0107_n_sx_14_titan_edp_file</local_identifier>
+            <creation_date_time>2020-08-11T13:15:44.872Z</creation_date_time>
+            <file_size unit="byte">124336</file_size>
+            <records>304</records>
+        </File>
+        <Table_Delimited>
+            <name>s19tioc2006078_0107_n_sx_14_titan_edp</name>
+            <local_identifier>s19tioc2006078_0107_n_sx_14_titan_edp_table</local_identifier>
+            <offset unit="byte">0</offset>
+            <object_length unit="byte">124336</object_length>
+            <parsing_standard_id>PDS DSV 1</parsing_standard_id>
+            <description>
+            Individual electron density profiles from an occultation. Each 
+            individual electron density profile data product was generated 
+            from two frequency data products, where the two frequency data 
+            products were received simultaneously by the same Deep Space 
+            Network Station (DSS) in different frequency bands. We used 
+            frequency bands S-band and X-band, and X-band and Ka-band, but 
+            not S-band and Ka-band. In no instances did a given DSN antenna 
+            record S-band and Ka-band together. Inspection of the user guide 
+            shows that uncertainties in the rate of change of total electron 
+            content would be significantly worse for this frequency pair than 
+            for the other possible frequency pairs. Uncertainties in electron 
+            density would be significantly worse as well. Each individual 
+            electron density profile data product contains data from either 
+            ingress or egress, but not both. Values in columns 1-13 of an 
+            average electron density profile data product match values in 
+            columns 1-13 of the associated individual electron density 
+            profile data products.
+            </description>
+            <records>304</records>
+            <record_delimiter>Carriage-Return Line-Feed</record_delimiter>
+            <field_delimiter>Comma</field_delimiter>
+            <Record_Delimited>
+                <fields>18</fields>
+                <groups>0</groups>
+                <Field_Delimited>
+                    <name>ETTX</name>
+                    <field_number>1</field_number>
+                    <data_type>ASCII_Real</data_type>
+                    <unit>Seconds</unit>
+                    <description>
+                    Ephemeris time (seconds past J2000) of transmission of 
+                    signal from the spacecraft.
+                    (format code E20.12)
+                    </description>
+                </Field_Delimited>
+                <Field_Delimited>
+                    <name>ETOCC</name>
+                    <field_number>2</field_number>
+                    <data_type>ASCII_Real</data_type>
+                    <unit>Seconds</unit>
+                    <description>
+                    Ephemeris time (seconds past J2000) of signal closest 
+                    approach to target body.
+                    (format code E20.12)
+                    </description>
+                </Field_Delimited>
+                <Field_Delimited>
+                    <name>ETRX</name>
+                    <field_number>3</field_number>
+                    <data_type>ASCII_Real</data_type>
+                    <unit>Seconds</unit>
+                    <description>
+                    Ephemeris time (seconds past J2000) of reception of 
+                    signal by DSN station.
+                    (format code E20.12)
+                    </description>
+                </Field_Delimited>
+                <Field_Delimited>
+                    <name>UTCTX</name>
+                    <field_number>4</field_number>
+                    <data_type>ASCII_String</data_type>
+                    <unit>Dimensionless</unit>
+                    <description>
+                    UTC time of transmission of signal from the spacecraft.
+                    (format code A30)
+                    </description>
+                </Field_Delimited>
+                <Field_Delimited>
+                    <name>UTCOCC</name>
+                    <field_number>5</field_number>
+                    <data_type>ASCII_String</data_type>
+                    <unit>Dimensionless</unit>
+                    <description>
+                    UTC time of signal closest approach to target body.
+                    (format code A30)
+                    </description>
+                </Field_Delimited>
+                <Field_Delimited>
+                    <name>UTCRX</name>
+                    <field_number>6</field_number>
+                    <data_type>ASCII_String</data_type>
+                    <unit>Dimensionless</unit>
+                    <description>
+                    UTC time of reception of signal by DSN station.
+                    (format code A30)
+                    </description>
+                </Field_Delimited>
+                <Field_Delimited>
+                    <name>OCCPTRADIUS</name>
+                    <field_number>7</field_number>
+                    <data_type>ASCII_Real</data_type>
+                    <unit>Kilometer</unit>
+                    <description>
+                    Occultation point radius. The distance between the 
+                    center of the target body and the signal at the 
+                    occultation point, or the closest approach to the target
+                    body.
+                    (format code E20.12)
+                    </description>
+                </Field_Delimited>
+                <Field_Delimited>
+                    <name>OCCPTLAT</name>
+                    <field_number>8</field_number>
+                    <data_type>ASCII_Real</data_type>
+                    <unit>Degrees</unit>
+                    <description>
+                    Occultation point latitude. Planetocentric latitude of 
+                    the occultation point. Increases positively northward.
+                    (format code E20.12)
+                    </description>
+                </Field_Delimited>
+                <Field_Delimited>
+                    <name>OCCPTLON</name>
+                    <field_number>9</field_number>
+                    <data_type>ASCII_Real</data_type>
+                    <unit>Degrees</unit>
+                    <description>
+                    Occultation point longitude. Planetocentric longitude of 
+                    the occultation point. Increases positively eastward.
+                    (format code E20.12)
+                    </description>
+                </Field_Delimited>
+                <Field_Delimited>
+                    <name>OCCPTSZA</name>
+                    <field_number>10</field_number>
+                    <data_type>ASCII_Real</data_type>
+                    <unit>Degrees</unit>
+                    <description>
+                    Occultation point solar zenith angle.
+                    (format code E20.12)
+                    </description>
+                </Field_Delimited>
+                <Field_Delimited>
+                    <name>OCCPTLST</name>
+                    <field_number>11</field_number>
+                    <data_type>ASCII_Real</data_type>
+                    <unit>Hours</unit>
+                    <description>
+                    Occultation point local true solar time.
+                    (format code E20.12)
+                    </description>
+                </Field_Delimited>
+                <Field_Delimited>
+                    <name>OCCPTSEP</name>
+                    <field_number>12</field_number>
+                    <data_type>ASCII_Real</data_type>
+                    <unit>Degrees</unit>
+                    <description>
+                    Occultation point Sun-Earth-Probe angle, where Probe is 
+                    the Cassini spacecraft.
+                    (format code E20.12)
+                    </description>
+                </Field_Delimited>
+                <Field_Delimited>
+                    <name>OCCPTEPS</name>
+                    <field_number>13</field_number>
+                    <data_type>ASCII_Real</data_type>
+                    <unit>Degrees</unit>
+                    <description>
+                    Occultation point Earth-Probe-Sun angle, where Probe is 
+                    the Cassini spacecraft.
+                    (format code E20.12)
+                    </description>
+                </Field_Delimited>
+                <Field_Delimited>
+                    <name>UNCORRDXDT</name>
+                    <field_number>14</field_number>
+                    <data_type>ASCII_Real</data_type>
+                    <unit>1/(m**2 s)</unit>
+                    <description>
+                    Uncorrected time derivative of the integrated electron 
+                    column density.
+                    (format code E20.12)
+                    </description>
+                </Field_Delimited>
+                <Field_Delimited>
+                    <name>CORRDXDT</name>
+                    <field_number>15</field_number>
+                    <data_type>ASCII_Real</data_type>
+                    <unit>1/(m**2 s)</unit>
+                    <description>
+                    Corrected time derivative of the integrated electron 
+                    column density. As discussed further in the user guide,
+                    some UNCORRDXDT time series (from Column 14) required
+                    corrections for baseline trends that were measured before 
+                    or after occultation. Corrections included subtraction 
+                    of a median value of UNCORRDXDT, subtraction of a linear 
+                    trend, or replacement of a spurious data point with an 
+                    interpolation between the previous and next data points. 
+                    If no correction was applied, then CORRDXDT will equal 
+                    UNCORRDXDT from Column 14.
+                    (format code E20.12)
+                    </description>
+                </Field_Delimited>
+                <Field_Delimited>
+                    <name>TEC</name>
+                    <field_number>16</field_number>
+                    <data_type>ASCII_Real</data_type>
+                    <unit>1/(m**2)</unit>
+                    <description>
+                    Total electron content (TEC). TEC is the electron number 
+                    density integrated along the signal path. The constant 
+                    of integration was chosen so that TEC is zero at the 
+                    earliest time.
+                    (format code E20.12)
+                    </description>
+                </Field_Delimited>
+                <Field_Delimited>
+                    <name>ELECDEN</name>
+                    <field_number>17</field_number>
+                    <data_type>ASCII_Real</data_type>
+                    <unit>1/(cm**3)</unit>
+                    <description>
+                    Electron number density. By construction, ELECDEN is zero 
+                    at the largest value of OCCPTRADIUS.
+                    (format code E20.12)
+                    </description>
+                </Field_Delimited>
+                <Field_Delimited>
+                    <name>ELECDENERR</name>
+                    <field_number>18</field_number>
+                    <data_type>ASCII_Real</data_type>
+                    <unit>1/(cm**3)</unit>
+                    <description>
+                    Uncertainty on ELECDEN from Column 17. The uncertainty 
+                    is calculated as the standard deviation of ELECDEN in the 
+                    high altitude baseline portion of the observations before 
+                    or after occultation. Therefore a single value of 
+                    ELECDENERR applies to all values of ELECDEN in a given 
+                    individual electron density profile.
+                    (format code E20.12)
+                    </description>
+                </Field_Delimited>
+            </Record_Delimited>
+        </Table_Delimited>
+    </File_Area_Observational>
+</Product_Observational>

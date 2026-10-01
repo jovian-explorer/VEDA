@@ -100,7 +100,11 @@ def load_profile(dataset_id: str, product_id: str, download: bool = True) -> Obs
 def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfile:
     cols = ds.profile_columns
     body = get_body(ds.body_ids[0])
-    tbl = read_pds3_table(str(label))
+    if label.suffix.lower() == ".xml":
+        from ..readers.pds4_reader import read_pds4_table
+        tbl = read_pds4_table(str(label))
+    else:
+        tbl = read_pds3_table(str(label))
     _COLUMN_UNITS.clear()
     _COLUMN_UNITS.update({k.upper(): v for k, v in ds.column_units.items()})
     split = prod.get("split")

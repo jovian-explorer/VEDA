@@ -1579,3 +1579,5 @@ a.btn:hover { border-color: var(--focal); }
 .geo-facts { margin-top: 8px; }
 .geo-prompt ul { margin: 6px 0 12px; }
 .geo-proj[hidden] { display: none; }
+.arch-portal { cursor: default; }
+.arch-portal-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }

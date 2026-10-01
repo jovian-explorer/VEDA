@@ -434,6 +434,12 @@ def read_any_table(file_path: str) -> Pds3Table:
     if not p.exists():
         raise FileNotFoundError(f"File not found: {file_path}")
 
+    if p.suffix.lower() == ".xml":
+        from .pds4_reader import is_pds4_label, read_pds4_table
+        if is_pds4_label(p):
+            return read_pds4_table(str(p))
+        raise ValueError(f"{p.name} is not a PDS4 product label")
+
     # Check for PDS3 label counterpart
     cand_lbl = [p.with_suffix(".lbl"), p.with_suffix(".LBL")]
     if p.suffix.lower() == ".lbl":
