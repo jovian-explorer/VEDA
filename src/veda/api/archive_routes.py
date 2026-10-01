@@ -95,6 +95,7 @@ def search(
     limit: int = Query(200, ge=1, le=2000),
     offset: int = Query(0, ge=0),
     newest_first: bool = False,
+    downloaded_only: bool = False,
 ) -> Dict[str, Any]:
     if dataset_id:
         unknown = [d for d in dataset_id if not get_dataset(d)]
@@ -105,7 +106,7 @@ def search(
     return catalog.search(catalog.SearchQuery(
         mission_id=mission_id, dataset_ids=dataset_id, target=target, start=start, end=end,
         kind=kind, product_type=product_type, text=q, limit=limit, offset=offset,
-        newest_first=newest_first))
+        newest_first=newest_first, downloaded_only=downloaded_only))
 
 
 # ------------------------------------------------------------------ download

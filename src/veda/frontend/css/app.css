@@ -1509,3 +1509,48 @@ kbd {
    long observation id wrap instead of squeezing the date. */
 .obs-table-wrap td, .obs-table-wrap th { white-space: nowrap; vertical-align: top; }
 .obs-table-wrap td:first-child { white-space: normal; overflow-wrap: anywhere; min-width: 140px; }
+
+/* ---------- Archive browser (Mission view) ---------- */
+.archive-browser { margin-bottom: 14px; }
+.archive-head { align-items: baseline; justify-content: space-between; }
+.arch-datasets { display: grid; gap: 6px; margin: 4px 0 12px; }
+.arch-ds {
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px;
+  padding: 8px 10px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+  background: var(--surface); margin: 0; color: var(--ink); cursor: pointer;
+}
+.arch-ds:hover { border-color: var(--line-highlight); }
+.arch-ds-main { display: grid; gap: 2px; min-width: 0; }
+.arch-ds-title { color: var(--ink-soft); }
+.arch-ds-meta { color: var(--ink-soft); font-size: calc(11px * var(--font-scale, 1.0)); overflow-wrap: anywhere; }
+.arch-filters {
+  display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px;
+  padding: 10px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+}
+.arch-filters label { margin: 0; display: grid; gap: 3px; }
+.arch-filters label.arch-check { display: inline-flex; align-items: center; gap: 6px; padding-bottom: 8px; }
+.arch-filters input[type="search"] { min-width: 180px; }
+.arch-results-wrap { max-height: 460px; overflow: auto; margin-top: 8px; }
+.arch-results { width: 100%; border-collapse: collapse; font-size: calc(12px * var(--font-scale, 1.0)); }
+.arch-results th {
+  position: sticky; top: 0; z-index: 1; background: var(--surface-solid);
+  text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); white-space: nowrap;
+}
+.arch-results td { padding: 5px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.arch-results tr.selected td { background: var(--focal-soft); }
+.arch-results code { font-size: 0.95em; overflow-wrap: anywhere; }
+.arch-results .nowrap { white-space: nowrap; }
+.arch-col-check { width: 28px; }
+.arch-footer { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.arch-spacer { flex: 1; }
+.arch-progress { display: flex; align-items: center; gap: 8px; min-width: 240px; }
+.arch-progress[hidden] { display: none; }
+.arch-progress-bar { flex: 1; height: 6px; border-radius: 3px; background: var(--focal-soft); overflow: hidden; min-width: 120px; }
+.arch-progress-bar span { display: block; height: 100%; width: 0; background: var(--focal); transition: width 0.3s; }
+.badge-ok { background: var(--ok-soft); color: var(--ok); }
+.badge-warn { background: var(--warn-soft); color: var(--warn); }
+.selection-chip {
+  display: flex; align-items: center; gap: 8px; margin: 6px 0; padding: 6px 10px;
+  border-radius: var(--radius-sm); background: var(--focal-soft); color: var(--ink);
+}
+.arch-results a { color: var(--focal); }

@@ -96,22 +96,21 @@ export const api = {
       `/api/veda/export/profile/${missionId}/${encodeURIComponent(obsId)}/csv`,
   vedaExportProfileJsonUrl: (missionId, obsId) =>
       `/api/veda/export/profile/${missionId}/${encodeURIComponent(obsId)}/json`,
-  vedaArchiveDiscover: (missionId, bodyId, instrumentId) => {
-    const q = [`mission_id=${encodeURIComponent(missionId)}`];
-    if (bodyId) q.push(`body_id=${encodeURIComponent(bodyId)}`);
-    if (instrumentId) q.push(`instrument_id=${encodeURIComponent(instrumentId)}`);
-    return call(`/api/veda/archive/discover?${q.join('&')}`);
+  // Real archive data sets (see veda/archives)
+  archiveDatasets: (missionId) =>
+      call(`/api/veda/archive/datasets${missionId ? `?mission_id=${encodeURIComponent(missionId)}` : ''}`),
+  archiveIndex: (datasetId, force = false) =>
+      call(`/api/veda/archive/datasets/${encodeURIComponent(datasetId)}/index${force ? '?force=true' : ''}`, {method: 'POST'}),
+  archiveSearch: (params) => {
+    const q = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) {
+      if (v === undefined || v === null || v === '') continue;
+      if (Array.isArray(v)) v.forEach(x => q.append(k, x)); else q.append(k, v);
+    }
+    return call(`/api/veda/archive/search?${q.toString()}`);
   },
-  vedaArchiveDownload: (req) =>
-      call('/api/veda/archive/download', {method: 'POST', body: req}),
-  vedaArchiveTaskStatus: (taskId) =>
-      call(`/api/veda/archive/tasks/${encodeURIComponent(taskId)}`),
-  vedaArchiveLocal: (missionId, bodyId) => {
-    const q = [];
-    if (missionId) q.push(`mission_id=${encodeURIComponent(missionId)}`);
-    if (bodyId) q.push(`body_id=${encodeURIComponent(bodyId)}`);
-    return call('/api/veda/archive/local' + (q.length ? `?${q.join('&')}` : ''));
-  },
+  archiveFetch: (items) => call('/api/veda/archive/fetch', {method: 'POST', body: {items}}),
+  archiveJob: (jobId) => call(`/api/veda/archive/jobs/${encodeURIComponent(jobId)}`),
   vedaPublicationFigureUrl: (bodyId, variable = 'temperature_k', missions, dpi = 300, fmt = 'png') => {
     const q = [`body_id=${encodeURIComponent(bodyId)}`, `variable=${encodeURIComponent(variable)}`, `dpi=${dpi}`, `fmt=${fmt}`];
     if (missions) q.push(`missions=${encodeURIComponent(missions)}`);

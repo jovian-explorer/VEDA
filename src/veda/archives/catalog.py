@@ -246,6 +246,7 @@ class SearchQuery:
     limit: int = 200
     offset: int = 0
     newest_first: bool = False
+    downloaded_only: bool = False
 
 
 def search(q: SearchQuery) -> Dict[str, Any]:
@@ -272,9 +273,16 @@ def search(q: SearchQuery) -> Dict[str, Any]:
     sql_where = " AND ".join(where)
     order = "DESC" if q.newest_first else "ASC"
     with _db_lock, _connect() as conn:
-        total = conn.execute(f"SELECT COUNT(*) FROM products WHERE {sql_where}", args).fetchone()[0]
-        rows = conn.execute(f"SELECT * FROM products WHERE {sql_where} ORDER BY start_time {order} "
-                            "LIMIT ? OFFSET ?", args + [q.limit, q.offset]).fetchall()
+        if q.downloaded_only:
+            # Download state lives on disk, so filter in Python, then page.
+            every = conn.execute(f"SELECT * FROM products WHERE {sql_where} ORDER BY start_time {order}",
+                                 args).fetchall()
+            local = [r for r in every if local_label_path(r["dataset_id"], r["volume"], r["path"]).is_file()]
+            total, rows = len(local), local[q.offset:q.offset + q.limit]
+        else:
+            total = conn.execute(f"SELECT COUNT(*) FROM products WHERE {sql_where}", args).fetchone()[0]
+            rows = conn.execute(f"SELECT * FROM products WHERE {sql_where} ORDER BY start_time {order} "
+                                "LIMIT ? OFFSET ?", args + [q.limit, q.offset]).fetchall()
         types = conn.execute(f"SELECT product_type, COUNT(*) n FROM products WHERE "
                              f"dataset_id IN ({','.join('?' * len(ds_ids))}) GROUP BY product_type",
                              ds_ids).fetchall()

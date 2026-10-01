@@ -4,6 +4,7 @@
  */
 import { api, state } from './api.js';
 import { renderMath, toast, cleanPlotlyMath, themedLayout, plotColors } from './ui.js';
+import { setupArchiveBrowser, showMissionArchive } from './archive_browser.js';
 
 // VEDA Global State
 export const vedaState = {
@@ -24,6 +25,7 @@ export const vedaState = {
   activeMission: null,
   missionFilter: 'all', // 'all' | 'orbiter' | 'flyby' | 'other'
   missionObservations: [],
+  comparisonProducts: null,  // [{mission_id, observation_id}] picked in the archive browser
   selectedObservation: null,
   currentProfileData: null,
   currentImageData: null,
@@ -375,6 +377,13 @@ export async function initVeda() {
   setupModeSwitching();
   setupBodyModeControls();
   setupMissionModeControls();
+  setupArchiveBrowser({
+    onOpen: (p) => inspectProfileObservation({
+      mission_id: p.mission_id, observation_id: p.product_id, dataset_id: p.dataset_id,
+      instrument: p.instrument, data_type: 'profile', time_utc: p.start_time,
+    }),
+    onCompare: compareSelectedProducts,
+  });
   setupWorkflowGuideInteractions();
   setupGlobalDragAndDrop();
 
@@ -474,6 +483,7 @@ function renderCelestialBodiesGrid() {
     card.addEventListener('click', async () => {
       document.querySelectorAll('.body-selector-card').forEach(el => el.classList.remove('active'));
       card.classList.add('active');
+      if (b.id !== vedaState.activeBodyId) vedaState.comparisonProducts = null;  // picks belong to one body
       await loadAndRenderCelestialBody(b.id);
     });
     grid.appendChild(card);
@@ -727,7 +737,44 @@ function setupBodyModeControls() {
   }
 }
 
+// Products picked in the archive browser; when set, they replace the
+// automatic one-profile-per-mission selection in the body comparison.
+async function compareSelectedProducts(products) {
+  const bodies = new Set(products.map(p => (p.target || '').toLowerCase()).filter(Boolean));
+  if (bodies.size > 1) return toast('Pick profiles of a single body to compare them', 'bad');
+  const body = [...bodies][0] || (vedaState.activeMission && vedaState.activeMission.primary_targets[0]);
+  vedaState.comparisonProducts = products.map(p => ({ mission_id: p.mission_id, observation_id: p.product_id }));
+  // Pick a variable the selection actually contains.
+  const isIono = (p) => /ionosphere|electron/i.test(p.product_type || '');
+  if (products.every(isIono)) vedaState.selectedCompareVariable = 'electron_density_cm3';
+  else if (!products.some(isIono) && vedaState.selectedCompareVariable === 'electron_density_cm3') {
+    vedaState.selectedCompareVariable = vedaState.unitsTemperature === 'C' ? 'temperature_c' : 'temperature_k';
+  }
+  syncUnitButtons();
+  switchMode('body');
+  await loadAndRenderCelestialBody(body);
+  toast(`Comparing ${products.length} selected profile${products.length > 1 ? 's' : ''} on ${body}`, 'good');
+}
+
+function renderComparisonSelectionNote() {
+  const el = document.getElementById('veda-comparison-status');
+  const n = (vedaState.comparisonProducts || []).length;
+  let chip = document.getElementById('veda-selection-chip');
+  if (!n) { chip?.remove(); return; }
+  if (!chip && el) {
+    chip = document.createElement('div');
+    chip.id = 'veda-selection-chip';
+    chip.className = 'selection-chip';
+    el.insertAdjacentElement('beforebegin', chip);
+  }
+  if (chip) {
+    chip.innerHTML = `Comparing ${n} hand-picked profile${n > 1 ? 's' : ''} <button type="button" class="ghost small">Use all missions instead</button>`;
+    chip.querySelector('button').onclick = () => { vedaState.comparisonProducts = null; updateComparison(); };
+  }
+}
+
 async function updateComparison() {
+  renderComparisonSelectionNote();
   const mids = Array.from(vedaState.selectedMissionIdsForBody);
   const statusEl = document.getElementById('veda-comparison-status');
   if (statusEl) statusEl.textContent = 'Computing multi-mission composite thermodynamics...';
@@ -735,6 +782,7 @@ async function updateComparison() {
   try {
     const [compData, exploreData] = await Promise.all([
       api.vedaCompareBody(vedaState.activeBodyId, {
+        observations: vedaState.comparisonProducts || undefined,
         missions: mids,
         variable: vedaState.selectedCompareVariable,
       }),
@@ -752,7 +800,8 @@ async function updateComparison() {
     renderComparisonTable();
 
     if (statusEl) {
-      statusEl.textContent = `Aggregated ${compData.profile_count} soundings across ${mids.length} missions.`;
+      const nMissions = new Set((compData.profiles || []).map(p => p.mission_id)).size;
+      statusEl.textContent = `Aggregated ${compData.profile_count} sounding${compData.profile_count === 1 ? "" : "s"} from ${nMissions} mission${nMissions === 1 ? "" : "s"}.`;
     }
   } catch (err) {
     console.error('Failed to compute comparison:', err);
@@ -834,7 +883,8 @@ function renderComparisonPlot() {
         type: 'scatter',
         mode: 'lines',
         line: { color: mColor, width: 2.2, dash: 'solid' },
-        name: `${p.mission_id.toUpperCase()} (${p.instrument})`,
+        // Several profiles of one mission must stay distinguishable in the legend.
+        name: `${p.mission_id.toUpperCase()} ${(p.time_utc || p.observation_id).replace("T", " ").slice(0, 16)}`,
         hovertemplate: `<b>${p.mission_id.toUpperCase()}</b><br>Alt: %{y:.1f} km<br>${varCfg.label}: %{x:.2f} ${varCfg.units}<extra></extra>`,
       });
     }
@@ -1271,71 +1321,12 @@ export async function loadAndRenderMission(missionId) {
     `;
   }
 
-  // Populate Instruments Selector
-  const instSelect = document.getElementById('veda-instrument-select');
-  if (instSelect) {
-    instSelect.innerHTML = '<option value="">-- All Instruments --</option>' +
-      (mission.instruments || []).map(inst => `
-        <option value="${inst.id}">${inst.name} (${inst.type})</option>
-      `).join('');
-    instSelect.onchange = () => loadMissionObservations();
-  }
-
-  await loadMissionObservations();
-}
-
-async function loadMissionObservations() {
-  const instSelect = document.getElementById('veda-instrument-select');
-  const instId = instSelect ? instSelect.value : null;
-
-  try {
-    const res = await api.vedaExploreMission(vedaState.activeMissionId, null, instId);
-    vedaState.missionObservations = res.observations || [];
-    renderObservationsTable();
-
-    // Auto-select first observation if available
-    if (vedaState.missionObservations.length > 0) {
-      await inspectObservation(vedaState.missionObservations[0]);
-    } else {
-      const viewer = document.getElementById('veda-observation-viewer');
-      if (viewer) viewer.innerHTML = '<div class="empty-state">No observations recorded for this filter.</div>';
-    }
-  } catch (err) {
-    console.error('Failed to load observations:', err);
-  }
-}
-
-function renderObservationsTable() {
-  const tbody = document.getElementById('veda-observations-table-body');
-  if (!tbody) return;
-
-  if (vedaState.missionObservations.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" class="text-muted">No observations found.</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = vedaState.missionObservations.map((obs, idx) => `
-    <tr class="obs-row ${idx === 0 ? 'selected' : ''}" data-obs-id="${obs.observation_id}">
-      <td><strong>${obs.observation_id}</strong></td>
-      <td>${obs.instrument}</td>
-      <td>${obs.body_id.toUpperCase()}</td>
-      <td>${obs.time_utc ? obs.time_utc.split('T')[0] : '-'}</td>
-      <td><button class="small ghost btn-inspect-obs">Inspect</button></td>
-    </tr>
-  `).join('');
-
-  tbody.querySelectorAll('tr').forEach((row, i) => {
-    row.addEventListener('click', async () => {
-      tbody.querySelectorAll('tr').forEach(r => r.classList.remove('selected'));
-      row.classList.add('selected');
-      await inspectObservation(vedaState.missionObservations[i]);
-    });
-  });
+  await showMissionArchive(missionId);
 }
 
 export async function inspectObservation(obs) {
   vedaState.selectedObservation = obs;
-  const isImage = obs.instrument === 'LORRI' || obs.instrument === 'UVI' || obs.instrument === 'LIR' || obs.instrument === 'JunoCam' || obs.instrument === 'ISS';
+  const isImage = obs.data_type === 'image' || ['LORRI', 'UVI', 'LIR', 'JunoCam', 'ISS'].includes(obs.instrument);
 
   if (isImage) {
     await inspectImageObservation(obs);
@@ -1944,161 +1935,6 @@ function setupMissionModeControls() {
     });
   });
 
-  // Remote Archive Downloader Controls
-  const btnToggle = document.getElementById('btn-toggle-archive-search');
-  const btnClose = document.getElementById('btn-close-archive-search');
-  const panel = document.getElementById('veda-archive-search-panel');
-  const btnQuery = document.getElementById('btn-execute-archive-search');
-  const resultsContainer = document.getElementById('archive-results-container');
-
-  if (btnToggle && panel) {
-    btnToggle.addEventListener('click', () => {
-      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-      if (panel.style.display === 'block') {
-        executeArchiveQuery();
-      }
-    });
-  }
-
-  if (btnClose && panel) {
-    btnClose.addEventListener('click', () => {
-      panel.style.display = 'none';
-    });
-  }
-
-  if (btnQuery) {
-    btnQuery.addEventListener('click', () => {
-      executeArchiveQuery();
-    });
-  }
-
-  async function executeArchiveQuery() {
-    if (!resultsContainer) return;
-    resultsContainer.innerHTML = '<div class="hint">Querying authentic international archives (NASA PDS, ESA PSA, JAXA DARTS)...</div>';
-
-    const agency = document.getElementById('archive-agency-select')?.value || 'all';
-    const queryTerm = (document.getElementById('archive-search-input')?.value || '').trim().toLowerCase();
-
-    try {
-      const resp = await api.vedaArchiveDiscover(vedaState.activeMissionId, vedaState.activeBodyId);
-      let products = resp.products || [];
-
-      if (agency !== 'all') {
-        products = products.filter(p => p.archive.toLowerCase().includes(agency));
-      }
-      if (queryTerm) {
-        products = products.filter(p =>
-          (p.filename || '').toLowerCase().includes(queryTerm) ||
-          (p.product_id || '').toLowerCase().includes(queryTerm) ||
-          (p.instrument || '').toLowerCase().includes(queryTerm) ||
-          (p.target || '').toLowerCase().includes(queryTerm)
-        );
-      }
-
-      if (products.length === 0) {
-        resultsContainer.innerHTML = '<div class="hint">No matching archive products found. Try a different search term or agency.</div>';
-        return;
-      }
-
-      resultsContainer.innerHTML = `
-        <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: calc(12px * var(--font-scale, 1.0));">
-          <thead>
-            <tr style="border-bottom: 1px solid var(--line); text-align: left;">
-              <th style="padding: 6px 8px;">Archive / Agency</th>
-              <th style="padding: 6px 8px;">Product / Granule</th>
-              <th style="padding: 6px 8px;">Instrument</th>
-              <th style="padding: 6px 8px;">Format</th>
-              <th style="padding: 6px 8px;">Size</th>
-              <th style="padding: 6px 8px;">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${products.map((p, idx) => {
-              const agencyClass = p.archive.toLowerCase().includes('nasa') ? 'nasa' :
-                                  (p.archive.toLowerCase().includes('esa') ? 'esa' : 'jaxa');
-              const taskId = `dl-${Date.now()}-${idx}`;
-              return `
-                <tr id="archive-row-${idx}">
-                  <td style="padding: 6px 8px;"><span class="archive-badge ${agencyClass}">${p.archive}</span></td>
-                  <td style="padding: 6px 8px;"><code>${p.filename || p.product_id}</code></td>
-                  <td style="padding: 6px 8px;">${p.instrument}</td>
-                  <td style="padding: 6px 8px;">${p.format}</td>
-                  <td style="padding: 6px 8px;">${(p.size_bytes / 1024 / 1024).toFixed(1)} MB</td>
-                  <td style="padding: 6px 8px;">
-                    <button class="primary small btn-start-dl"
-                      data-task-id="${taskId}"
-                      data-url="${p.download_url}"
-                      data-filename="${p.filename}"
-                      data-mission="${vedaState.activeMissionId}"
-                      data-body="${p.target || vedaState.activeBodyId}"
-                      data-instrument="${p.instrument}">
-                      ⬇️ Download
-                    </button>
-                    <div id="prog-${taskId}" class="progress-wrap hidden" style="margin-top: 4px; width: 120px;">
-                      <div class="progress-bar"><div class="progress-fill" id="bar-${taskId}" style="width: 0%;"></div></div>
-                    </div>
-                  </td>
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
-      `;
-
-      // Connect download buttons
-      resultsContainer.querySelectorAll('.btn-start-dl').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const tid = btn.dataset.taskId;
-          btn.disabled = true;
-          btn.textContent = 'Downloading...';
-          const progWrap = document.getElementById(`prog-${tid}`);
-          const bar = document.getElementById(`bar-${tid}`);
-          if (progWrap) progWrap.classList.remove('hidden');
-
-          try {
-            await api.vedaArchiveDownload({
-              task_id: tid,
-              mission_id: btn.dataset.mission,
-              body_id: btn.dataset.body,
-              instrument: btn.dataset.instrument,
-              remote_url: btn.dataset.url,
-              filename: btn.dataset.filename,
-            });
-
-            // Poll task status
-            const interval = setInterval(async () => {
-              try {
-                const st = await api.vedaArchiveTaskStatus(tid);
-                if (bar) bar.style.width = `${st.progress_pct}%`;
-
-                if (st.status === 'completed') {
-                  clearInterval(interval);
-                  btn.textContent = '✓ Downloaded';
-                  btn.classList.remove('primary');
-                  btn.classList.add('ghost');
-                  // Refresh mission observations
-                  await loadAndRenderMission(vedaState.activeMissionId);
-                } else if (st.status === 'failed') {
-                  clearInterval(interval);
-                  btn.textContent = 'Failed';
-                  alert(`Download failed: ${st.error}`);
-                }
-              } catch (pollErr) {
-                clearInterval(interval);
-              }
-            }, 600);
-
-          } catch (dlErr) {
-            btn.textContent = 'Error';
-            alert(`Download error: ${dlErr.message}`);
-          }
-        });
-      });
-
-    } catch (err) {
-      resultsContainer.innerHTML = `<div class="hint text-danger">Archive search error: ${err.message}</div>`;
-    }
-  }
 }
 
 // ==========================================================================
@@ -2255,49 +2091,6 @@ export function setupWorkflowGuideInteractions() {
             if (viewer) viewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }
           break;
-        case 'demo-cassini':
-          switchMode('mission');
-          await loadAndRenderMission('cassini');
-          await inspectProfileObservation({
-            mission_id: 'cassini',
-            observation_id: 'cassini-rss-titan-t12-ingress',
-            instrument: 'RSS'
-          });
-          toast('Loaded Cassini Titan Neutral Ionosphere Profile', 'good');
-          {
-            const viewer = document.getElementById('veda-observation-viewer');
-            if (viewer) viewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
-          break;
-        case 'demo-new-horizons':
-          switchMode('mission');
-          await loadAndRenderMission('new_horizons');
-          await inspectProfileObservation({
-            mission_id: 'new_horizons',
-            observation_id: 'nh-rex-pluto-ingress-20150714',
-            instrument: 'REX'
-          });
-          toast('Loaded New Horizons Pluto Atmospheric Profile', 'good');
-          {
-            const viewer = document.getElementById('veda-observation-viewer');
-            if (viewer) viewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
-          break;
-        case 'demo-bepicolombo':
-          switchMode('mission');
-          await loadAndRenderMission('bepicolombo');
-          await inspectProfileObservation({
-            mission_id: 'bepicolombo',
-            observation_id: 'bepicolombo-fb2-venus-more-ro',
-            instrument: 'MORE'
-          });
-          toast('Loaded BepiColombo Venus Flyby Science Data', 'good');
-          {
-            const viewer = document.getElementById('veda-observation-viewer');
-            if (viewer) viewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
-          break;
-
         case 'mode-body':
           switchMode('body');
           break;
@@ -2307,11 +2100,7 @@ export function setupWorkflowGuideInteractions() {
           break;
         case 'open-archive': {
           switchMode('mission');
-          const panel = document.getElementById('veda-archive-search-panel');
-          if (panel && panel.style.display === 'none') {
-            document.getElementById('btn-toggle-archive-search')?.click();
-          }
-          panel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          document.getElementById('veda-archive-browser')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
           break;
         }
         case 'trigger-file-input':
@@ -2328,91 +2117,38 @@ export function setupWorkflowGuideInteractions() {
           });
           toast('Loaded Akatsuki Venus Radio Occultation Sounding (VCO)', 'good');
           break;
-        case 'load-sample-chandrayaan2':
-        case 'load-sample-ch2':
+        case 'demo-mex':
+        case 'demo-mex-ion': {
+          const ion = action === 'demo-mex-ion';
           switchMode('mission');
-          await loadAndRenderMission('chandrayaan2');
+          await loadAndRenderMission('mex');
           await inspectProfileObservation({
-            mission_id: 'chandrayaan2',
-            observation_id: 'ch2_dfrs_orbit_1420',
-            instrument: 'DFRS'
+            mission_id: 'mex', instrument: 'MaRS (Radio Science)', data_type: 'profile',
+            observation_id: ion ? 'M32ICL2L04_IIX_040931105_60' : 'M32ICL2L04_AIX_040931105_60',
           });
-          toast('Loaded Chandrayaan-2 DFRS Ionosphere Sounding', 'good');
           break;
-        case 'load-sample-venus':
+        }
+        case 'archive-akatsuki':
+        case 'archive-mex': {
           switchMode('mission');
-          await loadAndRenderMission('vex');
-          await inspectProfileObservation({
-            mission_id: 'vex',
-            observation_id: 'vex_vera_0268_temp',
-            instrument: 'VeRa'
-          });
-          toast('Loaded Venus Express VeRa Temperature Profile', 'good');
+          await loadAndRenderMission(action === 'archive-mex' ? 'mex' : 'akatsuki');
+          document.getElementById('veda-archive-browser')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          toast('Pick a date range and product type, tick profiles, then Download or Compare selected', 'good');
           break;
-        case 'load-sample-menca':
-        case 'load-sample-mom':
+        }
+        case 'inspect-active-profile': {
           switchMode('mission');
-          await loadAndRenderMission('mom');
-          await inspectProfileObservation({
-            mission_id: 'mom',
-            observation_id: 'mom_menca_orbit_1200',
-            instrument: 'MENCA'
-          });
-          toast('Loaded Mars MOM MENCA Sounding', 'good');
+          const res = await api.vedaExploreMission(vedaState.activeMissionId);
+          const first = (res.observations || []).find(o => o.data_type === 'profile');
+          if (first) await inspectProfileObservation(first);
+          else toast('No downloaded profiles for this mission yet; use the archive table to download some', 'bad');
           break;
-        case 'inspect-active-profile':
-          switchMode('mission');
-          if (vedaState.missionObservations && vedaState.missionObservations.length > 0) {
-            const firstProf = vedaState.missionObservations.find(o => o.data_type === 'profile') || vedaState.missionObservations[0];
-            await inspectProfileObservation(firstProf);
-          }
-          break;
+        }
         case 'help-drawer': {
           const btnHelp = document.getElementById('btn-help');
           if (btnHelp) btnHelp.click();
           break;
         }
-        case 'compare-venus': {
-          switchMode('body');
-          await loadAndRenderCelestialBody('venus');
-          const checkboxes = document.querySelectorAll('#veda-missions-checkboxes input[type="checkbox"]');
-          vedaState.selectedMissionIdsForBody.clear();
-          checkboxes.forEach(cb => {
-            if (cb.value === 'akatsuki' || cb.value === 'vex') {
-              cb.checked = true;
-              vedaState.selectedMissionIdsForBody.add(cb.value);
-            } else {
-              cb.checked = false;
-            }
-          });
-          updateComparison();
-          break;
-        }
-        case 'compare-mars': {
-          switchMode('body');
-          await loadAndRenderCelestialBody('mars');
-          const checkboxes = document.querySelectorAll('#veda-missions-checkboxes input[type="checkbox"]');
-          vedaState.selectedMissionIdsForBody.clear();
-          checkboxes.forEach(cb => {
-            if (cb.value === 'mom' || cb.value === 'maven') {
-              cb.checked = true;
-              vedaState.selectedMissionIdsForBody.add(cb.value);
-            } else {
-              cb.checked = false;
-            }
-          });
-          updateComparison();
-          break;
-        }
-        case 'load-fits-pluto':
-          switchMode('mission');
-          await loadAndRenderMission('new_horizons');
-          await inspectImageObservation({
-            mission_id: 'new_horizons',
-            observation_id: 'nh_lorri_pluto_approach',
-            instrument: 'LORRI'
-          });
-          break;
         case 'load-fits-akatsuki':
           switchMode('mission');
           await loadAndRenderMission('akatsuki');

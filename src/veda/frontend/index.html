@@ -198,70 +198,62 @@
     <!-- Populated dynamically with mission details -->
   </div>
 
-  <!-- Remote Archive Discovery & Downloader Panel (Collapsible) -->
-  <div id="veda-archive-search-panel" class="archive-search-card" style="display: none;">
-    <div class="card-head" style="justify-content: space-between; align-items: center;">
-      <h3 style="margin: 0;">🌐 Discover Remote Mission Archives (NASA PDS / ESA PSA / JAXA DARTS)</h3>
-      <button class="ghost small" id="btn-close-archive-search">&times; Close</button>
-    </div>
-    <p class="hint" style="margin: 4px 0 12px;">Query authentic international planetary science archives to discover and download calibrated data products directly into VEDA's local cache.</p>
-    <div class="row" style="gap: 12px; align-items: flex-end; flex-wrap: wrap;">
-      <label style="flex: 1; min-width: 150px;">Target Agency / Archive:
-        <select id="archive-agency-select" style="width: 100%; margin-top: 4px;">
-          <option value="all">All Planetary Archives (NASA, ESA, JAXA)</option>
-          <option value="nasa">NASA Planetary Data System (PDS)</option>
-          <option value="esa">ESA Planetary Science Archive (PSA)</option>
-          <option value="jaxa">JAXA DARTS / ISAS</option>
-        </select>
-      </label>
-      <label style="flex: 1; min-width: 150px;">Filter Product / Target:
-        <input type="text" id="archive-search-input" placeholder="e.g. Venus, Pluto, LORRI, RS..." style="width: 100%; margin-top: 4px;" />
-      </label>
-      <button class="primary" id="btn-execute-archive-search" style="height: 38px;">🔍 Query Archive</button>
+  <!-- Archive browser: real archive data sets for the active mission -->
+  <div class="card archive-browser" id="veda-archive-browser">
+    <div class="card-head archive-head">
+      <h2>Archive data</h2>
+      <span class="hint" id="arch-summary"></span>
     </div>
 
-    <!-- Archive Search Results -->
-    <div id="archive-results-container" style="margin-top: 14px; max-height: 280px; overflow-y: auto;">
-      <div class="hint">Click "Query Archive" to search remote repositories.</div>
+    <div class="arch-datasets" id="arch-datasets" aria-label="Payloads and data sets">
+      <div class="hint">Loading data sets...</div>
+    </div>
+
+    <form class="arch-filters" id="arch-filters" autocomplete="off">
+      <label>From <input type="date" id="arch-start" /></label>
+      <label>To <input type="date" id="arch-end" /></label>
+      <label>Product type <select id="arch-ptype"><option value="">All types</option></select></label>
+      <label>Search <input type="search" id="arch-text" placeholder="product id, orbit..." /></label>
+      <label class="inline arch-check"><input type="checkbox" id="arch-profiles-only" checked /> Profiles only</label>
+      <label class="inline arch-check"><input type="checkbox" id="arch-local-only" /> Downloaded only</label>
+      <label>Order <select id="arch-order"><option value="asc">Oldest first</option><option value="desc">Newest first</option></select></label>
+      <button type="submit" class="primary" id="arch-search-btn">Search</button>
+    </form>
+
+    <div class="arch-results-wrap">
+      <table class="data-table arch-results">
+        <thead>
+          <tr>
+            <th class="arch-col-check"><input type="checkbox" id="arch-select-all" aria-label="Select all results" /></th>
+            <th>Time (UTC)</th>
+            <th>Product</th>
+            <th>Type</th>
+            <th>Orbit</th>
+            <th>Payload / level</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="arch-results-body"></tbody>
+      </table>
+    </div>
+
+    <div class="arch-footer">
+      <span id="arch-count" class="hint"></span>
+      <button type="button" class="ghost small" id="arch-more" hidden>Load more</button>
+      <span class="arch-spacer"></span>
+      <div class="arch-progress" id="arch-progress" hidden>
+        <div class="arch-progress-bar"><span id="arch-progress-fill"></span></div>
+        <span id="arch-progress-text" class="hint"></span>
+      </div>
+      <button type="button" class="ghost" id="arch-download" disabled>Download selected</button>
+      <button type="button" class="primary" id="arch-compare" disabled title="Add the selected profiles to the multi-mission comparison">Compare selected</button>
     </div>
   </div>
 
-  <!-- Mission Observations & Visualizer Grid -->
-  <div class="grid-2" style="grid-template-columns: 360px 1fr; gap: 14px;">
-    <!-- Left Column: Instrument Filter & Observations Table -->
-    <div class="card">
-      <div class="card-head" style="align-items: center; justify-content: space-between;">
-        <h2>Instruments & Observations</h2>
-        <button class="ghost small" id="btn-toggle-archive-search" title="Search authentic NASA PDS, ESA PSA, and JAXA DARTS archives">🌐 Remote Archives</button>
-      </div>
-      <div class="row" style="margin-bottom: 10px;">
-        <label style="width: 100%;">Instrument Payload:
-          <select id="veda-instrument-select" style="width: 100%; margin-top: 4px;"></select>
-        </label>
-      </div>
-
-      <div class="obs-table-wrap" style="max-height: 440px; overflow: auto; margin-top: 10px;">
-        <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: calc(12px * var(--font-scale, 1.0));">
-          <thead>
-            <tr style="border-bottom: 1px solid var(--line); text-align: left;">
-              <th style="padding: 4px 6px;">Observation</th>
-              <th style="padding: 4px 6px;">Inst</th>
-              <th style="padding: 4px 6px;">Target</th>
-              <th style="padding: 4px 6px;">Date</th>
-              <th style="padding: 4px 6px;">Action</th>
-            </tr>
-          </thead>
-          <tbody id="veda-observations-table-body">
-            <!-- Populated dynamically -->
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Right Column: Observation Visualizer Workspace -->
-    <div class="card" id="veda-observation-viewer" style="min-height: 520px;">
-      <div class="empty-state">Select an observation on the left to visualize.</div>
-    </div>
+  <!-- Observation viewer -->
+  <div class="card" id="veda-observation-viewer" style="min-height: 420px;">
+    <div class="empty-state">Open a product from the archive table to plot it here.</div>
   </div>
 </section>
 
@@ -301,29 +293,22 @@
       <button class="demo-profile-btn" data-guide-action="demo-akatsuki">
         <span class="demo-btn-icon">🟡</span>
         <div class="demo-btn-info">
-          <strong>Load Akatsuki Venus Radio Occultation Sounding (VCO)</strong>
-          <span class="demo-btn-sub">Venus (0 to 100 km) : JAXA DARTS RS Inversion</span>
+          <strong>Akatsuki radio occultation, Venus (2016-03-03)</strong>
+          <span class="demo-btn-sub">Level 4 temperature and pressure, 39 to 95 km : JAXA DARTS</span>
         </div>
       </button>
-      <button class="demo-profile-btn" data-guide-action="demo-cassini">
-        <span class="demo-btn-icon">🟠</span>
+      <button class="demo-profile-btn" data-guide-action="demo-mex">
+        <span class="demo-btn-icon">🔴</span>
         <div class="demo-btn-info">
-          <strong>Load Cassini Titan Neutral Ionosphere Profile</strong>
-          <span class="demo-btn-sub">Titan (0 to 300 km) : NASA PDS RSS Occultation</span>
+          <strong>Mars Express MaRS occultation, Mars (2004-04-02)</strong>
+          <span class="demo-btn-sub">Level 4 neutral atmosphere with uncertainties, 5 to 49 km : ESA PSA</span>
         </div>
       </button>
-      <button class="demo-profile-btn" data-guide-action="demo-new-horizons">
-        <span class="demo-btn-icon">❄️</span>
+      <button class="demo-profile-btn" data-guide-action="demo-mex-ion">
+        <span class="demo-btn-icon">⚡</span>
         <div class="demo-btn-info">
-          <strong>Load New Horizons Pluto Atmospheric Profile</strong>
-          <span class="demo-btn-sub">Pluto (0 to 100 km) : NASA PDS REX Ingress</span>
-        </div>
-      </button>
-      <button class="demo-profile-btn" data-guide-action="demo-bepicolombo">
-        <span class="demo-btn-icon">🛰️</span>
-        <div class="demo-btn-info">
-          <strong>Load BepiColombo Venus Flyby Science Data</strong>
-          <span class="demo-btn-sub">Venus (50 to 95 km) : ESA PSA MORE Radio Science</span>
+          <strong>Mars Express MaRS ionosphere, Mars (2004-04-02)</strong>
+          <span class="demo-btn-sub">Level 4 electron density : ESA PSA</span>
         </div>
       </button>
     </div>
@@ -400,8 +385,7 @@
       </div>
       <div class="guide-actions-bar">
         <button class="guide-action-btn" data-guide-action="load-sample-akatsuki">📥 Load Venus Akatsuki Radio Science (.tab)</button>
-        <button class="guide-action-btn" data-guide-action="load-sample-mom">📥 Load Mars MOM MENCA Sounding (.tab)</button>
-        <button class="guide-action-btn" data-guide-action="load-sample-ch2">📥 Load Chandrayaan-2 DFRS Ionosphere (.tab)</button>
+        <button class="guide-action-btn" data-guide-action="demo-mex">📥 Load Mars Express MaRS profile (.LBL + .TAB)</button>
         <button class="guide-action-btn secondary" data-guide-action="click-file-input">📁 Browse Local File</button>
       </div>
     </div>
@@ -479,8 +463,8 @@
         </ul>
       </div>
       <div class="guide-actions-bar">
-        <button class="guide-action-btn" data-guide-action="compare-venus">🪐 Compare Venus Express vs Akatsuki</button>
-        <button class="guide-action-btn" data-guide-action="compare-mars">🔴 Compare Mars MOM vs MAVEN</button>
+        <button class="guide-action-btn" data-guide-action="archive-akatsuki">🪐 Search Akatsuki profiles in the archive</button>
+        <button class="guide-action-btn" data-guide-action="archive-mex">🔴 Search Mars Express profiles in the archive</button>
       </div>
     </div>
 
@@ -506,7 +490,6 @@
         </ul>
       </div>
       <div class="guide-actions-bar">
-        <button class="guide-action-btn" data-guide-action="load-fits-pluto">❄️ Slice Pluto LORRI FITS Image</button>
         <button class="guide-action-btn" data-guide-action="load-fits-akatsuki">🟡 Slice Venus Akatsuki UVI FITS Image</button>
       </div>
     </div>

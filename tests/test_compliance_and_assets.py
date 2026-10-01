@@ -126,24 +126,26 @@ def test_frontend_zero_external_cdn():
 # 4. QUALITY OF LIFE FEATURES VERIFICATION
 # ===========================================================================
 
-def test_interactive_demonstration_profiles_present():
-    """Verify that the 4 interactive demonstration profiles exist in guide tab."""
+def test_every_guide_button_has_a_handler():
+    """Regression: three Workflow Guide buttons did nothing (no handler case)."""
+    import re as _re
     index_html = (FRONTEND / "index.html").read_text(encoding="utf-8")
     app_js = (FRONTEND / "js" / "veda_app.js").read_text(encoding="utf-8")
+    actions = set(_re.findall(r'data-guide-action="([^"]+)"', index_html))
+    handled = set(_re.findall(r"case '([^']+)':", app_js))
+    assert actions, "no guide buttons found"
+    assert not actions - handled, f"guide buttons without a handler: {sorted(actions - handled)}"
 
-    expected_labels = [
-        "Load Akatsuki Venus Radio Occultation Sounding (VCO)",
-        "Load Cassini Titan Neutral Ionosphere Profile",
-        "Load New Horizons Pluto Atmospheric Profile",
-        "Load BepiColombo Venus Flyby Science Data",
-    ]
-    for label in expected_labels:
-        assert label in index_html, f"Missing demo button label in index.html: {label}"
 
-    actions = ["demo-akatsuki", "demo-cassini", "demo-new-horizons", "demo-bepicolombo"]
-    for act in actions:
-        assert act in index_html, f"Missing data-guide-action in index.html: {act}"
-        assert act in app_js, f"Missing handler for action in veda_app.js: {act}"
+def test_demo_buttons_use_bundled_real_products():
+    """Demo buttons may only open products that ship with VEDA."""
+    app_js = (FRONTEND / "js" / "veda_app.js").read_text(encoding="utf-8")
+    from veda.config import sampledata_dir
+    shipped = {f.stem for f in sampledata_dir().rglob("*") if f.is_file()}
+    import re as _re
+    for oid in _re.findall(r"observation_id: (?:ion \? )?'([^']+)'(?: : '([^']+)')?", app_js):
+        for o in filter(None, oid):
+            assert o in shipped, f"demo opens {o}, which is not bundled"
 
 
 def test_planetary_quick_card_and_constants_present():
