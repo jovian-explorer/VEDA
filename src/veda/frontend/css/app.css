@@ -1569,3 +1569,13 @@ a.btn {
 }
 a.btn.primary { background: var(--focal-gradient); color: #fff; border-color: var(--focal); }
 a.btn:hover { border-color: var(--focal); }
+
+/* ---------- Observation geometry ---------- */
+.geo-box { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
+.geo-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; justify-content: space-between; }
+.geo-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.geo-proj { margin: 0; }
+.geo-plot { height: 560px; margin-top: 10px; }
+.geo-facts { margin-top: 8px; }
+.geo-prompt ul { margin: 6px 0 12px; }
+.geo-proj[hidden] { display: none; }

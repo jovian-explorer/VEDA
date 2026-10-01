@@ -169,3 +169,77 @@ def profile(dataset_id: str, product_id: str,
     d["dataset_id"] = dataset_id
     d["product"] = catalog.get_product(dataset_id, product_id)
     return d
+
+
+# ------------------------------------------------------------------ geometry (SPICE)
+
+geometry_router = APIRouter(prefix="/api/veda/geometry", tags=["geometry"])
+
+
+def _geometry_inputs(dataset_id: str, product_id: str):
+    import datetime as dt
+    from ..geometry import kernels
+    ds = get_dataset(dataset_id)
+    prod = catalog.get_product(dataset_id, product_id)
+    if not ds or not prod:
+        raise HTTPException(404, f"Unknown product {dataset_id}/{product_id}")
+    if ds.mission_id not in kernels.MISSION_SPICE:
+        raise HTTPException(404, f"No SPICE ephemeris source is set up for {ds.mission_id} yet")
+    if not prod.get("start_time"):
+        raise HTTPException(422, "This product has no observation time")
+    try:
+        plan = kernels.plan(ds.mission_id, ds.body_ids[0], dt.date.fromisoformat(prod["start_time"][:10]))
+    except LookupError as exc:
+        raise HTTPException(404, str(exc))
+    except net.ArchiveError as exc:
+        raise HTTPException(502, str(exc))
+    return ds, prod, plan
+
+
+@geometry_router.get("/{dataset_id}/{product_id}")
+def geometry(dataset_id: str, product_id: str, span_min: float = Query(90, ge=5, le=1440)) -> Dict[str, Any]:
+    """Observation geometry, or {"kernels_needed": true, ...} listing the SPICE kernels to download."""
+    from ..core.registry import get_body
+    from ..geometry import kernels
+    from ..geometry.compute import observation_geometry
+    ds, prod, plan = _geometry_inputs(dataset_id, product_id)
+    if plan.missing:
+        files = [{"name": u.rsplit("/", 1)[1], "url": u, "bytes": kernels.remote_size(u)} for u in plan.missing]
+        return {"kernels_needed": True, "kernels": files,
+                "total_mb": round(sum(f["bytes"] for f in files) / 1048576, 1)}
+    try:
+        prof = load_profile(dataset_id, product_id)
+    except (LookupError, ValueError) as exc:
+        raise HTTPException(422, str(exc))
+    tr = prof.track or {}
+    if "et" not in tr:
+        raise HTTPException(422, "This product has no ephemeris-time column, so its geometry cannot be computed")
+    body = get_body(ds.body_ids[0])
+    try:
+        g = observation_geometry(plan, kernels.MISSION_SPICE[ds.mission_id].naif_id, body.id, tr["et"],
+                                 span_min=span_min,
+                                 product_track={"latitude": tr.get("latitude"), "longitude": tr.get("longitude"),
+                                                "radius": prof.altitude_km + body.radius_km})
+    except (LookupError, ValueError) as exc:
+        raise HTTPException(422, str(exc))
+    g["kernels"] = [u.rsplit("/", 1)[1] for u in plan.urls]
+    g["ephemeris_source"] = kernels.MISSION_SPICE[ds.mission_id].source
+    return g
+
+
+@geometry_router.post("/{dataset_id}/{product_id}/prepare")
+def prepare_geometry(dataset_id: str, product_id: str) -> Dict[str, Any]:
+    """Download the SPICE kernels this observation needs (background job)."""
+    from ..geometry import kernels
+    _, _, plan = _geometry_inputs(dataset_id, product_id)
+    job = _new_job("kernels", total=len(plan.missing))
+
+    def work(j):
+        def progress(i, n, msg):
+            j.update(done=i, total=n, message=f"Downloading {msg}")
+        kernels.download(plan, progress=progress)
+        j.update(done=j["total"], message="SPICE kernels ready")
+        return {"kernels": [u.rsplit("/", 1)[1] for u in plan.urls]}
+
+    _run(job, work)
+    return {"job_id": job["id"]}

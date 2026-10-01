@@ -5,6 +5,7 @@
 import { api, state } from './api.js';
 import { renderMath, toast, cleanPlotlyMath, themedLayout, plotColors, drawer } from './ui.js';
 import { setupArchiveBrowser, showMissionArchive } from './archive_browser.js';
+import { showGeometry } from './geometry.js';
 import { style as plotStyle, styleTrace, styleLayout, sigmaBand, orient, paletteColor, plotStyleBody, exportFigure } from './plot_style.js';
 
 // VEDA Global State
@@ -1303,7 +1304,8 @@ export async function loadAndRenderMission(missionId) {
     `;
   }
 
-  await showMissionArchive(missionId);
+  // Indexing a mission's archive can take seconds; do not hold up whatever opened the mission.
+  showMissionArchive(missionId);
 }
 
 export async function inspectObservation(obs) {
@@ -1377,6 +1379,7 @@ async function inspectProfileObservation(obs) {
           <div class="toolbar-actions">
             <button type="button" class="btn small ghost" id="btn-plot-style" title="Lines, colours, uncertainty, axes, fonts, journal templates">🎨 Plot style</button>
             <button type="button" class="btn small ghost" id="btn-export-figure" title="Download the plot at journal column width (set in Plot style)">🖼️ Export figure</button>
+            <button type="button" class="btn small ghost" id="btn-geometry" title="Orbit, view from Earth, tangent-point map and solar angles (SPICE)">🛰️ Geometry</button>
             ${prof.mission_id ? `
               <a class="btn small primary" href="${api.vedaExportProfileCsvUrl(prof.mission_id, prof.observation_id)}" download>📥 Export CSV</a>
               <a class="btn small ghost" href="${api.vedaExportProfileJsonUrl(prof.mission_id, prof.observation_id)}" download>Structured JSON</a>
@@ -1429,6 +1432,7 @@ async function inspectProfileObservation(obs) {
         </div>
 
         <div id="veda-single-profile-plot" style="height: 480px; margin-top: 10px;"></div>
+        <div id="veda-geometry-box" class="geo-box" hidden></div>
       </div>
     `;
 
@@ -1474,6 +1478,14 @@ async function inspectProfileObservation(obs) {
       renderSingleProfilePlot(prof, varSelect ? varSelect.value : bestVar);
     }));
     document.getElementById('btn-plot-style')?.addEventListener('click', openPlotStyle);
+    document.getElementById('btn-geometry')?.addEventListener('click', () => {
+      const box = document.getElementById('veda-geometry-box');
+      box.hidden = !box.hidden;
+      if (!box.hidden) {
+        showGeometry(box, { dataset_id: prof.dataset_id || obs.dataset_id, product_id: prof.observation_id });
+        box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
     document.getElementById('btn-export-figure')?.addEventListener('click', () =>
       exportFigure(document.getElementById('veda-single-profile-plot'), `veda_${prof.mission_id || 'profile'}_${prof.observation_id}`));
 
