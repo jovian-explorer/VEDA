@@ -613,17 +613,23 @@ def fetch_product(dataset_id: str, product_id: str,
         candidates = [volume_url + p for p in dict.fromkeys([prod["path"], prod["path"].lower(), prod["path"].upper()])]
     product_dirs = list(dict.fromkeys(u.rsplit("/", 1)[0] + "/" for u in candidates))
     if not label_path.is_file():
+        refused = None          # a server that answers 403/5xx is not the same as a missing file
         for url in candidates:
             try:
                 http.download(url, label_path, login_url=ds.login_url, max_bytes=max_bytes)
                 # the spelling that worked goes first for the pointer files
                 product_dirs.insert(0, product_dirs.pop(product_dirs.index(url.rsplit("/", 1)[0] + "/")))
                 break
-            except http.LoginRequired:
+            except (http.LoginRequired, http.TooLarge):
                 raise
-            except http.ArchiveError:
+            except http.ArchiveError as exc:
+                if "HTTP 404" not in str(exc):
+                    refused = refused or exc
                 continue
         else:
+            if refused is not None:
+                raise http.ArchiveError(f"{refused} The archive lists this product, but its server does not "
+                                        "serve it at the moment; try again later.")
             raise http.ArchiveError(f"{prod['path']} is not on the archive server ({volume_url})")
     if label_path.suffix.lower() not in (".lbl", ".xml", ".lblx") and not _has_attached_label(label_path):
         return label_path

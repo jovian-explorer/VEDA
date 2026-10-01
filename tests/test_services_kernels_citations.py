@@ -164,3 +164,22 @@ def test_structure_answers_413_with_the_size_until_confirmed(monkeypatch):
     assert r.status_code == 413 and r.json()["detail"]["size_bytes"] == 1_200_000_000
     assert c.get("/api/veda/product/pds-juno-uvs/x/structure", params={"confirm_large": True}).status_code == 502
     assert seen[0] == 250_000_000 and seen[1] is None
+
+
+def test_refused_server_is_reported_as_refused_not_missing(monkeypatch):
+    from veda.archives import catalog, net
+    ds = get_dataset("pds-galileo-radioscience")
+    url = "https://pds-rings.seti.org/pds4/bundles/gll.rss/x/g1/p.xml"
+    monkeypatch.setattr(catalog, "get_product", lambda d, p: {"volume": "", "path": url})
+
+    def refuse(u, dest, **kw):
+        raise net.ArchiveError("pds-rings.seti.org refused the request (HTTP 403).")
+    monkeypatch.setattr(net, "download", refuse)
+    with pytest.raises(net.ArchiveError, match="HTTP 403"):
+        catalog.fetch_product(ds.id, "p")
+
+    def too_big(u, dest, **kw):
+        raise net.TooLarge("p.fit", 900_000_000)
+    monkeypatch.setattr(net, "download", too_big)
+    with pytest.raises(net.TooLarge):
+        catalog.fetch_product(ds.id, "p", max_bytes=1000)
