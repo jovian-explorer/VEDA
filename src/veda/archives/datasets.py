@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 # (filename regex, product type shown to the user, kind)
 #   kind: "profile"    vertical profile VEDA can plot and compare
@@ -33,10 +33,14 @@ class Dataset:
     rules: Tuple[Rule, ...] = ()
     # Column names in the product label for loadable profiles (match_column
     # handles variants such as "TEMPERATURE (MEDIUM ...)").
-    profile_columns: Dict[str, str] = field(default_factory=dict)
+    profile_columns: Dict[str, Union[str, Tuple[str, ...]]] = field(default_factory=dict)
     citation: str = ""
     doi: str = ""
     login_url: Optional[str] = None   # portal needing an account
+    # Regex on the file name giving the observation time when the index has
+    # no START_TIME. Named groups: year (4 digits) or yy, doy or month+day,
+    # and optional hh, mm, ss.
+    time_from_name: Optional[str] = None
 
     def classify(self, file_name: str) -> Tuple[str, str]:
         name = file_name.lower()
@@ -44,6 +48,22 @@ class Dataset:
             if re.search(rx, name):
                 return label, kind
         return "Product", "other"
+
+    def time_from_filename(self, file_name: str) -> str:
+        if not self.time_from_name:
+            return ""
+        m = re.search(self.time_from_name, file_name, re.I)
+        if not m:
+            return ""
+        import datetime as _dt
+        g = m.groupdict()
+        year = int(g["year"]) if g.get("year") else 2000 + int(g["yy"]) if int(g["yy"]) < 70 else 1900 + int(g["yy"])
+        if g.get("doy"):
+            day = _dt.date(year, 1, 1) + _dt.timedelta(days=int(g["doy"]) - 1)
+        else:
+            day = _dt.date(year, int(g["month"]), int(g["day"]))
+        hms = [int(g.get(k) or 0) for k in ("hh", "mm", "ss")]
+        return f"{day.isoformat()}T{hms[0]:02d}:{hms[1]:02d}:{hms[2]:02d}"
 
     def to_dict(self) -> Dict[str, object]:
         return {
@@ -72,7 +92,44 @@ AKATSUKI_PROFILE_COLUMNS = {
     "et": "EPHEMERIS_SECONDS",
 }
 
+MEX_CITATION = ("Paetzold, M., et al. (2016). Mars Express 10 years at Mars: observations by the Mars "
+                "Express Radio Science Experiment (MaRS). Planetary and Space Science, 127, 44-90.")
+RS_PROFILE_COLUMNS = {  # ESA/JAXA radio-science L4 layout (MaRS, VeRa heritage)
+    "radius": "RADIUS",
+    "temperature": "TEMPERATURE",
+    "temperature_sigma": "SIGMA TEMPERATURE",
+    "pressure": "PRESSURE",
+    "pressure_sigma": "SIGMA PRESSURE",
+    "number_density": "NUMBER DENSITY",
+    "electron_density": ("ELECTRON NUMBER DENSITY", "ELECTRON DENSITY"),
+    "electron_density_sigma": ("SIGMA ELECTRON NUMBER DENSITY", "NOISE LEVEL ELECTRON NUMBER DENSITY",
+                               "SIGMA ELECTRON DENSITY"),
+    "refractivity": "REFRACTIVITY",
+    "latitude": "LATITUDE",
+    "longitude": "LONGITUDE",
+    "sza": "SOLAR ZENITH ANGLE",
+    "lst": "LOCAL SOLAR TIME",
+    "et": "EPHEMERIS SECONDS",
+}
+
 DATASETS: List[Dataset] = [
+    Dataset(
+        id="mex-m-mrs-5-occ", mission_id="mex", instrument="MaRS (Radio Science)", level="L4",
+        title="Mars Express radio occultation: neutral atmosphere and ionosphere profiles (L4)",
+        body_ids=("mars",), archive="ESA PSA",
+        base_url="https://archives.esac.esa.int/psa/ftp/MARS-EXPRESS/MRS/",
+        # The V1.0 and V2.0 copies of 9101 overlap; the catalogue keys products by id, so
+        # the later volume's rows replace the earlier ones.
+        volume_pattern=r"^MEX-M-MRS-5-OCC-\d{4}-V\d\.\d$",
+        rules=(
+            (r"l04_a(\w{2})_", "L4 neutral atmosphere profile", "profile"),
+            (r"l04_i(\w{2})_", "L4 ionosphere electron density profile", "profile"),
+        ),
+        profile_columns=RS_PROFILE_COLUMNS,
+        citation=MEX_CITATION,
+        # e.g. M65RSR0L04_AIX_041601543_60.LBL -> 2004 day 160 15:43
+        time_from_name=r"_(?P<yy>\d{2})(?P<doy>\d{3})(?P<hh>\d{2})(?P<mm>\d{2})_\d+\.",
+    ),
     Dataset(
         id="vco-v-rs-5-occ-v1.0", mission_id="akatsuki", instrument="RS (Radio Science)", level="L3/L4",
         title="Akatsuki radio occultation: refractivity (L3) and atmospheric profiles (L4)",

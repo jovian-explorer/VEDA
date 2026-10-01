@@ -139,7 +139,10 @@ def index_volume(ds: Dataset, volume: str) -> List[Dict[str, Any]]:
                  if k not in ("FILE_SPECIFICATION_NAME", "PATH_NAME", "FILE_NAME") and v}
         out.append({
             "dataset_id": ds.id, "product_id": product_id, "volume": volume, "path": path,
-            "start_time": _normalise_time(_pick(row, "START_TIME", "OBSERVATION_TIME", "PRODUCT_CREATION_TIME")),
+            # Never fall back to PRODUCT_CREATION_TIME: that is when the archive
+            # file was made, not when the observation was taken.
+            "start_time": _normalise_time(_pick(row, "START_TIME", "OBSERVATION_TIME"))
+                          or ds.time_from_filename(PurePosixPath(path).name),
             "stop_time": _normalise_time(_pick(row, "STOP_TIME")),
             "target": _pick(row, "TARGET_NAME", "TARGET*").upper(),
             "product_type": ptype, "kind": kind, "extra": json.dumps(extra),
@@ -265,46 +268,82 @@ def local_label_path(dataset_id: str, volume: str, path: str) -> Path:
     return PRODUCT_ROOT / dataset_id / volume / PurePosixPath(path)
 
 
-_POINTER = re.compile(r'^\s*\^\w+\s*=\s*\(?\s*"?([^",)\s]+\.\w+)"?', re.M)
+_POINTER = re.compile(r'^\s*\^(\w+)\s*=\s*\(?\s*"?([^",)\s]+\.\w+)"?', re.M)
 
 
-def label_pointers(label_text: str) -> List[str]:
-    """Files a PDS3 label points to (^TABLE = "x.tab", ^SERIES = ("x.dat", 1) ...)."""
-    names = []
+def label_pointers(label_text: str) -> List[tuple]:
+    """(pointer, file) pairs a PDS3 label refers to: ^TABLE = "x.tab", ^SERIES = ("x.dat", 1) ..."""
+    out = []
     for m in _POINTER.finditer(label_text):
-        name = m.group(1)
-        if name.lower().endswith((".fmt",)):
+        pair = (m.group(1).upper(), m.group(2))
+        if pair not in out:
+            out.append(pair)
+    return out
+
+
+def _case_variants(name: str) -> List[str]:
+    return list(dict.fromkeys([name, name.upper(), name.lower()]))
+
+
+def _fetch_first(urls: List[str], dest: Path, login_url: Optional[str], progress=None) -> bool:
+    for u in urls:
+        try:
+            http.download(u, dest, login_url=login_url, progress=progress)
+            return True
+        except http.LoginRequired:
+            raise
+        except http.ArchiveError:
             continue
-        if name not in names:
-            names.append(name)
-    return names
+    return False
 
 
 def fetch_product(dataset_id: str, product_id: str,
                   progress: Optional[Callable[[int, int], None]] = None) -> Path:
-    """Download a product's label and every data file it points to; returns the label path."""
+    """Download a product's label and the files it points to; returns the label path.
+
+    Pointer files are looked up the way PDS3 resolves them: next to the label
+    first, then in the volume's LABEL/ (format files) or DOCUMENT/ (descriptions)
+    folder.  Data objects (^TABLE, ^SERIES, ...) are required; format files are
+    fetched because the table cannot be read without them; description texts
+    are optional.
+    """
     ds = get_dataset(dataset_id)
     prod = get_product(dataset_id, product_id)
     if not ds or not prod:
         raise http.ArchiveError(f"Unknown product {dataset_id}/{product_id}; refresh the dataset index.")
     label_path = local_label_path(ds.id, prod["volume"], prod["path"])
     remote_dir = prod["url"].rsplit("/", 1)[0] + "/"
+    volume_url = f"{ds.base_url}{prod['volume']}/"
     if not label_path.is_file():
         http.download(prod["url"], label_path, login_url=ds.login_url)
-    is_label = label_path.suffix.lower() == ".lbl"
-    files = label_pointers(label_path.read_text(encoding="latin-1", errors="replace")) if is_label else []
-    for i, name in enumerate(files):
+    if label_path.suffix.lower() != ".lbl":
+        return label_path
+
+    pending = label_pointers(label_path.read_text(encoding="latin-1", errors="replace"))
+    seen = set()
+    while pending:
+        pointer, name = pending.pop(0)
+        if name.lower() in seen:
+            continue
+        seen.add(name.lower())
         dest = label_path.parent / name
         if dest.is_file():
             continue
-        try:
-            http.download(remote_dir + name, dest, login_url=ds.login_url,
-                          progress=(lambda d, t, i=i: progress(i * 100 + int(100 * d / t) if t else 0,
-                                                               len(files) * 100)) if progress else None)
-        except http.ArchiveError:
-            # Archives differ in file-name case; try the other one before giving up.
-            alt = name.upper() if name != name.upper() else name.lower()
-            http.download(remote_dir + alt, dest, login_url=ds.login_url)
+        is_format = name.lower().endswith(".fmt") or pointer == "STRUCTURE"
+        is_doc = "DESCRIPTION" in pointer or name.lower().endswith((".txt", ".asc", ".cat"))
+        folders = [remote_dir]
+        if is_format:
+            folders += [volume_url + d for d in ("LABEL/", "label/")]
+        if is_doc:
+            folders += [volume_url + d for d in ("DOCUMENT/", "document/")]
+        folders.append(volume_url)
+        urls = [f + n for f in folders for n in _case_variants(name)]
+        ok = _fetch_first(urls, dest, ds.login_url, progress=progress if not (is_format or is_doc) else None)
+        if not ok and not is_doc:
+            raise http.ArchiveError(f"{name} (referenced by {label_path.name}) is missing from the archive.")
+        if ok and is_format:
+            # Format files can include further format files.
+            pending += label_pointers(dest.read_text(encoding="latin-1", errors="replace"))
     return label_path
 
 

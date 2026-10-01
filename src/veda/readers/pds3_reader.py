@@ -58,17 +58,21 @@ def match_column(names, query: str) -> Optional[str]:
       * uncertainty columns ("SIGMA TEMPERATURE ...") come last;
       * of several retrieval variants the nominal MEDIUM one is preferred.
     """
-    q = query.strip().upper()
+    def norm(text: str) -> str:
+        # "EPHEMERIS_SECONDS" and "EPHEMERIS SECONDS" are the same column.
+        return re.sub(r"[\s_]+", " ", text.strip().strip('"').upper())
+
+    q = norm(query)
     if not q:
         return None
     names = list(names)
     for k in names:
-        if k.strip().upper() == q:
+        if norm(k) == q:
             return k
     word = re.compile(r"(?<![A-Z0-9])" + re.escape(q) + r"(?![A-Z0-9])")
     ranked = []
     for i, k in enumerate(names):
-        u = k.strip().upper()
+        u = norm(k)
         if not word.search(u):
             continue
         uncertain = u.startswith(_UNCERTAINTY_PREFIXES)

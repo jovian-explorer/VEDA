@@ -14,26 +14,71 @@ from .catalog import fetch_product, get_product
 from .datasets import Dataset, get_dataset
 
 
-def _col(tbl, name: Optional[str]) -> Optional[np.ndarray]:
+def _key(tbl, name) -> Optional[str]:
+    """Column for ``name``; a tuple/list gives alternatives tried in order."""
     if not name:
         return None
-    key = match_column(tbl.columns.keys(), name)
+    for cand in ([name] if isinstance(name, str) else name):
+        key = match_column(tbl.columns.keys(), cand)
+        if key is not None:
+            return key
+    return None
+
+
+def _col(tbl, name) -> Optional[np.ndarray]:
+    key = _key(tbl, name)
     if key is None:
         return None
     arr = np.asarray(tbl.columns[key], dtype=float)
     return arr if np.isfinite(arr).any() else None
 
 
-def _sigma(tbl, name: Optional[str]) -> Optional[np.ndarray]:
+def _unit(tbl, name) -> str:
+    key = _key(tbl, name)
+    return (tbl.units.get(key, "") if key else "").upper().replace('"', "").strip()
+
+
+def _scale(unit: str) -> float:
+    """Leading power-of-ten factor, e.g. '10^6 PER CUBIC METER' -> 1e6."""
+    import re as _re
+    m = _re.search(r"10\s*(?:\^|\*\*)\s*([+-]?\d+)", unit) or _re.search(r"\b1E([+-]?\d+)\b", unit)
+    return 10.0 ** int(m.group(1)) if m else 1.0
+
+
+def _to_hpa(values: np.ndarray, unit: str) -> np.ndarray:
+    u = unit.replace(" ", "")
+    if "HPA" in u or "MBAR" in u or "MILLIBAR" in u:
+        return values
+    if u in ("BAR", "BARS"):
+        return values * 1000.0
+    return values / 100.0               # PASCAL (the PDS radio-science default)
+
+
+def _to_per_cm3(values: np.ndarray, unit: str) -> np.ndarray:
+    import re as _re
+    values = values * _scale(unit)      # e.g. "10^6 PER CUBIC METER"
+    # Word-level test: squeezing out spaces made "CUBIC METER" contain "CM".
+    if "CENTIMETER" in unit or _re.search(r"(?<![A-Z])CM(?![A-Z])", unit):
+        return values
+    return values / 1e6                 # per cubic metre -> per cm^3
+
+
+def _to_kelvin(values: np.ndarray, unit: str) -> np.ndarray:
+    return values + 273.15 if "CELSIUS" in unit or unit in ("C", "DEGC") else values
+
+
+def _sigma(tbl, name) -> Optional[np.ndarray]:
     """Uncertainty columns are skipped by match_column, so look them up directly."""
     if not name:
         return None
-    want = name.upper()
-    for k, v in tbl.columns.items():
-        u = k.upper()
-        if u.startswith(want) and ("MEDIUM" in u or not any("MEDIUM" in c.upper() for c in tbl.columns)):
-            arr = np.asarray(v, dtype=float)
-            return arr if np.isfinite(arr).any() else None
+    for want in ([name] if isinstance(name, str) else name):
+        want = want.upper().replace("_", " ")
+        for k, v in tbl.columns.items():
+            u = k.upper().replace("_", " ").strip('"')
+            if u.startswith(want) and ("MEDIUM" in u or not any("MEDIUM" in c.upper() for c in tbl.columns)):
+                arr = np.asarray(v, dtype=float)
+                if np.isfinite(arr).any():
+                    return arr
     return None
 
 
@@ -60,10 +105,17 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
             raise ValueError(f"{label.name}: no altitude or radius column")
         z = r - body.radius_km
 
+    # Units come from the label, so Pa/hPa/bar and m^-3/cm^-3 are all handled.
+    t_unit = _unit(tbl, cols.get("temperature"))
+    p_unit = _unit(tbl, cols.get("pressure"))
+    ne_unit = _unit(tbl, cols.get("electron_density"))
     t_k = _col(tbl, cols.get("temperature"))
+    if t_k is not None:
+        t_k = _to_kelvin(t_k, t_unit)
     p = _col(tbl, cols.get("pressure"))
-    p_hpa = p / 100.0 if p is not None else None          # PDS RS products give Pa
+    p_hpa = _to_hpa(p, p_unit) if p is not None else None
     ne = _col(tbl, cols.get("electron_density"))
+    ne_cm3 = _to_per_cm3(ne, ne_unit) if ne is not None else None
     n = _col(tbl, cols.get("number_density"))
 
     unc: Dict[str, np.ndarray] = {}
@@ -73,7 +125,11 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
         unc["temperature_c"] = s
     s = _sigma(tbl, cols.get("pressure_sigma"))
     if s is not None:
-        unc["pressure_hpa"] = s / 100.0
+        unc["pressure_hpa"] = _to_hpa(s, p_unit)
+    s = _sigma(tbl, cols.get("electron_density_sigma"))
+    if s is not None:
+        sig_key = next((k for k in tbl.columns if k.upper().strip('"').startswith(("SIGMA ELECTRON", "NOISE LEVEL ELECTRON"))), None)
+        unc["electron_density_cm3"] = _to_per_cm3(s, (tbl.units.get(sig_key, "") or ne_unit).upper())
 
     track: Dict[str, np.ndarray] = {}
     for key in ("latitude", "longitude", "sza", "lst"):
@@ -99,7 +155,8 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
         pressure_hpa=p_hpa,
         temperature_k=t_k,
         temperature_c=t_k - 273.15 if t_k is not None else None,
-        electron_density_cm3=ne / 1e6 if ne is not None else None,  # m^-3 -> cm^-3
+        electron_density_cm3=ne_cm3,
+        refractivity=_col(tbl, cols.get("refractivity")),
         provenance=ProvenanceRecord(
             mission_id=ds.mission_id, instrument=ds.instrument,
             product_level=ds.level, original_file=label.name,
