@@ -62,7 +62,13 @@ All 19 missions are connected, with 141 data sets covering nearly all of their p
 Units are read from the label and converted to VEDA's display units: pressure from Pa, hPa, bar or mbar; temperature from K or degrees C; densities from m^-3 or cm^-3, including scaled units such as `10^6 PER CUBIC METER`; radius and altitude from metres. Times come from the archive index (start time), the label or the file name; product creation dates are never used as observation times.
 
 ### Comparing observations
-Selected profiles, from one mission or many, are interpolated onto a common altitude grid. The comparison shows each profile, the mean $\mu(z) = \frac{1}{M}\sum_m X_m(z)$ and the spread $\mu(z) \pm 1\sigma(z)$. Choose the variable and units on the left, colour the curves by mission, date or latitude, and toggle the mean and spread. **Export Comparison CSV** writes the gridded table.
+Selected profiles, from one mission or many, are interpolated onto a common altitude grid (0.5 km by default; altitudes below the reference level, such as Mars below the MOLA datum, are kept). Interpolation never extrapolates beyond a profile and never bridges a data gap wider than five times the profile's typical spacing.
+
+* Temperature and other quantities that vary smoothly: arithmetic mean $\mu(z) = \frac{1}{M}\sum_m X_m(z)$ and the sample standard deviation (ddof = 1) as the $\pm 1\sigma$ spread.
+* Pressure, mass and number density, and electron density (they change by orders of magnitude with height): interpolation and averaging in log space, i.e. the geometric mean, with the spread as a multiplicative $1\sigma$ factor. If any value is zero or negative (noisy electron densities), VEDA falls back to the linear treatment.
+* The spread is drawn only at levels covered by at least two profiles; a single profile gives no spread.
+
+Choose the variable and units on the left, colour the curves by mission, date or latitude, and toggle the mean and spread. **Export Comparison CSV** writes the gridded table.
 
 ### Live data sets
 Data sets marked **live search** are not copied as an index: when you give **From** and **To** dates, VEDA asks the archive server for that instrument and window (ESA PSA EPN-TAP for Mars Express, Venus Express, Rosetta, BepiColombo and Huygens; the NASA PDS Registry API for MAVEN, Juno, New Horizons, MESSENGER, LRO, Galileo, Magellan, MGS, MRO, Pioneer Venus and Dawn; OPUS for Cassini, Galileo and New Horizons imaging and spectra). Up to 5,000 products per data set and window are listed; if there are more, VEDA says so and you can narrow the dates. Windows already searched in the last week are answered from the local catalogue.

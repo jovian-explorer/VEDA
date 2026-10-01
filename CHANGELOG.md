@@ -10,6 +10,7 @@ All notable changes to VEDA. VEDA is pre-release software at version **0.0.1** u
 - **Temperature-dependent heat capacity** for Venus, Mars, Titan and Pluto: cp(T) from the JANAF ideal-gas tables of the main constituents, weighted by composition (Mars 740 J/(kg K) at 200 K instead of a fixed 830; Venus 850 at 300 K rising to 1140 at 735 K). Used for N^2, the new dry adiabatic lapse rate g/cp(T) and the speed of sound; potential temperature keeps the conventional constant kappa at the reference cp.
 - N^2, buoyancy period and dry adiabatic lapse rate are computed from temperature alone (they were skipped for profiles without a pressure column).
 - Removed a second, Earth-constant implementation of potential temperature and N^2 (dry-air R and cp, 1000 hPa) that was not used by the app, so every derived value comes from one body-aware implementation.
+- **Comparisons**: pressure, densities and electron density are interpolated and averaged in log space (geometric mean, multiplicative spread); the spread is the sample standard deviation and is shown only where at least two profiles overlap; data gaps are no longer bridged; altitudes below the reference level (Mars below the MOLA datum, the Galileo probe below 1 bar) are kept instead of cut at 0 km, and gravity is computed correctly there.
 - New analytic tests: isothermal Mars (scale height, N^2 = g^2/(cp T), density, sound speed), a true dry adiabat through the deep Venus atmosphere (N^2 = 0 with cp(T)), potential temperature at the reference pressure, Chapman-layer TEC.
 
 #### Clean-up

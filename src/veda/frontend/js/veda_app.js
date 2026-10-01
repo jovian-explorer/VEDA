@@ -829,7 +829,7 @@ async function updateComparison() {
 
     if (statusEl) {
       const nMissions = new Set((compData.profiles || []).map(p => p.mission_id)).size;
-      statusEl.textContent = `Aggregated ${compData.profile_count} sounding${compData.profile_count === 1 ? "" : "s"} from ${nMissions} mission${nMissions === 1 ? "" : "s"}.`;
+      statusEl.textContent = `Aggregated ${compData.profile_count} sounding${compData.profile_count === 1 ? "" : "s"} from ${nMissions} mission${nMissions === 1 ? "" : "s"}${compData.averaging ? `; ${compData.averaging}; the spread is shown where at least two profiles overlap` : ""}.`;
     }
   } catch (err) {
     console.error('Failed to compute comparison:', err);

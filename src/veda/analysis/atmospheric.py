@@ -81,7 +81,9 @@ def compute_atmospheric_diagnostics(
     # 2. Local gravitational acceleration with altitude g(z) = g0 * (R / (R + z))^2
     r_body = body.radius_km
     g0 = body.surface_gravity
-    gz = g0 * (r_body / (r_body + np.clip(z, 0.0, None))) ** 2
+    # (altitudes below the reference level, e.g. Mars below the MOLA datum or the
+    # Galileo probe below 1 bar, are valid: gravity is slightly larger there)
+    gz = g0 * (r_body / np.maximum(r_body + z, 1e-3 * r_body)) ** 2
 
     # 3. Scale height H = R_spec T / g(z) (km) and speed of sound with cp(T)
     from .thermo import cp_model, heat_capacity
@@ -174,6 +176,10 @@ def _empty_comparison(body: BodyInfo, variable_name: str, grid_km: Optional[List
     }
 
 
+# Variables compared in log space (they change by orders of magnitude with height)
+LOG_VARIABLES = {"pressure_hpa", "density", "density_measured", "number_density_m3", "electron_density_cm3"}
+
+
 def compare_profiles_on_body(
     profiles: List[ObservationProfile],
     body: BodyInfo,
@@ -202,7 +208,7 @@ def compare_profiles_on_body(
     if not z_mins or not z_maxs:
         return _empty_comparison(body, variable_name)
 
-    grid_lo = max(0.0, float(np.min(z_mins)))
+    grid_lo = float(np.min(z_mins))          # negative altitudes (below the reference level) are kept
     grid_hi = float(np.max(z_maxs))
     if grid_hi <= grid_lo:
         grid_hi = grid_lo + 10.0
@@ -212,6 +218,9 @@ def compare_profiles_on_body(
 
     interpolated_matrix = []
     profile_summaries = []
+    # Quantities that vary exponentially with height are interpolated and averaged in
+    # log space (geometric mean, spread as a factor), when every value is positive.
+    log_like = variable_name in LOG_VARIABLES
 
     for p in valid_profiles:
         # Extract target variable
@@ -241,9 +250,19 @@ def compare_profiles_on_body(
         v_clean = v[ok]
         sort_idx = np.argsort(z_clean)
         z_clean, v_clean = z_clean[sort_idx], v_clean[sort_idx]
+        if log_like and np.any(v_clean <= 0):
+            log_like = False                  # e.g. noisy electron densities: fall back to linear
 
-        # Interpolate onto common body grid (never extrapolate beyond profile range)
-        v_interp = np.interp(z_grid, z_clean, v_clean, left=np.nan, right=np.nan)
+        # Interpolate onto the common grid, never extrapolating beyond the profile and
+        # never bridging data gaps wider than five times the profile's typical spacing.
+        f = np.log(v_clean) if log_like else v_clean
+        v_interp = np.interp(z_grid, z_clean, f, left=np.nan, right=np.nan)
+        if z_clean.size > 2:
+            dz = np.diff(z_clean)
+            typical = float(np.median(dz[dz > 0])) if np.any(dz > 0) else 0.0
+            if typical > 0:
+                for gap_lo, gap_hi in zip(z_clean[:-1][dz > 5 * typical], z_clean[1:][dz > 5 * typical]):
+                    v_interp[(z_grid > gap_lo) & (z_grid < gap_hi)] = np.nan
         interpolated_matrix.append(v_interp)
 
         profile_summaries.append({
@@ -255,26 +274,47 @@ def compare_profiles_on_body(
             "longitude": p.longitude,
             "n_points": int(v_clean.size),
             "z_range_km": [round(float(np.min(z_clean)), 2), round(float(np.max(z_clean)), 2)],
-            "interpolated_series": [None if not np.isfinite(x) else round(float(x), 4) for x in v_interp],
+            "interpolated_series": v_interp,
         })
 
     if not interpolated_matrix:
         return _empty_comparison(body, variable_name, [round(float(z), 2) for z in z_grid])
 
     mat = np.array(interpolated_matrix)  # shape: (n_profiles, n_grid)
-    with np.errstate(invalid="ignore"):
-        mean_v = np.nanmean(mat, axis=0)
-        std_v = np.nanstd(mat, axis=0)
+    if log_like and len(interpolated_matrix) != len(profile_summaries):
+        log_like = False
+    n_per_level = np.sum(np.isfinite(mat), axis=0)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            mean_f = np.nanmean(mat, axis=0)
+            std_f = np.nanstd(mat, axis=0, ddof=1) if mat.shape[0] > 1 else np.full(mat.shape[1], np.nan)
+    std_f = np.where(n_per_level >= 2, std_f, np.nan)        # no spread from a single profile
+    if log_like:
+        mean_v, lo_v, hi_v = np.exp(mean_f), np.exp(mean_f - std_f), np.exp(mean_f + std_f)
+        std_v = np.full_like(mean_v, np.nan)                  # spread is a factor, see lo/hi
+        for s in profile_summaries:
+            s["interpolated_series"] = np.exp(s["interpolated_series"])
+    else:
+        mean_v, std_v = mean_f, std_f
+        lo_v, hi_v = mean_f - std_f, mean_f + std_f
+    for s in profile_summaries:
+        s["interpolated_series"] = [None if not np.isfinite(x) else float(f"{x:.6g}")
+                                    for x in s["interpolated_series"]]
+    sig = (lambda x: None if not np.isfinite(x) else float(f"{x:.6g}"))
 
     return {
+        "averaging": "geometric mean and 1-sigma factor (log space)" if log_like else "arithmetic mean and 1-sigma (sample)",
+        "profiles_per_level": [int(n) for n in n_per_level],
         "body_id": body.id,
         "body_name": body.name,
         "variable_name": variable_name,
         "grid_km": [round(float(z), 2) for z in z_grid],
-        "composite_mean": [None if not np.isfinite(x) else round(float(x), 4) for x in mean_v],
-        "composite_std": [None if not np.isfinite(x) else round(float(x), 4) for x in std_v],
-        "composite_plus_1sigma": [None if not np.isfinite(m + s) else round(float(m + s), 4) for m, s in zip(mean_v, std_v)],
-        "composite_minus_1sigma": [None if not np.isfinite(m - s) else round(float(m - s), 4) for m, s in zip(mean_v, std_v)],
+        "composite_mean": [sig(x) for x in mean_v],
+        "composite_std": [sig(x) for x in std_v],
+        "composite_plus_1sigma": [sig(x) for x in hi_v],
+        "composite_minus_1sigma": [sig(x) for x in lo_v],
         "profile_count": len(profile_summaries),
         "profiles": profile_summaries,
     }

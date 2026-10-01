@@ -130,3 +130,35 @@ def test_descending_and_duplicate_altitudes():
     ne = np.array([1e5, 2e5, 2e5, 1.5e5, 5e4])
     r = compute_vtec(z, ne)
     assert r["alt_min_km"] == 150.0 and r["alt_max_km"] == 300.0 and r["vtec_tecu"] > 0
+
+
+# ---------------------------------------------------------------- multi-profile comparison
+
+def test_comparison_pressure_is_averaged_in_log_space():
+    from veda.analysis.atmospheric import compare_profiles_on_body
+    mars = get_body("mars")
+    z = np.linspace(0.0, 40.0, 41)
+    a = _profile("mars", z, np.full_like(z, 200.0), 6.0 * np.exp(-z / 10.0))
+    b = _profile("mars", z, np.full_like(z, 220.0), 6.0 * np.exp(-z / 12.0))
+    r = compare_profiles_on_body([a, b], mars, altitude_step_km=1.0, variable_name="pressure_hpa")
+    assert r["averaging"].startswith("geometric")
+    i = r["grid_km"].index(30.0)
+    pa, pb = 6.0 * np.exp(-3.0), 6.0 * np.exp(-2.5)
+    assert r["composite_mean"][i] == pytest.approx(np.sqrt(pa * pb), rel=1e-6)
+    assert r["composite_minus_1sigma"][i] < r["composite_mean"][i] < r["composite_plus_1sigma"][i]
+    # each interpolated profile stays exponential between grid points
+    assert r["profiles"][0]["interpolated_series"][i] == pytest.approx(pa, rel=1e-5)   # 6 significant figures
+
+
+def test_comparison_keeps_negative_altitudes_and_does_not_bridge_gaps():
+    from veda.analysis.atmospheric import compare_profiles_on_body
+    mars = get_body("mars")
+    z = np.concatenate([np.arange(-4.0, 10.0, 1.0), np.arange(30.0, 40.0, 1.0)])     # gap 9..30 km
+    p = _profile("mars", z, 210.0 - z)
+    r = compare_profiles_on_body([p], mars, altitude_step_km=1.0)
+    assert r["grid_km"][0] == -4.0
+    series = r["profiles"][0]["interpolated_series"]
+    assert series[r["grid_km"].index(-4.0)] == pytest.approx(214.0)
+    assert series[r["grid_km"].index(20.0)] is None                  # inside the gap
+    assert r["composite_plus_1sigma"][0] is None                     # one profile: no spread
+    assert r["profiles_per_level"][0] == 1

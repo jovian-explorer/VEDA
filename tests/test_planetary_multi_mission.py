@@ -154,7 +154,8 @@ def test_cross_compare_variable_switching():
                 assert minus_val <= mean_val <= plus_val
     t = compare_profiles_on_body([a, b], venus_body, altitude_step_km=1.0, variable_name="temperature_k")
     spread = [s for s in t["composite_std"] if s is not None]
-    assert spread and abs(np.median(spread) - 2.5) < 0.2      # std of x and x+5 is 2.5
+    # sample standard deviation (ddof=1) of x and x+5 is 5/sqrt(2)
+    assert spread and abs(np.median(spread) - 5 / np.sqrt(2)) < 0.2
 
 
 # ===========================================================================

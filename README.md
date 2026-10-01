@@ -84,7 +84,7 @@ An opened profile shows every quantity in the product with the archived 1-sigma 
 * For ionospheres, the peak height and density and $\text{VTEC} = 10^{-7}\int N_e\,dz$ (TECU)
 
 ### Compare observations
-Selected profiles from any missions are interpolated onto a common altitude grid and drawn with their mean and 1-sigma spread. Colour the curves by mission, date or latitude, switch the variable and units, and export the comparison table as CSV.
+Selected profiles from any missions are interpolated onto a common altitude grid (no extrapolation, no bridging of data gaps) and drawn with their mean and 1-sigma spread: arithmetic mean and sample standard deviation for temperature-like quantities, geometric mean and a multiplicative spread for pressure, densities and electron density. Colour the curves by mission, date or latitude, switch the variable and units, and export the comparison table as CSV.
 
 ### Style and export figures
 **Plot style** controls lines, markers, palettes, uncertainty bands or error bars, linear or log axes, swapped axes, altitude or pressure as the vertical axis, grid, ticks, fonts and legend, with journal templates for AGU, Elsevier (Icarus/PSS), A&A and MNRAS. It applies to profiles, comparisons, time series, spectra and images. **Export figure** writes PNG at a chosen DPI or vector SVG at the journal's single- or double-column width.
