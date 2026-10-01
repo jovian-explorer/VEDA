@@ -17,7 +17,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any, Callable, Dict, Iterable, List, Optional
 
 from ..config import CACHE_DIR
-from . import http
+from . import net as http
 from .datasets import DATASETS, Dataset, get_dataset
 from .pds3_index import parse_index
 
@@ -61,25 +61,69 @@ def _pick(row: Dict[str, str], *candidates: str) -> str:
 
 
 def _normalise_time(t: str) -> str:
+    """ISO calendar time; PDS day-of-year times (2014-001T00:00:02) are converted."""
     t = t.strip().rstrip("Z")
-    return t if re.match(r"^\d{4}-\d{2}-\d{2}", t) else ""
+    if re.match(r"^\d{4}-\d{2}-\d{2}", t):
+        return t
+    m = re.match(r"^(\d{4})-(\d{3})(T.*)?$", t)
+    if m:
+        import datetime as _dt
+        d = _dt.date(int(m.group(1)), 1, 1) + _dt.timedelta(days=int(m.group(2)) - 1)
+        return d.isoformat() + (m.group(3) or "")
+    return ""
+
+
+def find_index(vol_url: str, login_url: Optional[str] = None) -> str:
+    """URL of a volume's product index, whatever its case or name.
+
+    PDS3 volumes keep it in index/ or INDEX/ as index.tab, INDEX.TAB or
+    volindex.tab; the cumulative CUMINDEX.TAB is only used if nothing else is
+    there.
+    """
+    entries = http.list_directory(vol_url, login_url=login_url)
+    idx_dir = next((e for e in entries if e.lower() == "index"), None)
+    if idx_dir is None:
+        raise http.ArchiveError(f"{vol_url} has no index directory")
+    files = http.list_directory(vol_url + idx_dir + "/", login_url=login_url)
+    tabs = [f for f in files if f.lower().endswith(".tab")]
+    for want in ("index.tab", "volindex.tab"):
+        hit = next((f for f in tabs if f.lower() == want), None)
+        if hit:
+            return f"{vol_url}{idx_dir}/{hit}"
+    others = [f for f in tabs if "index" in f.lower() and not f.lower().startswith("cum")] or              [f for f in tabs if "index" in f.lower()]
+    if not others:
+        raise http.ArchiveError(f"No index table in {vol_url}{idx_dir}/")
+    return f"{vol_url}{idx_dir}/{others[0]}"
+
+
+def _with_structure(label: str, base: str, login_url: Optional[str]) -> str:
+    """Append the column definitions a label pulls in with ^STRUCTURE = "X.FMT"."""
+    for name in re.findall(r'\^STRUCTURE\s*=\s*"?([^"\s]+)"?', label, flags=re.I):
+        for cand in (name, name.upper(), name.lower()):
+            try:
+                return label + "\n" + http.get_text(base + cand, login_url=login_url)
+            except http.LoginRequired:
+                raise
+            except http.ArchiveError:
+                continue
+    return label
 
 
 def index_volume(ds: Dataset, volume: str) -> List[Dict[str, Any]]:
     """Fetch and parse one volume's index into catalogue rows."""
     vol_url = f"{ds.base_url}{volume}/"
-    tab_url = vol_url + ds.index_path
-    lbl_url = re.sub(r"\.tab$", ".lbl", tab_url, flags=re.I)
-    try:
-        label = http.get_text(lbl_url, login_url=ds.login_url)
-    except http.LoginRequired:
-        raise
-    except http.ArchiveError:
-        label = ""  # some volumes ship INDEX.LBL in upper case or not at all
+    tab_url = vol_url + ds.index_path if ds.index_path else find_index(vol_url, ds.login_url)
+    label = ""
+    stem = tab_url.rsplit(".", 1)[0]
+    for lbl_url in (stem + ".lbl", stem + ".LBL"):
         try:
-            label = http.get_text(re.sub(r"\.lbl$", ".LBL", lbl_url), login_url=ds.login_url)
+            label = http.get_text(lbl_url, login_url=ds.login_url)
+            break
+        except http.LoginRequired:
+            raise
         except http.ArchiveError:
-            pass
+            continue
+    label = _with_structure(label, tab_url.rsplit("/", 1)[0] + "/", ds.login_url)
     table = http.get_text(tab_url, login_url=ds.login_url)
     out = []
     for row in parse_index(label, table):
@@ -106,7 +150,7 @@ def index_volume(ds: Dataset, volume: str) -> List[Dict[str, Any]]:
 def refresh_dataset(ds: Dataset, force: bool = False,
                     progress: Optional[Callable[[int, int, str], None]] = None) -> int:
     """(Re)index every volume of ``ds``; returns the number of products."""
-    volumes = http.list_directory(ds.base_url, ds.volume_pattern, dirs_only=True)
+    volumes = http.list_directory(ds.base_url, ds.volume_pattern, dirs_only=True, login_url=ds.login_url)
     if not volumes:
         raise http.ArchiveError(f"No volumes found at {ds.base_url}")
     with _db_lock, _connect() as conn:

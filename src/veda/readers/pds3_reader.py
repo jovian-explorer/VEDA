@@ -78,31 +78,41 @@ def match_column(names, query: str) -> Optional[str]:
     return min(ranked)[-1] if ranked else None
 
 
+def _strip_comments(text: str) -> str:
+    out = []
+    i, n = 0, len(text)
+    in_quote = in_comment = False
+    while i < n:
+        ch = text[i]
+        if in_comment:
+            if text.startswith("*/", i):
+                in_comment = False
+                i += 2
+                continue
+            if ch == "\n":
+                out.append(ch)
+            i += 1
+            continue
+        if ch == '"':
+            in_quote = not in_quote
+        elif not in_quote and text.startswith("/*", i):
+            in_comment = True
+            i += 2
+            continue
+        out.append(ch)
+        i += 1
+    return "".join(out)
+
+
 def parse_pds3_label(label_text: str) -> Tuple[Dict[str, Any], List[ColumnDef]]:
     """Parse key-value pairs and COLUMN objects from a PDS3 label."""
     metadata: Dict[str, Any] = {}
     columns: List[ColumnDef] = []
 
-    # Clean lines and handle comments
-    lines = label_text.splitlines()
-    clean_lines = []
-    in_comment = False
-    for line in lines:
-        l = line.strip()
-        if not l:
-            continue
-        if "/*" in l and "*/" in l:
-            l = re.sub(r'/\*.*?\*/', '', l).strip()
-        elif "/*" in l:
-            in_comment = True
-            l = l[:l.find("/*")].strip()
-        elif "*/" in l:
-            in_comment = False
-            l = l[l.find("*/") + 2:].strip()
-        elif in_comment:
-            continue
-        if l:
-            clean_lines.append(l)
+    # Drop /* ... */ comments, but not "/*" inside quoted strings such as
+    # INDEXED_FILE_NAME = {"BCK/*.LBL", ...}, which used to swallow the rest
+    # of the label (and every COLUMN definition after it).
+    clean_lines = [l.strip() for l in _strip_comments(label_text).splitlines() if l.strip()]
 
     # Join quoted values that wrap onto following lines, e.g.
     #   NAME = "SIGMA PRESSURE (LOWER TEMPERATURE AT

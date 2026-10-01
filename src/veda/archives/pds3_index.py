@@ -35,13 +35,14 @@ def parse_index(label_text: str, table_text: str) -> List[Dict[str, str]]:
         # "VENUS", which shifts every later column).
         csv_rows = list(csv.reader(io.StringIO("\n".join(lines)), skipinitialspace=True))
         if csv_rows and all(len(r) == len(names) for r in csv_rows):
-            return [{n: _clean(v) for n, v in zip(names, r)} for r in csv_rows]
+            return _drop_header_rows([{n: _clean(v) for n, v in zip(names, r)} for r in csv_rows])
         widest = max(c.start_byte - 1 + c.bytes_count for c in columns)
         if all(len(ln) >= widest - 2 for ln in lines[:5]):
             for ln in lines:
                 rows.append({n: _clean(ln[c.start_byte - 1:c.start_byte - 1 + c.bytes_count])
                              for n, c in zip(names, columns)})
-            if _looks_valid(rows):
+            rows = _drop_header_rows(rows)
+            if rows and _looks_valid(rows):
                 return rows
         # Byte offsets do not fit (some volumes pad differently): fall back to
         # quote-aware comma splitting in label column order.
@@ -49,12 +50,17 @@ def parse_index(label_text: str, table_text: str) -> List[Dict[str, str]]:
         for rec in csv.reader(io.StringIO("\n".join(lines)), skipinitialspace=True):
             if len(rec) >= len(names):
                 rows.append({n: _clean(v) for n, v in zip(names, rec)})
-        return rows
+        return _drop_header_rows(rows)
 
     # No usable label: assume a header row.
     reader = csv.reader(io.StringIO("\n".join(lines)), skipinitialspace=True)
     header = [h.strip().upper() for h in next(reader)]
     return [{h: _clean(v) for h, v in zip(header, rec)} for rec in reader]
+
+
+def _drop_header_rows(rows: List[Dict[str, str]]) -> List[Dict[str, str]]:
+    """Some index tables repeat the column names as their first row."""
+    return [r for r in rows if sum(k == v.upper() for k, v in r.items()) < max(2, len(r) // 2)]
 
 
 def _looks_valid(rows: List[Dict[str, str]]) -> bool:

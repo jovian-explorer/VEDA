@@ -29,7 +29,7 @@ class Dataset:
     archive: str                 # "JAXA DARTS", "ESA PSA", "NASA PDS ..."
     base_url: str                # directory holding the volumes, ends with /
     volume_pattern: str          # regex for volume directory names
-    index_path: str = "index/index.tab"
+    index_path: Optional[str] = None   # found automatically when None
     rules: Tuple[Rule, ...] = ()
     # Column names in the product label for loadable profiles (match_column
     # handles variants such as "TEMPERATURE (MEDIUM ...)").

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import re
 import threading
+import time
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Callable, Dict, List, Optional
@@ -75,18 +76,32 @@ def _describe(exc: Exception, url: str) -> ArchiveError:
     return ArchiveError(f"Request to {host} failed: {exc}")
 
 
+RETRIES = 3
+
+
 def get(url: str, *, login_url: Optional[str] = None, stream: bool = False) -> requests.Response:
+    """GET with retries: archives drop connections when many index files are read."""
     _check_network()
-    try:
-        r = session().get(url, timeout=SETTINGS.network_timeout_s, stream=stream, allow_redirects=True)
-        if r.status_code in (401, 403) and login_url:
-            raise LoginRequired(urlparse(url).netloc, login_url)
-        r.raise_for_status()
-        return r
-    except LoginRequired:
-        raise
-    except requests.RequestException as exc:
-        raise _describe(exc, url) from exc
+    for attempt in range(RETRIES + 1):
+        try:
+            r = session().get(url, timeout=SETTINGS.network_timeout_s, stream=stream, allow_redirects=True)
+            if r.status_code in (401, 403) and login_url:
+                raise LoginRequired(urlparse(url).netloc, login_url)
+            if r.status_code in (429, 502, 503, 504) and attempt < RETRIES:
+                time.sleep(2 ** attempt)
+                continue
+            r.raise_for_status()
+            return r
+        except LoginRequired:
+            raise
+        except (requests.ConnectionError, requests.Timeout) as exc:
+            if attempt < RETRIES:
+                time.sleep(2 ** attempt)
+                continue
+            raise _describe(exc, url) from exc
+        except requests.RequestException as exc:
+            raise _describe(exc, url) from exc
+    raise ArchiveError(f"{urlparse(url).netloc} kept failing; try again later.")
 
 
 def get_text(url: str, **kw) -> str:
@@ -133,12 +148,13 @@ class _Links(HTMLParser):
                 self.hrefs.append(href)
 
 
-def list_directory(url: str, pattern: Optional[str] = None, dirs_only: bool = False) -> List[str]:
+def list_directory(url: str, pattern: Optional[str] = None, dirs_only: bool = False,
+                   login_url: Optional[str] = None) -> List[str]:
     """Names in an Apache/nginx/FTP-style HTML index, optionally filtered by regex."""
     if not url.endswith("/"):
         url += "/"
     p = _Links()
-    p.feed(get_text(url))
+    p.feed(get_text(url, login_url=login_url))
     base = urlparse(url)
     rx = re.compile(pattern, re.I) if pattern else None
     names: List[str] = []
