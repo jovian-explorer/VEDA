@@ -115,7 +115,7 @@ It gives BibTeX, plain text and a matching data availability statement, all read
 ## Installation
 
 ### Option A: download the app (no Python needed)
-Open the [latest release](https://github.com/jovian-explorer/VEDA/releases/latest) and download the archive for your OS:
+Open the [Releases page](https://github.com/jovian-explorer/VEDA/releases) (builds are pre-releases until version 1.0.0) and download the archive for your OS:
 
 | OS | Asset | Run |
 |---|---|---|
