@@ -4,7 +4,6 @@ from __future__ import annotations
 from pathlib import Path
 import pytest
 from veda.api.routes import ParseFileRequest, parse_generic_file_endpoint
-from veda.pipeline.archive_downloader import get_archive_pipeline
 
 
 from veda.config import sampledata_dir
@@ -17,16 +16,8 @@ def test_ingest_all_planetary_samples():
     samples = [
         ("venus_akatsuki/rs_20160303_223100_udsc64_l4_ae_v10.tab", "venus", "profile"),
         ("venus_akatsuki/uvi_20181105_080112_283_geo_v10.fit", "venus", "image"),
-        ("mars_mom/mom_menca_orbit_1200.tab", "mars", "profile"),
-        ("mars_maven/maven_rs_orbit_1240.tab", "mars", "profile"),
-        ("moon_chandrayaan2/ch2_dfrs_orbit_1420.tab", "moon", "profile"),
-        ("moon_lro/lro_diviner_shackleton.tab", "moon", "profile"),
-        ("jupiter_juno/juno_mwr_perijove_08.tab", "jupiter", "profile"),
-        ("titan_cassini/cassini_rss_titan_t12.tab", "titan", "profile"),
-        ("venus_express/vex_vera_0268_temp.tab", "venus", "profile"),
-        ("pluto_new_horizons/nh_rex_pluto_ingress.tab", "pluto", "profile"),
-        ("pluto_new_horizons/nh_lorri_pluto_approach.fits", "pluto", "image"),
-        ("pluto_new_horizons/lor_0299059349_0x630_sci_full.jpg", "pluto", "image"),
+        ("mars_express/M32ICL2L04_AIX_040931105_60.LBL", "mars", "profile"),
+        ("mars_express/M32ICL2L04_IIX_040931105_60.LBL", "mars", "profile"),
     ]
 
     for rel_path, body_id, expected_type in samples:
@@ -54,9 +45,9 @@ def test_ingest_all_planetary_samples():
 
 
 def test_derived_thermodynamics_values():
-    """Verify thermodynamic calculation values on ingested sample profile."""
-    full_path = SAMPLES / "venus_express/vex_vera_0268_temp.tab"
-    req = ParseFileRequest(file_path=str(full_path), body_id="venus")
+    """Thermodynamic diagnostics on a real Mars Express MaRS profile."""
+    full_path = SAMPLES / "mars_express/M32ICL2L04_AIX_040931105_60.LBL"
+    req = ParseFileRequest(file_path=str(full_path), body_id="mars")
     res = parse_generic_file_endpoint(req)
 
     data = res["data"]
@@ -65,27 +56,13 @@ def test_derived_thermodynamics_values():
     assert "potential_temperature" in derived
     assert "buoyancy_freq_sq" in derived
 
-    # Verify potential temperature increases with height (stable atmosphere)
-    theta = [x for x in derived["potential_temperature"] if x is not None]
-    assert len(theta) > 10
-    assert theta[-1] > theta[0]
+    # Potential temperature increases with height (stable atmosphere). The MaRS
+    # table runs top-down, so compare by altitude rather than by row order.
+    pairs = sorted((z, th) for z, th in zip(data["altitude_km"], derived["potential_temperature"])
+                   if z is not None and th is not None)
+    assert len(pairs) > 10
+    assert pairs[-1][1] > pairs[0][1]
 
-
-def test_archive_pipeline_offline_download():
-    """Verify archive downloader task fallback to bundled samples."""
-    pipe = get_archive_pipeline()
-    task = pipe.download_product(
-        task_id="test_offline_mom_granule",
-        remote_url="https://example.gov/mom_menca_orbit_1200.tab",
-        mission_id="mom",
-        body_id="mars",
-        instrument="MENCA",
-        filename="mom_menca_orbit_1200.tab",
-    )
-    assert task.status == "completed"
-    assert task.progress_pct == 100.0
-    assert Path(task.local_path).exists()
-    assert Path(task.local_path).stat().st_size > 0
 
 
 def test_parse_file_content_text_and_base64():

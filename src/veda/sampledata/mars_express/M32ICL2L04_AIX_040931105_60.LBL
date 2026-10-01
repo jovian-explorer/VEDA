@@ -1,0 +1,403 @@
+ PDS_VERSION_ID           = "PDS3"
+ DATA_SET_ID              = "MEX-M-MRS-5-OCC-9101-V1.0"
+ DATA_SET_NAME            = "MARS EXPRESS MARS MRS 5
+                              OCCULTATION 9101 V1.0"
+ MISSION_ID               = "MEX"
+ MISSION_NAME             = "MARS EXPRESS"
+ ORBIT_NUMBER             = 264
+ PROCESSING_LEVEL_ID      = 5
+ TARGET_NAME              = "MARS"
+ ^ATM_INFO                = "M32ICL2L04_AIX_040931105_60.TXT"
+ STANDARD_DATA_PRODUCT_ID = "IFMS2"
+ OBSERVATION_TYPE         = "OCCULTATION"
+ INSTRUMENT_HOST_NAME     = "MARS EXPRESS"
+ INSTRUMENT_HOST_ID       = "MEX"
+ INSTRUMENT_NAME          = "MARS EXPRESS ORBITER RADIO SCIENCE"
+ INSTRUMENT_ID            = "MRS"
+ PRODUCER_ID              = "RIU_COLOGNE"
+ PRODUCER_FULL_NAME       = "MARTIN PAETZOLD, PI"
+ PRODUCER_INSTITUTION_NAME= "RHEINISCHES INSTITUT FUER UMWELTFORSCHUNG,
+                            PLANETENFORSCHUNG"
+ SPACECRAFT_CLOCK_START_COUNT = "N/A"
+ SPACECRAFT_CLOCK_STOP_COUNT  = "N/A"
+ DSN_STATION_NUMBER       = 32
+ RELEASE_ID               =  0001
+ REVISION_ID              =  0000
+ PRODUCT_TYPE             =  "RDR"
+ INSTRUMENT_TYPE          =  "RADIO SCIENCE"
+ ^INSTRUMENT_DESC         =  "MARS_DESC.TXT"
+ TARGET_TYPE              =  "PLANET"
+ SPACECRAFT_POINTING_MODE =  "EARTH" 
+ ^SPACECRAFT_POINTING_MODE_DESC= "MEX_POINTING_MODE_DESC.TXT"
+ PRODUCT_CREATION_TIME    = 2021-03-04T11:24:47.381
+ SOURCE_PRODUCT_ID        = "M32ICL2L03_AIX_040931105_60.TAB"
+ SOFTWARE_NAME            = "MEX_ATM_PROFILES_V6.0"
+ DESCRIPTION              = "This file contains an atmospheric
+                            temperature-pressure profile derived from Mars
+                            Express radio occultation data. Raw samples of
+                            ground station receiver output were corrected
+                            for observing conditions and converted to
+                            bending angle as a function of impact
+                            parameter. These results were then inverted to
+                            refractive index as a function of radius via
+                            an Abel transform. Number density was obtained
+                            from the refractive index using a conversion
+                            formula appropriate to the composition of the
+                            atmosphere, which is known. Pressure and
+                            temperature profiles were derived by assuming
+                            hydrostatic balance and using the ideal gas
+                            law."
+ 
+ OBJECT                   = FILE
+   PRODUCT_ID               = "M32ICL2L04_AIX_040931105_60.TAB"
+   RECORD_TYPE              = FIXED_LENGTH
+   RECORD_BYTES             = 276
+   FILE_RECORDS             = 354
+   START_TIME               = 2004-04-02T11:44:14.100
+   STOP_TIME                = 2004-04-02T11:45:24.699
+ ^ATM_TABLE               = "M32ICL2L04_AIX_040931105_60.TAB"
+ 
+ OBJECT            = ATM_TABLE
+ 
+   ROWS                  = 354
+   COLUMNS               =  26
+   ROW_BYTES             = 276
+   INTERCHANGE_FORMAT    = ASCII
+  
+  OBJECT                = COLUMN
+    NAME                   = "SAMPLE NUMBER"                                
+    COLUMN_NUMBER          = 1
+    DATA_TYPE              = ASCII_INTEGER                 
+    START_BYTE             = 1                             
+    BYTES                  = 5                             
+    FORMAT                 = "I5"                          
+    UNIT                   = "N/A"                                   
+    DESCRIPTION            = "The number of this row in the table,
+                             starting from 1 in the first row."              
+  END_OBJECT            = COLUMN
+  
+  OBJECT                = COLUMN
+    NAME                   = "UTC TIME"                                     
+    COLUMN_NUMBER          = 2
+    DATA_TYPE              = TIME                          
+    START_BYTE             = 8                             
+    BYTES                  = 23                            
+    FORMAT                 = "A23"                         
+    UNIT                   = "N/A"                                   
+    DESCRIPTION            = "The UTC receiver date and time of   
+                             this measurement, in the format                 
+                             CCYY-MM-DDTHH:MM:SS.sss"                        
+  END_OBJECT            = COLUMN
+  
+  OBJECT                = COLUMN
+    NAME                   = "EPHEMERIS SECONDS"                            
+    COLUMN_NUMBER          = 3
+    DATA_TYPE              = ASCII_REAL                    
+    START_BYTE             = 33                            
+    BYTES                  = 16                            
+    FORMAT                 = "F16.6"                       
+    UNIT                   = "SECOND"                                
+    DESCRIPTION            = "Seconds from 12h 1 January 2000 TDB 
+                             corresponding to UTC TIME (column 2);           
+                             includes leap seconds."                         
+  END_OBJECT            = COLUMN
+  
+  OBJECT                = COLUMN
+    NAME                   = "RADIUS"                                       
+    COLUMN_NUMBER          = 4
+    DATA_TYPE              = ASCII_REAL                    
+    START_BYTE             = 51                            
+    BYTES                  = 8                             
+    FORMAT                 = "F8.3"                        
+    UNIT                   = "KILOMETER"                             
+    DESCRIPTION            = "Measurement radius with respect to  
+                             the center of the mass."                        
+  END_OBJECT            = COLUMN
+  
+  OBJECT                = COLUMN
+    NAME                   = "LATITUDE"                                     
+    COLUMN_NUMBER          = 5
+    DATA_TYPE              = ASCII_REAL                    
+    START_BYTE             = 61                            
+    BYTES                  = 6                             
+    FORMAT                 = "F6.2"                        
+    UNIT                   = "DEGREE"                                
+    DESCRIPTION            = "Areocentric (north) latitude of     
+                             measurement."                                   
+  END_OBJECT            = COLUMN
+  
+  OBJECT                = COLUMN
+    NAME                   = "LONGITUDE"                                    
+    COLUMN_NUMBER          = 6
+    DATA_TYPE              = ASCII_REAL                    
+    START_BYTE             = 69                            
+    BYTES                  = 6                             
+    FORMAT                 = "F6.2"                        
+    UNIT                   = "DEGREE"                                
+    DESCRIPTION            = "Areocentric (east) longitude of     
+                             measurement in body fixed coordinates."         
+  END_OBJECT            = COLUMN
+  
+  OBJECT                = COLUMN
+    NAME                   = "GEOPOTENTIAL"                                 
+    COLUMN_NUMBER          = 7
+    DATA_TYPE              = ASCII_REAL                    
+    START_BYTE             = 77                            
+    BYTES                  = 8                             
+    FORMAT                 = "F8.0"                        
+    UNIT                   = "METER SQUARED PER SECOND SQUARED"      
+    DESCRIPTION            = "Geopotential at measurement location
+                             (RADIUS, LATITUDE, LONGITUDE). A reference      
+                             value of 12652811 m^2/s^2 has been              
+                             subtracted."                                    
+  END_OBJECT            = COLUMN
+  
+  OBJECT                = COLUMN
+    NAME                   = "GEOPOTENTIAL HEIGHT"                          
+    COLUMN_NUMBER          = 8
+    DATA_TYPE              = ASCII_REAL                    
+    START_BYTE             = 87                            
+    BYTES                  = 7                             
+    FORMAT                 = "F7.3"                        
+    UNIT                   = "KILOMETER"                             
+    DESCRIPTION            = "Geopotential height calculated from 
+                             GEOPOTENTIAL (column 7)."                       
+  END_OBJECT            = COLUMN
+  
+  OBJECT                = COLUMN
+    NAME                   = "PRESSURE (LOWER BOUNDARY CONDITION)"          
+    COLUMN_NUMBER          = 9
+    DATA_TYPE              = ASCII_REAL                    
+    START_BYTE             = 96                            
+    BYTES                  = 11                            
+    FORMAT                 = "F11.3"                       
+    UNIT                   = "PASCAL"                                
+    DESCRIPTION            = "Atmospheric pressure at RADIUS      
+                             calculated using the lowest upper boundary      
+                             condition for TEMPERATURE. Values of boundary   
+                             conditions are listed in  *.TXT-file"           
+  END_OBJECT            = COLUMN
+  
+  OBJECT                = COLUMN
+    NAME                   = "SIGMA PRESSURE (LOWER BOUNDARY CONDITION)"    
+    COLUMN_NUMBER          = 10
+    DATA_TYPE              = ASCII_REAL                    
+    START_BYTE             = 109                           
+    BYTES                  = 7                             
+    FORMAT                 = "F7.3"                        
+    UNIT                   = "PASCAL"                                
+    DESCRIPTION            = "One standard deviation uncertainty  
+                             in PRESSURE (LOWER BOUNDARY CONDITION)."        
+  END_OBJECT            = COLUMN
+  
+  OBJECT                = COLUMN
+    NAME                   = "PRESSURE (MEDIUM BOUNDARY CONDITION)"         
+    COLUMN_NUMBER          = 11
+    DATA_TYPE              = ASCII_REAL                    
+    START_BYTE             = 118                           
+    BYTES                  = 11                            
+    FORMAT                 = "F11.3"                       
+    UNIT                   = "PASCAL"                                
+    DESCRIPTION            = "Atmospheric pressure at RADIUS      
+                             calculated using the medium upper boundary      
+                             condition for TEMPERATURE. Values of boundary   
+                             conditions are listed in *.TXT-file"            
+  END_OBJECT            = COLUMN
+  
+  OBJECT                = COLUMN
+    NAME                   = "SIGMA PRESSURE (MEDIUM BOUNDARY CONDITION)"   
+    COLUMN_NUMBER          = 12
+    DATA_TYPE              = ASCII_REAL                    
+    START_BYTE             = 131                           
+    BYTES                  = 7                             
+    FORMAT                 = "F7.3"                        
+    UNIT                   = "PASCAL"                                
+    DESCRIPTION            = "One standard deviation uncertainty  
+                             in PRESSURE (MEDIUM BOUNDARY CONDITION)."       
+  END_OBJECT            = COLUMN
+  
+  OBJECT                = COLUMN
+    NAME                   = "PRESSURE (UPPER BOUNDARY CONDITION)"          
+    COLUMN_NUMBER          = 13
+    DATA_TYPE              = ASCII_REAL                    
+    START_BYTE             = 140                           
+    BYTES                  = 11                            
+    FORMAT                 = "F11.3"                       
+    UNIT                   = "PASCAL"                                
+    DESCRIPTION            = "Atmospheric pressure at RADIUS      
+                             calculated using the highest upper boundary     
+                             condition for TEMPERATURE. Values of boundary   
+                             conditions are listed in *.TXT-file"            
+  END_OBJECT            = COLUMN
+  
+  OBJECT                = COLUMN
+    NAME                   = "SIGMA PRESSURE (UPPER BOUNDARY CONDITION)"    
+    COLUMN_NUMBER          = 14
+    DATA_TYPE              = ASCII_REAL                    
+    START_BYTE             = 153                           
+    BYTES                  = 7                             
+    FORMAT                 = "F7.3"                        
+    UNIT                   = "PASCAL"                                
+    DESCRIPTION            = "One standard deviation uncertainty  
+                             in PRESSURE (UPPER BOUNDARY CONDITION)."        
+  END_OBJECT            = COLUMN
+  
+  OBJECT                = COLUMN
+    NAME                   = "TEMPERATURE (LOWER BOUNDARY CONDITION)"       
+    COLUMN_NUMBER          = 15
+    DATA_TYPE              = ASCII_REAL                    
+    START_BYTE             = 162                           
+    BYTES                  = 7                             
+    FORMAT                 = "F7.3"                        
+    UNIT                   = "KELVIN"                                
+    DESCRIPTION            = "Atmospheric temperature at RADIUS   
+                             calculated using the lowest upper boundary      
+                             condition for TEMPERATURE. Values of boundary   
+                             conditions are listed in *.TXT-file"            
+  END_OBJECT            = COLUMN
+  
+  OBJECT                = COLUMN
+    NAME                   = "SIGMA TEMPERATURE (LOWER BOUNDARY CONDITION)" 
+    COLUMN_NUMBER          = 16
+    DATA_TYPE              = ASCII_REAL                    
+    START_BYTE             = 171                           
+    BYTES                  = 6                             
+    FORMAT                 = "F6.3"                        
+    UNIT                   = "KELVIN"                                
+    DESCRIPTION            = "One standard deviation uncertainty  
+                             in TEMPERATURE (LOWER BOUNDARY CONDITION)."     
+  END_OBJECT            = COLUMN
+  
+  OBJECT                = COLUMN
+    NAME                   = "TEMPERATURE (MEDIUM BOUNDARY CONDITION)"      
+    COLUMN_NUMBER          = 17
+    DATA_TYPE              = ASCII_REAL                    
+    START_BYTE             = 179                           
+    BYTES                  = 7                             
+    FORMAT                 = "F7.3"                        
+    UNIT                   = "KELVIN"                                
+    DESCRIPTION            = "Atmospheric temperature at RADIUS   
+                             calculated using the medium upper boundary      
+                             condition for TEMPERATURE. Values of boundary   
+                             conditions are listed in *.TXT-file"            
+  END_OBJECT            = COLUMN
+  
+  OBJECT                = COLUMN
+    NAME                   = "SIGMA TEMPERATURE (MEDIUM BOUNDARY CONDITION)"
+    COLUMN_NUMBER          = 18
+    DATA_TYPE              = ASCII_REAL                    
+    START_BYTE             = 188                           
+    BYTES                  = 6                             
+    FORMAT                 = "F6.3"                        
+    UNIT                   = "KELVIN"                                
+    DESCRIPTION            = "One standard deviation uncertainty  
+                             in TEMPERATURE (MEDIUM BOUNDARY CONDITION)."    
+  END_OBJECT            = COLUMN
+  
+  OBJECT                = COLUMN
+    NAME                   = "TEMPERATURE (UPPER BOUNDARY CONDITION)"       
+    COLUMN_NUMBER          = 19
+    DATA_TYPE              = ASCII_REAL                    
+    START_BYTE             = 196                           
+    BYTES                  = 7                             
+    FORMAT                 = "F7.3"                        
+    UNIT                   = "KELVIN"                                
+    DESCRIPTION            = "Atmospheric temperature at RADIUS   
+                             calculated using the highest upper boundary     
+                             condition for TEMPERATURE. Values of boundary   
+                             conditions are listed in *.TXT-file"            
+  END_OBJECT            = COLUMN
+  
+  OBJECT                = COLUMN
+    NAME                   = "SIGMA TEMPERATURE (UPPER BOUNDARY CONDITION)" 
+    COLUMN_NUMBER          = 20
+    DATA_TYPE              = ASCII_REAL                    
+    START_BYTE             = 205                           
+    BYTES                  = 6                             
+    FORMAT                 = "F6.3"                        
+    UNIT                   = "KELVIN"                                
+    DESCRIPTION            = "One standard deviation uncertainty  
+                             in TEMPERATURE (UPPER BOUNDARY CONDITION)."     
+  END_OBJECT            = COLUMN
+  
+  OBJECT                = COLUMN
+    NAME                   = "NUMBER DENSITY"                               
+    COLUMN_NUMBER          = 21
+    DATA_TYPE              = ASCII_REAL                    
+    START_BYTE             = 213                           
+    BYTES                  = 11                            
+    FORMAT                 = "E11.5"                       
+    UNIT                   = "1 PER CUBIC METER"                     
+    DESCRIPTION            = "Molecular number density of the     
+                             atmosphere at RADIUS."                          
+  END_OBJECT            = COLUMN
+  
+  OBJECT                = COLUMN
+    NAME                   = "SIGMA NUMBER DENSITY"                         
+    COLUMN_NUMBER          = 22
+    DATA_TYPE              = ASCII_REAL                    
+    START_BYTE             = 226                           
+    BYTES                  = 8                             
+    FORMAT                 = "E8.2"                        
+    UNIT                   = "1 PER CUBIC METER"                     
+    DESCRIPTION            = "One standard deviation uncertainty  
+                             in NUMBER DENSITY."                             
+  END_OBJECT            = COLUMN
+  
+  OBJECT                = COLUMN
+    NAME                   = "RAYPARAMETER"                                 
+    COLUMN_NUMBER          = 23
+    DATA_TYPE              = ASCII_REAL                    
+    START_BYTE             = 236                           
+    BYTES                  = 10                            
+    FORMAT                 = "F10.3"                       
+    UNIT                   = "KILOMETER"                             
+    DESCRIPTION            = "Distance of the ray asymptotes to   
+                              the planet. The value is defined as the        
+                              distance between the ray asymptote and the     
+                              center of the planet."                         
+  END_OBJECT            = COLUMN
+  
+  OBJECT                = COLUMN
+    NAME                   = "BENDING ANGLE"                                
+    COLUMN_NUMBER          = 24
+    DATA_TYPE              = ASCII_REAL                    
+    START_BYTE             = 248                           
+    BYTES                  = 13                            
+    FORMAT                 = "F13.6"                       
+    UNIT                   = "MICRORADIAN"                           
+    DESCRIPTION            = "Total bending angle measured as the 
+                             angle between the ray asymptotes of             
+                             the radio ray link."                            
+  END_OBJECT            = COLUMN
+  
+  OBJECT                = COLUMN
+    NAME                   = "SIGNAL LEVEL"                                 
+    COLUMN_NUMBER          = 25
+    DATA_TYPE              = ASCII_REAL                    
+    START_BYTE             = 263                           
+    BYTES                  = 5                             
+    FORMAT                 = "F5.1"                        
+    UNIT                   = "DECIBEL RELATIVE TO ONE MILLIWATT"     
+    DESCRIPTION            = "Signal level from AGC in decibels   
+                             relative to one milliwatt (dBm). For            
+                             open loop this value is set to -999.9"          
+  END_OBJECT            = COLUMN
+  
+  OBJECT                = COLUMN
+    NAME                   = "FRESNEL RADIUS"                               
+    COLUMN_NUMBER          = 26
+    DATA_TYPE              = ASCII_REAL                    
+    START_BYTE             = 270                           
+    BYTES                  = 5                             
+    FORMAT                 = "F5.2"                        
+    UNIT                   = "KILOMETER"                             
+    DESCRIPTION            = "Fresnel radius, defined as          
+                             SQRT(lambda*D) with the wavelength lambda       
+                             and the spacecraft-to-limb-distance D."         
+  END_OBJECT            = COLUMN
+ END_OBJECT        = ATM_TABLE
+ 
+ END_OBJECT        = FILE
+ 
+END

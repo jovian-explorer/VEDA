@@ -117,25 +117,17 @@ def test_explore_multiple_bodies_api():
 
 
 def test_mission_manager_profile_loading():
-    """Verify that profile loader retrieves valid soundings with required arrays."""
+    """Real bundled profiles load through the mission manager (Akatsuki, Mars Express)."""
     mgr = get_mission_manager()
-    # Test loading Venus profiles
-    ak_obs = mgr.discover_by_mission("akatsuki", body_id="venus")
-    assert len(ak_obs) > 0
-    ak_prof = mgr.load_profile("akatsuki", ak_obs[0]["observation_id"])
-    assert ak_prof is not None
-    assert len(ak_prof.altitude_km) > 0
-    assert len(ak_prof.temperature_k) > 0
-    assert len(ak_prof.pressure_hpa) > 0
-    assert ak_prof.body_id == "venus"
-
-    # Test loading VEX profile
-    vex_obs = mgr.discover_by_mission("vex", body_id="venus")
-    assert len(vex_obs) > 0
-    vex_prof = mgr.load_profile("vex", vex_obs[0]["observation_id"])
-    assert vex_prof is not None
-    assert len(vex_prof.altitude_km) > 0
-    assert vex_prof.body_id == "venus"
+    for mission, body, t_range in (("akatsuki", "venus", (100, 450)), ("mex", "mars", (120, 260))):
+        obs = [o for o in mgr.discover_by_mission(mission, body_id=body)
+               if o.get("data_type") == "profile" and "atmosphere" in o["product"]]
+        assert obs, mission
+        prof = mgr.load_profile(mission, obs[-1]["observation_id"])
+        t = prof.temperature_k[np.isfinite(prof.temperature_k)]
+        assert prof.body_id == body and len(prof.altitude_km) > 50
+        assert t_range[0] < t.min() and t.max() < t_range[1], (mission, t.min(), t.max())
+        assert prof.provenance.archive_url.startswith("https://")
 
 
 # ===========================================================================
@@ -143,24 +135,26 @@ def test_mission_manager_profile_loading():
 # ===========================================================================
 
 def test_cross_compare_variable_switching():
-    """Verify cross-mission comparison works across temperature and pressure."""
+    """Composite statistics across two profiles of one body, for T and P."""
+    import copy
     mgr = get_mission_manager()
-    ak_obs = mgr.discover_by_mission("akatsuki", body_id="venus")
-    vex_obs = mgr.discover_by_mission("vex", body_id="venus")
-    ak_prof = mgr.load_profile("akatsuki", ak_obs[0]["observation_id"])
-    vex_prof = mgr.load_profile("vex", vex_obs[0]["observation_id"])
+    ak_obs = [o for o in mgr.discover_by_mission("akatsuki", body_id="venus") if o.get("data_type") == "profile"]
+    a = mgr.load_profile("akatsuki", ak_obs[0]["observation_id"])
+    # Test input: a second profile made by offsetting the real one by +5 K.
+    b = copy.deepcopy(a)
+    b.observation_id += "_offset"
+    b.temperature_k = a.temperature_k + 5.0
     venus_body = get_body("venus")
-
     for var in ["temperature_k", "pressure_hpa"]:
-        res = compare_profiles_on_body([ak_prof, vex_prof], venus_body, altitude_step_km=1.0, variable_name=var)
-        assert res["variable_name"] == var
-        assert len(res["composite_mean"]) == len(res["grid_km"])
-        assert len(res["composite_minus_1sigma"]) == len(res["grid_km"])
-        assert len(res["composite_plus_1sigma"]) == len(res["grid_km"])
-        # Mean should be bounded between minus and plus 1-sigma where valid
+        res = compare_profiles_on_body([a, b], venus_body, altitude_step_km=1.0, variable_name=var)
+        assert res["variable_name"] == var and res["profile_count"] == 2
+        assert len(res["composite_mean"]) == len(res["grid_km"]) == len(res["composite_plus_1sigma"])
         for mean_val, minus_val, plus_val in zip(res["composite_mean"], res["composite_minus_1sigma"], res["composite_plus_1sigma"]):
-            if mean_val is not None and minus_val is not None and plus_val is not None:
-                assert minus_val <= mean_val <= plus_val or abs(plus_val - minus_val) < 1e-6
+            if None not in (mean_val, minus_val, plus_val):
+                assert minus_val <= mean_val <= plus_val
+    t = compare_profiles_on_body([a, b], venus_body, altitude_step_km=1.0, variable_name="temperature_k")
+    spread = [s for s in t["composite_std"] if s is not None]
+    assert spread and abs(np.median(spread) - 2.5) < 0.2      # std of x and x+5 is 2.5
 
 
 # ===========================================================================
@@ -179,29 +173,15 @@ def test_publication_figure_generator():
 # 6. ISRO PLANETARY MISSIONS (MOM & CHANDRAYAAN-2)
 # ===========================================================================
 
-def test_isro_planetary_missions_mom_and_ch2():
-    """Verify ISRO planetary missions MOM and Chandrayaan-2 adapters and profiles."""
+def test_no_mission_returns_fabricated_observations():
+    """Regression: missions used to return formula-generated profiles presented as
+    archive data. Every observation must now trace to a real archive product."""
     mgr = get_mission_manager()
-
-    # MOM (Mars)
-    mom_obs = mgr.discover_by_mission("mom", body_id="mars")
-    assert len(mom_obs) >= 2
-    mom_prof = mgr.load_profile("mom", mom_obs[0]["observation_id"])
-    assert mom_prof is not None
-    assert mom_prof.body_id == "mars"
-    assert mom_prof.instrument == "MENCA"
-    assert len(mom_prof.altitude_km) > 0
-    assert len(mom_prof.temperature_k) > 0
-    assert "SPL" in mom_prof.provenance.doi_or_citation or "Bhardwaj" in mom_prof.provenance.doi_or_citation
-
-    # Chandrayaan-2 (Moon)
-    ch2_obs = mgr.discover_by_mission("chandrayaan2", body_id="moon")
-    assert len(ch2_obs) >= 2
-    ch2_prof = mgr.load_profile("chandrayaan2", ch2_obs[0]["observation_id"])
-    assert ch2_prof is not None
-    assert ch2_prof.body_id == "moon"
-    assert ch2_prof.instrument == "DFRS"
-    assert ch2_prof.electron_density_cm3 is not None
-    assert len(ch2_prof.electron_density_cm3) > 0
-    assert np.nanmax(ch2_prof.electron_density_cm3) > 100.0
-
+    for mid in MISSIONS:
+        for obs in mgr.discover_by_mission(mid, limit=500):
+            if obs.get("data_type") == "image":
+                continue
+            assert obs.get("dataset_id"), (mid, obs)
+            assert str(obs.get("archive_source", "")).startswith("https://"), (mid, obs)
+    # MOM and Chandrayaan-2 data need an ISSDC login, so nothing is listed until downloaded.
+    assert mgr.discover_by_mission("mom") == [] and mgr.discover_by_mission("chandrayaan2") == []

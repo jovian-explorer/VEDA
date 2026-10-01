@@ -22,8 +22,6 @@ from veda.api.routes import (
     compare_missions_on_body,
     get_observation_profile,
     export_compare_csv,
-    discover_remote_products,
-    list_local_cached_products,
     generate_publication_figure,
     CrossCompareRequest,
 )
@@ -149,43 +147,25 @@ def test_fits_zscale_and_transect():
 # ===========================================================================
 
 def test_venus_cross_mission_comparison():
-    """Verify comparing Akatsuki and Venus Express profiles on Venus."""
+    """Comparison on Venus from the real Akatsuki profile, with CSV export."""
     mgr = get_mission_manager()
-    ak_obs = mgr.discover_by_mission("akatsuki", body_id="venus")
-    vex_obs = mgr.discover_by_mission("vex", body_id="venus")
-    assert len(ak_obs) > 0
-    assert len(vex_obs) > 0
-
+    ak_obs = [o for o in mgr.discover_by_mission("akatsuki", body_id="venus") if o.get("data_type") == "profile"]
+    assert ak_obs
     ak_prof = mgr.load_profile("akatsuki", ak_obs[0]["observation_id"])
-    vex_prof = mgr.load_profile("vex", vex_obs[0]["observation_id"])
-    assert ak_prof is not None
-    assert vex_prof is not None
-
-    venus_body = get_body("venus")
-    res = compare_profiles_on_body([ak_prof, vex_prof], venus_body, altitude_step_km=1.0, variable_name="temperature_k")
-    assert res["body_id"] == "venus"
-    assert res["profile_count"] == 2
+    res = compare_profiles_on_body([ak_prof], get_body("venus"), altitude_step_km=1.0, variable_name="temperature_k")
+    assert res["body_id"] == "venus" and res["profile_count"] == 1
     assert len(res["grid_km"]) > 10
-    assert len(res["composite_mean"]) == len(res["grid_km"])
-    assert len(res["composite_plus_1sigma"]) == len(res["grid_km"])
-
-    # Check that each profile includes its interpolated series
-    for p in res["profiles"]:
-        assert "interpolated_series" in p
-        assert len(p["interpolated_series"]) == len(res["grid_km"])
-
-    # Test CSV export of comparison
+    assert len(res["composite_mean"]) == len(res["grid_km"]) == len(res["profiles"][0]["interpolated_series"])
     csv_text = export_comparison_to_csv(res)
-    assert "composite_mean_temperature_k" in csv_text
-    assert "akatsuki" in csv_text or "vex" in csv_text
+    assert "composite_mean_temperature_k" in csv_text and "akatsuki" in csv_text
 
 
 def test_profile_csv_export():
     """Verify single profile export to CSV with provenance metadata."""
     mgr = get_mission_manager()
-    vex_prof = mgr.load_profile("vex", "vex-vera-orbit-0268-ingress")
-    assert vex_prof is not None
-    csv_text = export_profile_to_csv(vex_prof)
+    prof = mgr.load_profile("mex", "M32ICL2L04_AIX_040931105_60")
+    assert prof is not None
+    csv_text = export_profile_to_csv(prof)
     assert "# VEDA Scientific Data Export" in csv_text
     assert "altitude_km,temperature_k" in csv_text
     assert "potential_temperature" in csv_text
@@ -208,38 +188,28 @@ def test_api_explore_body():
 
 
 def test_api_compare_body():
-    req = CrossCompareRequest(missions=["akatsuki", "vex"], variable="temperature_k")
+    req = CrossCompareRequest(missions=["akatsuki"], variable="temperature_k")
     data = compare_missions_on_body("venus", req)
     assert data["body_id"] == "venus"
-    assert data["profile_count"] >= 2
+    assert data["profile_count"] >= 1
     assert len(data["composite_mean"]) > 0
 
 
 def test_api_profile_data():
-    data = get_observation_profile("vex", "vex-vera-orbit-0268-ingress")
-    assert data["mission_id"] == "vex"
+    data = get_observation_profile("mex", "M32ICL2L04_AIX_040931105_60")
+    assert data["mission_id"] == "mex"
     assert "altitude_km" in data
     assert "temperature_k" in data
     assert "provenance" in data
 
 
 def test_api_export_compare_csv():
-    req = CrossCompareRequest(missions=["akatsuki", "vex"], variable="temperature_k")
+    req = CrossCompareRequest(missions=["akatsuki"], variable="temperature_k")
     resp = export_compare_csv("venus", req)
     assert resp.media_type == "text/csv"
     assert "composite_mean_temperature_k" in resp.body.decode()
 
 
-def test_api_archive_discovery():
-    data = discover_remote_products("akatsuki", body_id="venus")
-    assert data["mission_id"] == "akatsuki"
-    assert data["total_available"] >= 1
-    assert any("darts" in p["archive"].lower() for p in data["products"])
-
-
-def test_api_archive_local_cache():
-    local_items = list_local_cached_products()
-    assert isinstance(local_items, list)
 
 
 def test_api_publication_figure_generator():

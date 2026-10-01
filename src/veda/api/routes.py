@@ -416,105 +416,6 @@ def export_compare_csv(body_id: str, req: CrossCompareRequest):
 
 
 # ---------------------------------------------------------------------------
-# Live Archive Discovery & Pipeline Endpoints
-# ---------------------------------------------------------------------------
-
-@router.get("/archive/discover")
-def discover_remote_products(
-    mission_id: str,
-    body_id: Optional[str] = None,
-    instrument_id: Optional[str] = None,
-) -> dict:
-    """Discover authentic remote archive products (NASA PDS, ESA PSA, JAXA DARTS)."""
-    from ..pipeline.archive_downloader import get_archive_pipeline
-    if not get_mission(mission_id):
-        raise HTTPException(status_code=404, detail=f"Mission '{mission_id}' not found")
-    pipe = get_archive_pipeline()
-    products = pipe.query_remote_archive(mission_id, body_id=body_id, instrument_id=instrument_id)
-    return {
-        "mission_id": mission_id,
-        "body_id": body_id,
-        "total_available": len(products),
-        "products": products,
-    }
-
-
-class DownloadProductRequest(BaseModel):
-    task_id: str
-    mission_id: str
-    body_id: str
-    instrument: str
-    remote_url: str
-    filename: str
-
-
-@router.post("/archive/download")
-def start_archive_download(req: DownloadProductRequest) -> dict:
-    """Trigger background or direct download of remote mission observation."""
-    from urllib.parse import urlparse
-    from ..pipeline.archive_downloader import get_archive_pipeline
-
-    # The download writes into the cache folder: never let the request pick
-    # the scheme (file://) or escape the folder (../ in mission or filename).
-    if not get_mission(req.mission_id):
-        raise HTTPException(status_code=404, detail=f"Mission '{req.mission_id}' not found")
-    if urlparse(req.remote_url).scheme not in ("http", "https"):
-        raise HTTPException(status_code=400, detail="Only http(s) archive URLs can be downloaded")
-    if Path(req.filename.replace("\\", "/")).name != req.filename or req.filename in ("", ".", ".."):
-        raise HTTPException(status_code=400, detail="filename must be a plain file name")
-    pipe = get_archive_pipeline()
-
-    # Run download
-    task = pipe.download_product(
-        task_id=req.task_id,
-        remote_url=req.remote_url,
-        mission_id=req.mission_id,
-        body_id=req.body_id,
-        instrument=req.instrument,
-        filename=req.filename,
-    )
-    return {
-        "task_id": task.task_id,
-        "status": task.status,
-        "downloaded_bytes": task.downloaded_bytes,
-        "total_bytes": task.total_bytes,
-        "progress_pct": task.progress_pct,
-        "local_path": task.local_path,
-        "error": task.error_message,
-    }
-
-
-@router.get("/archive/tasks/{task_id}")
-def get_download_task_status(task_id: str) -> dict:
-    """Poll progress of a specific archive download task."""
-    from ..pipeline.archive_downloader import get_archive_pipeline
-    pipe = get_archive_pipeline()
-    task = pipe.tasks.get(task_id)
-    if not task:
-        raise HTTPException(status_code=404, detail="Download task not found")
-    return {
-        "task_id": task.task_id,
-        "status": task.status,
-        "downloaded_bytes": task.downloaded_bytes,
-        "total_bytes": task.total_bytes,
-        "progress_pct": task.progress_pct,
-        "local_path": task.local_path,
-        "error": task.error_message,
-    }
-
-
-@router.get("/archive/local")
-def list_local_cached_products(
-    mission_id: Optional[str] = None,
-    body_id: Optional[str] = None,
-) -> List[dict]:
-    """List all indexed local granules in the VEDA archive repository."""
-    from ..pipeline.archive_downloader import get_archive_pipeline
-    pipe = get_archive_pipeline()
-    return pipe.list_downloaded(mission_id=mission_id, body_id=body_id)
-
-
-# ---------------------------------------------------------------------------
 # Publication-Quality Figure Generator (Journal-Ready Vector / High-DPI)
 # ---------------------------------------------------------------------------
 
@@ -554,8 +455,12 @@ def generate_publication_figure(
     comp = mgr.compare_on_body(body_id, None, mission_ids=mission_list, variable_name=variable)
 
     grid = comp.get("grid_km", [])
-    if not grid:
-        raise HTTPException(status_code=400, detail="No profile data available for this figure")
+    if not grid or not comp.get("profile_count"):
+        # A grid alone is returned when profiles exist but none carry this
+        # variable; plotting the empty composite against it used to crash (500).
+        raise HTTPException(status_code=400, detail=(
+            f"None of the selected {b.name} profiles contain '{variable}'. "
+            "Choose another variable or add profiles that measure it."))
 
     fig, ax = plt.subplots(figsize=(6.5, 7.5), dpi=dpi)
 

@@ -1,0 +1,42 @@
+ Profile file name                                  :  "M32ICL2L04_AIX_040931105_60.TAB"
+ Start time                                   [ERT] :  2004-04-02T11:44:14.100
+ Stop time                                    [ERT] :  2004-04-02T11:45:24.699
+ Orbit Number                                       :        264
+ G/S antenna number                                 :         32
+ Ray path direction of geometrical OCC point  [deg] :      98.60
+ Angle from Diametric of geom. OCC point      [deg] :    -117.65
+ Solar Longitude                              [deg] :      13.59
+ PCK file name                                      :  "EARTH_000101_210224_201203.BPC"
+ SPK file name                                      :  "ORMM__040401000000_00072.BSP"
+ Gravity field model                                :  "JGM75C01.SHA"
+ Upper Boundary Condition for T (low)           [K] :     130.00
+ Upper Boundary Condition for T (medium)        [K] :     165.00
+ Upper Boundary Condition for T (high)          [K] :     200.00
+ -----------------------------------------------------------------------------
+  values of lowest measurement point
+ -----------------------------------------------------------------------------
+ Measurement time (lowest sample)             [ERT] :  2004-04-02T11:45:24.699
+ Measurement time (lowest sample)      [ERT - OWLT] :  2004-04-02T11:31:02.438
+ Latitude (lowest sample)                     [deg] :      25.03
+ Longitude (lowest sample)                    [deg] :      56.71
+ Sub-Solar Latitude (lowest sample)           [deg] :       5.74
+ Sub-Solar Longitude (lowest sample)          [deg] :     170.93
+ Radius of last acceptable point before OCC    [km] :    3394.80
+ MOLA Radius (lowest sample)                   [km] :    3393.61
+ MOLA Areoid (lowest sample)                   [km] :    3393.13
+ Sigma Radius (lowest sample)                  [km] :    -999.99
+ Pressure (lowest sample)                      [Pa] :     491.94
+ Sigma Pressure (lowest sample)                [Pa] :       1.10
+ Temperature (lowest sample)                    [K] :     200.70
+ Sigma Temperature (lowest sample)              [K] :       0.13
+ S/C to Limb Distance (lowest sample)          [km] :     11839.
+ S/C to G/S Distance (lowest sample)     [*10^6 km] : 290.587699
+ Local True Solar Time (lowest sample)      [hours] :       4.39
+ Solar Zenith Angle (lowest sample)           [deg] :     109.12
+ Sun-Earth-S/C-Angle (lowest sample)          [deg] :       0.96
+ G/S Elevation Angle (lowest sample)          [deg] :       0.40
+ Fresnel radius (lowest sample)                [km] :       0.65
+ -----------------------------------------------------------------------------
+  Fresnel value at 50 km passing above surface
+ -----------------------------------------------------------------------------
+ Fresnel radius (50 km)                        [km] :       0.65

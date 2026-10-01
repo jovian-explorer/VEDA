@@ -1,0 +1,59 @@
+ Profile file name                                  :  "M32ICL2L04_IIX_040931105_60.TAB"
+ Start time                                   [ERT] :  2004-04-02T11:05:04.100
+ Stop time                                    [ERT] :  2004-04-02T11:45:24.500
+ Orbit number                                       :         264
+ Antenna number                                     :          32
+ PCK file name                                      :  "EARTH_000101_210414_210121.BPC"
+ SPK file name                                      :  "ORMM__040401000000_00072.BSP"
+ Gravity field model                                :  "JGM75C01.SHA"
+ Geopotential reference                   [m^2/s^2] :   12652811.
+ Noise level of the profile              [10^6/m^3] :     1540.58
+ Offset correction of the profile        [10^6/m^3] :     -385.67
+ Upper noise level altitude                    [km] :   -9999.999
+ Fresnel radius at upper noise level altitude  [km] :       -9.99
+ Lower noise level altitude                    [km] :   -9999.999
+ Fresnel radius at lower noise level altitude  [km] :       -9.99
+ Lowest valid altitude of ionospheric profile  [km] :    3457.542
+ Fresnel radius at lowest valid altitude       [km] :        0.65
+ -----------------------------------------------------------------------------
+  values at geometrical occultation
+ -----------------------------------------------------------------------------
+ Occultation time                             [ERT] :  2004-04-02T11:45:23.513
+ Occultation time                        [ERT-OWLT] :  2004-04-02T11:29:14.252
+ Ray path direction of geometrical OCC point  [deg] :       98.60
+ Angle from diametric at geom. OCC point      [deg] :     -117.65
+ S/C to limb distance at geom. OCC point       [km] :      11841.
+ S/C to G/S distance at geom. OCC point  [10^6/m^3] :     290.588
+ Sun-Earth-S/C-angle at geom. OCC point       [deg] :       54.73
+ Antenna elevation angle at geom. OCC point   [deg] :       22.73
+ -----------------------------------------------------------------------------
+  values at 130 km altitude above aeroid (130 km)
+ -----------------------------------------------------------------------------
+ Measurement time (130 km)                    [ERT] :  2004-04-02T11:42:10.049
+ Measurement time (130 km)               [ERT-OWLT] :  2004-04-02T11:26:00.761
+ Solar longitude (130 km)                     [deg] :       13.59
+ Planet to Sun distance (130 km)          [10^6 km] :     237.924
+ North planetary latitude (130 km)            [deg] :       28.85
+ East planetary longitude (130 km)            [deg] :       58.16
+ Sub-solar north planetary latitude (130 km)  [deg] :        5.74
+ Sub-solar east planetary longitude (130 km)  [deg] :      171.72
+ Aeroid radius (130 km)                        [km] :    3392.205
+ MOLA radius (130 km)                          [km] :    3392.361
+ Local true solar time (130 km)               [hrs] :        4.43
+ Solar zenith angle (130 km)                  [deg] :      107.38
+ Electron density (130 km)               [10^6/m^3] :     4916.43
+ -----------------------------------------------------------------------------
+  values of maximum electron density (max)
+ -----------------------------------------------------------------------------
+ Measurement time (max)                       [ERT] :  NOT-AVAILABLE          
+ Measurement time (max)                  [ERT-OWLT] :  NOT-AVAILABLE          
+ North planetary latitude (max)               [deg] :      -99.99
+ East planetary longitude (max)               [deg] :     -999.99
+ Solar zenith angle (max)                     [deg] :     -999.99
+ Maximum of electron density (max)       [10^6/m^3] :   -99999.99
+ Radius of max. electron density               [km] :   -9999.999
+ Aeroid radius (max)                           [km] :   -9999.999
+ MOLA radius (max)                             [km] :   -9999.999
+ Altitude above ref. aeroid (max)              [km] :   -9999.999
+ Geopotential (max)                       [m^2/s^2] :   -9999999.
+ Geopotential height (max)                     [km] :  -99999.999

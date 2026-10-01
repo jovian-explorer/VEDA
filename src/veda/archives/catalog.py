@@ -41,11 +41,50 @@ CREATE INDEX IF NOT EXISTS idx_products_time ON products(dataset_id, start_time)
 """
 
 
+# Real archive products shipped with VEDA (sampledata/), registered under their
+# true archive location so they behave exactly like downloaded products.
+#   (dataset_id, volume, path in volume, sampledata folder, start_time, product_type, kind)
+BUNDLED_SAMPLES = [
+    ("vco-v-rs-5-occ-v1.0", "vcors_2001", "data/l4/rs_20160303_223100_udsc64_l4_ae_v10.lbl",
+     "venus_akatsuki", "2016-03-03T23:17:09.324", "L4 atmosphere profile, egress", "profile", "VENUS"),
+    ("mex-m-mrs-5-occ", "MEX-M-MRS-5-OCC-9101-V1.0", "DATA/2004_093_0017/LEVEL04/M32ICL2L04_AIX_040931105_60.LBL",
+     "mars_express", "2004-04-02T11:05:00", "L4 neutral atmosphere profile", "profile", "MARS"),
+    ("mex-m-mrs-5-occ", "MEX-M-MRS-5-OCC-9101-V1.0", "DATA/2004_093_0017/LEVEL04/M32ICL2L04_IIX_040931105_60.LBL",
+     "mars_express", "2004-04-02T11:05:00", "L4 ionosphere electron density profile", "profile", "MARS"),
+]
+_seeded = False
+
+
+def _seed(conn: sqlite3.Connection) -> None:
+    """Copy the bundled samples into the archive cache and catalogue (once per process)."""
+    global _seeded
+    if _seeded:
+        return
+    _seeded = True
+    import shutil
+    from ..config import sampledata_dir
+    for ds_id, vol, path, folder, t0, ptype, kind, target in BUNDLED_SAMPLES:
+        src_dir = sampledata_dir() / folder
+        stem = PurePosixPath(path).stem
+        dest = PRODUCT_ROOT / ds_id / vol / PurePosixPath(path)
+        try:
+            for f in src_dir.glob(stem + ".*"):
+                out = dest.parent / f.name
+                if not out.exists():
+                    out.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(f, out)
+        except OSError:
+            continue
+        conn.execute("INSERT OR IGNORE INTO products VALUES (?,?,?,?,?,?,?,?,?,?)",
+                     (ds_id, stem, vol, path, t0, "", target, ptype, kind, '{"BUNDLED": "yes"}'))
+
+
 def _connect() -> sqlite3.Connection:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(DB_PATH), timeout=30)
     conn.row_factory = sqlite3.Row
     conn.executescript(_SCHEMA)
+    _seed(conn)
     return conn
 
 
@@ -133,6 +172,8 @@ def index_volume(ds: Dataset, volume: str) -> List[Dict[str, Any]]:
         if not path:
             continue
         path = path.replace("\\", "/").lstrip("/")
+        if ".." in PurePosixPath(path).parts:
+            continue  # never let an index entry point outside the volume
         product_id = PurePosixPath(path).stem
         ptype, kind = ds.classify(PurePosixPath(path).name)
         extra = {k: v for k, v in row.items()
@@ -144,7 +185,9 @@ def index_volume(ds: Dataset, volume: str) -> List[Dict[str, Any]]:
             "start_time": _normalise_time(_pick(row, "START_TIME", "OBSERVATION_TIME"))
                           or ds.time_from_filename(PurePosixPath(path).name),
             "stop_time": _normalise_time(_pick(row, "STOP_TIME")),
-            "target": _pick(row, "TARGET_NAME", "TARGET*").upper(),
+            # Single-body data sets often omit TARGET_NAME from their index.
+            "target": (_pick(row, "TARGET_NAME", "TARGET*") or
+                       (ds.body_ids[0] if len(ds.body_ids) == 1 else "")).upper(),
             "product_type": ptype, "kind": kind, "extra": json.dumps(extra),
         })
     return out
@@ -323,6 +366,8 @@ def fetch_product(dataset_id: str, product_id: str,
     seen = set()
     while pending:
         pointer, name = pending.pop(0)
+        if PurePosixPath(name.replace("\\", "/")).name != name:
+            continue  # pointers name files, not paths; ignore anything else
         if name.lower() in seen:
             continue
         seen.add(name.lower())
@@ -348,7 +393,10 @@ def fetch_product(dataset_id: str, product_id: str,
 
 
 def downloaded_products(dataset_ids: Optional[Iterable[str]] = None) -> List[Dict[str, Any]]:
-    ids = [d.lower() for d in dataset_ids] if dataset_ids else [d.id for d in DATASETS]
+    # None means every data set; an empty list (a mission with no data sets yet) means none.
+    ids = [d.lower() for d in dataset_ids] if dataset_ids is not None else [d.id for d in DATASETS]
+    if not ids:
+        return []
     out = []
     with _db_lock, _connect() as conn:
         rows = conn.execute(f"SELECT * FROM products WHERE dataset_id IN ({','.join('?' * len(ids))}) "

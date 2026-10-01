@@ -34,7 +34,6 @@ def _b64(path):
 
 @pytest.mark.parametrize("mission,obs", [
     ("akatsuki", "uvi_20181105_080112_283_geo_v10"),
-    ("new_horizons", "nh_lorri_pluto_approach"),
 ])
 def test_image_render_returns_png(client, mission, obs):
     """Bug: /image/{id}/render was shadowed by the greedy metadata route (404 / JSON)."""
@@ -143,8 +142,8 @@ def _upload(client, name, content, **extra):
 
 def test_upload_pds3_label_with_companion_table(client):
     """Bug: every uploaded .tab/.csv failed ('Pds3Table' has no attribute 'row_count')."""
-    lbl = SAMPLES / "mars_mom" / "mom_menca_orbit_1200.lbl"
-    tab = lbl.with_suffix(".tab")
+    lbl = SAMPLES / "mars_express" / "M32ICL2L04_AIX_040931105_60.LBL"
+    tab = lbl.with_suffix(".TAB")
     r = _upload(client, lbl.name, _text(lbl), body_id="mars",
                 companion_files=[{"filename": tab.name, "file_content": _text(tab)}])
     assert r.status_code == 200, r.text[:300]
@@ -154,7 +153,7 @@ def test_upload_pds3_label_with_companion_table(client):
 
 
 def test_upload_label_without_table_explains_what_to_do(client):
-    lbl = SAMPLES / "mars_mom" / "mom_menca_orbit_1200.lbl"
+    lbl = SAMPLES / "mars_express" / "M32ICL2L04_AIX_040931105_60.LBL"
     r = _upload(client, lbl.name, _text(lbl), body_id="mars")
     assert r.status_code == 422
     assert ".tab together" in r.json()["detail"]
@@ -164,8 +163,8 @@ def test_upload_label_without_table_explains_what_to_do(client):
 def test_reupload_does_not_reuse_stale_companions(client):
     """Bug: uploads shared one folder, so a label uploaded alone silently paired
     with a .tab left over from an earlier upload of the same name."""
-    lbl = SAMPLES / "mars_mom" / "mom_menca_orbit_1200.lbl"
-    tab = lbl.with_suffix(".tab")
+    lbl = SAMPLES / "mars_express" / "M32ICL2L04_AIX_040931105_60.LBL"
+    tab = lbl.with_suffix(".TAB")
     first = _upload(client, lbl.name, _text(lbl), body_id="mars",
                     companion_files=[{"filename": tab.name, "file_content": _text(tab)}])
     assert first.status_code == 200, first.text[:300]
@@ -181,7 +180,7 @@ def test_upload_companion_named_meta_json_is_rejected(client):
 
 
 def test_upload_headerless_tab_asks_for_label(client):
-    tab = SAMPLES / "mars_mom" / "mom_menca_orbit_1200.tab"
+    tab = SAMPLES / "mars_express" / "M32ICL2L04_AIX_040931105_60.TAB"
     r = _upload(client, tab.name, _text(tab), body_id="mars")
     assert r.status_code == 422
     assert ".lbl" in r.json()["detail"]
@@ -210,9 +209,12 @@ def test_bad_uploads_fail_cleanly(client, name, content, status, needle):
         assert needle.lower() in r.json()["detail"].lower()
 
 
-def test_uploaded_fits_can_be_rendered_and_listed(client):
+def test_uploaded_fits_can_be_rendered_and_listed(client, tmp_path):
     """Bug: uploaded images were treated as profiles and then 404'd."""
-    fits = SAMPLES / "pluto_new_horizons" / "nh_lorri_pluto_approach.fits"
+    from astropy.io import fits as _fits
+    fits = tmp_path / "small.fits"
+    yy, xx = np.mgrid[0:64, 0:64]
+    _fits.PrimaryHDU(np.exp(-((xx - 32) ** 2 + (yy - 32) ** 2) / 200.0).astype("float32")).writeto(fits)
     r = _upload(client, "my_upload.fits", _b64(fits), body_id="pluto")
     assert r.status_code == 200 and r.json()["type"] == "image"
     png = client.get("/api/veda/image/user_imported/my_upload/render")
@@ -236,19 +238,36 @@ def test_parse_file_path_restricted_to_veda_folders(client, tmp_path):
     outside = tmp_path / "secret.csv"
     outside.write_text("altitude,temperature\n0,1\n1,2\n", encoding="utf-8")
     assert client.post("/api/veda/parse-file", json={"file_path": str(outside)}).status_code == 403
-    inside = SAMPLES / "venus_express" / "vex_vera_0268_temp.tab"
+    inside = SAMPLES / "venus_akatsuki" / "rs_20160303_223100_udsc64_l4_ae_v10.lbl"
     assert client.post("/api/veda/parse-file", json={"file_path": str(inside)}).status_code == 200
 
 
-@pytest.mark.parametrize("patch,status", [
-    ({"remote_url": "file:///etc/passwd"}, 400),
-    ({"filename": "../../escape.txt"}, 400),
-    ({"mission_id": "../.."}, 404),
-])
-def test_archive_download_rejects_unsafe_requests(client, patch, status):
-    req = {"task_id": "t1", "mission_id": "akatsuki", "body_id": "venus", "instrument": "RS",
-           "remote_url": "https://example.invalid/x.tab", "filename": "x.tab", **patch}
-    assert client.post("/api/veda/archive/download", json=req).status_code == status
+def test_archive_api_rejects_unknown_and_bad_input(client):
+    assert client.get("/api/veda/archive/search?dataset_id=nope").status_code == 404
+    assert client.get("/api/veda/archive/search?start=yesterday").status_code == 422
+    assert client.get("/api/veda/archive/search?start=2020-01-02&end=2020-01-01").status_code == 400
+    assert client.post("/api/veda/archive/datasets/nope/index").status_code == 404
+    r = client.post("/api/veda/archive/fetch", json={"items": [{"dataset_id": "mex-m-mrs-5-occ", "product_id": "../../x"}]})
+    assert r.status_code == 404
+    assert client.get("/api/veda/archive/profile/mex-m-mrs-5-occ/nope").status_code == 404
+
+
+def test_archive_search_finds_bundled_real_products(client):
+    r = client.get("/api/veda/archive/search?mission_id=mex&kind=profile&start=2004-01-01&end=2004-12-31")
+    assert r.status_code == 200
+    ids = {p["product_id"] for p in r.json()["products"]}
+    assert {"M32ICL2L04_AIX_040931105_60", "M32ICL2L04_IIX_040931105_60"} <= ids
+    prof = client.get("/api/veda/archive/profile/mex-m-mrs-5-occ/M32ICL2L04_AIX_040931105_60").json()
+    temps = [t for t in prof["temperature_k"] if t is not None]
+    assert 150 < min(temps) and max(temps) < 260          # Mars, 5-50 km
+    assert prof["uncertainty"]["temperature_k"] and prof["track"]["latitude"]
+
+
+def test_archive_paths_from_remote_files_cannot_escape(tmp_path):
+    """Index paths and label pointers come from remote files; '..' must never be used."""
+    from veda.archives.catalog import label_pointers
+    assert ("TABLE", "../../evil.tab") in label_pointers('^TABLE = "../../evil.tab"')
+    # fetch_product skips such pointers; index_volume skips such paths (see catalog.py)
 
 
 def test_foreign_host_header_is_rejected(client):

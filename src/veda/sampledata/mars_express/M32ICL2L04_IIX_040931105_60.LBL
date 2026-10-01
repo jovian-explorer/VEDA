@@ -1,0 +1,225 @@
+PDS_VERSION_ID           =  "PDS3"
+DATA_SET_ID              =  "MEX-M-MRS-5-OCC-9101-V1.0"
+DATA_SET_NAME            =  "MARS EXPRESS MARS MRS 5
+                             OCCULTATION 9101 V1.0"
+RELEASE_ID               =  0001
+REVISION_ID              =  0000
+PRODUCT_TYPE             =  "RDR"
+INSTRUMENT_TYPE          =  "RADIO SCIENCE"
+^INSTRUMENT_DESC         =  "MARS_DESC.TXT"
+TARGET_TYPE              =  "PLANET"
+SPACECRAFT_POINTING_MODE =  "EARTH"
+^SPACECRAFT_POINTING_MODE_DESC=  "MEX_POINTING_MODE_DESC.TXT"
+INSTRUMENT_HOST_NAME     =  "MARS EXPRESS"
+INSTRUMENT_HOST_ID       =  "MEX"
+INSTRUMENT_NAME          =  "MARS EXPRESS ORBITER RADIO SCIENCE"
+INSTRUMENT_ID            =  "MRS"
+TARGET_NAME              =  "MARS"
+OBSERVATION_TYPE         =  "OCCULTATION"
+SPACECRAFT_CLOCK_START_COUNT =  "N/A"
+SPACECRAFT_CLOCK_STOP_COUNT  =  "N/A"
+ORBIT_NUMBER             =  264
+MISSION_NAME             =  "MARS EXPRESS"
+MISSION_ID               =  "MEX"
+PROCESSING_LEVEL_ID      =  5
+^ION_INFO                =  "M32ICL2L04_IIX_040931105_60.TXT"
+PRODUCER_ID              =  "RIU_COLOGNE"
+PRODUCER_FULL_NAME       =  "MARTIN PAETZOLD, PI"
+PRODUCER_INSTITUTION_NAME=  "RHEINISCHES INSTITUT FUER UMWELTFORSCHUNG,
+                             PLANETENFORSCHUNG"
+DSN_STATION_NUMBER       =  32
+PRODUCT_CREATION_TIME    =  2021-03-04T11:35:45.798
+STANDARD_DATA_PRODUCT_ID =  "IFMS2"
+SOFTWARE_NAME            =  "MEX_IONO_PROFILES_V6.0"
+SOURCE_PRODUCT_ID        =  "M32ICL2L03_IIX_040931105_60.TAB"
+DESCRIPTION              =  "This file contains an ionospheric
+                             electron density profile derived from Mars
+                             Express single frequency radio occultation
+                             data. Raw samples of ground station
+                             receiver output were corrected for observing
+                             conditions and converted to bending angle
+                             as a function of impact parameter. These
+                             results were then inverted to refractive index
+                             as a function of radius via an Abel transform.
+                             Electron number density was obtained from
+                             refractive index using a conversion formula
+                             appropriate to the measurement frequency."
+
+OBJECT                   =  FILE
+   PRODUCT_ID               =  "M32ICL2L04_IIX_040931105_60.TAB"
+   RECORD_TYPE              =  FIXED_LENGTH
+   RECORD_BYTES             =     157
+   FILE_RECORDS             =   12103
+   START_TIME               =  2004-04-02T11:05:04.100
+   STOP_TIME                =  2004-04-02T11:45:24.500
+^ION_TABLE               =  "M32ICL2L04_IIX_040931105_60.TAB"
+  
+   OBJECT                   =  ION_TABLE
+      NAME                     =  ION_DATA
+      INTERCHANGE_FORMAT       =  ASCII
+      ROWS                     =   12103
+      COLUMNS                  =      13
+      ROW_BYTES                =     157
+  
+    OBJECT                   = COLUMN
+      COLUMN_NUMBER             = 1
+      NAME                      = "SAMPLE NUMBER"
+      DATA_TYPE                 = ASCII_INTEGER
+      START_BYTE                = 1
+      BYTES                     = 5
+      UNIT                      = "N/A"
+      FORMAT                    = "I5"
+      DESCRIPTION               = "The number of this row in the table,
+                                  starting from 1 in the first row."
+    END_OBJECT               = COLUMN
+  
+    OBJECT                   = COLUMN
+      COLUMN_NUMBER             = 2
+      NAME                      = "UTC TIME"
+      DATA_TYPE                 = TIME
+      START_BYTE                = 8
+      BYTES                     = 23
+      UNIT                      = "N/A"
+      FORMAT                    = "A23"
+      DESCRIPTION               = "The UTC receiver date and time of
+                                  this measurement (in Earth received time),
+                                  in the format CCYY-MM-DDTHH:MM:SS.sss."
+    END_OBJECT               = COLUMN
+  
+    OBJECT                   = COLUMN
+      COLUMN_NUMBER             = 3
+      NAME                      = "EPHEMERIS SECONDS"
+      DATA_TYPE                 = ASCII_REAL
+      START_BYTE                = 33
+      BYTES                     = 16
+      UNIT                      = "SECOND"
+      FORMAT                    = "F16.6"
+      DESCRIPTION               = "Seconds from 12h 1 January 2000 TDB
+                                  corresponding to UTC TIME (column 2);
+                                  includes leap seconds."
+    END_OBJECT               = COLUMN
+  
+    OBJECT                   = COLUMN
+      COLUMN_NUMBER             = 4
+      NAME                      = "RADIUS"
+      DATA_TYPE                 = ASCII_REAL
+      START_BYTE                = 51
+      BYTES                     = 9
+      UNIT                      = "KILOMETER"
+      FORMAT                    = "F9.3"
+      DESCRIPTION               = "Measurement radius with respect to
+                                  the center of mass of the planet."
+    END_OBJECT               = COLUMN
+  
+    OBJECT                   = COLUMN
+      COLUMN_NUMBER             = 5
+      NAME                      = "GEOPOTENTIAL HEIGHT"
+      DATA_TYPE                 = ASCII_REAL
+      START_BYTE                = 62
+      BYTES                     = 9
+      UNIT                      = "KILOMETER"
+      FORMAT                    = "F9.3"
+      DESCRIPTION               = "Geopotential height."
+    END_OBJECT               = COLUMN
+  
+    OBJECT                   = COLUMN
+      COLUMN_NUMBER             = 6
+      NAME                      = "LATITUDE"
+      DATA_TYPE                 = ASCII_REAL
+      START_BYTE                = 73
+      BYTES                     = 7
+      UNIT                      = "DEGREE"
+      FORMAT                    = "F7.3"
+      DESCRIPTION               = "Aerocentric (north) latitude of
+                                  measurement in body fixed coordinates."
+    END_OBJECT               = COLUMN
+  
+    OBJECT                   = COLUMN
+      COLUMN_NUMBER             = 7
+      NAME                      = "LONGITUDE"
+      DATA_TYPE                 = ASCII_REAL
+      START_BYTE                = 82
+      BYTES                     = 7
+      UNIT                      = "DEGREE"
+      FORMAT                    = "F7.3"
+      DESCRIPTION               = "Aerocentric (east) longitude of
+                                  measurement in body fixed coordinates."
+    END_OBJECT               = COLUMN
+  
+    OBJECT                   = COLUMN
+      COLUMN_NUMBER             = 8
+      NAME                      = "REFRACTIVITY"
+      DATA_TYPE                 = ASCII_REAL
+      START_BYTE                = 91
+      BYTES                     = 11
+      UNIT                      = "N/A"
+      FORMAT                    = "F11.6"
+      DESCRIPTION               = "Refractivity of the atmosphere."
+    END_OBJECT               = COLUMN
+  
+    OBJECT                   = COLUMN
+      COLUMN_NUMBER             = 9
+      NAME                      = "SIGNAL LEVEL"
+      DATA_TYPE                 = ASCII_REAL
+      START_BYTE                = 104
+      BYTES                     = 10
+      UNIT                      = "DECIBEL"
+      FORMAT                    = "F10.5"
+      DESCRIPTION               = "Signal intensity in decibels (dB)
+                                  relative to an arbitrary reference."
+    END_OBJECT               = COLUMN
+  
+    OBJECT                   = COLUMN
+      COLUMN_NUMBER             = 10
+      NAME                      = "ELECTRON NUMBER DENSITY"
+      DATA_TYPE                 = ASCII_REAL
+      START_BYTE                = 116
+      BYTES                     = 11
+      UNIT                      = "10^6 PER CUBIC METER"
+      FORMAT                    = "F11.2"
+      DESCRIPTION               = "Electron number density of the
+                                  ionosphere at RADIUS, LATITUDE,
+                                  LONGITUDE."
+    END_OBJECT               = COLUMN
+  
+    OBJECT                   = COLUMN
+      COLUMN_NUMBER             = 11
+      NAME                      = "NOISE LEVEL ELECTRON NUMBER DENSITY"
+      DATA_TYPE                 = ASCII_REAL
+      START_BYTE                = 129
+      BYTES                     = 11
+      UNIT                      = "10^6 PER CUBIC METER"
+      FORMAT                    = "F11.2"
+      DESCRIPTION               = "Noise level of
+                                  ELECTRON NUMBER DENSITY."
+    END_OBJECT               = COLUMN
+  
+    OBJECT                   = COLUMN
+      COLUMN_NUMBER             = 12
+      NAME                      = "SOLAR ZENITH ANGLE"
+      DATA_TYPE                 = ASCII_REAL
+      START_BYTE                = 142
+      BYTES                     = 7
+      UNIT                      = "DEGREE"
+      FORMAT                    = "F7.2"
+      DESCRIPTION               = "Solar zenith angle at ray periapsis
+                                  at RADIUS, LATITUDE, LONGITUDE."
+    END_OBJECT               = COLUMN
+  
+    OBJECT                   = COLUMN
+      COLUMN_NUMBER             = 13
+      NAME                      = "FRESNEL RADIUS"
+      DATA_TYPE                 = ASCII_REAL
+      START_BYTE                = 151
+      BYTES                     = 5
+      UNIT                      = "KILOMETER"
+      FORMAT                    = "F5.2"
+      DESCRIPTION               = "Fresnel radius at ray periapsis
+                                  at RADIUS, LATITUDE, LONGITUDE."
+    END_OBJECT               = COLUMN
+  
+   END_OBJECT               =  ION_TABLE
+  
+END_OBJECT               =  FILE
+  
+END

@@ -35,6 +35,7 @@ from ..config import (
     frontend_dir,
     sampledata_dir,
 )
+from .archive_routes import router as archive_router
 from .routes import router as veda_router
 
 
@@ -65,6 +66,7 @@ def create_app() -> FastAPI:
 
     # Mount VEDA multi-mission scientific router
     app.include_router(veda_router)
+    app.include_router(archive_router)
 
     @app.get("/api/health")
     def health_check() -> Dict[str, Any]:

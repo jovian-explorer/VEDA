@@ -11,25 +11,8 @@ from ..core.models import ObservationImage, ObservationProfile, ProvenanceRecord
 from ..core.registry import BODIES, MISSIONS, get_body, get_mission
 from ..analysis.atmospheric import compare_profiles_on_body
 
-# Import adapters
 from .akatsuki_adapter import AkatsukiAdapter
-from .new_horizons_adapter import NewHorizonsAdapter
-from .juno_adapter import JunoAdapter
-from .cassini_adapter import CassiniAdapter
-from .vex_adapter import VenusExpressAdapter
-from .maven_adapter import MavenAdapter
-from .bepicolombo_adapter import BepiColomboAdapter
-from .galileo_adapter import GalileoAdapter
-from .extended_adapters import (
-    MessengerAdapter,
-    MagellanAdapter,
-    PioneerVenusAdapter,
-    MroAdapter,
-    LroAdapter,
-    DawnAdapter,
-    RosettaAdapter,
-)
-from .isro_adapters import MomAdapter, Chandrayaan2Adapter
+from .archive_adapter import ArchiveMissionAdapter
 from .uploads_adapter import MISSION_ID as UPLOADS_MISSION_ID, UploadsAdapter
 
 
@@ -42,23 +25,11 @@ class MissionManager:
         self._register_default_adapters()
 
     def _register_default_adapters(self) -> None:
-        self.register_adapter(AkatsukiAdapter())
-        self.register_adapter(NewHorizonsAdapter())
-        self.register_adapter(JunoAdapter())
-        self.register_adapter(CassiniAdapter())
-        self.register_adapter(VenusExpressAdapter())
-        self.register_adapter(MavenAdapter())
-        self.register_adapter(BepiColomboAdapter())
-        self.register_adapter(GalileoAdapter())
-        self.register_adapter(MessengerAdapter())
-        self.register_adapter(MagellanAdapter())
-        self.register_adapter(PioneerVenusAdapter())
-        self.register_adapter(MroAdapter())
-        self.register_adapter(LroAdapter())
-        self.register_adapter(DawnAdapter())
-        self.register_adapter(RosettaAdapter())
-        self.register_adapter(MomAdapter())
-        self.register_adapter(Chandrayaan2Adapter())
+        # Every mission is served from the real archive catalogue; Akatsuki also
+        # has a bundled UVI image, read by its original image loader.
+        for mid in MISSIONS:
+            images = AkatsukiAdapter() if mid == "akatsuki" else None
+            self.register_adapter(ArchiveMissionAdapter(mid, image_provider=images))
 
     def register_adapter(self, adapter: BaseMissionAdapter) -> None:
         self._adapters[adapter.mission_id.lower()] = adapter
