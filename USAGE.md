@@ -28,34 +28,50 @@ See the README for the development setup and platform notes.
 
 ---
 
-## 2. Interface Navigation and Modes
+## 2. Finding and Opening Real Observations
 
-VEDA provides two exploration paradigms accessible via the top-left navigation switch:
+Everything VEDA shows comes from the official mission archives. Nothing is simulated: if no mission observed a body in your date range, the search returns nothing.
 
-### Mode 1: Exploration by Celestial Body
-1. **Target Selection**:
-   * Click any planetary target in the body gallery: **Venus**, **Mars**, **Jupiter**, **Saturn**, **Titan**, **Pluto**, **Mercury**, **Moon**, **Ceres**, **Vesta**, or **Comet 67P**.
-   * The target banner displays authoritative physical constants: equatorial radius $R_p$, surface gravity $g_0$, mean molecular weight $\mu$, specific gas constant $R_{spec}$, and primary atmospheric constituents.
-   * Direct links are provided to the official exploration overview and the authoritative planetary data archive.
-2. **Multi-Mission Comparative Analysis**:
-   * In the Soundings panel, activate multiple missions simultaneously (e.g. for Venus: select **Akatsuki**, **Venus Express**, and **BepiColombo**).
-   * VEDA aligns soundings onto a target-specific uniform vertical altitude grid ($z$).
-   * The system computes:
-     * Individual spacecraft vertical profiles
-     * Multi-spacecraft composite mean: $\mu(z) = \frac{1}{M}\sum_{m=1}^M T_m(z)$
-     * Observational spread envelope: $\mu(z) \pm 1\sigma(z)$
-3. **Planetary Spatial Map and 3D Globe**:
-   * **2D Cylindrical Equirectangular Projection**: Visualizes latitude and longitude coordinates of occultation tangent points and image centers.
-   * **3D Orthographic Rotating Globe**: Wireframe mathematical sphere with latitude parallels and longitude meridians, plotting spacecraft observation footprints in 3D coordinate space.
+The top-left switch has three modes: **By Celestial Body**, **By Planetary Mission** and the **Guide**.
 
-### Mode 2: Exploration by Spacecraft Mission
-1. **Mission Architecture**:
-   * Browse 17 planetary missions filtered by mission class (**Orbiters** vs. **Flybys and Encounters**).
-   * Inspect spacecraft trajectory parameters, orbital configurations, scientific payload suites, and target bodies.
-   * Direct links are provided to the official mission portal and data archive.
-2. **Observation Timeline and Soundings Catalog**:
-   * Browse ingested observation soundings chronologically or filter by instrument.
-   * View solar zenith angle (SZA), local solar time (LST), latitude, longitude, and measurement altitude ranges.
+### Search a body by date (all missions)
+1. Choose a planet or moon in **By Celestial Body**. The banner shows its radius, gravity, mean molecular weight, gas constant and composition, which VEDA uses for derived quantities.
+2. In **Find observations of ...**, set **From** and **To** (leave both empty for the whole archive). **Show** chooses *Profiles (plottable)* or *Everything (incl. raw data)*.
+3. Press **Search all missions**. The first time, VEDA reads the index of every connected data set for that body from its archive (progress is shown); afterwards searches use the local catalogue and work offline.
+4. The table lists mission, UTC time, product id, product type, payload and level, and whether the product is downloaded. Press **Open** to download and plot one profile, tick rows and press **Compare selected** to overlay them, or **Download selected** to cache them.
+
+Example: Mars, 2005-07-01 to 2005-07-31 returns several hundred profiles from Mars Express MaRS and Mars Global Surveyor.
+
+### Browse one mission by payload
+1. Choose a spacecraft in **By Planetary Mission**. **Archive data** shows one chip per payload and data set (instrument, level, archive, indexed coverage). Tick the ones to search.
+2. Filter by **From** / **To** date, **Product type** (for example atmosphere or ionosphere profiles, raw records), free **Search** text (product id, orbit), **Profiles only**, **Downloaded only**, and **Order** oldest or newest first.
+3. Open, download or compare products as above. The observation viewer below shows the opened product.
+
+### Missions that need an account (ISRO ISSDC)
+Mars Orbiter Mission and Chandrayaan-2 data are on ISRO's PRADAN portal, which requires a free registered account and its own download pages. Their mission views show **Sign in to ISRO ISSDC**, which opens PRADAN in your browser. Download the products there, then press **Import downloaded files** and select them (PDS3 `.lbl` + data, or PDS4 `.xml` + data). VEDA never sees your password.
+
+### Connected data sets
+
+| Body | Mission and data | Archive |
+|---|---|---|
+| Venus | Akatsuki RS L2, L3, L4; Venus Express VeRa L1A to L2; Magellan radio occultation profiles, absorptivity/H2SO4 and raw records | JAXA DARTS, ESA PSA, NASA PDS |
+| Mars | Mars Express MaRS L4; Mars Global Surveyor RS profiles; MOM (import) | ESA PSA, NASA PDS, ISRO ISSDC |
+| Moon | Chandrayaan-2 (import) | ISRO ISSDC |
+| Jupiter | Galileo probe descent; Juno MWR | NASA PDS |
+| Titan | Cassini RSS ionosphere (PDS4); Huygens HASI | NASA PDS |
+
+See [DATA_POLICY.md](DATA_POLICY.md) for data set ids, terms and citations.
+
+### What an opened profile shows
+* Every quantity in the product (temperature, pressure, number density, electron density, refractivity, absorptivity, H2SO4 and others) in its own panel, with the archived 1-sigma uncertainty as a band or error bars where the product provides it.
+* Time, latitude, longitude, solar zenith angle and local solar time from the product, as chips above the plot.
+* Derived quantities (section 3) computed from the archived temperature and pressure.
+* **Plot style**, **Export figure**, **Geometry**, **Export CSV** and **Structured JSON**.
+
+Units are read from the label and converted to VEDA's display units: pressure from Pa, hPa, bar or mbar; temperature from K or degrees C; densities from m^-3 or cm^-3, including scaled units such as `10^6 PER CUBIC METER`; radius and altitude from metres. Times come from the archive index (start time), the label or the file name; product creation dates are never used as observation times.
+
+### Comparing observations
+Selected profiles, from one mission or many, are interpolated onto a common altitude grid. The comparison shows each profile, the mean $\mu(z) = \frac{1}{M}\sum_m X_m(z)$ and the spread $\mu(z) \pm 1\sigma(z)$. Choose the variable and units on the left, colour the curves by mission, date or latitude, and toggle the mean and spread. **Export Comparison CSV** writes the gridded table.
 
 ---
 
@@ -95,48 +111,68 @@ where $1 \text{ TECU} = 10^{16} \text{ electrons}/\text{m}^2$.
 
 ---
 
-## 4. Astronomical FITS Canvas and Transect Slicing
+## 4. Plot Style and Figure Export
 
-VEDA includes a high-performance scientific imaging pipeline for 2D FITS image granules:
+**Plot style** (on any profile or comparison plot) opens a panel whose choices apply immediately and are remembered on this computer:
 
-1. **Contrast Stretching Algorithms**:
-   * **ZScale**: IRAF-standard astronomical contrast stretch for optimal dynamic range.
-   * **Percentile**: Min-max clipping using user-selectable intervals (0.5% to 99.5%).
-   * **Linear / Log / Sqrt / Asinh**: Mathematical transfer functions for faint limb or high-contrast planetary disk analysis.
-   * **Histogram Equalization**: Maximizes detail across complex planetary cloud decks.
-2. **Scientific Color Palettes**:
-   * Select from Inferno, Viridis, Plasma, Magma, Grayscale, or Twilight.
-3. **Live Pixel Coordinate Inspector**:
-   * Move the mouse across the canvas to view real-time image coordinates $(X, Y)$ and calibrated pixel intensity.
-4. **Interactive 1D Transect Slicing**:
-   * Click and drag across any cloud band, planetary limb, or ring feature $(x_0, y_0) \to (x_1, y_1)$.
-   * Instantly renders a 1D photometric cross-section profile and 60-bin flux distribution histogram.
+| Group | Options |
+|---|---|
+| Lines and markers | lines, markers or both; line width; dash; marker size and symbol; colour palette |
+| Uncertainty | none, error bars or shaded 1-sigma band |
+| Axes | altitude or pressure as the vertical axis; swap axes; linear or log x; fixed ranges; grid; frame on all sides; ticks inside or outside |
+| Text | sans or serif font, font size, legend position |
+| Template | screen, or a journal template: AGU (JGR, GRL), Icarus/PSS (Elsevier), A&A, MNRAS |
+
+**Export figure** saves the plot at the template's single-column (84 to 95 mm) or double-column (174 to 190 mm) width, as PNG at the DPI you choose or as vector SVG. In journal mode the fonts, sizes and black axes follow the journal's style.
 
 ---
 
-## 5. Remote Planetary Archive Query and Download
+## 5. Observation Geometry (SPICE)
 
-VEDA connects directly to international planetary science archives:
+Press **Geometry** on an opened profile. The first time for a given date, VEDA lists the SPICE kernels it needs with their sizes (leap seconds, planetary constants, planetary ephemeris and the spacecraft trajectory) and downloads them only when you press the download button. Generic kernels come from NASA NAIF, Mars Express kernels from the ESA SPICE service and Akatsuki kernels from JAXA DARTS. They are cached and shared by later observations.
 
-1. **Archive Search**:
-   * In Mission Mode, open the Remote Archive Query interface.
-   * Select target agency: **NASA PDS**, **ESA PSA**, **JAXA DARTS**, or **ISRO ISSDC**.
-   * Enter search keywords, mission name, or target body.
-2. **Chunked Streaming Acquisition**:
-   * Click **Download** on any discovered file.
-   * The backend initiates an asynchronous chunked transfer, calculating downloaded bytes, transfer speed, and SHA-256 cryptographic checksums.
-   * Download progress is tracked in real time.
-   * Upon completion, the file is indexed into the local SQLite catalog for immediate analysis.
+| View | What it shows |
+|---|---|
+| Orbit (planet-fixed) | 3D spacecraft orbit for 90 minutes either side of the occultation in the body-fixed frame, the part flown during the profile, the tangent points, the lit side of the planet and the directions to the Sun and Earth |
+| Orbit (inertial J2000) | the same in the inertial frame |
+| View from Earth | the planet disk and the orbit in the sky plane as seen from Earth (north up, east right), split into visible and hidden behind the planet |
+| Tangent-point map | the tangent-point track coloured by altitude with the terminator, subsolar and sub-Earth points, in cylindrical, north polar, south polar or orthographic projection |
+| Angles along profile | solar zenith angle, local solar time and Sun-Earth-probe angle against tangent altitude |
+
+Radio-science times are Earth-received times, so positions are corrected for light time. Where the product gives its own refracted tangent track, VEDA uses it and reports the straight-line minus refracted radius as ray bending. For Mars Express the computed tangent radii agree with the archived ones to about 1 km; for Akatsuki the SZA and local time agree with the published values to about 0.01 degrees.
+
+Geometry is currently set up for Akatsuki and Mars Express. For other missions the latitude, longitude, SZA and local time stored in the product are still shown.
 
 ---
 
-## 6. Loading Your Own Files
+## 6. Astronomical FITS Canvas and Transect Slicing
+
+FITS and PNG/JPEG images (for example the bundled Akatsuki UVI image) open in the image viewer:
+
+1. **Contrast stretches**: ZScale, percentile (0.5% to 99.5%), linear, log, sqrt, asinh and histogram equalisation.
+2. **Colour maps**: Inferno, Viridis, Plasma, Magma, Grayscale and Twilight.
+3. **Pixel inspector**: image coordinates and value under the cursor.
+4. **Line transects**: drag across the image from $(x_0, y_0)$ to $(x_1, y_1)$ to get the profile along the line and a histogram of pixel values.
+
+---
+
+## 7. Downloads, Cache and Offline Use
+
+* Archive indexes are stored in a local SQLite catalogue (`archive_catalog.sqlite` in the cache folder) the first time a data set is searched. Re-indexing a data set picks up new volumes.
+* Products are downloaded one at a time on request, with retries when an archive is busy. Each file is written in full before it is used, so an interrupted download never leaves a broken product.
+* Everything is cached under the VEDA data folder (see the README). Downloaded products, the catalogue and SPICE kernels are reused offline.
+* With **Settings > Network > Allow downloads** off, VEDA makes no network requests at all and works from the cache and the bundled samples.
+
+---
+
+## 8. Loading Your Own Files
 
 Click **Load File** in the toolbar, drop files anywhere on the window, or use the drop zone in the Workflow Guide. You can select several files at once.
 
 | Format | Extensions | Notes |
 |---|---|---|
 | PDS3 table | `.lbl` + `.tab` | Select the label **and** its table together; the label defines the columns. |
+| PDS4 table | `.xml` + `.csv` or `.tab` | Select the XML label and its table together (character and delimited tables). |
 | Text table | `.csv`, `.txt`, `.dat`, `.asc` | Needs a header row with an altitude column (`ALTITUDE`, `ALT`, `HEIGHT`, `Z` or `RADIUS`). |
 | FITS image | `.fit`, `.fits`, `.fts` | Opens in the image viewer with stretch, colour map, histogram and transects. |
 | Picture | `.png`, `.jpg`, `.jpeg` | Opens in the image viewer. |
@@ -145,16 +181,17 @@ Column names are matched as whole words, preferring the column that *leads* with
 
 ---
 
-## 7. Publication Figures and Data Export
+## 9. Publication Figures and Data Export
 
 * **Publication Figure** (Celestial Body mode) renders a journal-style Matplotlib figure of the current comparison at the DPI set in Settings (72 to 1200, default 300).
 * **Snapshot Plot (PNG)** saves the on-screen plot.
+* **Export figure** (on any profile or comparison) saves PNG or SVG at a journal column width; see section 4.
 * **Export Comparison CSV** saves the interpolated multi-mission table: altitude grid, each mission's curve, the composite mean and its 1-sigma spread.
-* In Mission mode, **Export CSV** and **Structured JSON** save the open observation with its derived diagnostics and provenance.
+* **Export CSV** and **Structured JSON** save the open observation with its derived quantities. The CSV header names the archive, the source URL and file, the citation and the VEDA version, and states which columns are archived and which are derived.
 
 ---
 
-## 8. Settings
+## 10. Settings
 
 Open **Settings** in the toolbar. Changes apply as soon as you save; **Reset to defaults** restores everything.
 
@@ -172,7 +209,7 @@ Settings are stored in `settings.json` inside the VEDA data folder (see the READ
 
 ---
 
-## 9. Troubleshooting
+## 11. Troubleshooting
 
 | Symptom | What to do |
 |---|---|

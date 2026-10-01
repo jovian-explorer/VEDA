@@ -82,7 +82,7 @@ function wireChrome() {
 
   const btnDataPolicy = $('#btn-veda-data-policy');
   if (btnDataPolicy) {
-    btnDataPolicy.addEventListener('click', () => drawer('Planetary Data Portals, Availability & Licenses', dataPolicyBody()));
+    btnDataPolicy.addEventListener('click', () => drawer('Data & Licenses', dataPolicyBody()));
   }
 
   const btnSettings = $('#btn-settings');
@@ -299,18 +299,36 @@ function helpBody() {
     <input type="search" id="help-search" class="help-search" placeholder="Search help..." aria-label="Search help" />
 
     <section data-help>
-      <h3>Quick start</h3>
+      <h3>Quick start: find everything observed on a date</h3>
       <ol>
-        <li>Pick a planet, moon or comet under <strong>By Celestial Body</strong>.</li>
-        <li>Tick the missions to compare and choose a variable (temperature, pressure, density...).</li>
-        <li>Read the composite profile and the &plusmn;1&sigma; spread; open any row of the table with <strong>Deep Dive</strong>.</li>
-        <li>Export the comparison as CSV, a PNG snapshot, or a publication figure.</li>
+        <li>Pick a planet or moon under <strong>By Celestial Body</strong>.</li>
+        <li>In <strong>Find observations of &hellip;</strong> set <em>From</em> and <em>To</em> (or leave them empty for the whole archive) and press <strong>Search all missions</strong>. VEDA reads the official archive indexes of every connected mission for that body the first time (this needs the internet once) and lists every product in the range.</li>
+        <li>Press <strong>Open</strong> on a row to download and plot that profile, or tick several rows and press <strong>Compare selected</strong> to overlay them.</li>
+        <li><strong>Download selected</strong> keeps the products in the cache so they also work offline.</li>
       </ol>
+      <p>Only real archive products are listed. Nothing is simulated: if a mission has no data in your range, it simply does not appear.</p>
     </section>
 
     <section data-help>
-      <h3>Exploring by mission</h3>
-      <p><strong>By Planetary Mission</strong> lists each spacecraft's observations. Open one to plot a profile or to view an image with stretch, colour map, histogram and line-transect tools. <strong>Remote Archives</strong> searches the official catalogue for that mission and downloads files into the cache.</p>
+      <h3>Browsing one mission and choosing payloads</h3>
+      <p><strong>By Planetary Mission</strong> opens <strong>Archive data</strong> for that spacecraft. The chips at the top are its payloads and data sets (instrument, processing level, archive); tick the ones you want. Filter by date, product type, free text (product id, orbit), <em>Profiles only</em> or <em>Downloaded only</em>, and sort oldest or newest first. Indexing a large data set runs in the background with a progress bar.</p>
+      <p><strong>ISRO ISSDC (Mars Orbiter Mission, Chandrayaan-2)</strong> requires a PRADAN account. Press <strong>Sign in to ISRO ISSDC</strong>, download the products on the PRADAN website, then press <strong>Import downloaded files</strong> and select them.</p>
+    </section>
+
+    <section data-help>
+      <h3>Plotting, derived parameters and comparison</h3>
+      <p>An opened profile shows every quantity the product contains (temperature, pressure, number or electron density, refractivity, absorptivity, H<sub>2</sub>SO<sub>4</sub>, &hellip;) with the archived &plusmn;1&sigma; uncertainty where the product gives one. VEDA also derives lapse rate, scale height, potential temperature, mass density, Brunt-V&auml;is&auml;l&auml; frequency, gravity-wave perturbations, tropopause and, for ionospheres, the peak and VTEC, using the body's constants. The time, latitude, longitude, solar zenith angle and local time come from the product.</p>
+      <p>In a comparison the profiles are put on a common altitude grid with their mean and &plusmn;1&sigma; spread; colour the curves by mission, date or latitude.</p>
+    </section>
+
+    <section data-help>
+      <h3>Plot style and figure export</h3>
+      <p><strong>&#127912; Plot style</strong> sets line width and dash, markers, palette, uncertainty bands or error bars, log or linear axes, swapped axes, grid, ticks, fonts and legend, altitude or pressure as the vertical axis, and journal templates (AGU, Elsevier, A&amp;A, MNRAS). <strong>Export figure</strong> saves PNG (at the DPI you choose) or vector SVG at the journal's single- or double-column width. Your style is remembered on this computer.</p>
+    </section>
+
+    <section data-help>
+      <h3>Observation geometry (SPICE)</h3>
+      <p><strong>&#128752; Geometry</strong> on an opened profile computes the occultation geometry with NAIF SPICE: <em>Orbit (planet-fixed)</em>, <em>Orbit (inertial J2000)</em>, <em>View from Earth</em> (sky plane), <em>Tangent-point map</em> (cylindrical, north or south polar, or orthographic) and <em>Angles along profile</em> (SZA, local solar time, Sun-Earth-probe angle). The first time, VEDA lists the kernels it needs with their size and downloads them when you agree. Times are treated as Earth-received, so light time is corrected. Geometry is available for Akatsuki and Mars Express; other missions show the track stored in the product.</p>
     </section>
 
     <section data-help>
@@ -384,6 +402,50 @@ function helpBody() {
   return container;
 }
 
+const escHtml = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function missionName(id) {
+  const m = (vedaState.missions || []).find(x => x.id === id);
+  return m ? m.name : id.toUpperCase();
+}
+
+/** "Mission: payload (level); ..." for every connected archive data set. */
+async function fillDatasetSummary(box) {
+  if (!box) return;
+  try {
+    const { datasets = [] } = await api.archiveDatasets();
+    const byMission = new Map();
+    datasets.forEach(d => byMission.set(d.mission_id, [...(byMission.get(d.mission_id) || []), d]));
+    box.innerHTML = [...byMission].map(([m, ds]) =>
+      `<strong>${escHtml(missionName(m))}</strong>: ${[...new Set(ds.map(d => `${d.instrument} (${d.level})`))].map(escHtml).join('; ')}`
+    ).join('<br>') || 'No archive data set is connected.';
+  } catch (err) {
+    box.textContent = `Could not list the data sets: ${err.message}`;
+  }
+}
+
+/** Table of connected data sets with archive, citation and DOI. */
+async function fillDatasetTable(box) {
+  if (!box) return;
+  try {
+    const { datasets = [] } = await api.archiveDatasets();
+    box.innerHTML = `
+      <table class="data-table">
+        <thead><tr><th>Mission</th><th>Data set</th><th>Archive</th><th>Cite</th></tr></thead>
+        <tbody>${datasets.map(d => `
+          <tr>
+            <td>${escHtml(missionName(d.mission_id))}</td>
+            <td>${escHtml(d.title)}<br><code>${escHtml(d.id)}</code></td>
+            <td>${d.base_url ? `<a href="${escHtml(d.base_url)}" target="_blank" rel="noopener">${escHtml(d.archive)}</a>` : escHtml(d.archive)}${d.portal_only ? '<br><span class="badge">account needed</span>' : ''}</td>
+            <td>${escHtml(d.citation || 'See the data set documentation')}${d.doi ? `<br><a href="https://doi.org/${escHtml(d.doi)}" target="_blank" rel="noopener">doi:${escHtml(d.doi)}</a>` : ''}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  } catch (err) {
+    box.textContent = `Could not list the data sets: ${err.message}`;
+  }
+}
+
 function aboutBody() {
   const version = appVersion();
   const paths = (state.meta && state.meta.paths) || {};
@@ -393,7 +455,7 @@ function aboutBody() {
       <img src="img/veda_logo.png" alt="" width="56" height="56" />
       <div>
         <h2>VEDA ${version ? `<span class="badge">v${version}</span>` : ''}</h2>
-        <p>Visualization, Exploration, and Data Analysis: a multi-mission planetary science laboratory for discovering, processing, comparing and plotting spacecraft observations across the Solar System.</p>
+        <p>Visualization, Exploration, and Data Analysis: search the official planetary archives by body, mission, payload and date, then plot, derive, compare and export the real spacecraft observations, with SPICE observation geometry.</p>
         <p><a href="${REPO_URL}" target="_blank" rel="noopener">Source code &amp; releases</a> &middot;
            <a href="${REPO_URL}/issues" target="_blank" rel="noopener">Report a problem</a> &middot;
            <a href="https://jovian-explorer.github.io/" target="_blank" rel="noopener">Author's website</a></p>
@@ -401,19 +463,19 @@ function aboutBody() {
     </div>
 
     <h3>Author</h3>
-    <p><strong>Keshav Aggarwal</strong>, Research Associate, Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO, Thiruvananthapuram, India. Formerly Prime Minister's Research Fellow, DAASE, IIT Indore.</p>
+    <p><strong>Keshav Aggarwal</strong>, Research Associate, Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO, Thiruvananthapuram, India. Formerly Prime Minister's Research Fellow, DAASE, IIT Indore. Research: planetary radio occultation, planetary atmospheres and ionospheres, solar wind and coronal plasma.</p>
 
-    <h3>Missions</h3>
-    <p class="about-missions">${(vedaState.missions || []).map(m => m.name).join(' &middot; ') || 'Akatsuki, Venus Express, Magellan, Pioneer Venus, BepiColombo, MESSENGER, MAVEN, MRO, Juno, Galileo, Cassini-Huygens, New Horizons, LRO, Dawn, Rosetta, Mars Orbiter Mission, Chandrayaan-2'}</p>
+    <h3>Connected archive data</h3>
+    <p class="about-missions" id="about-datasets">Loading&hellip;</p>
 
     <h3>How to cite</h3>
-    <p>Cite both the mission dataset (instrument team and archive DOI) and VEDA:</p>
+    <p>Cite the data set and the instrument team's reference publication (listed in <strong>Data &amp; Licenses</strong>), the archive, and VEDA:</p>
     <pre class="about-bibtex">${vedaBibtex()}</pre>
     <button type="button" class="ghost small" id="btn-copy-bibtex">Copy citation</button>
 
-    <h3>Data &amp; license</h3>
-    <p>VEDA reads public data from NASA PDS, ESA PSA, JAXA DARTS and ISRO ISSDC and does not claim ownership of it; see <strong>Data &amp; Licenses</strong> for each archive's terms. VEDA itself is released under the MIT License. Bundled libraries: KaTeX, Plotly.js, Three.js (MIT); FastAPI, Pydantic (MIT); Uvicorn, NumPy, SciPy, Astropy, PyWebView (BSD-3-Clause); Matplotlib (PSF).</p>
-
+    <h3>License and terms</h3>
+    <p>VEDA is free software under the MIT License and comes with no warranty. The data belong to the mission teams and archives (NASA PDS, ESA PSA, JAXA DARTS, ISRO ISSDC; ephemerides from NASA NAIF); VEDA only downloads and reads them, and your use of them is governed by each archive's terms. Check results against the product documentation before you publish. VEDA sends nothing about you anywhere: it contacts only the archives you search, and only when downloads are allowed in Settings. See <code>TERMS.md</code>, <code>DATA_POLICY.md</code> and <code>THIRD_PARTY_LICENSES.md</code> in the repository.</p>
+    <p class="hint">Bundled libraries: Plotly.js, KaTeX (MIT); FastAPI, Pydantic, SpiceyPy (MIT); Uvicorn, NumPy, SciPy, Astropy, PyWebView (BSD-3-Clause); Requests (Apache-2.0); Matplotlib (PSF-based); Pillow (MIT-CMU); NAIF CSPICE (public, see NAIF rules).</p>
     <h3>This installation</h3>
     <dl class="about-paths">
       <dt>Data folder</dt><dd><code>${paths.data_root || 'unknown'}</code></dd>
@@ -421,6 +483,7 @@ function aboutBody() {
       <dt>Logs</dt><dd><code>${paths.logs || 'unknown'}</code></dd>
     </dl>
   `;
+  fillDatasetSummary(container.querySelector('#about-datasets'));
   container.querySelector('#btn-copy-bibtex').addEventListener('click', async () => {
     try {
       await navigator.clipboard.writeText(vedaBibtex());
@@ -475,80 +538,69 @@ function variablesCatalogBody() {
 }
 
 function dataPolicyBody() {
-  const container = el('div', { class: 'stack' });
+  const container = el('div', { class: 'stack policy-body' });
   const portals = (state.meta && state.meta.data_portals) || [];
+  const licenses = (state.meta && state.meta.licenses) || {};
   const stmt = (state.meta && state.meta.data_availability) ||
-    'The planetary spacecraft observations and radio occultation profiles analyzed in this study were retrieved from international planetary data archives: NASA Planetary Data System (PDS) Atmospheres Node (https://pds-atmospheres.nmsu.edu/), European Space Agency (ESA) Planetary Science Archive (PSA) (https://archives.esac.esa.int/psa/), JAXA Data Archives and Transmission System (DARTS) (https://data.darts.isas.jaxa.jp/), and ISRO Indian Space Science Data Centre (ISSDC / PRADAN) (https://pradan.issdc.gov.in/). Cross-mission calibration, thermodynamic profiling, and comparative analysis were conducted using VEDA (Version ' + appVersion() + '), available open-source at ' + REPO_URL + '.';
+    `The spacecraft observations analysed in this study are publicly available from the NASA Planetary Data System (PDS) Atmospheres Node (https://pds-atmospheres.nmsu.edu/), the ESA Planetary Science Archive (PSA) (https://archives.esac.esa.int/psa/) and the JAXA Data Archives and Transmission System (DARTS) (https://data.darts.isas.jaxa.jp/). Archived values were read, unit-converted and compared with VEDA version ${appVersion()} (${REPO_URL}).`;
+  const licenseKey = { nasa_pds_atm: 'nasa_pds', esa_psa: 'esa_psa', jaxa_darts: 'jaxa_darts', isro_issdc: 'isro_issdc', naif_spice: 'naif_spice' };
 
-  let portalsHtml = '';
-  portals.forEach(p => {
-    const missions = p.missions ? `<p style="font-size: calc(10px * var(--font-scale, 1.0)); color: var(--text-secondary); margin-top: 4px;"><strong>Supported Missions:</strong> ${p.missions.join(', ')}</p>` : '';
-    portalsHtml += `
-      <div class="card" style="margin-bottom: 8px; padding: 10px; background: rgba(0,0,0,0.18); border: 1px solid var(--border-color); border-radius: 6px;">
-        <div style="display: flex; justify-content: space-between; align-items: baseline;">
-          <strong style="font-size: calc(13px * var(--font-scale, 1.0)); color: var(--focal);">${p.name}</strong>
-          <span class="badge" style="font-size: calc(10px * var(--font-scale, 1.0));">${p.agency}</span>
+  const portalsHtml = portals.map(p => {
+    const lic = licenses[licenseKey[p.id]];
+    const missions = (p.missions || []).map(missionName).join(', ');
+    return `
+      <div class="policy-card">
+        <div class="policy-card-head">
+          <a href="${escHtml(p.url)}" target="_blank" rel="noopener"><strong>${escHtml(p.name)}</strong></a>
+          <span class="badge">${escHtml(p.agency)}</span>
+          ${p.login ? '<span class="badge">account needed</span>' : ''}
         </div>
-        <p style="font-size: calc(11px * var(--font-scale, 1.0)); margin: 4px 0; color: var(--text-primary);">${p.description}</p>
-        ${missions}
-        <div style="margin-top: 6px;">
-          <a href="${p.url}" target="_blank" rel="noopener" class="link" style="font-size: calc(11px * var(--font-scale, 1.0)); color: var(--focal);">Official Archive Portal ↗</a>
-        </div>
-      </div>
-    `;
-  });
+        <p>${escHtml(p.description)}</p>
+        ${missions ? `<p class="hint"><strong>Read by VEDA:</strong> ${escHtml(missions)}</p>` : ''}
+        ${lic ? `<p class="hint"><strong>Terms:</strong> ${escHtml(lic.terms)} <a href="${escHtml(lic.url)}" target="_blank" rel="noopener">Details</a></p>` : ''}
+      </div>`;
+  }).join('');
 
   container.innerHTML = `
-    <h2>Authoritative Planetary Data Portals, Availability & Licenses</h2>
+    <p>VEDA does not own, host or modify any of the data it shows. It downloads products from the official archives below to a cache on your computer and reads them there. Each archive's own terms apply to the data; VEDA's MIT License applies only to the software.</p>
 
-    <h3>1. Planetary Data Availability Statement</h3>
-    <p style="font-size: calc(12px * var(--font-scale, 1.0)); color: var(--text-secondary);">
-      Authors utilizing VEDA for academic peer-reviewed publications are requested to include the following Data Availability Statement:
-    </p>
-    <blockquote style="background: rgba(0,0,0,0.2); border-left: 4px solid var(--focal); margin: 8px 0; padding: 10px 14px; font-size: calc(12px * var(--font-scale, 1.0)); color: var(--text-secondary); line-height: 1.5;">
-      "${stmt}"
-    </blockquote>
+    <h3>Archives</h3>
+    ${portalsHtml}
 
-    <h3 style="margin-top: 16px;">2. Authoritative Planetary Science Data Portals</h3>
-    <p style="font-size: calc(12px * var(--font-scale, 1.0)); color: var(--text-secondary); margin-bottom: 8px;">
-      Primary international public space agency portals hosting the underlying raw and calibrated science data:
-    </p>
-    <div style="margin-top: 8px;">
-      ${portalsHtml}
-    </div>
+    <h3>Data sets and what to cite</h3>
+    <p class="hint">Cite the data set (with its DOI where the archive gives one) and the instrument team's reference publication. The list below comes from VEDA's catalogue, so it always matches what this version can search.</p>
+    <div id="policy-datasets" class="policy-table">Loading&hellip;</div>
 
-    <h3 style="margin-top: 16px;">3. Mandatory Dual-Attribution Citations</h3>
-    <p style="font-size: calc(12px * var(--font-scale, 1.0)); color: var(--text-secondary); margin-bottom: 8px;">
-      In accordance with open science practices, academic publications must cite both the primary spacecraft instrument dataset (via DOI) and the VEDA computational platform:
-    </p>
+    <h3>Data availability statement</h3>
+    <p class="hint">A starting point for your paper; remove archives you did not use and add the data set DOIs.</p>
+    <blockquote class="policy-quote" id="policy-statement">${escHtml(stmt)}</blockquote>
+    <button type="button" class="ghost small" id="btn-copy-statement">Copy statement</button>
+
+    <h3>Citing VEDA</h3>
     <pre class="about-bibtex">${vedaBibtex()}</pre>
 
-    <h3 style="margin-top: 16px;">4. Software & Open-Source Licenses</h3>
-    <p style="font-size: calc(12px * var(--font-scale, 1.0)); color: var(--text-secondary);">
-      VEDA is distributed under the permissive <strong>MIT License</strong>. Copyright (c) 2026 Keshav Aggarwal, Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO.
-    </p>
-    <p style="font-size: calc(11px * var(--font-scale, 1.0)); color: var(--text-secondary); margin-top: 6px;">
-      Third-party dependencies utilized in VEDA include KaTeX (MIT), Plotly.js (MIT), Three.js (MIT), FastAPI (MIT), Pydantic (MIT), Uvicorn (BSD-3-Clause), NumPy (BSD-3-Clause), SciPy (BSD-3-Clause), Astropy (BSD-3-Clause), Matplotlib (PSF), and PyWebView (BSD-3-Clause).
-    </p>
+    <h3>Terms of use (summary)</h3>
+    <ul>
+      <li>VEDA is provided as is, without warranty. Check derived values against the product labels and the instrument team's documentation before you publish them.</li>
+      <li>Archived files are never altered. Unit conversions and derived quantities are computed in memory; the downloaded files stay exactly as the archive published them.</li>
+      <li>Download what you need: VEDA fetches products one at a time, backs off when an archive is busy, and keeps them in a local cache so the archives are not asked twice.</li>
+      <li>VEDA has no accounts, no analytics and no telemetry. It contacts only the archives you search, and only while <em>Allow downloads</em> is on in Settings. Archive passwords are never seen by VEDA: you sign in on the archive's own website.</li>
+      <li>VEDA is not affiliated with or endorsed by NASA, ESA, JAXA or ISRO.</li>
+    </ul>
+    <p class="hint">Full texts: <a href="${REPO_URL}/blob/main/TERMS.md" target="_blank" rel="noopener">TERMS.md</a> &middot; <a href="${REPO_URL}/blob/main/DATA_POLICY.md" target="_blank" rel="noopener">DATA_POLICY.md</a> &middot; <a href="${REPO_URL}/blob/main/LICENSE" target="_blank" rel="noopener">LICENSE</a> &middot; <a href="${REPO_URL}/blob/main/THIRD_PARTY_LICENSES.md" target="_blank" rel="noopener">THIRD_PARTY_LICENSES.md</a></p>
 
-    <h3 style="margin-top: 16px;">5. Lead Researcher and Principal Architect</h3>
-    <div class="card" style="padding: 12px; background: rgba(0,0,0,0.18); border: 1px solid var(--border-color); border-radius: 6px;">
-      <strong style="font-size: calc(14px * var(--font-scale, 1.0)); color: var(--focal);">Keshav Aggarwal</strong>
-      <p style="font-size: calc(12px * var(--font-scale, 1.0)); margin: 4px 0; color: var(--text-secondary);">
-        Research Associate, Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), Indian Space Research Organisation (ISRO), Thiruvananthapuram, Kerala, India.
-      </p>
-      <p style="font-size: calc(11px * var(--font-scale, 1.0)); color: var(--text-secondary); margin-top: 2px;">
-        Former Prime Minister's Research Fellow (PMRF Scholar), Department of Astronomy, Astrophysics and Space Engineering (DAASE), Indian Institute of Technology (IIT) Indore.
-      </p>
-      <p style="font-size: calc(11px * var(--font-scale, 1.0)); color: var(--text-secondary); margin-top: 2px;">
-        Research Specialization: Planetary Radio Occultation, Space Physics, Solar Wind Velocity and Turbulence, Coronal Electron Density, and Planetary Atmospheric and Ionospheric Structure.
-      </p>
-      <div style="margin-top: 6px;">
-        <a href="https://jovian-explorer.github.io/" target="_blank" rel="noopener" class="link" style="font-size: calc(11px * var(--font-scale, 1.0)); color: var(--focal);">🌐 Researcher Website ↗</a>
-      </div>
-    </div>
+    <h3>Software license</h3>
+    <p>VEDA: MIT License, Copyright (c) 2026 Keshav Aggarwal, Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO. Third-party components: Plotly.js, KaTeX, FastAPI, Pydantic, SpiceyPy (MIT); Uvicorn, NumPy, SciPy, Astropy, PyWebView (BSD-3-Clause); Requests (Apache-2.0); Matplotlib (PSF-based); Pillow (MIT-CMU); NAIF CSPICE (public).</p>
   `;
-  renderMath(container);
+  fillDatasetTable(container.querySelector('#policy-datasets'));
+  container.querySelector('#btn-copy-statement').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(stmt);
+      toast('Statement copied', 'good');
+    } catch (_) {
+      toast('Could not copy; select the text and copy it manually', 'bad');
+    }
+  });
   return container;
 }
 

@@ -1,6 +1,6 @@
 # Third-Party Software Licenses and Attributions
 
-VEDA (Visualization, Exploration, and Data Analysis) bundles, links, or interacts with several third-party open-source software libraries. This document provides attributions, copyright notices, and license terms for these projects.
+VEDA (Visualization, Exploration, and Data Analysis) bundles or depends on the third-party open-source projects below. This document gives their copyright notices and license terms. The standalone app bundles all of them; a pip install fetches the Python packages from PyPI. Data from the space agency archives are not software and are covered by [DATA_POLICY.md](DATA_POLICY.md).
 
 ---
 
@@ -9,8 +9,8 @@ VEDA (Visualization, Exploration, and Data Analysis) bundles, links, or interact
 | Component | Ecosystem | License | Primary Purpose in VEDA |
 | :--- | :--- | :--- | :--- |
 | **KaTeX** | Frontend (JavaScript/CSS) | MIT License | Offline mathematical typesetting of LaTeX equations in UI drawers |
-| **Plotly.js** | Frontend (JavaScript) | MIT License | Interactive science visualizations, vertical profile charts, and spread envelopes |
-| **Three.js** | Frontend (JavaScript) | MIT License | 3D orthographic rotating planetary globe and coordinate rendering |
+| **Plotly.js** | Frontend (JavaScript) | MIT License | Interactive profile, comparison, map, globe and 3D orbit plots |
+| **Natural Earth coastlines** | Frontend (data) | Public domain | Plotly geographic outlines, bundled for offline use (`vendor/topojson`) |
 | **FastAPI** | Backend (Python) | MIT License | High-performance asynchronous REST API backend |
 | **Pydantic** | Backend (Python) | MIT License | Data validation and scientific schema definitions |
 | **Uvicorn** | Backend (Python) | BSD 3-Clause | Asynchronous ASGI web server |
@@ -19,8 +19,10 @@ VEDA (Visualization, Exploration, and Data Analysis) bundles, links, or interact
 | **Astropy** | Backend (Python) | BSD 3-Clause | Astronomical coordinate transformations, FITS file I/O, and header parsing |
 | **Matplotlib** | Backend (Python) | PSF / BSD Compatible | Server-side generation of 300-DPI publication figures |
 | **PyWebView** | Backend (Python) | BSD 3-Clause | Native desktop window binding with Edge WebView2 runtime |
-| **Requests** | Backend (Python) | Apache 2.0 | HTTP client for remote planetary archive queries and downloads |
-| **Pillow** | Backend (Python) | HPND License | Astronomical image rendering and PNG thumbnail processing |
+| **Requests** | Backend (Python) | Apache 2.0 | HTTP client for archive indexes, product and kernel downloads |
+| **Pillow** | Backend (Python) | MIT-CMU (HPND) | Image rendering and PNG thumbnails |
+| **SpiceyPy** | Backend (Python) | MIT License | Python interface to the NAIF CSPICE toolkit |
+| **NAIF CSPICE** | Backend (C library, via SpiceyPy) | NAIF rules (free to use) | Ephemerides, frames, light time and illumination angles for observation geometry |
 
 ---
 
@@ -76,29 +78,15 @@ THE SOFTWARE.
 
 ---
 
-## 3. Three.js
+## 3. SpiceyPy and NAIF CSPICE
 
-* **License**: MIT License
-* **Copyright**: Copyright (c) 2010-2026 Three.js Authors
-* **Repository**: https://github.com/mrdoob/three.js
+* **SpiceyPy license**: MIT License
+* **SpiceyPy copyright**: Copyright (c) 2014-2026 Andrew Annex and contributors
+* **Repository**: https://github.com/AndrewAnnex/SpiceyPy
+* **CSPICE**: the SPICE toolkit is produced by the Navigation and Ancillary Information Facility (NAIF), Jet Propulsion Laboratory, California Institute of Technology, for NASA. It is free to use and redistribute under the NAIF rules at https://naif.jpl.nasa.gov/naif/rules.html, which ask users to acknowledge NAIF. The toolkit is provided without warranty.
+* **Reference**: Acton, C. H. (1996). Ancillary data services of NASA's Navigation and Ancillary Information Facility. *Planetary and Space Science*, 44(1), 65-70. Annex, A. M., et al. (2020). SpiceyPy: a Pythonic wrapper for the SPICE toolkit. *Journal of Open Source Software*, 5(46), 2050.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
+The SpiceyPy license is the MIT License; its text is identical to the one reproduced in section 1, with the copyright line above.
 
 ---
 
@@ -186,3 +174,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   * Copyright (c) 1997-2011 by Secret Labs AB
   * Copyright (c) 1995-2011 by Fredrik Lundh
 * **Terms**: Permission to use, copy, modify, and distribute this software and its documentation for any purpose and without fee is hereby granted, provided that the above copyright notice appear in all copies and that both that copyright notice and this permission notice appear in supporting documentation.
+
+---
+
+## 9. Natural Earth
+
+* **License**: Public domain
+* **Source**: https://www.naturalearthdata.com/
+* **Use**: the Plotly map outline files in `src/veda/frontend/vendor/topojson` are derived from Natural Earth 1:110m and 1:50m data. Natural Earth asks for, but does not require, the credit "Made with Natural Earth".

@@ -1,21 +1,22 @@
 <p align="center">
-  <img src="frontend/img/veda_logo.png" width="140" alt="VEDA Planetary Science Laboratory Emblem" />
+  <img src="src/veda/frontend/img/veda_logo.png" width="140" alt="VEDA emblem" />
 </p>
 
 # VEDA: Visualization, Exploration, and Data Analysis
 
-**VEDA** is an open, multi-mission planetary-science computational laboratory capable of discovering, downloading, processing, analyzing, visualizing, and comparing scientific observations across multiple robotic spacecraft missions and celestial bodies.
+**VEDA** is a desktop laboratory for planetary atmosphere and ionosphere data. Pick a planet or moon and a date range, and VEDA finds every product the official archives hold for it across all connected missions. You can then download the products, plot them, derive physical parameters, compare observations and compute the observation geometry with SPICE.
+
+All data shown in VEDA come straight from the mission archives (NASA PDS, ESA PSA, JAXA DARTS, ISRO ISSDC). Nothing is simulated.
 
 ---
 
-## Documentation Quick Links
+## Documentation
 
-* 📖 **[User Guide and Scientific Manual](USAGE.md)**: Operational workflows, planetary thermodynamics, FITS imaging, and data export.
-* 🛰️ **[Third-Party Data Policy and Citations](DATA_POLICY.md)**: Policies for NASA PDS, ESA PSA, JAXA DARTS, ISRO ISSDC, and mandatory academic attribution guidelines.
-* ⚖️ **[Software License (MIT)](LICENSE)**: Open-source terms and conditions for VEDA.
-* 📜 **[Third-Party Licenses and Attributions](THIRD_PARTY_LICENSES.md)**: Notices for bundled and linked open-source libraries (KaTeX, Plotly, Three.js, FastAPI, NumPy, SciPy, Astropy, Matplotlib, PyWebView).
-* 🤝 **[Contributing Guidelines](CONTRIBUTING.md)**: Development workflow, coding conventions, testing protocols, and style rules.
-* 📝 **[Changelog](CHANGELOG.md)**: What changed in each release.
+* **[User guide](USAGE.md)**: searching, plotting, comparison, geometry, export, settings and troubleshooting.
+* **[Data policy and citations](DATA_POLICY.md)**: the archives and data sets VEDA reads, their terms, and what to cite.
+* **[Terms of use](TERMS.md)**: warranty, responsibility for results, archive etiquette and privacy.
+* **[License (MIT)](LICENSE)** and **[third-party licenses](THIRD_PARTY_LICENSES.md)**.
+* **[Contributing](CONTRIBUTING.md)** and **[changelog](CHANGELOG.md)**.
 
 ![Multi-mission comparison of Venus (dark theme)](docs/screenshots/body-comparison-dark.png)
 
@@ -25,89 +26,60 @@
 
 ---
 
-## Key Capabilities
+## What you can do
 
-### 1. Runs Everywhere: Desktop App, Python Package, or Local Server
-* **Standalone app** for Windows (`VEDA.exe`), macOS (`VEDA.app`) and Linux (`VEDA`), built automatically for every release.
-* **Python package**: `pip install` straight from GitHub gives you the `veda` and `veda-server` commands.
-* **Native window with a safe fallback**: opens in a native window (WebView2, WebKit or GTK/Qt) and falls back to your default browser if no webview runtime is available.
-* **Self-contained**: frontend, math typesetting, plotting libraries and sample granules are all bundled, so the app works offline.
+### Find observations by body and date
+In **By Celestial Body**, the *Find observations of ...* panel searches every connected data set for that body over the dates you give, for example all Mars occultations from Mars Express and Mars Global Surveyor in July 2005. Results show mission, UTC time, product, type, payload and level, and whether the product is already downloaded. Open one to plot it, tick several to compare them, or download them for offline work.
 
-### 2. Dual Exploration Paradigms
+### Browse a mission by payload
+In **By Planetary Mission**, *Archive data* lists the mission's payloads and data sets (instrument, processing level, archive). Choose the ones you want and filter by date, product type, free text (product id, orbit), profiles only or downloaded only, oldest or newest first.
 
-#### A. By Celestial Body
-Explore any non-Earth target planetary body or satellite:
-* **Venus** (Akatsuki, Venus Express, Magellan, Pioneer Venus Orbiter, BepiColombo)
-* **Mars** (MAVEN, Mars Reconnaissance Orbiter, Mars Orbiter Mission / MOM)
-* **Jupiter** (Juno, Galileo, Cassini, New Horizons)
-* **Saturn** (Cassini-Huygens)
-* **Titan** (Cassini-Huygens)
-* **Pluto and Arrokoth** (New Horizons)
-* **Mercury** (MESSENGER, BepiColombo)
-* **Moon** (Lunar Reconnaissance Orbiter, Chandrayaan-2)
-* **Ceres** (Dawn)
-* **Vesta** (Dawn)
-* **Comet 67P/C-G** (Rosetta)
+VEDA reads each archive's own catalogue (PDS3 volume indexes, PDS4 bundles) into a local SQLite index the first time, so later searches are instant and work offline. Products are downloaded on demand into a cache, with retries, and each file is written in full before it is used.
 
-**Multi-Mission Simultaneous Selection**:
-* Select multiple missions simultaneously (e.g. Venus: **Akatsuki** + **Venus Express** + **BepiColombo**).
-* Aligns compatible atmospheric soundings onto a common body-specific vertical grid.
-* Computes multi-spacecraft **composite mean $\mu(z)$** and **$\pm 1\sigma$ spread envelopes**.
-* Interactive Plotly visualization showing individual spacecraft curves overlaid with the composite.
-* One-click CSV export of cross-mission comparison tables.
-* **Publication Figure Generator**: Generates 300-DPI publication-ready figures with LaTeX mathematical typography.
+### Connected data sets
 
-#### B. Planetary Spatial Coordinates Map and 3D Globe
-* **2D Cylindrical Equirectangular Projection**: Visualizes observation locations, ray tangent points, and camera footprints with latitude and longitude guide bands.
-* **3D Orthographic Rotating Globe**: Mathematical wireframe representation of the planetary body with latitude parallels and longitude meridians, plotting mission observation markers in true 3D coordinates.
-* **Cross-Mission Synchronization**: Color-coded mission markers, observation tooltips, and click-to-highlight synchronization with the soundings table.
+| Body | Mission | Data | Archive |
+|---|---|---|---|
+| Venus | Akatsuki | Radio occultation L2 (frequency, power), L3 refractivity, L4 temperature, pressure, density | JAXA DARTS |
+| Venus | Venus Express | VeRa radio science L1A to L2 (ESA PSA) and the PDS copy with calibration files | ESA PSA, NASA PDS |
+| Venus | Magellan | Radio occultation (Oct 1991): T, P, density, refractivity; 13 cm absorptivity and H2SO4; raw ODR/TDF | NASA PDS |
+| Mars | Mars Express | MaRS L4 neutral atmosphere and ionosphere profiles | ESA PSA |
+| Mars | Mars Global Surveyor | Radio science T-P and electron density profiles | NASA PDS |
+| Mars | Mars Orbiter Mission | All payloads, via sign-in and import | ISRO ISSDC |
+| Moon | Chandrayaan-2 | Orbiter payloads incl. DFRS and CHACE-2, via sign-in and import | ISRO ISSDC |
+| Jupiter | Galileo probe | Atmospheric structure descent profile and probe instrument data | NASA PDS |
+| Jupiter | Juno | MWR raw records, antenna and brightness temperatures, NH3/H2O | NASA PDS |
+| Titan | Cassini RSS | Ionospheric electron density profiles (PDS4) | NASA PDS |
+| Titan | Huygens | HASI entry and descent profiles | NASA PDS |
 
-#### C. By Mission
-Dive into specific spacecraft architectures with accurate mission classification:
-* **Orbiters**: Akatsuki, Juno, Cassini, Venus Express, MAVEN, BepiColombo, Galileo, MESSENGER, Magellan, PVO, LRO, MRO, Dawn, Rosetta, Mars Orbiter Mission (MOM), Chandrayaan-2.
-* **Flybys and Encounters**: New Horizons (Pluto, Arrokoth, Jupiter gravity assist), BepiColombo Venus flybys, Galileo Venus flyby.
-* **Multi-level Data Pipeline**: Raw to Calibrated to Derived to User Analysis to Visualization to Export.
-* **Astronomical Imaging and Interactive FITS Canvas**:
-  * Full astronomical contrast stretching: **ZScale**, **Percentile (0.5% to 99.5%)**, **Linear**, **Log**, **Sqrt**, **Asinh**, **Histogram Equalization**.
-  * Scientific palettes: Inferno, Viridis, Plasma, Magma, Grayscale, Twilight.
-  * **Live Pixel Coordinate Inspector**: Real-time crosshair tracking displaying native image coordinates `(X, Y)` under the cursor.
-  * **Click-and-Drag Custom Transect Slicing**: Scientists can drag a line slice directly across planetary cloud bands, surface features, or atmospheric limbs $(x_0, y_0) \to (x_1, y_1)$ to instantly extract 1D calibrated photometric flux cross-sections and 60-bin pixel value histograms/CDFs.
+ISRO's PRADAN portal requires a free account, so VEDA opens it for you to sign in; you download there and use **Import downloaded files**. VEDA never sees your password.
 
----
+### Plot and derive
+An opened profile shows every quantity in the product (temperature, pressure, number or electron density, refractivity, absorptivity, H2SO4 and so on) with the archived 1-sigma uncertainty where the product gives one, and the time, latitude, longitude, solar zenith angle and local time stored with it. Units are read from the label and converted (Pa, hPa, bar, mbar; K and degrees C; m^-3 and cm^-3, including scaled units).
 
-### 3. Remote Archive Discovery and Streaming Downloader
+From temperature and pressure VEDA derives, with the body's own constants ($R_{spec}, c_p, g_0, P_{ref}$):
 
-* **International Planetary Archives**: Direct queries to NASA Planetary Data System (PDS), ESA Planetary Science Archive (PSA), JAXA DARTS / ISAS, and ISRO ISSDC.
-* **Live Progress and Cataloging**: Background streaming chunked downloader with byte tracking, SHA-256 verification, and SQLite cataloging via `/api/veda/archive/download` and `/api/veda/archive/tasks/{task_id}`.
-* **In-App Search UI**: Query remote archives by agency and keyword directly within Mission Mode.
+* Lapse rate $\Gamma = -dT/dz$ and gravity $g(z) = g_0 (R_p/(R_p+z))^2$
+* Scale height $H = R_{spec} T / g$ and speed of sound
+* Potential temperature $\theta = T (P_0/P)^{R_{spec}/c_p}$ and mass density $\rho = P/(R_{spec} T)$
+* Brunt-Vaisala frequency $N^2 = \frac{g}{T}\left(\frac{dT}{dz} + \frac{g}{c_p}\right)$ and buoyancy period
+* Tropopause, gravity-wave temperature perturbations and potential energy
+* For ionospheres, the peak height and density and $\text{VTEC} = 10^{-7}\int N_e\,dz$ (TECU)
 
----
+### Compare observations
+Selected profiles from any missions are interpolated onto a common altitude grid and drawn with their mean and 1-sigma spread. Colour the curves by mission, date or latitude, switch the variable and units, and export the comparison table as CSV.
 
-### 4. Multi-Planet Thermodynamic Engine
+### Style and export figures
+**Plot style** controls lines, markers, palettes, uncertainty bands or error bars, linear or log axes, swapped axes, altitude or pressure as the vertical axis, grid, ticks, fonts and legend, with journal templates for AGU, Elsevier (Icarus/PSS), A&A and MNRAS. **Export figure** writes PNG at a chosen DPI or vector SVG at the journal's single- or double-column width. The body view also renders a Matplotlib publication figure.
 
-Applies target-specific physical constants ($R_{spec}, c_p, g_0, P_{ref}$) to compute:
-* **Environmental Lapse Rate**: $\Gamma = -\frac{dT}{dz}$
-* **Altitude-Dependent Gravity**: $g(z) = g_0 \left(\frac{R_p}{R_p + z}\right)^2$
-* **Atmospheric Scale Height**: $H(z) = \frac{R_{spec} T(z)}{g(z)}$
-* **Poisson Potential Temperature**: $\theta(z) = T(z) \left(\frac{P_0}{P(z)}\right)^\kappa$ where $\kappa = \frac{R_{spec}}{c_p}$
-* **Static Stability / Brunt-Vaisala Buoyancy Frequency**:
-  $$N^2(z) = \frac{g(z)}{\theta(z)} \frac{\partial \theta}{\partial z} = \frac{g(z)}{T(z)} \left(\frac{\partial T}{\partial z} + \frac{g(z)}{c_p}\right)$$
-* **Gravity Wave Potential Energy**:
-  $$E_p(z) = \frac{1}{2}\left(\frac{g(z)}{N(z)}\right)^2 \overline{\left(\frac{T'(z)}{\overline{T}(z)}\right)^2}$$
-* **Ionospheric Vertical Total Electron Content (VTEC)**:
-  $$\text{VTEC} = 10^{-7} \int N_e(z) dz \quad [\text{TECU}]$$
+### Observation geometry with SPICE
+**Geometry** on an opened profile computes, with NAIF SPICE, the spacecraft orbit around the occultation (planet-fixed and inertial J2000), the view from Earth in the sky plane, the tangent-point track on a map (cylindrical, north or south polar, orthographic) and SZA, local solar time and Sun-Earth-probe angle along the profile. VEDA lists the kernels it needs and downloads them when you agree (generic kernels from NAIF, mission kernels from ESA and JAXA). Radio-science times are treated as Earth-received and corrected for light time; the result agrees with the archived tangent radii to about 1 km for Mars Express and with Akatsuki's published SZA and local time to about 0.01 degrees. Available for Akatsuki and Mars Express; other missions show the track stored in the product.
 
----
+### Your own files
+**Load File** or drag and drop: PDS3 (`.lbl` + `.tab`), PDS4 (`.xml` + table), CSV and text tables, FITS images and PNG/JPEG. FITS images open in a viewer with ZScale, percentile, linear, log, sqrt, asinh and histogram-equalised stretches, colour maps, a pixel inspector, line transects and histograms.
 
-### 5. Pure-Python Readers (Zero PVL / Heavy C Dependencies)
-
-* **PDS3 Label and Table Reader** (`pds3_reader.py`):
-  * Parses fixed-width and CSV `.TAB` / `.LBL` data without third-party PVL libraries.
-  * Automatically handles column byte-offsets, units, sentinel values (`-999.0`, `-9999.0`), and missing constants.
-  * Tested and verified on authentic JAXA Akatsuki Level 4 radio science data.
-* **FITS Astronomical Image Reader** (`fits_reader.py`):
-  * Reads multi-extension FITS files using `astropy.io.fits`.
-  * Computes robust astronomical percentile intervals and renders high-fidelity PNG streams on the fly.
+### Readers
+Pure-Python PDS3 and PDS4 table readers: nested objects, `^STRUCTURE` format files, multiple tables per file, fixed-width and delimited records, character columns, declared missing constants, repaired broken records, and whole-word column matching that prefers the nominal retrieval and skips uncertainty columns.
 
 ---
 
@@ -122,7 +94,7 @@ Open the [latest release](https://github.com/jovian-explorer/VEDA/releases/lates
 | macOS (Apple Silicon) | `VEDA-<version>-macos-arm64.zip` | unzip, right-click `VEDA.app` > Open the first time (the app is not notarized) |
 | Linux (x86_64) | `VEDA-<version>-linux-x86_64.zip` | unzip, `chmod +x VEDA && ./VEDA` |
 
-The repository is private, so you need to be signed in to GitHub with access to it.
+While the repository is private you need to be signed in to GitHub with access to it.
 
 ### Option B: install with pip (any OS, Python 3.10+)
 ```bash
@@ -132,7 +104,7 @@ veda --browser        # always use the default browser
 veda-server           # headless API + web UI, prints the URL
 python -m veda        # same as `veda`
 ```
-Add `[netcdf]` (`pip install "veda[netcdf] @ git+https://github.com/jovian-explorer/VEDA.git"`) to read HDF5-backed COSMIC-2 netCDF4 files; classic netCDF3 granules work without it.
+Add `[netcdf]` (`pip install "veda[netcdf] @ git+https://github.com/jovian-explorer/VEDA.git"`) to read HDF5-backed netCDF4 files; classic netCDF3 files work without it.
 
 ### Option C: development setup
 ```bash
@@ -153,9 +125,9 @@ pytest
 | `veda --no-window --port 8765` | Server only; open `http://127.0.0.1:8765/` yourself |
 | `veda-server --host 0.0.0.0` | Serve on your network (the API has no authentication, so only do this on a trusted network) |
 
-The interactive REST API documentation is at `/api/docs` on the same address.
+The interactive REST API documentation is at `/api/docs` on the same address. The archive endpoints are under `/api/veda/archive` (data sets, index, search, fetch, profile) and `/api/veda/geometry`.
 
-**Where VEDA keeps your files** (cache, exports, settings, logs):
+**Where VEDA keeps your files** (archive index, downloaded products, SPICE kernels, exports, settings, logs):
 
 | OS | Location |
 |---|---|
@@ -163,13 +135,11 @@ The interactive REST API documentation is at `/api/docs` on the same address.
 | macOS | `~/Library/Application Support/VEDA` |
 | Linux | `$XDG_DATA_HOME/VEDA` (default `~/.local/share/VEDA`) |
 
-Set `VEDA_HOME` to use a different folder.
+Set `VEDA_HOME` to use a different folder. Deleting the cache folder is safe; VEDA downloads again what it needs.
 
-## Loading Your Own Files
+An internet connection is needed to search an archive for the first time, to download products and to fetch SPICE kernels. The bundled sample products (Akatsuki, Mars Express, Cassini) work offline. Turn **Settings > Network > Allow downloads** off to work fully offline.
 
-Use **Load File** or drag files onto the window. PDS3 products need the `.lbl` label and its `.tab` table selected together; CSV and text tables need an altitude column; FITS, PNG and JPEG images open in the image viewer. See [USAGE.md](USAGE.md#6-loading-your-own-files) for details and [troubleshooting](USAGE.md#9-troubleshooting).
-
-## Building the Standalone App
+## Building the standalone app
 
 ```bash
 pip install -e ".[build]"
@@ -178,7 +148,7 @@ python scripts/build_exe.py --archive  # also zips it for distribution
 ```
 PyInstaller cannot cross-compile, so each OS builds its own binary. Pushing a `v*` tag runs `.github/workflows/release.yml`, which builds all three and attaches them to a GitHub Release.
 
-## Platform Notes
+## Platform notes
 
 * **Windows**: uses the Microsoft Edge WebView2 runtime (preinstalled on Windows 10/11).
 * **macOS**: uses the system WebKit, so nothing extra is needed. Unsigned builds need right-click > Open the first time.
@@ -186,67 +156,56 @@ PyInstaller cannot cross-compile, so each OS builds its own binary. Pushing a `v
 
 ---
 
-## Third-Party Data Policy and Attribution
+## Data, citation and license
 
-VEDA processes public scientific data retrieved from international space agency archives:
-* **NASA Planetary Data System (PDS)**: Public domain data governed by NASA Open Science guidelines.
-* **ESA Planetary Science Archive (PSA)**: Open access research data provided under ESA planetary science policies.
-* **JAXA Data Archives and Transmission System (DARTS)**: Open research data provided by JAXA / ISAS.
-* **ISRO Indian Space Science Data Centre (ISSDC)**: Planetary data provided under ISRO science data terms.
+VEDA does not own or host any data. Each archive's terms apply to the data you download (see [DATA_POLICY.md](DATA_POLICY.md)); the MIT License applies to the VEDA software. When you publish results, cite the data set, the instrument team's reference publication and VEDA. **Data & Licenses** in the app lists every connected data set with its citation and gives a data availability statement you can copy.
 
-### Mandatory Dual-Attribution for Academic Publications
-When publishing scientific work that uses data, figures, or analyses produced with VEDA, researchers are required to cite both:
-1. The original spacecraft instrument team and dataset DOI from the relevant archive.
-2. The VEDA software platform.
-
-See **[DATA_POLICY.md](DATA_POLICY.md)** for detailed citation instructions and dataset-specific BibTeX entries.
-
-### BibTeX Citation for VEDA
 ```bibtex
 @software{Aggarwal_VEDA_2026,
   author       = {Keshav Aggarwal},
   title        = {{VEDA: Visualization, Exploration, and Data Analysis - A Multi-Mission Planetary Science Data Laboratory}},
   year         = {2026},
   publisher    = {Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO},
-  version      = {2.1.0},
+  version      = {3.0.0},
   url          = {https://github.com/jovian-explorer/VEDA},
   address      = {Thiruvananthapuram, Kerala, India}
 }
 ```
 
----
-
-## Software License and Open-Source Attributions
-
-* **Software License**: VEDA is distributed under the **[MIT License](LICENSE)**. Copyright (c) 2026 Keshav Aggarwal, Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO.
-* **Third-Party Open Source**: Bundles and interfaces with open-source libraries under permissive licenses (MIT, BSD-3-Clause, Apache-2.0, PSF). Full copyright statements and license texts are provided in **[THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)**.
-* **Offline KaTeX Typography**: KaTeX 0.16.9 is bundled locally in `src/veda/frontend/vendor/katex/` for self-contained, offline LaTeX mathematical equation rendering.
+* **License**: [MIT](LICENSE). Copyright (c) 2026 Keshav Aggarwal, Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO.
+* **Terms of use**: [TERMS.md](TERMS.md). VEDA is provided without warranty, has no accounts, analytics or telemetry, and contacts only the archives you search.
+* **Third-party software**: [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) (Plotly.js, KaTeX, FastAPI, Pydantic, SpiceyPy/CSPICE, NumPy, SciPy, Astropy, Matplotlib, Pillow, Requests, Uvicorn, PyWebView).
+* VEDA is not affiliated with or endorsed by NASA, ESA, JAXA or ISRO.
 
 ---
 
-## Project Layout and Tests
+## Project layout and tests
 
 ```
-src/veda/            Python package (FastAPI backend, readers, analysis, mission adapters)
-src/veda/frontend/   Web UI served by the backend (bundled offline: KaTeX, Plotly, TopoJSON)
-src/veda/sampledata/ Sample granules used by the demo workflows and the tests
+src/veda/archives/   archive data sets, catalogue index, downloads, profile loading
+src/veda/geometry/   SPICE kernel planning/download and observation geometry
+src/veda/readers/    PDS3, PDS4, FITS and text readers
+src/veda/analysis/   derived atmospheric and ionospheric parameters
+src/veda/api/        FastAPI backend
+src/veda/frontend/   web UI (Plotly and KaTeX bundled for offline use)
+src/veda/sampledata/ real archive products used by the demos and tests
 packaging/           PyInstaller spec, entry script and icon
-scripts/             build_exe.py, generate_sample_granules.py
+scripts/             build_exe.py
 tests/               pytest suite
 ```
 
 ```bash
 pytest                          # full suite
-pytest tests/test_veda.py -v    # a single module
+pytest tests/test_archives.py   # a single module
 ```
 CI runs the suite on Windows, macOS and Linux for every push to `main`. The Windows exe launch tests in `tests/test_explorer_launch.py` run after `python scripts/build_exe.py` and skip otherwise.
 
 ---
 
-## Scientific Leadership and Affiliation
+## Author
 
-* **Lead Researcher and Developer**: Keshav Aggarwal
-* **Current Affiliation**: Research Associate, Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), Indian Space Research Organisation (ISRO), Thiruvananthapuram, Kerala, India.
-* **Former Affiliation**: Former Prime Minister's Research Fellow (PMRF Scholar), Department of Astronomy, Astrophysics and Space Engineering (DAASE), Indian Institute of Technology (IIT) Indore.
-* **Research Focus**: Planetary Radio Occultation, Space Physics, Solar Wind Velocity and Turbulence, Coronal Electron Density, and Multi-Mission Planetary Science Data Systems.
-* **Website**: [https://jovian-explorer.github.io/](https://jovian-explorer.github.io/)
+**Keshav Aggarwal**, Research Associate, Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), Indian Space Research Organisation (ISRO), Thiruvananthapuram, Kerala, India. Formerly Prime Minister's Research Fellow, Department of Astronomy, Astrophysics and Space Engineering (DAASE), IIT Indore.
+
+Research: planetary radio occultation, planetary atmospheres and ionospheres, solar wind velocity and turbulence, and coronal electron density.
+
+Website: [https://jovian-explorer.github.io/](https://jovian-explorer.github.io/)

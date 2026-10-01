@@ -42,7 +42,7 @@
       <button type="button" class="zoom-btn" id="btn-font-inc" title="Increase UI font size (A+)">A+</button>
     </div>
     <button class="ghost" id="btn-load-file" title="Load any local PDS3 (.lbl/.tab), CSV, or FITS (.fit/.fits) file">📁 Load File</button>
-    <input type="file" id="veda-file-input" style="display: none;" multiple accept=".tab,.lbl,.csv,.txt,.dat,.asc,.fit,.fits,.fts,.png,.jpg,.jpeg" />
+    <input type="file" id="veda-file-input" style="display: none;" multiple accept=".tab,.lbl,.xml,.csv,.txt,.dat,.asc,.fit,.fits,.fts,.png,.jpg,.jpeg" />
     <button class="ghost" id="btn-veda-vars" title="Explore registered planetary analysis variables, KaTeX formulas, and DOIs">Variables</button>
     <button class="ghost" id="btn-veda-data-policy" title="Authoritative planetary data archives, availability statement, and open-source licenses">Data & Licenses</button>
     <button class="ghost" id="btn-settings">Settings</button>
@@ -376,17 +376,18 @@
       </div>
       <div class="guide-stage-content">
         <p>
-          Robotic planetary missions archive their raw telemetry and calibrated products in official international repositories:
+          Missions archive their raw and calibrated products in official repositories. VEDA reads their catalogues directly:
         </p>
         <ul>
-          <li><strong>NASA Planetary Data System (PDS):</strong> Managed by NASA SMD nodes including Atmospheres (NMSU), Geosciences (WUSTL), Planetary Plasma Interactions (UCLA), and Ring-Moon Systems / Small Bodies (SETI/UMD).</li>
-          <li><strong>ESA Planetary Science Archive (PSA):</strong> Managed by ESAC (Madrid, Spain), hosting Venus Express, BepiColombo, Mars Express, and Rosetta.</li>
-          <li><strong>JAXA DARTS / ISAS:</strong> Data Archives and Transmission System hosting Akatsuki (Venus Climate Orbiter) and Hayabusa datasets.</li>
-          <li><strong>ISRO ISSDC / PRADAN:</strong> Indian Space Science Data Centre hosting Mars Orbiter Mission (MOM / Mangalyaan) and Chandrayaan-2 planetary telemetry.</li>
+          <li><strong>NASA PDS Atmospheres Node:</strong> Magellan, Venus Express, Mars Global Surveyor, Galileo probe, Huygens HASI, Cassini (Titan ionosphere, PDS4) and Juno MWR.</li>
+          <li><strong>ESA Planetary Science Archive (PSA):</strong> Mars Express MaRS and Venus Express VeRa.</li>
+          <li><strong>JAXA DARTS:</strong> Akatsuki radio occultation (L2 to L4), plus Akatsuki SPICE kernels for geometry.</li>
+          <li><strong>ISRO ISSDC / PRADAN:</strong> Mars Orbiter Mission and Chandrayaan-2; sign in on the PRADAN website, download, then import into VEDA.</li>
         </ul>
         <p>
-          In VEDA, you can explore observations either <strong>By Celestial Body</strong> (selecting a planet or moon to view all missions that observed it)
-          or <strong>By Planetary Mission</strong> (inspecting specific spacecraft payloads and downloading products with SHA-256 verification).
+          <strong>By Celestial Body</strong> &rarr; <em>Find observations of &hellip;</em>: give a date range and VEDA lists every product from every connected mission for that body.
+          <strong>By Planetary Mission</strong> &rarr; <em>Archive data</em>: choose payloads and data sets, filter by date, product type or text, and download.
+          The first search reads the archive's index (needs the internet once); downloads are cached for offline use.
         </p>
       </div>
       <div class="guide-actions-bar">
@@ -481,7 +482,7 @@
         <div class="guide-formula-box">
           <strong>5. Ionospheric Total Electron Content (VTEC):</strong>
           <p>$$\text{VTEC} = 10^{-7} \int_{z_{base}}^{z_{top}} N_e(z)\,dz \quad [\text{TECU}]$$</p>
-          integrating vertical electron density profiles from radio occultation sounders (e.g. Chandrayaan-2 DFRS, Akatsuki RS, Cassini RSS).
+          integrating radio occultation electron density profiles (e.g. Mars Express MaRS, Mars Global Surveyor, Cassini RSS at Titan).
         </div>
       </div>
       <div class="guide-actions-bar">
@@ -528,7 +529,7 @@
       </div>
       <div class="guide-stage-content">
         <p>
-          Planetary camera observations (such as Akatsuki UVI, New Horizons LORRI, or Cassini ISS) capture spatial structures
+          Planetary camera observations (such as the bundled Akatsuki UVI image) capture spatial structures
           like cloud bands, atmospheric waves, volcanic plumes, and impact craters. VEDA provides astronomical image tools:
         </p>
         <ul>
@@ -561,7 +562,7 @@
           <li><strong>Structured JSON Export:</strong> Delivers complete profile records with derived physics for automated downstream analysis in Python or Julia.</li>
           <li><strong>Publication Figure Generator:</strong> Generates 300-DPI high-resolution figures with publication typography and shaded $\pm 1\sigma$ envelopes.</li>
           <li>
-            <strong>Mandatory Academic Citation:</strong> When publishing research using VEDA, authors are required to cite both the primary space agency dataset
+            <strong>Citation:</strong> Please cite the data set and the instrument team's reference publication (listed under <em>Data &amp; Licenses</em>)
             and the software: <em>Keshav Aggarwal, Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO (2026).</em>
           </li>
         </ul>
@@ -659,121 +660,38 @@
       </div>
     </div>
 
-    <!-- Authoritative Planetary Science Data Portals -->
+    <!-- Archives, citation and licensing -->
     <div class="card" style="margin-top: 24px; padding: 18px; border: 1px solid var(--border-color); border-radius: 8px;">
       <div class="card-head" style="margin-bottom: 12px;">
-        <h2 style="margin: 0; font-size: calc(18px * var(--font-scale, 1.0)); color: var(--text-primary);">Authoritative Planetary Science Data Sites and International Archives</h2>
-        <span class="badge" style="background: rgba(0, 229, 255, 0.15); color: #00e5ff;">Public Space Archives</span>
+        <h2 style="margin: 0; font-size: calc(18px * var(--font-scale, 1.0)); color: var(--text-primary);">Archives, citation and licensing</h2>
+        <span class="badge">Open science</span>
       </div>
-      <p class="hint" style="margin-bottom: 16px;">
-        Primary repositories hosting the raw and calibrated planetary mission telemetry datasets analyzed in VEDA:
+      <p>
+        VEDA does not own or host any data. It downloads products from
+        <a href="https://pds-atmospheres.nmsu.edu/" target="_blank" rel="noopener">NASA PDS Atmospheres</a>,
+        <a href="https://archives.esac.esa.int/psa/" target="_blank" rel="noopener">ESA PSA</a>,
+        <a href="https://data.darts.isas.jaxa.jp/pub/pds3/" target="_blank" rel="noopener">JAXA DARTS</a> and
+        <a href="https://pradan.issdc.gov.in/" target="_blank" rel="noopener">ISRO ISSDC / PRADAN</a>
+        (ephemerides from <a href="https://naif.jpl.nasa.gov/" target="_blank" rel="noopener">NASA NAIF</a>) and each archive's terms apply.
+        When you publish, cite the data set, the instrument team's reference publication and VEDA.
+        <strong>Data &amp; Licenses</strong> lists every connected data set with its citation and a data availability statement you can copy.
       </p>
-
-      <div class="grid-2" style="gap: 14px;">
-        <!-- Portal 1: NASA PDS Atmospheres -->
-        <div class="card" style="margin: 0; padding: 12px; background: rgba(0,0,0,0.18); border: 1px solid var(--border-color);">
-          <h4 style="margin: 0 0 6px 0; color: #00e5ff;">1. NASA Planetary Data System (PDS) Atmospheres Node</h4>
-          <p style="font-size: calc(12px * var(--font-scale, 1.0)); color: var(--text-secondary); margin-bottom: 8px;">
-            <strong>Host:</strong> New Mexico State University, Las Cruces, NM, USA.
-          </p>
-          <p style="font-size: calc(12px * var(--font-scale, 1.0)); margin-bottom: 8px;">
-            Archiving atmospheric radio science, thermal profiles, and entry probe telemetry for New Horizons (Pluto/Jupiter), Galileo (Jupiter), Cassini (Saturn/Titan), and MAVEN/MRO (Mars).
-          </p>
-          <a href="https://pds-atmospheres.nmsu.edu/" target="_blank" rel="noopener" class="button ghost" style="padding: 4px 10px; font-size: calc(11px * var(--font-scale, 1.0));">🌐 PDS Atmospheres Portal ↗</a>
-        </div>
-
-        <!-- Portal 2: ESA Planetary Science Archive -->
-        <div class="card" style="margin: 0; padding: 12px; background: rgba(0,0,0,0.18); border: 1px solid var(--border-color);">
-          <h4 style="margin: 0 0 6px 0; color: #00e5ff;">2. ESA Planetary Science Archive (PSA)</h4>
-          <p style="font-size: calc(12px * var(--font-scale, 1.0)); color: var(--text-secondary); margin-bottom: 8px;">
-            <strong>Host:</strong> European Space Astronomy Centre (ESAC), Madrid, Spain.
-          </p>
-          <p style="font-size: calc(12px * var(--font-scale, 1.0)); margin-bottom: 8px;">
-            Central repository for European planetary exploration missions: Venus Express (VeRa radio science), BepiColombo (MORE / Mio), Rosetta (RSI / OSIRIS), and Mars Express (MaRS).
-          </p>
-          <a href="https://archives.esac.esa.int/psa/" target="_blank" rel="noopener" class="button ghost" style="padding: 4px 10px; font-size: calc(11px * var(--font-scale, 1.0));">🌐 ESA PSA Portal ↗</a>
-        </div>
-
-        <!-- Portal 3: JAXA DARTS -->
-        <div class="card" style="margin: 0; padding: 12px; background: rgba(0,0,0,0.18); border: 1px solid var(--border-color);">
-          <h4 style="margin: 0 0 6px 0; color: #00e5ff;">3. JAXA Data Archives and Transmission System (DARTS)</h4>
-          <p style="font-size: calc(12px * var(--font-scale, 1.0)); color: var(--text-secondary); margin-bottom: 8px;">
-            <strong>Host:</strong> ISAS / JAXA, Sagamihara, Japan.
-          </p>
-          <p style="font-size: calc(12px * var(--font-scale, 1.0)); margin-bottom: 8px;">
-            Primary repository for Akatsuki (Planet-C / VCO) Venus Climate Orbiter Level 4 radio science vertical soundings and multi-spectral visible/infrared/ultraviolet imagery.
-          </p>
-          <a href="https://data.darts.isas.jaxa.jp/pub/pds3/" target="_blank" rel="noopener" class="button ghost" style="padding: 4px 10px; font-size: calc(11px * var(--font-scale, 1.0));">🌐 JAXA DARTS Archive ↗</a>
-        </div>
-
-        <!-- Portal 4: ISRO ISSDC PRADAN -->
-        <div class="card" style="margin: 0; padding: 12px; background: rgba(0,0,0,0.18); border: 1px solid var(--border-color);">
-          <h4 style="margin: 0 0 6px 0; color: #00e5ff;">4. ISRO ISSDC / PRADAN (Planetary Data Archive)</h4>
-          <p style="font-size: calc(12px * var(--font-scale, 1.0)); color: var(--text-secondary); margin-bottom: 8px;">
-            <strong>Host:</strong> Indian Space Science Data Centre (ISSDC), Byalalu, Bengaluru, India.
-          </p>
-          <p style="font-size: calc(12px * var(--font-scale, 1.0)); margin-bottom: 8px;">
-            Archiving Indian planetary exploration science: Chandrayaan-2 Dual Frequency Radio Science (DFRS) and CHACE-2 mass spectrometry; Mars Orbiter Mission (MOM) MENCA and MCC.
-          </p>
-          <a href="https://pradan.issdc.gov.in/ch2/" target="_blank" rel="noopener" class="button ghost" style="padding: 4px 10px; font-size: calc(11px * var(--font-scale, 1.0));">🌐 ISRO ISSDC PRADAN ↗</a>
-        </div>
-      </div>
-      <div class="guide-actions-bar" style="margin-top: 16px;">
-        <button class="guide-action-btn" data-guide-action="data-policy-drawer">🌐 Explore All Planetary Data Portals</button>
-      </div>
-    </div>
-
-    <!-- Data Availability, Attribution & Software Licensing -->
-    <div class="card" style="margin-top: 24px; padding: 18px; border: 1px solid var(--border-color); border-radius: 8px;">
-      <div class="card-head" style="margin-bottom: 12px;">
-        <h2 style="margin: 0; font-size: calc(18px * var(--font-scale, 1.0)); color: var(--text-primary);">Planetary Data Availability Statements, Dual Attribution, and Licensing</h2>
-        <span class="badge" style="background: rgba(0, 229, 255, 0.15); color: #00e5ff;">Open Science Policy</span>
-      </div>
-
-      <h3 style="font-size: calc(14px * var(--font-scale, 1.0)); margin-bottom: 6px;">1. Standard Data Availability Statement for Publications</h3>
-      <p style="font-size: calc(12px * var(--font-scale, 1.0)); margin-bottom: 8px;">Researchers publishing scientific analyses using VEDA are encouraged to include this statement:</p>
-      <blockquote style="background: rgba(0,0,0,0.2); border-left: 4px solid #00e5ff; margin: 8px 0; padding: 10px 14px; font-size: calc(12px * var(--font-scale, 1.0)); color: var(--text-secondary);">
-        "The planetary spacecraft observations and radio occultation profiles analyzed in this study were retrieved from international planetary data archives: NASA Planetary Data System (PDS) Atmospheres Node (https://pds-atmospheres.nmsu.edu/), European Space Agency (ESA) Planetary Science Archive (PSA) (https://archives.esac.esa.int/psa/), JAXA Data Archives and Transmission System (DARTS) (https://data.darts.isas.jaxa.jp/), and ISRO Indian Space Science Data Centre (ISSDC / PRADAN) (https://pradan.issdc.gov.in/). Cross-mission calibration, thermodynamic profiling, and comparative analysis were conducted using VEDA (Version <span class="veda-version">2.1.0</span>), available open-source at https://github.com/jovian-explorer/VEDA."
-      </blockquote>
-
-      <h3 style="font-size: calc(14px * var(--font-scale, 1.0)); margin-top: 16px; margin-bottom: 6px;">2. Mandatory Dual-Attribution Citations</h3>
-      <p style="font-size: calc(12px * var(--font-scale, 1.0)); margin-bottom: 8px;">Please provide dual attribution for both the primary space agency mission dataset and the VEDA platform:</p>
-      <div class="grid-2" style="gap: 12px;">
-        <div>
-          <strong style="font-size: calc(12px * var(--font-scale, 1.0));">VEDA Software Platform:</strong>
-          <pre style="background: rgba(0,0,0,0.25); padding: 8px; border-radius: 4px; font-size: calc(10px * var(--font-scale, 1.0)); overflow-x: auto; border: 1px solid var(--border-color);">
+      <pre style="background: rgba(0,0,0,0.25); padding: 8px; border-radius: 4px; font-size: calc(10px * var(--font-scale, 1.0)); overflow-x: auto; border: 1px solid var(--border-color);">
 @software{Aggarwal_VEDA_2026,
-  author       = {Keshav Aggarwal},
-  title        = {{VEDA: Visualization, Exploration, and Data Analysis - A Multi-Mission Planetary Science Data Laboratory}},
-  year         = {2026},
-  publisher    = {Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO},
-  version      = {<span class="veda-version">2.1.0</span>},
-  url          = {https://jovian-explorer.github.io/},
-  address      = {Thiruvananthapuram, Kerala, India}
+  author    = {Keshav Aggarwal},
+  title     = {{VEDA: Visualization, Exploration, and Data Analysis - A Multi-Mission Planetary Science Data Laboratory}},
+  year      = {2026},
+  publisher = {Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO},
+  version   = {<span class="veda-version">3.0.0</span>},
+  url       = {https://github.com/jovian-explorer/VEDA},
+  address   = {Thiruvananthapuram, Kerala, India}
 }</pre>
-        </div>
-        <div>
-          <strong style="font-size: calc(12px * var(--font-scale, 1.0));">Akatsuki Radio Science (JAXA DARTS):</strong>
-          <pre style="background: rgba(0,0,0,0.25); padding: 8px; border-radius: 4px; font-size: calc(10px * var(--font-scale, 1.0)); overflow-x: auto; border: 1px solid var(--border-color);">
-@article{Imamura_Akatsuki_2017,
-  author    = {Takeshi Imamura and Hiroki Ando and Silvia Tellmann and Martin P{\"a}tzold and Bernd H{\"a}usler},
-  title     = {{Initial performance of the radio occultation experiment aboard Akatsuki}},
-  journal   = {Earth, Planets and Space},
-  volume    = {69},
-  number    = {1},
-  pages     = {137},
-  year      = {2017},
-  doi       = {10.1186/s40623-017-0722-3}
-}</pre>
-        </div>
-      </div>
-
-      <h3 style="font-size: calc(14px * var(--font-scale, 1.0)); margin-top: 16px; margin-bottom: 6px;">3. Open-Source Software Licensing (MIT)</h3>
       <p style="font-size: calc(12px * var(--font-scale, 1.0)); color: var(--text-secondary);">
-        VEDA is open-source scientific software distributed under the <strong>MIT License</strong>. Copyright &copy; 2026 <strong>Keshav Aggarwal</strong>, Research Associate at Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), Indian Space Research Organisation (ISRO), Thiruvananthapuram, Kerala, India (Former PMRF Scholar at DAASE, IIT Indore).
+        VEDA is free software under the MIT License, provided without warranty. Copyright &copy; 2026 Keshav Aggarwal, Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO.
       </p>
       <div class="guide-actions-bar" style="margin-top: 16px;">
-        <button class="guide-action-btn" data-guide-action="data-policy-drawer">📜 View Full Licensing &amp; Policy Drawer</button>
+        <button class="guide-action-btn" data-guide-action="data-policy-drawer">📜 Data &amp; Licenses</button>
+        <button class="guide-action-btn secondary" data-guide-action="about-drawer">🏛️ About and citation</button>
       </div>
     </div>
 

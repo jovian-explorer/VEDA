@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional, Tuple, Any
 import numpy as np
+from .. import __version__
 from ..core.models import BodyInfo, ObservationProfile
 from ..core.registry import get_body
 
@@ -282,9 +283,10 @@ def export_profile_to_csv(profile: ObservationProfile) -> str:
     ]
     if profile.provenance:
         lines.append(f"# Archive: {profile.provenance.archive_source} ({profile.provenance.archive_url})")
+        lines.append(f"# Source file: {profile.provenance.original_file} ({profile.provenance.product_level})")
         lines.append(f"# Citation: {profile.provenance.doi_or_citation}")
-    lines.append("# Data Availability: NASA PDS Atmospheres, ESA PSA, JAXA DARTS, and ISRO ISSDC PRADAN planetary science archives.")
-    lines.append("# Software License: MIT License (Keshav Aggarwal, SPL, VSSC, ISRO)")
+    lines.append("# Archived columns are as published, converted to the units in the header; other columns are derived by VEDA.")
+    lines.append(f"# Processed with VEDA {__version__} (https://github.com/jovian-explorer/VEDA), MIT License")
 
     cols = ["altitude_km"]
     data_arrays = [profile.altitude_km]
@@ -337,8 +339,8 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
     lines = [
         f"# VEDA Cross-Mission Comparative Analysis - Body: {body_name}, Variable: {var_name}",
         f"# Total Profiles: {len(profiles)}",
-        "# Data Availability: NASA PDS Atmospheres, ESA PSA, JAXA DARTS, and ISRO ISSDC PRADAN planetary science archives.",
-        "# Software License: MIT License (Keshav Aggarwal, SPL, VSSC, ISRO)",
+        "# Profiles from the official mission archives (see each product for its source); mean and spread computed by VEDA.",
+        f"# Processed with VEDA {__version__} (https://github.com/jovian-explorer/VEDA), MIT License",
     ]
     for p in profiles:
         lines.append(f"# Mission: {p.get('mission_id')}, Obs: {p.get('observation_id')}, Lat: {p.get('latitude')}, Lon: {p.get('longitude')}")

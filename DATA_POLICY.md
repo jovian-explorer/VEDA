@@ -1,180 +1,110 @@
-# Third-Party Planetary Data Policy, Archive Guidelines, and Citations
+# Data Policy, Archives and Citations
 
-## 1. Scope and Scientific Objective
+## 1. Scope
 
-VEDA (Visualization, Exploration, and Data Analysis) is an open scientific computational platform designed to ingest, calibrate, analyze, visualize, and compare observations from robotic planetary spacecraft across the Solar System.
+VEDA is a tool for finding, downloading, reading and analysing planetary science data that are published by space agency archives. VEDA does not own, host, re-distribute or modify those data:
 
-VEDA does not claim ownership, copyright, or proprietary rights over original raw, calibrated, or derived telemetry data products obtained from international space agencies. All planetary observations accessible through or bundled as demonstration data with VEDA are public scientific datasets produced by the respective spacecraft instrument teams and hosted by international planetary data archives.
+* Products are downloaded from the official archive, on your request, into a cache on your own computer.
+* The downloaded files are kept exactly as the archive published them. Unit conversions, derived quantities and comparisons are computed in memory, and exports say which archive file they came from.
+* The terms of the archive that published a product apply to it. VEDA's MIT License applies only to the VEDA software.
 
----
-
-## 2. Authoritative Planetary Data Archives
-
-VEDA directly queries, downloads, or processes datasets governed by international planetary science archives:
-
-### A. NASA Planetary Data System (PDS)
-* **Governing Body**: National Aeronautics and Space Administration (NASA), Science Mission Directorate.
-* **Archival Discipline Nodes**:
-  * **Atmospheres Node** (New Mexico State University): Radio occultation soundings, thermal profiles, and atmospheric dynamics.
-  * **Planetary Plasma Interactions (PPI) Node** (University of California, Los Angeles): Magnetospheric and ionospheric measurements.
-  * **Geosciences Node** (Washington University in St. Louis): Surface radar, topography, and geochemical observations.
-  * **Small Bodies Node** (University of Maryland): Cometary and asteroid rendezvous and flyby data.
-  * **Cartography and Imaging Sciences Node** (USGS / JPL): Multi-band orbital imaging and cartographic mosaics.
-* **Terms of Use**: Data hosted by NASA PDS are in the public domain and freely available to the worldwide scientific community. Users are required by scientific etiquette and NASA policy to cite the corresponding PDS dataset Digital Object Identifier (DOI), the instrument Principal Investigator (PI) team, and the host PDS node in any resulting scientific publication.
-
-### B. ESA Planetary Science Archive (PSA)
-* **Governing Body**: European Space Agency (ESA), European Space Astronomy Centre (ESAC), Madrid, Spain.
-* **Missions**: Venus Express (VEX), BepiColombo, Rosetta, Mars Express (MEX).
-* **Terms of Use**: Data accessible through the ESA PSA are distributed under open-access policies for scientific research following completion of the mission-defined proprietary validation period.
-* **Mandatory Acknowledgment**: Publications utilizing ESA planetary data must include the standard ESA acknowledgment statement:
-  > "The scientific observations utilized in this study were retrieved from the European Space Agency (ESA) Planetary Science Archive (PSA), with scientific credit to the [Spacecraft Name] [Instrument Name] Principal Investigator and Science Team."
-
-### C. JAXA Data Archives and Transmission System (DARTS)
-* **Governing Body**: Institute of Space and Astronautical Science (ISAS) / Japan Aerospace Exploration Agency (JAXA).
-* **Missions**: Akatsuki (Venus Climate Orbiter / VCO), Hayabusa2, BepiColombo (MMO / Mio).
-* **Terms of Use**: Science data products released on DARTS are open to researchers worldwide.
-* **Mandatory Acknowledgment**: Publications utilizing JAXA planetary observations must acknowledge JAXA and the corresponding mission team:
-  > "Data from the Akatsuki (VCO) mission were provided by the Japan Aerospace Exploration Agency (JAXA) through the Data Archives and Transmission System (DARTS)."
-
-### D. ISRO Indian Space Science Data Centre (ISSDC)
-* **Governing Body**: Indian Space Research Organisation (ISRO), Bengaluru, India.
-* **Missions**: Chandrayaan-2, Chandrayaan-3, Mars Orbiter Mission (MOM).
-* **Terms of Use**: Planetary science datasets hosted by ISSDC are accessible according to the ISRO Science Data Policy. Authors must cite ISSDC and the relevant payload Principal Investigators.
+The sample products bundled with VEDA (`src/veda/sampledata`) are unmodified copies of public archive products, included so the demonstrations and tests work offline. Each is listed in section 3 with its source.
 
 ---
 
-## 3. Mandatory Dual-Attribution Policy for Publications
+## 2. Archives VEDA reads
 
-When publishing peer-reviewed journal papers, conference proceedings, technical reports, or theses that incorporate figures, tables, or analytical retrievals produced with VEDA, researchers are required to provide dual attribution:
+### NASA Planetary Data System (PDS), Atmospheres Node
+* **Host**: New Mexico State University, for NASA's Science Mission Directorate. https://pds-atmospheres.nmsu.edu/
+* **How VEDA reads it**: PDS3 volume indexes (`INDEX.TAB` and format files) and PDS4 bundles over HTTPS. No account is needed.
+* **Terms**: PDS data are freely available without restriction on use. Cite the data set (and its DOI where the archive gives one), the instrument team's reference publication and the PDS node.
 
-1. **Primary Dataset Citation**: Cite the primary space agency dataset, the instrument Principal Investigator team, and the specific archive DOI or reference volume.
-2. **Software Platform Citation**: Cite the VEDA computational platform to ensure computational reproducibility and scientific provenance.
+### ESA Planetary Science Archive (PSA)
+* **Host**: European Space Astronomy Centre (ESAC), Madrid. https://archives.esac.esa.int/psa/
+* **How VEDA reads it**: the PSA FTP mirror of the PDS3 volumes, over HTTPS. No account is needed.
+* **Terms**: open access for scientific use once a data set's proprietary period has ended. Acknowledge ESA, the PSA and the instrument team, and cite the data set and the instrument reference publication. A suitable acknowledgement is: *"This work used data from the [mission] [instrument] experiment, obtained from the ESA Planetary Science Archive (https://archives.esac.esa.int/psa/)."*
 
-### Standard Citation Text for Methodologies Sections:
-> "Planetary atmospheric soundings and observational datasets were analyzed using VEDA (Visualization, Exploration, and Data Analysis), an open multi-mission planetary science platform developed at the Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO (Aggarwal, 2026). Primary mission datasets were retrieved from the [NASA PDS / ESA PSA / JAXA DARTS] archive."
+### JAXA Data Archives and Transmission System (DARTS)
+* **Host**: Institute of Space and Astronautical Science (ISAS), JAXA. https://darts.isas.jaxa.jp/
+* **How VEDA reads it**: the DARTS PDS3 tree and the Akatsuki SPICE kernels, over HTTPS. No account is needed.
+* **Terms**: free for research and education. Acknowledge JAXA/ISAS and DARTS and cite the mission team's reference publication. A suitable acknowledgement is: *"Akatsuki data were provided by JAXA/ISAS through DARTS."*
+
+### ISRO Indian Space Science Data Centre (ISSDC / PRADAN)
+* **Host**: Indian Space Science Data Centre, ISRO, Byalalu, Bengaluru. https://pradan.issdc.gov.in/
+* **How VEDA reads it**: PRADAN requires a registered account and its own website for downloads. VEDA opens the PRADAN page for you to sign in; you download the products there and import them into VEDA. VEDA never receives your credentials.
+* **Terms**: data are released to registered users under the ISRO science data policy and the terms you accept when you register. Acknowledge ISRO and ISSDC and the payload team as those terms require.
+
+### NASA NAIF SPICE and mission SPICE archives
+* **Hosts**: NAIF, Jet Propulsion Laboratory (https://naif.jpl.nasa.gov/); ESA SPICE Service (Mars Express); JAXA DARTS (Akatsuki).
+* **How VEDA uses them**: when you ask for an observation's geometry, VEDA lists the kernels it needs (leap seconds, planetary constants, planetary ephemeris, spacecraft trajectory) with their size, and downloads them only after you agree.
+* **Terms**: SPICE kernels and the CSPICE toolkit are free to use. Acknowledge NAIF and cite Acton, C. H. (1996), *Ancillary data services of NASA's Navigation and Ancillary Information Facility*, Planetary and Space Science 44, 65-70, together with the producer of any mission kernels used. See https://naif.jpl.nasa.gov/naif/rules.html.
 
 ---
 
-## 4. BibTeX Citation Entries
+## 3. Connected data sets and what to cite
 
-### A. VEDA Software Platform
+The authoritative list is VEDA's own catalogue (`src/veda/archives/datasets.py`), shown in the app under **Data & Licenses** with the same citations. Where an archive assigns a DOI to a data set, cite it as well; the PDS and PSA landing pages for each volume give it.
+
+| Data set id | Mission and data | Archive | Instrument reference |
+|---|---|---|---|
+| `vco-v-rs-5-occ-v1.0` | Akatsuki radio occultation L3 refractivity and L4 profiles (Venus) | JAXA DARTS | Imamura, T., et al. (2017). Initial performance of the radio occultation experiment in the Venus orbiter mission Akatsuki. *Earth, Planets and Space*, 69, 137. |
+| `vco-v-rs-3-occ-v1.0` | Akatsuki radio occultation L2 frequency and power (Venus) | JAXA DARTS | as above |
+| `vex-v-vra-1-2-3` | Venus Express VeRa L1A to L2, per orbit (Venus) | ESA PSA | Häusler, B., et al. (2006). Radio science investigations by VeRa onboard the Venus Express spacecraft. *Planetary and Space Science*, 54, 1315-1335. |
+| `vex-v-rss-1-ent-v1.0` | Venus Express VeRa, PDS copy with calibration and SPICE (Venus) | NASA PDS | as above |
+| `mgn-v-rss-5-occ-prof-rtpd-v1.0` | Magellan radio occultation, Oct 1991: refractivity, T, P, density (Venus) | NASA PDS | Jenkins, J. M., Steffes, P. G., Hinson, D. P., Twicken, J. D., & Tyler, G. L. (1994). Radio occultation studies of the Venus atmosphere with the Magellan spacecraft. 2. Results from the October 1991 experiments. *Icarus*, 110, 79-94. |
+| `mgn-v-rss-5-occ-prof-abs-h2so4-v1.0` | Magellan 13 cm absorptivity and H2SO4 vapour (Venus) | NASA PDS | as above |
+| `mgn-v-rss-1-rocc-v2.0` | Magellan raw open-loop and tracking records (Venus) | NASA PDS | as above |
+| `mex-m-mrs-5-occ` | Mars Express MaRS L4 neutral atmosphere and ionosphere (Mars) | ESA PSA | Pätzold, M., et al. (2016). Mars Express 10 years at Mars: observations by the Mars Express Radio Science Experiment (MaRS). *Planetary and Space Science*, 127, 44-90. |
+| `mgs-m-rss-5-sdp-v1.0` | Mars Global Surveyor radio science T-P and electron density (Mars) | NASA PDS | Hinson, D. P., et al. (1999). Initial results from radio occultation measurements with Mars Global Surveyor. *JGR*, 104(E11), 26997-27012; Tyler, G. L., et al. (2001), *JGR*, 106(E10). |
+| `gp-j-entry-v1.0` | Galileo probe atmospheric structure and instruments (Jupiter) | NASA PDS | Seiff, A., et al. (1998). Thermal structure of Jupiter's atmosphere near the edge of a 5-µm hot spot in the north equatorial belt. *JGR*, 103(E10), 22857-22889. |
+| `jno-x-mwr` | Juno MWR records, antenna and brightness temperatures, NH3/H2O (Jupiter) | NASA PDS | Janssen, M. A., et al. (2017). MWR: Microwave Radiometer for the Juno mission to Jupiter. *Space Science Reviews*, 213, 139-185. |
+| `corss_occul_el_dens` | Cassini RSS Titan ionospheric electron density (PDS4) | NASA PDS | Kliore, A. J., et al. (2008). First results from the Cassini radio occultations of the Titan ionosphere. *JGR*, 113, A09317. |
+| `hp-ssa-hasi-2-3-4-mission-v1.1` | Huygens HASI entry and descent (Titan) | NASA PDS | Fulchignoni, M., et al. (2005). In situ measurements of the physical characteristics of Titan's environment. *Nature*, 438, 785-791. |
+| `issdc-mom` | Mars Orbiter Mission payloads (sign-in and import) | ISRO ISSDC | cite the payload team's reference publication |
+| `issdc-ch2` | Chandrayaan-2 orbiter payloads incl. DFRS, CHACE-2 (sign-in and import) | ISRO ISSDC | cite the payload team's reference publication |
+
+### Bundled sample products
+
+| Folder | Product | Source |
+|---|---|---|
+| `sampledata/venus_akatsuki` | Akatsuki RS Level 4 profile and a UVI image | JAXA DARTS, `vco-v-rs-5-occ-v1.0` and the Akatsuki UVI archive |
+| `sampledata/mars_express` | MaRS L4 neutral atmosphere and ionosphere profiles | ESA PSA, `mex-m-mrs-5-occ` |
+| `sampledata/titan_cassini_rss` | Cassini RSS Titan electron density (PDS4) | NASA PDS Atmospheres, `corss_occul_el_dens` |
+| `sampledata/earth_cosmic2` | COSMIC-2 radio occultation granule | UCAR COSMIC Data Analysis and Archive Center (CDAAC) |
+
+---
+
+## 4. Citing your results
+
+When you publish figures, tables or values produced with VEDA, please cite:
+
+1. **The data**: the data set (id and DOI if one exists), the instrument team's reference publication from the table above, and the archive.
+2. **The geometry** (if you used it): NAIF (Acton, 1996) and the mission kernels.
+3. **VEDA**, so that others can reproduce the processing:
+
 ```bibtex
 @software{Aggarwal_VEDA_2026,
   author       = {Keshav Aggarwal},
   title        = {{VEDA: Visualization, Exploration, and Data Analysis - A Multi-Mission Planetary Science Data Laboratory}},
   year         = {2026},
   publisher    = {Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO},
-  version      = {1.0.0},
-  url          = {https://jovian-explorer.github.io/},
+  version      = {3.0.0},
+  url          = {https://github.com/jovian-explorer/VEDA},
   address      = {Thiruvananthapuram, Kerala, India}
 }
 ```
 
-### B. Akatsuki (VCO) Radio Science (JAXA DARTS)
-```bibtex
-@misc{Akatsuki_RS_Level4,
-  author       = {Imamura, Takeshi and Ando, Hiroki and Tellmann, Silvia and P{\"a}tzold, Martin and H{\"a}usler, Bernd},
-  title        = {{Akatsuki Radio Science Level 4 Vertical Atmospheric Profiles of Venus}},
-  year         = {2017},
-  publisher    = {JAXA Data Archives and Transmission System (DARTS)},
-  howpublished = {\url{https://darts.isas.jaxa.jp/planet/project/akatsuki/}}
-}
-```
+### Data availability statement (template)
+Remove the archives you did not use and add the data set DOIs:
 
-### C. Venus Express VeRa Radio Science (ESA PSA)
-```bibtex
-@article{Haeusler_VeRa_2006,
-  author       = {H{\"a}usler, Bernd and P{\"a}tzold, Martin and Tyler, G. Leonard and Simpson, Richard A. and Bird, Michael K. and Dehant, V{\'e}ronique and Barriot, Jean-Pierre and Eidel, Walter and Mattei, R. and Remus, S. and Selle, J. and Tellmann, S. and Imamura, T.},
-  title        = {{Radio science investigations on Venus Express: The VeRa instrument}},
-  journal      = {Planetary and Space Science},
-  volume       = {54},
-  number       = {13},
-  pages        = {1315-1335},
-  year         = {2006},
-  doi          = {10.1016/j.pss.2006.04.032}
-}
-```
-
-### D. New Horizons REX Radio Science (NASA PDS Atmospheres)
-```bibtex
-@article{Gladstone_NewHorizons_2016,
-  author       = {Gladstone, G. Randall and Stern, S. Alan and Ennico, Kimberly and Olkin, Catherine B. and Weaver, Harold A. and Young, Leslie A. and Summers, Michael E. and Strobel, Darrell F. and Hinson, David P. and Kammer, Joshua A. and others},
-  title        = {{The atmosphere of Pluto as observed by New Horizons}},
-  journal      = {Science},
-  volume       = {351},
-  number       = {6279},
-  pages        = {aad8866},
-  year         = {2016},
-  doi          = {10.1126/science.aad8866}
-}
-```
-
-### E. MAVEN Radio Science and NGIMS (NASA PDS PPI / Atmospheres)
-```bibtex
-@article{Jakosky_MAVEN_2015,
-  author       = {Jakosky, Bruce M. and Lin, R. P. and Grebowsky, J. M. and Luhmann, J. G. and Mitchell, D. L. and Beutelschies, G. and Priser, T. and Acuna, M. and Andersson, L. and Baird, D. and others},
-  title        = {{The Mars Atmosphere and Volatile Evolution (MAVEN) Mission}},
-  journal      = {Space Science Reviews},
-  volume       = {195},
-  number       = {1},
-  pages        = {3-48},
-  year         = {2015},
-  doi          = {10.1007/s11214-015-0139-x}
-}
-```
-
-### F. Cassini Radio Science Subsystem (NASA PDS Atmospheres)
-```bibtex
-@article{Kliore_CassiniRSS_2004,
-  author       = {Kliore, Arvydas J. and Anderson, John D. and Armstrong, J. W. and Asmar, Sami W. and Hamilton, Douglas P. and Rappaport, Nicole J. and Simpson, Richard A. and Flasar, F. Michael and Nagy, Andrew F. and French, Richard G. and others},
-  title        = {{Cassini Radio Science Investigations at Saturn and Titan}},
-  journal      = {Space Science Reviews},
-  volume       = {115},
-  number       = {1},
-  pages        = {1-70},
-  year         = {2004},
-  doi          = {10.1007/s11214-004-1436-y}
-}
-```
-
-### G. Mars Orbiter Mission MENCA Investigation (ISRO ISSDC)
-```bibtex
-@article{Bhardwaj_MENCA_2016,
-  author       = {Bhardwaj, Anil and Thampi, Smitha V. and Das, Tirtha Pratim and Dhanya, M. B. and Naik, Neha and Pant, Tarun Kumar and Pradeepkumar, P. and Sreelatha, P. and Sundar, Abhishek and Vipin, K. K. and others},
-  title        = {{On the evening and morning exosphere of Mars: Results from MENCA on the Mars Orbiter Mission}},
-  journal      = {Geophysical Research Letters},
-  volume       = {43},
-  number       = {6},
-  pages        = {2388-2395},
-  year         = {2016},
-  doi          = {10.1002/2016GL067707}
-}
-```
-
-### H. Chandrayaan-2 Dual Frequency Radio Science (ISRO ISSDC / PRADAN)
-```bibtex
-@article{Choudhary_DFRS_2022,
-  author       = {Choudhary, R. K. and Ambili, K. M. and Thampi, Smitha V. and Bhardwaj, Anil},
-  title        = {{Dual Frequency Radio Science (DFRS) experiment onboard Chandrayaan-2: Detection of lunar ionosphere}},
-  journal      = {Current Science},
-  volume       = {122},
-  number       = {2},
-  pages        = {186-193},
-  year         = {2022},
-  doi          = {10.18520/cs/v122/i2/186-193}
-}
-```
+> The spacecraft observations analysed in this study are publicly available from the NASA Planetary Data System (PDS) Atmospheres Node (https://pds-atmospheres.nmsu.edu/), the ESA Planetary Science Archive (PSA) (https://archives.esac.esa.int/psa/) and the JAXA Data Archives and Transmission System (DARTS) (https://data.darts.isas.jaxa.jp/); ISRO mission data are available to registered users from the Indian Space Science Data Centre (ISSDC/PRADAN) (https://pradan.issdc.gov.in/). Spacecraft and planetary ephemerides were obtained from the NASA NAIF SPICE archive (https://naif.jpl.nasa.gov/) and the mission SPICE archives at ESA and JAXA. Archived values were read, unit-converted and compared with VEDA version 3.0.0 (https://github.com/jovian-explorer/VEDA).
 
 ---
 
-## 5. Scientific Integrity and Algorithmic Provenance
+## 5. Scientific responsibility
 
-1. **Deterministic Calculations**: VEDA implements verified equations for:
-   * Hydrostatic equilibrium: $dP/dz = -\rho(z) g(z)$
-   * Altitude-dependent gravity: $g(z) = g_0 (R_p / (R_p + z))^2$
-   * Poisson potential temperature: $\theta(z) = T(z) (P_0 / P(z))^\kappa$
-   * Brunt-Vaisala static stability: $N^2(z) = (g(z)/\theta(z)) (\partial \theta / \partial z)$
-   * Gravity wave potential energy: $E_p(z) = \frac{1}{2}(g/N)^2 \overline{(T' / \overline{T})^2}$
-   * Radio occultation Abel inversion: $\mu(r) - 1 = \frac{1}{\pi} \int_r^{r_{top}} \frac{\alpha(a)}{\sqrt{a^2 - r^2}} da$
-2. **User Validation Responsibility**: VEDA is an analytical tool. Researchers retain full scientific responsibility for verifying that derived values align with peer-reviewed mission calibration documents and published literature before incorporating results into academic papers.
-3. **Upstream Archive Independence**: VEDA is not affiliated with, endorsed by, or sponsored by NASA, ESA, JAXA, or ISRO. VEDA cannot guarantee continuous server availability, bandwidth, or uninterrupted access to remote third-party data repositories.
+* VEDA's derived quantities use the equations documented in the app (**Help** and **Variables**) and in [USAGE.md](USAGE.md), with the body constants listed there. They are not a substitute for the instrument team's own retrievals.
+* Check any value you intend to publish against the product label, the data set documentation (`DOCUMENT/` and `CATALOG/` in each volume) and the instrument team's publications.
+* Report errors in VEDA's reading or processing at https://github.com/jovian-explorer/VEDA/issues. Report errors in the data themselves to the archive.
+
+VEDA is not affiliated with, endorsed by or sponsored by NASA, ESA, JAXA or ISRO, and cannot guarantee that their servers are available.

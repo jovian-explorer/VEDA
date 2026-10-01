@@ -6,6 +6,7 @@ spacecraft mission definitions across NASA, ESA, JAXA, and NOAA planetary progra
 from __future__ import annotations
 
 from typing import Dict, List, Optional
+from .. import __version__
 from .models import BodyInfo, InstrumentInfo, MissionInfo
 
 
@@ -1006,89 +1007,116 @@ LEAD_RESEARCHER = (
 )
 
 DATA_AVAILABILITY_STATEMENT = (
-    "The planetary spacecraft observations and radio occultation profiles analyzed by VEDA "
-    "are publicly available from international planetary data archives: NASA Planetary Data System "
-    "(PDS) Atmospheres and Geosciences Nodes at https://pds-atmospheres.nmsu.edu/, European Space "
-    "Agency (ESA) Planetary Science Archive (PSA) at https://archives.esac.esa.int/psa/, JAXA Data "
-    "Archives and Transmission System (DARTS) at https://data.darts.isas.jaxa.jp/, and ISRO Indian "
-    "Space Science Data Centre (ISSDC / PRADAN) at https://pradan.issdc.gov.in/. All calibration, "
-    "retrieval, and cross-mission comparative modeling are performed locally using VEDA."
+    "The spacecraft observations analysed in this study are publicly available from the NASA "
+    "Planetary Data System (PDS) Atmospheres Node (https://pds-atmospheres.nmsu.edu/), the ESA "
+    "Planetary Science Archive (PSA) (https://archives.esac.esa.int/psa/) and the JAXA Data Archives "
+    "and Transmission System (DARTS) (https://data.darts.isas.jaxa.jp/); ISRO mission data are "
+    "available to registered users from the Indian Space Science Data Centre (ISSDC/PRADAN) "
+    "(https://pradan.issdc.gov.in/). Spacecraft and planetary ephemerides were obtained from the "
+    "NASA NAIF SPICE archive (https://naif.jpl.nasa.gov/) and the mission SPICE archives at ESA and "
+    "JAXA. Archived values were read, unit-converted and compared with VEDA version "
+    f"{__version__} (https://github.com/jovian-explorer/VEDA)."
 )
 
+# Archives VEDA can search.  "missions" lists the missions whose data VEDA reads
+# from that archive; the per-data-set list (with citations) comes from
+# veda.archives.datasets and is shown in the Data & Licenses panel.
 DATA_PORTALS = [
     {
         "id": "nasa_pds_atm",
         "name": "NASA Planetary Data System (PDS) Atmospheres Node",
-        "agency": "NASA Science Mission Directorate",
+        "agency": "NASA",
         "url": "https://pds-atmospheres.nmsu.edu/",
-        "description": "Authoritative repository for planetary atmospheric dynamics, radio occultation soundings, and entry probe profiles (Venus, Mars, Jupiter, Saturn, Titan, Pluto).",
-        "missions": ["new_horizons", "galileo", "cassini", "maven", "mro", "pvo"],
-    },
-    {
-        "id": "nasa_pds_geo",
-        "name": "NASA PDS Geosciences Node",
-        "agency": "NASA Science Mission Directorate",
-        "url": "https://pds-geosciences.wustl.edu/",
-        "description": "Orbital radar soundings, thermal emission spectrometry, and geodetic measurements across planetary surfaces and exospheres.",
-        "missions": ["messenger", "magellan", "lro"],
+        "description": "Radio occultation profiles, entry-probe descent data and microwave radiometry. "
+                       "VEDA reads the PDS3 volume indexes and PDS4 bundles directly; no account is needed.",
+        "missions": ["magellan", "vex", "mgs", "galileo", "cassini", "juno"],
+        "login": False,
     },
     {
         "id": "esa_psa",
         "name": "ESA Planetary Science Archive (PSA)",
-        "agency": "European Space Agency (ESA)",
+        "agency": "ESA",
         "url": "https://archives.esac.esa.int/psa/",
-        "description": "Primary archive for European planetary exploration missions including radio science experiments and spectral sounders.",
-        "missions": ["vex", "bepicolombo", "rosetta", "mex"],
+        "description": "European mission archives. VEDA reads the Mars Express MaRS and Venus Express VeRa "
+                       "radio-science volumes from the PSA FTP mirror; no account is needed.",
+        "missions": ["mex", "vex"],
+        "login": False,
     },
     {
         "id": "jaxa_darts",
         "name": "JAXA Data Archives and Transmission System (DARTS)",
-        "agency": "ISAS / JAXA (Japan Aerospace Exploration Agency)",
+        "agency": "ISAS / JAXA",
         "url": "https://data.darts.isas.jaxa.jp/pub/pds3/",
-        "description": "Host for Akatsuki (VCO) Venus Climate Orbiter radio science Level 4 temperature/pressure profiles and multi-band camera imagery.",
-        "missions": ["akatsuki", "bepicolombo_mio"],
+        "description": "Akatsuki radio occultation (L2 to L4) and camera products, plus the Akatsuki SPICE "
+                       "kernels VEDA uses for observation geometry; no account is needed.",
+        "missions": ["akatsuki"],
+        "login": False,
     },
     {
         "id": "isro_issdc",
         "name": "ISRO Indian Space Science Data Centre (ISSDC / PRADAN)",
-        "agency": "Indian Space Research Organisation (ISRO)",
+        "agency": "ISRO",
         "url": "https://pradan.issdc.gov.in/",
-        "description": "Repository for Indian planetary missions, including Space Physics Laboratory (SPL/VSSC) Chandrayaan-2 DFRS radio science and MOM MENCA mass spectrometer.",
+        "description": "Mars Orbiter Mission and Chandrayaan-2 data. Downloads need a free PRADAN account, "
+                       "so VEDA opens the portal for you to sign in and then imports the files you download.",
         "missions": ["mom", "chandrayaan2"],
+        "login": True,
+    },
+    {
+        "id": "naif_spice",
+        "name": "NASA NAIF SPICE archive",
+        "agency": "NASA / JPL",
+        "url": "https://naif.jpl.nasa.gov/naif/data.html",
+        "description": "Leap-second, planetary-constant and planetary ephemeris kernels (with the mission "
+                       "SPICE archives at ESA and JAXA). Downloaded on request for observation geometry.",
+        "missions": [],
+        "login": False,
     },
 ]
 
 DATA_LICENSES = {
     "nasa_pds": {
-        "name": "NASA Open Data Policy",
-        "type": "Public Domain / U.S. Federal Government Work",
+        "name": "NASA PDS",
+        "type": "Public, no restrictions on use",
         "url": "https://pds.nasa.gov/",
-        "terms": "Planetary data products are in the public domain and freely accessible to researchers worldwide.",
+        "terms": "PDS data are freely available. Cite the data set (and its DOI where one is given) "
+                 "and the instrument team's reference publication.",
     },
     "esa_psa": {
-        "name": "ESA Open Access Policy",
-        "type": "Open Scientific Access",
-        "url": "https://archives.esac.esa.int/psa/",
-        "terms": "Free access for scientific research following completion of the proprietary instrument validation period.",
+        "name": "ESA PSA",
+        "type": "Open access after the proprietary period",
+        "url": "https://www.cosmos.esa.int/web/psa/",
+        "terms": "Free for scientific use. Acknowledge ESA, the PSA and the instrument team, and cite "
+                 "the data set and the instrument reference publication.",
     },
     "jaxa_darts": {
-        "name": "JAXA DARTS Science Data Policy",
-        "type": "Open Research Access",
-        "url": "https://data.darts.isas.jaxa.jp/",
-        "terms": "Freely accessible for research and educational purposes with mandatory citation of JAXA and instrument teams.",
+        "name": "JAXA DARTS",
+        "type": "Open access",
+        "url": "https://darts.isas.jaxa.jp/",
+        "terms": "Free for research and education. Acknowledge JAXA/ISAS and DARTS and cite the "
+                 "mission team's reference publication.",
     },
     "isro_issdc": {
-        "name": "ISRO Planetary Science Data Policy",
-        "type": "Open Science Access",
+        "name": "ISRO ISSDC / PRADAN",
+        "type": "Registered users",
         "url": "https://pradan.issdc.gov.in/",
-        "terms": "Planetary datasets released by ISSDC are accessible according to ISRO open data guidelines.",
+        "terms": "Available to registered users under the ISRO science data policy and the terms you "
+                 "accept when you create a PRADAN account. Acknowledge ISRO/ISSDC and the payload team.",
+    },
+    "naif_spice": {
+        "name": "NASA NAIF SPICE",
+        "type": "Public",
+        "url": "https://naif.jpl.nasa.gov/naif/rules.html",
+        "terms": "SPICE kernels and the CSPICE toolkit are free to use; acknowledge NAIF (Acton, 1996, "
+                 "Planet. Space Sci. 44, 65-70) and the kernel producer.",
     },
     "software": {
         "name": "MIT License",
         "type": "Open Source",
         "copyright": "Copyright (c) 2026 Keshav Aggarwal, Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO",
         "url": "https://github.com/jovian-explorer/VEDA/blob/main/LICENSE",
-        "terms": "Permission is hereby granted, free of charge, to any person obtaining a copy of this software.",
+        "terms": "Free to use, copy, modify and distribute, provided the copyright notice is kept. "
+                 "Provided as is, without warranty of any kind.",
     },
 }
 

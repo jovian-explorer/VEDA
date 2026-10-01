@@ -13,7 +13,7 @@ When contributing code, algorithms, or mission data models to VEDA, the followin
    * Earth-centric GNSS or terrestrial weather data pipelines must not be integrated into VEDA.
 2. **Offline-First Architecture**:
    * The application must operate seamlessly in offline research environments without active internet connectivity.
-   * All vendor libraries (e.g. KaTeX, Plotly, Three.js) must be bundled locally within `src/veda/frontend/vendor/`. No external CDN links are permitted in application HTML or scripts.
+   * All vendor libraries (KaTeX, Plotly) must be bundled locally within `src/veda/frontend/vendor/`. No external CDN links are permitted in application HTML or scripts.
 3. **Typography and Style Constraint**:
    * **Do not use em-dashes or en-dashes anywhere in the repository.**
    * Use standard ASCII hyphens (`-`), colons (`:`), commas (`,`), or parentheses (`()`).
@@ -99,6 +99,8 @@ print('Verification passed: Zero em-dashes and zero en-dashes detected.')
 
 ## 5. Third-Party Data and License Compliance
 
-* If integrating demonstration data from space agency archives, verify that the dataset is in the public domain or covered by an open-access research license.
-* Document the dataset source, Principal Investigator, and archive DOI in `DATA_POLICY.md` and the appropriate registry entries.
+* **No synthetic or fabricated data.** Everything VEDA shows must come from an archive product. Do not add generated samples, placeholder profiles or invented metadata, and do not invent DOIs or citations.
+* To connect a new data set, add a `Dataset` entry in `src/veda/archives/datasets.py` (archive URL, index path, product rules, column map, citation) and a test in `tests/test_archives.py` that reads a real product. Add the data set to the table in `DATA_POLICY.md`.
+* Bundled sample products must be unmodified public archive files, listed with their source in `DATA_POLICY.md`.
+* Respect the archives: read indexes once into the catalogue, download only what the user asks for, and keep the retry and back-off behaviour in `veda.archives.net`.
 * Never commit proprietary or embargoed science data to the repository.

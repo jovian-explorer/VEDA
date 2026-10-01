@@ -1491,6 +1491,22 @@ kbd {
 .about-paths dt { color: var(--ink-soft); }
 .about-paths dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
 
+.drawer a { color: var(--focal); text-underline-offset: 2px; }
+.drawer a:hover { text-decoration-thickness: 2px; }
+.policy-card {
+  border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 8px;
+  background: var(--surface-elevated);
+}
+.policy-card p { margin: 4px 0; }
+.policy-card-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+.policy-table { overflow-x: auto; }
+.policy-table td { vertical-align: top; font-size: 0.92em; }
+.policy-table td code { font-size: 0.85em; color: var(--ink-soft); overflow-wrap: anywhere; }
+.policy-quote {
+  margin: 6px 0; padding: 10px 14px; border-left: 4px solid var(--focal);
+  background: var(--surface-elevated); color: var(--ink-soft); line-height: 1.5;
+}
+
 /* Light theme: the capsule behind the mode buttons must stay light. */
 :root:not([data-theme="dark"]) .mode-switcher-wrap {
   background: rgba(15, 23, 42, 0.05);
