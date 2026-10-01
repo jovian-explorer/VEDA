@@ -146,6 +146,7 @@ class ObservationProfile:
             "provenance": prov_dict,
             "n_points": int(self.altitude_km.size) if self.altitude_km is not None else 0,
             "dataset_id": self.raw_attributes.get("DATASET_ID"),
+            "altitude_reference": self.raw_attributes.get("ALTITUDE_REFERENCE", ""),
         }
 
 

@@ -60,6 +60,12 @@ class Dataset:
     column_units: Dict[str, str] = field(default_factory=dict)
     # Extra measured variables: key -> (column, uncertainty column or None, label, units)
     extra_variables: Dict[str, Tuple[str, Optional[str]]] = field(default_factory=dict)
+    # Vertical reference of an ALTITUDE column.  A number is the radius (km) of the
+    # archive's reference sphere: altitudes are moved onto the body's own reference
+    # radius, so profiles of different missions share one vertical coordinate.  Text
+    # names a reference that is not a sphere (the 1-bar level of a giant planet).
+    altitude_reference_km: Optional[float] = None
+    altitude_reference: str = ""
     # PDS4 bundle: folder (inside the bundle) holding the product XML labels.
     pds4_product_dir: Optional[str] = None
     # Archive that only works through its own website with an account (no
@@ -274,6 +280,7 @@ DATASETS: List[Dataset] = [
                          "latitude": "LATITUDE", "longitude": "LONGITUDE", "sza": "ZENITH_ANGLE", "lst": "LOCAL_TIME"},
         column_units=MGN_UNITS,
         extra_variables={"density_measured": ("DENSITY", "DENS_DEV")},
+        altitude_reference_km=6052.0,          # label: "Altitude above 6052 km"
         citation=MGN_CITATION,
     ),
     Dataset(
@@ -305,6 +312,7 @@ DATASETS: List[Dataset] = [
     ),
     Dataset(
         id="gp-j-entry-v1.0", mission_id="galileo", instrument="Galileo Probe (ASI, NMS, NEP, NFR, ...)", level="L3",
+        altitude_reference="the 1-bar pressure level",             # label: "Altitude above 1-bar level"
         title="Galileo probe at Jupiter: atmospheric structure descent profile and probe instrument data",
         body_ids=("jupiter",), archive="NASA PDS Atmospheres Node",
         base_url="https://pds-atmospheres.nmsu.edu/PDS/data/",
@@ -327,6 +335,7 @@ DATASETS: List[Dataset] = [
     ),
     Dataset(
         id="hp-ssa-hasi-2-3-4-mission-v1.1", mission_id="cassini", instrument="Huygens HASI", level="L2-L4",
+        altitude_reference="the surface at the Huygens landing site (Fulchignoni et al. 2005)",
         title="Huygens probe HASI: Titan entry and descent atmospheric profiles and sensor data",
         body_ids=("titan",), archive="NASA PDS Atmospheres Node",
         base_url="https://pds-atmospheres.nmsu.edu/PDS/data/",

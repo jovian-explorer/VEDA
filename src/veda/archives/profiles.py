@@ -132,6 +132,14 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
         if "METER" in r_unit and "KILO" not in r_unit:
             r = r / 1000.0            # e.g. MGS radio science gives RADIUS in metres
         z = r - body.radius_km
+        z_ref = f"a sphere of radius {body.radius_km:g} km (from the radius column)"
+    elif ds.altitude_reference_km is not None:
+        shift = ds.altitude_reference_km - body.radius_km
+        z = z + shift
+        z_ref = (f"a sphere of radius {body.radius_km:g} km (archive altitudes are above "
+                 f"{ds.altitude_reference_km:g} km; shifted by {shift:+.3g} km)")
+    else:
+        z_ref = ds.altitude_reference or "as given in the archive"
 
     # Units come from the label, so Pa/hPa/bar and m^-3/cm^-3 are all handled.
     t_unit = _unit(tbl, cols.get("temperature"))
@@ -192,7 +200,7 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
             doi_or_citation=ds.citation or ds.doi,
             retrieval_method=prod["product_type"],
         ),
-        raw_attributes={**tbl.metadata, "DATASET_ID": ds.id, "VOLUME": prod["volume"]},
+        raw_attributes={**tbl.metadata, "DATASET_ID": ds.id, "VOLUME": prod["volume"], "ALTITUDE_REFERENCE": z_ref},
         uncertainty=unc,
         track=track,
     )

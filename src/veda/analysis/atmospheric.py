@@ -81,7 +81,7 @@ def compute_atmospheric_diagnostics(
     # 2. Local gravitational acceleration with altitude g(z) = g0 * (R / (R + z))^2
     r_body = body.radius_km
     g0 = body.surface_gravity
-    # (altitudes below the reference level, e.g. Mars below the MOLA datum or the
+    # (altitudes below the reference level, e.g. the Hellas basin below the Mars reference sphere or the
     # Galileo probe below 1 bar, are valid: gravity is slightly larger there)
     gz = g0 * (r_body / np.maximum(r_body + z, 1e-3 * r_body)) ** 2
 
@@ -174,6 +174,22 @@ def _empty_comparison(body: BodyInfo, variable_name: str, grid_km: Optional[List
         "profile_count": 0,
         "profiles": [],
     }
+
+
+def _vertical_reference_warning(summaries: List[Dict[str, Any]]) -> str:
+    """A note when the compared profiles measure altitude from different references
+    (a sphere around the body centre, the 1-bar level, a landing site)."""
+    kinds = {}
+    for s in summaries:
+        ref = s.get("altitude_reference")
+        if not ref:
+            continue                      # unknown (user files): no claim either way
+        kind = "the body's reference sphere" if ref.startswith("a sphere of radius") else ref
+        kinds.setdefault(kind, set()).add(s["mission_id"])
+    if len(kinds) < 2:
+        return ""
+    parts = "; ".join(f"{', '.join(sorted(m)).upper()}: {k}" for k, m in kinds.items())
+    return f"Altitudes are measured from different references ({parts}), so they are offset from each other."
 
 
 # Variables compared in log space (they change by orders of magnitude with height)
@@ -274,6 +290,7 @@ def compare_profiles_on_body(
             "longitude": p.longitude,
             "n_points": int(v_clean.size),
             "z_range_km": [round(float(np.min(z_clean)), 2), round(float(np.max(z_clean)), 2)],
+            "altitude_reference": (p.raw_attributes or {}).get("ALTITUDE_REFERENCE", ""),
             "interpolated_series": v_interp,
         })
 
@@ -307,6 +324,7 @@ def compare_profiles_on_body(
     return {
         "averaging": "geometric mean and 1-sigma factor (log space)" if log_like else "arithmetic mean and 1-sigma (sample)",
         "profiles_per_level": [int(n) for n in n_per_level],
+        "vertical_reference_warning": _vertical_reference_warning(profile_summaries),
         "body_id": body.id,
         "body_name": body.name,
         "variable_name": variable_name,

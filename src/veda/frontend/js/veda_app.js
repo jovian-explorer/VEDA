@@ -12,6 +12,8 @@ import { prefetchMission, prefetchObservation } from './spice_auto.js';
 import { recordProduct, recordFeature } from './citations.js';
 import { style as plotStyle, styleTrace, styleLayout, sigmaBand, orient, paletteColor, plotStyleBody, exportFigure } from './plot_style.js';
 
+const escHtml = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 let imageViewerListeners = null;   // AbortController for the open image's window listeners
 
 // VEDA Global State
@@ -829,7 +831,7 @@ async function updateComparison() {
 
     if (statusEl) {
       const nMissions = new Set((compData.profiles || []).map(p => p.mission_id)).size;
-      statusEl.textContent = `Aggregated ${compData.profile_count} sounding${compData.profile_count === 1 ? "" : "s"} from ${nMissions} mission${nMissions === 1 ? "" : "s"}${compData.averaging ? `; ${compData.averaging}; the spread is shown where at least two profiles overlap` : ""}.`;
+      statusEl.textContent = `Aggregated ${compData.profile_count} sounding${compData.profile_count === 1 ? "" : "s"} from ${nMissions} mission${nMissions === 1 ? "" : "s"}${compData.averaging ? `; ${compData.averaging}; the spread is shown where at least two profiles overlap` : ""}.${compData.vertical_reference_warning ? ` Note: ${compData.vertical_reference_warning}` : ""}`;
     }
   } catch (err) {
     console.error('Failed to compute comparison:', err);
@@ -1434,8 +1436,9 @@ async function inspectProfileObservation(obs) {
           <div class="diag-chip"><strong>Sounding Points:</strong> ${prof.n_points || 0}</div>
           <div class="diag-chip"><strong>Time UTC:</strong> ${timeTag}</div>
           <div class="diag-chip"><strong>Lat/Lon:</strong> ${latStr}, ${lonStr}</div>
-          ${prof.provenance ? `<div class="diag-chip"><strong>Archive:</strong> ${prof.provenance.archive_source}</div>` : ''}
-          ${prof.filename ? `<div class="diag-chip"><strong>File:</strong> ${prof.filename}</div>` : ''}
+          ${prof.provenance ? `<div class="diag-chip"><strong>Archive:</strong> ${escHtml(prof.provenance.archive_source)}</div>` : ''}
+          ${prof.filename ? `<div class="diag-chip"><strong>File:</strong> ${escHtml(prof.filename)}</div>` : ''}
+          ${prof.altitude_reference ? `<div class="diag-chip" title="Altitude is measured from ${escHtml(prof.altitude_reference)}"><strong>Altitude from:</strong> ${escHtml(prof.altitude_reference.replace(/ \(.*\)$/, ''))}</div>` : ''}
           ${trackChips(prof)}
         </div>
 

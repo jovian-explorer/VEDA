@@ -122,3 +122,71 @@ def test_venus_express_vera_time_from_file_name():
     ds = get_dataset("vex-v-vra-1-2-3")
     assert ds.time_from_filename("V32ICL2L1B_AG1_073610303_00.LBL") == "2007-12-27T03:03:00"
     assert ds.classify("DATA/LEVEL02/CLOSED_LOOP/IFMS/DP1/V32ICL2L02_D1X_073610303_00.LBL")[0] == "Level 2 (calibrated) record"
+
+
+def _ascii_profile(tmp_path, z, t, p):
+    rows = "".join(f"{a:8.2f} {b:8.2f} {c:10.4f}\r\n" for a, b, c in zip(z, t, p))
+    (tmp_path / "prof.tab").write_text(rows, newline="")
+    (tmp_path / "prof.lbl").write_text(f"""PDS_VERSION_ID = PDS3
+RECORD_TYPE = FIXED_LENGTH
+RECORD_BYTES = 30
+FILE_RECORDS = {len(z)}
+^TABLE = "prof.tab"
+OBJECT = TABLE
+  INTERCHANGE_FORMAT = ASCII
+  ROWS = {len(z)}
+  COLUMNS = 3
+  ROW_BYTES = 30
+  OBJECT = COLUMN
+    NAME = ALTITUDE
+    DATA_TYPE = ASCII_REAL
+    START_BYTE = 1
+    BYTES = 8
+    UNIT = KILOMETER
+  END_OBJECT = COLUMN
+  OBJECT = COLUMN
+    NAME = TEMPERATURE
+    DATA_TYPE = ASCII_REAL
+    START_BYTE = 10
+    BYTES = 8
+    UNIT = KELVIN
+  END_OBJECT = COLUMN
+  OBJECT = COLUMN
+    NAME = PRESSURE
+    DATA_TYPE = ASCII_REAL
+    START_BYTE = 19
+    BYTES = 10
+    UNIT = BAR
+  END_OBJECT = COLUMN
+END_OBJECT = TABLE
+END
+""")
+    return tmp_path / "prof.lbl"
+
+
+def test_magellan_altitudes_move_onto_the_venus_reference_radius(tmp_path):
+    """Magellan RSS altitudes are above 6052 km; VEDA's Venus reference (and the VEX
+    radius-derived altitudes) use 6051.8 km, so Magellan profiles move up 0.2 km."""
+    import dataclasses
+    from veda.archives.profiles import profile_from_label
+    from veda.core.registry import get_body
+    ds = dataclasses.replace(get_dataset("mgn-v-rss-5-occ-prof-rtpd-v1.0"), split_by=(), column_units={},
+                             extra_variables={}, profile_columns={"altitude": "ALTITUDE", "temperature": "TEMPERATURE",
+                                                                  "pressure": "PRESSURE"})
+    lbl = _ascii_profile(tmp_path, [40.0, 50.0, 60.0], [420.0, 350.0, 260.0], [3.5, 1.0, 0.2])
+    prod = {"product_id": "x", "start_time": "1991-10-05T00:00:00", "volume": "mg_2401", "url": "", "product_type": "profile"}
+    prof = profile_from_label(ds, prod, lbl)
+    shift = 6052.0 - get_body("venus").radius_km
+    np.testing.assert_allclose(prof.altitude_km, np.array([40.0, 50.0, 60.0]) + shift)
+    assert "6052" in prof.raw_attributes["ALTITUDE_REFERENCE"]
+    assert prof.to_dict()["altitude_reference"].startswith("a sphere of radius")
+
+
+def test_comparison_warns_when_vertical_references_differ():
+    from veda.analysis.atmospheric import _vertical_reference_warning
+    sphere = {"mission_id": "vex", "altitude_reference": "a sphere of radius 6051.8 km (from the radius column)"}
+    sphere2 = {"mission_id": "magellan", "altitude_reference": "a sphere of radius 6051.8 km (archive ...)"}
+    onebar = {"mission_id": "galileo", "altitude_reference": "the 1-bar pressure level"}
+    assert _vertical_reference_warning([sphere, sphere2]) == ""
+    assert _vertical_reference_warning([sphere, {"mission_id": "upload", "altitude_reference": ""}]) == ""
+    assert "1-bar" in _vertical_reference_warning([sphere, onebar])

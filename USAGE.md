@@ -62,11 +62,12 @@ All 19 missions are connected, with 141 data sets covering nearly all of their p
 Units are read from the label and converted to VEDA's display units: pressure from Pa, hPa, bar or mbar; temperature from K or degrees C; densities from m^-3 or cm^-3, including scaled units such as `10^6 PER CUBIC METER`; radius and altitude from metres. Times come from the archive index (start time), the label or the file name; product creation dates are never used as observation times.
 
 ### Comparing observations
-Selected profiles, from one mission or many, are interpolated onto a common altitude grid (0.5 km by default; altitudes below the reference level, such as Mars below the MOLA datum, are kept). Interpolation never extrapolates beyond a profile and never bridges a data gap wider than five times the profile's typical spacing.
+Selected profiles, from one mission or many, are interpolated onto a common altitude grid (0.5 km by default; altitudes below the reference level, such as the Hellas basin below the Mars reference sphere, are kept). Interpolation never extrapolates beyond a profile and never bridges a data gap wider than five times the profile's typical spacing.
 
 * Temperature and other quantities that vary smoothly: arithmetic mean $\mu(z) = \frac{1}{M}\sum_m X_m(z)$ and the sample standard deviation (ddof = 1) as the $\pm 1\sigma$ spread.
 * Pressure, mass and number density, and electron density (they change by orders of magnitude with height): interpolation and averaging in log space, i.e. the geometric mean, with the spread as a multiplicative $1\sigma$ factor. If any value is zero or negative (noisy electron densities), VEDA falls back to the linear treatment.
 * The spread is drawn only at levels covered by at least two profiles; a single profile gives no spread.
+* **One vertical reference.** Altitudes are measured from a sphere of the body's reference radius (Mars 3389.5 km, Venus 6051.8 km, Titan 2574.7 km), whether the archive gives a radius (MEX, VEX, MGS radio science) or an altitude above another sphere (Magellan gives altitudes above 6052 km; VEDA moves them up 0.2 km). The reference of each profile is shown on its **Altitude from** chip. Probes are the exception: Galileo altitudes are above the 1-bar level of Jupiter and Huygens altitudes above the landing site, and the comparison says so when such profiles are mixed with others. Altitudes are not above the local surface or the Mars areoid, which differ from the sphere by several km.
 
 Choose the variable and units on the left, colour the curves by mission, date or latitude, and toggle the mean and spread. **Export Comparison CSV** writes the gridded table.
 
