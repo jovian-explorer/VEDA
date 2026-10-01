@@ -560,6 +560,7 @@ async function boot() {
     state.meta = await api.meta();
     if (state.meta && state.meta.app) {
       $('#version-tag').textContent = `v${state.meta.app.version}`;
+      document.querySelectorAll('.veda-version').forEach(n => { n.textContent = state.meta.app.version; });
       document.title = `${state.meta.app.title} ${state.meta.app.version}`;
     }
     if (state.meta && state.meta.settings) {

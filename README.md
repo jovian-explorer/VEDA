@@ -15,6 +15,13 @@
 * ⚖️ **[Software License (MIT)](LICENSE)**: Open-source terms and conditions for VEDA.
 * 📜 **[Third-Party Licenses and Attributions](THIRD_PARTY_LICENSES.md)**: Notices for bundled and linked open-source libraries (KaTeX, Plotly, Three.js, FastAPI, NumPy, SciPy, Astropy, Matplotlib, PyWebView).
 * 🤝 **[Contributing Guidelines](CONTRIBUTING.md)**: Development workflow, coding conventions, testing protocols, and style rules.
+* 📝 **[Changelog](CHANGELOG.md)**: What changed in each release.
+
+![Multi-mission comparison of Venus (dark theme)](docs/screenshots/body-comparison-dark.png)
+
+| Comparison, light theme | Mission view | Settings |
+|---|---|---|
+| ![](docs/screenshots/comparison-light.png) | ![](docs/screenshots/mission-light.png) | ![](docs/screenshots/settings.png) |
 
 ---
 
@@ -158,6 +165,10 @@ The interactive REST API documentation is at `/api/docs` on the same address.
 
 Set `VEDA_HOME` to use a different folder.
 
+## Loading Your Own Files
+
+Use **Load File** or drag files onto the window. PDS3 products need the `.lbl` label and its `.tab` table selected together; CSV and text tables need an altitude column; FITS, PNG and JPEG images open in the image viewer. See [USAGE.md](USAGE.md#6-loading-your-own-files) for details and [troubleshooting](USAGE.md#9-troubleshooting).
+
 ## Building the Standalone App
 
 ```bash
@@ -197,7 +208,7 @@ See **[DATA_POLICY.md](DATA_POLICY.md)** for detailed citation instructions and 
   title        = {{VEDA: Visualization, Exploration, and Data Analysis - A Multi-Mission Planetary Science Data Laboratory}},
   year         = {2026},
   publisher    = {Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO},
-  version      = {2.0.0},
+  version      = {2.1.0},
   url          = {https://github.com/jovian-explorer/VEDA},
   address      = {Thiruvananthapuram, Kerala, India}
 }

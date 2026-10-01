@@ -130,23 +130,55 @@ VEDA connects directly to international planetary science archives:
 
 ---
 
-## 6. Publication Figure Generator and Data Export
+## 6. Loading Your Own Files
 
-1. **Publication Figure Generation**:
-   * Click the **Generate Publication Figure** button on any active analysis.
-   * Configure layout parameters: Figure title, DPI (72 to 1200 DPI, default 300 DPI), plot theme (Publication Light or Deep Space Dark), and LaTeX annotations.
-   * Exports high-resolution PNG or PDF figures suitable for submission to peer-reviewed journals (JGR Planets, Icarus, A&A, GRL, EPS).
-2. **Data Export**:
-   * **Export CSV**: Downloads the interpolated multi-spacecraft comparison table, including altitude $z$, temperatures, densities, and calculated $N^2(z)$.
-   * **Export JSON**: Exports metadata and numerical arrays for custom scientific pipelines in Python, Julia, or MATLAB.
+Click **Load File** in the toolbar, drop files anywhere on the window, or use the drop zone in the Workflow Guide. You can select several files at once.
+
+| Format | Extensions | Notes |
+|---|---|---|
+| PDS3 table | `.lbl` + `.tab` | Select the label **and** its table together; the label defines the columns. |
+| Text table | `.csv`, `.txt`, `.dat`, `.asc` | Needs a header row with an altitude column (`ALTITUDE`, `ALT`, `HEIGHT`, `Z` or `RADIUS`). |
+| FITS image | `.fit`, `.fits`, `.fts` | Opens in the image viewer with stretch, colour map, histogram and transects. |
+| Picture | `.png`, `.jpg`, `.jpeg` | Opens in the image viewer. |
+
+Column names are matched as whole words, preferring the column that *leads* with the quantity and skipping uncertainty (`SIGMA ...`) columns. When a product carries several retrieval variants (e.g. Akatsuki's lower / medium / higher upper-boundary temperatures) the nominal **MEDIUM** variant is used. Loaded files are kept (the 25 most recent) under the *user_imported* mission so you can reopen, compare and export them.
 
 ---
 
-## 7. Configuration and Customization
+## 7. Publication Figures and Data Export
 
-Access the **Settings** drawer (top-right gear icon) to customize:
-* **Interface Theme**: Dark (Deep Space) or Light (Publication Clean).
-* **Interface Font Size**: Scalable from 10px to 24px.
-* **Interface Mode**: Research (Scientific Workstation) or Educational (Extended Guidance).
-* **Plot DPI Default**: Default resolution for exported publication charts.
-* **Temperature Units**: Kelvin (K) or Celsius (°C).
+* **Publication Figure** (Celestial Body mode) renders a journal-style Matplotlib figure of the current comparison at the DPI set in Settings (72 to 1200, default 300).
+* **Snapshot Plot (PNG)** saves the on-screen plot.
+* **Export Comparison CSV** saves the interpolated multi-mission table: altitude grid, each mission's curve, the composite mean and its 1-sigma spread.
+* In Mission mode, **Export CSV** and **Structured JSON** save the open observation with its derived diagnostics and provenance.
+
+---
+
+## 8. Settings
+
+Open **Settings** in the toolbar. Changes apply as soon as you save; **Reset to defaults** restores everything.
+
+| Group | Setting | Effect |
+|---|---|---|
+| Appearance | Theme | Dark, Light, or Follow system. Plots follow the theme. |
+| | Base font size / Interface zoom | Text size (11 to 20 px) and whole-interface zoom (A- / A+). |
+| Units | Temperature, Pressure | Default units for the comparison plot and the quick unit switcher. |
+| Start-up | Open on body, Default mission | Where VEDA opens next time. |
+| Figures | Publication figure DPI | Resolution of exported publication figures. |
+| Network | Allow downloads, Timeout | Turn online archive downloads off (offline work) and set how long to wait for a slow archive. |
+| Data folders | Open | Shows and opens the data, cache, export and log folders. |
+
+Settings are stored in `settings.json` inside the VEDA data folder (see the README). A damaged or hand-edited file never stops VEDA from starting: invalid entries fall back to their defaults.
+
+---
+
+## 9. Troubleshooting
+
+| Symptom | What to do |
+|---|---|
+| "... is a PDS3 label and its data table was not included" | Select the `.lbl` and `.tab` together (Ctrl/Cmd-click), or drop both at once. |
+| "No altitude column found" | Rename the altitude column (e.g. `altitude`) or load the table together with its PDS3 label. |
+| Comparison plot says none of the observations contain the variable | Choose another variable or tick missions that measured it. |
+| Download fails or times out | Check your connection, allow downloads in Settings > Network, or raise the timeout. Archives are occasionally offline for maintenance. |
+| Window stays blank / does not open | Run `veda --browser`, or `veda-server` and open the printed address. On Linux install GTK or Qt support for pywebview (see the README). |
+| Something else | Open Settings > Data folders > Logs and attach `startup.log` (and `startup-error.log` if present) to an issue at https://github.com/jovian-explorer/VEDA/issues. |
