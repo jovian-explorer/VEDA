@@ -148,6 +148,20 @@ def _with_structure(label: str, base: str, login_url: Optional[str]) -> str:
     return label
 
 
+def _label_start_time(vol_url: str, path: str, login_url: Optional[str]) -> str:
+    """START_TIME from a product label (used when the index has no observation time)."""
+    for p in dict.fromkeys([path, path.lower(), path.upper()]):
+        try:
+            text = http.get_text(vol_url + p, login_url=login_url)
+        except http.LoginRequired:
+            raise
+        except http.ArchiveError:
+            continue
+        m = re.search(r"^\s*START_TIME\s*=\s*\"?([0-9T:.\-]+)", text, re.M)
+        return _normalise_time(m.group(1)) if m else ""
+    return ""
+
+
 def index_volume(ds: Dataset, volume: str) -> List[Dict[str, Any]]:
     """Fetch and parse one volume's index into catalogue rows."""
     vol_url = f"{ds.base_url}{volume}/"
@@ -172,6 +186,9 @@ def index_volume(ds: Dataset, volume: str) -> List[Dict[str, Any]]:
         if not path:
             continue
         path = path.replace("\\", "/").lstrip("/")
+        if ds.label_from_data and not path.lower().endswith(".lbl"):
+            stem = path.rsplit(".", 1)[0]
+            path = stem + (".LBL" if path[-3:].isupper() else ".lbl")
         if ".." in PurePosixPath(path).parts:
             continue  # never let an index entry point outside the volume
         product_id = PurePosixPath(path).stem
@@ -183,7 +200,9 @@ def index_volume(ds: Dataset, volume: str) -> List[Dict[str, Any]]:
             # Never fall back to PRODUCT_CREATION_TIME: that is when the archive
             # file was made, not when the observation was taken.
             "start_time": _normalise_time(_pick(row, "START_TIME", "OBSERVATION_TIME"))
-                          or ds.time_from_filename(PurePosixPath(path).name),
+                          or ds.time_from_filename(PurePosixPath(path).name)
+                          or (_label_start_time(vol_url, path, ds.login_url) if ds.times_from_labels else "")
+                          or (ds.fixed_time or ""),
             "stop_time": _normalise_time(_pick(row, "STOP_TIME")),
             # Single-body data sets often omit TARGET_NAME from their index.
             "target": (_pick(row, "TARGET_NAME", "TARGET*") or

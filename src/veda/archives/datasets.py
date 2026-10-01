@@ -41,6 +41,14 @@ class Dataset:
     # no START_TIME. Named groups: year (4 digits) or yy, doy or month+day,
     # and optional hh, mm, ss.
     time_from_name: Optional[str] = None
+    # Read START_TIME from each product label when the index has no observation
+    # time (only for small data sets: one request per product while indexing).
+    times_from_labels: bool = False
+    # The index lists data files whose labels are detached (same name, .lbl).
+    label_from_data: bool = False
+    # Documented event time used when neither index nor labels give one
+    # (e.g. the Galileo probe labels say START_TIME = "UNK").
+    fixed_time: Optional[str] = None
 
     def classify(self, file_name: str) -> Tuple[str, str]:
         name = file_name.lower()
@@ -115,7 +123,54 @@ RS_PROFILE_COLUMNS = {  # ESA/JAXA radio-science L4 layout (MaRS, VeRa heritage)
 MGS_CITATION = ("Hinson, D. P., et al. (1999). Initial results from radio occultation measurements with "
                 "Mars Global Surveyor. JGR, 104(E11), 26997-27012; Tyler, G. L., et al. (2001), JGR 106(E10).")
 
+HASI_CITATION = ("Fulchignoni, M., et al. (2005). In situ measurements of the physical characteristics "
+                 "of Titan's environment. Nature, 438, 785-791.")
+
+GP_CITATION = ("Seiff, A., et al. (1998). Thermal structure of Jupiter's atmosphere near the edge of a "
+               "5-um hot spot in the north equatorial belt. JGR, 103(E10), 22857-22889.")
+
 DATASETS: List[Dataset] = [
+    Dataset(
+        id="gp-j-entry-v1.0", mission_id="galileo", instrument="Galileo Probe (ASI, NMS, NEP, NFR, ...)", level="L3",
+        title="Galileo probe at Jupiter: atmospheric structure descent profile and probe instrument data",
+        body_ids=("jupiter",), archive="NASA PDS Atmospheres Node",
+        base_url="https://pds-atmospheres.nmsu.edu/PDS/data/",
+        volume_pattern=r"^gp_0001$",
+        rules=(
+            (r"/asi/descent\.", "ASI descent profile (T, P, density vs altitude)", "profile"),
+            (r"/asi/", "ASI entry / sensor data", "other"),
+            (r"/nms/", "Neutral mass spectrometer data", "other"),
+            (r"/nep/", "Nephelometer data", "other"),
+            (r"/nfr/", "Net flux radiometer data", "other"),
+            (r"/dwe/", "Doppler wind experiment data", "other"),
+            (r"/epi/", "Energetic particle data", "other"),
+            (r"/had/", "Helium abundance detector data", "other"),
+            (r"/lrd/", "Lightning and radio emission data", "other"),
+        ),
+        profile_columns={"altitude": "ALTITUDE", "temperature": "TEMPERATURE", "pressure": "PRESSURE"},
+        citation=GP_CITATION,
+        label_from_data=True,
+        fixed_time="1995-12-07T22:04:44",    # probe entry (Young et al. 1996, Science 272)
+    ),
+    Dataset(
+        id="hp-ssa-hasi-2-3-4-mission-v1.1", mission_id="cassini", instrument="Huygens HASI", level="L2-L4",
+        title="Huygens probe HASI: Titan entry and descent atmospheric profiles and sensor data",
+        body_ids=("titan",), archive="NASA PDS Atmospheres Node",
+        base_url="https://pds-atmospheres.nmsu.edu/PDS/data/",
+        volume_pattern=r"^hphasi_\d{4}$",
+        rules=(
+            (r"/profiles/hasi_l4_atmo_profile_entry", "L4 atmospheric profile, entry (in situ)", "profile"),
+            (r"/profiles/hasi_l4_atmo_profile_descen", "L4 atmospheric profile, descent (in situ)", "profile"),
+            (r"/profiles/", "L4 trajectory profile (altitude / velocity)", "other"),
+            (r"/tem/", "Temperature sensor data", "other"),
+            (r"/ppi/", "Pressure sensor data", "other"),
+            (r"/acc/", "Accelerometer data", "other"),
+            (r"/pwa/", "Permittivity and wave analyser data", "other"),
+        ),
+        profile_columns={"altitude": "ALTITUDE", "temperature": "TEMPERATURE", "pressure": "PRESSURE"},
+        citation=HASI_CITATION,
+        times_from_labels=True,
+    ),
     Dataset(
         id="mgs-m-rss-5-sdp-v1.0", mission_id="mgs", instrument="RS (Radio Science)", level="L5 (SDP)",
         title="Mars Global Surveyor radio occultation: temperature-pressure and electron density profiles",

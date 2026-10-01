@@ -162,10 +162,10 @@ def parse_pds3_tables(label_text: str) -> List[TableDef]:
     tables: List[TableDef] = []
     stack: List[Tuple[str, Dict[str, Any], List[ColumnDef]]] = []
     for l in lines:
-        if "=" not in l:
-            continue
-        key, val = (x.strip() for x in l.split("=", 1))
+        key, sep, val = (x.strip() for x in l.partition("="))
         key = key.upper()
+        if not sep and key != "END_OBJECT":
+            continue
         val_c = val.strip('"').strip()
         if key == "OBJECT":
             stack.append((val_c.upper(), {}, []))
@@ -204,99 +204,46 @@ def _num(v: Optional[str]) -> Optional[float]:
 
 
 def parse_pds3_label(label_text: str) -> Tuple[Dict[str, Any], List[ColumnDef]]:
-    """Parse key-value pairs and COLUMN objects from a PDS3 label."""
+    """Top-level keywords and every COLUMN object of a PDS3 label.
+
+    Objects are tracked with a stack, so a bare END_OBJECT (allowed by PDS3,
+    used e.g. by the Galileo probe volumes) closes the current object, and
+    keywords inside objects never overwrite top-level metadata.
+    """
     metadata: Dict[str, Any] = {}
     columns: List[ColumnDef] = []
-
-    # Drop /* ... */ comments, but not "/*" inside quoted strings such as
-    # INDEXED_FILE_NAME = {"BCK/*.LBL", ...}, which used to swallow the rest
-    # of the label (and every COLUMN definition after it).
-    clean_lines = [l.strip() for l in _strip_comments(label_text).splitlines() if l.strip()]
-
-    # Join quoted values that wrap onto following lines, e.g.
-    #   NAME = "SIGMA PRESSURE (LOWER TEMPERATURE AT
-    #           BOUNDARY)"
-    # Without this the name is truncated and text inside a wrapped DESCRIPTION
-    # that happens to contain "=" is misread as a keyword.
-    merged: List[str] = []
-    pending: Optional[str] = None
-    for l in clean_lines:
-        if pending is not None:
-            pending += " " + l
-            if pending.count('"') % 2 == 0:
-                merged.append(pending)
-                pending = None
-            continue
-        if "=" in l and l.split("=", 1)[1].count('"') % 2 == 1:
-            pending = l
-            continue
-        merged.append(l)
-    if pending is not None:
-        merged.append(pending + '"')
-    clean_lines = merged
-
-    # State machine to capture global keywords and COLUMN blocks
-    curr_obj = None
-    curr_col: Dict[str, Any] = {}
-
-    for line in clean_lines:
-        if "=" not in line:
-            continue
-        parts = line.split("=", 1)
-        key = parts[0].strip().upper()
-        val = parts[1].strip()
-
-        # Clean value quotes and angle units e.g. "6051.8 <km>"
-        if val.startswith('"') and val.endswith('"'):
-            val_clean = val[1:-1]
-        elif val.startswith("'") and val.endswith("'"):
-            val_clean = val[1:-1]
-        else:
-            val_clean = val
-
-        if key == "OBJECT":
-            curr_obj = val_clean.upper()
-            if curr_obj == "COLUMN":
-                curr_col = {}
+    stack: List[Tuple[str, Dict[str, str]]] = []
+    for line in _label_lines(label_text):
+        key, sep, val = line.partition("=")
+        key = key.strip().upper()
+        val = val.strip()
+        val_clean = val[1:-1] if len(val) >= 2 and val[0] == val[-1] and val[0] in "\"'" else val
+        if key == "END":
+            break
+        if key == "OBJECT" and sep:
+            stack.append((val_clean.strip().upper(), {}))
         elif key == "END_OBJECT":
-            if val_clean.upper() == "COLUMN" and curr_col:
-                col_name = curr_col.get("NAME", f"COL_{len(columns)+1}")
-                c_num = int(curr_col.get("COLUMN_NUMBER", len(columns)+1))
-                s_byte = int(curr_col.get("START_BYTE", 1))
-                b_count = int(curr_col.get("BYTES", 10))
-                dtype = curr_col.get("DATA_TYPE", "ASCII_REAL")
-                unit = curr_col.get("UNIT", "")
-                inv = None
-                if "INVALID_CONSTANT" in curr_col:
-                    try:
-                        inv = float(curr_col["INVALID_CONSTANT"])
-                    except (ValueError, TypeError):
-                        pass
-                miss = None
-                if "MISSING_CONSTANT" in curr_col:
-                    try:
-                        miss = float(curr_col["MISSING_CONSTANT"])
-                    except (ValueError, TypeError):
-                        pass
-
-                columns.append(ColumnDef(
-                    name=col_name,
-                    column_number=c_num,
-                    start_byte=s_byte,
-                    bytes_count=b_count,
-                    data_type=dtype,
-                    unit=unit,
-                    invalid_constant=inv,
-                    missing_constant=miss,
-                ))
-                curr_col = {}
-            curr_obj = None
-        else:
-            if curr_obj == "COLUMN":
-                curr_col[key] = val_clean
+            if not stack:
+                continue
+            name, attrs = stack.pop()
+            if name == "COLUMN":
+                try:
+                    columns.append(ColumnDef(
+                        name=attrs.get("NAME", f"COL_{len(columns) + 1}"),
+                        column_number=int(attrs.get("COLUMN_NUMBER", len(columns) + 1)),
+                        start_byte=int(attrs.get("START_BYTE", 1)),
+                        bytes_count=int(attrs.get("BYTES", 10)),
+                        data_type=attrs.get("DATA_TYPE", "ASCII_REAL"),
+                        unit=attrs.get("UNIT", ""),
+                        invalid_constant=_num(attrs.get("INVALID_CONSTANT")),
+                        missing_constant=_num(attrs.get("MISSING_CONSTANT"))))
+                except ValueError:
+                    pass
+        elif sep:
+            if stack:
+                stack[-1][1][key] = val_clean
             else:
                 metadata[key] = val_clean
-
     return metadata, columns
 
 

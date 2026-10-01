@@ -99,6 +99,10 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
     tbl = read_pds3_table(str(label))
 
     z = _col(tbl, cols.get("altitude"))
+    if z is not None:
+        z_unit = _unit(tbl, cols.get("altitude"))
+        if z_unit in ("M", "METER", "METERS", "METRE", "METRES"):
+            z = z / 1000.0            # e.g. Huygens HASI gives altitude in metres
     if z is None:
         r = _col(tbl, cols.get("radius"))
         if r is None:
