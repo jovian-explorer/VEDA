@@ -236,7 +236,7 @@ Open **Settings** in the toolbar. Changes apply as soon as you save; **Reset to 
 | Units | Temperature, Pressure | Default units for the comparison plot and the quick unit switcher. |
 | Start-up | Open on body, Default mission | Where VEDA opens next time. |
 | Figures | Publication figure DPI | Resolution of exported publication figures. |
-| Network | Allow downloads, Timeout | Turn online archive downloads off (offline work) and set how long to wait for a slow archive. |
+| Network | Allow downloads, Timeout, Large-file limit | Turn online archive downloads off (offline work), set how long to wait for a slow archive, and the size (default 250 MB) above which opening a product asks first, showing the file size and an estimated download time. |
 | Observation geometry | Automatic SPICE downloads, size limit | Download the kernels for opened missions and observations by themselves, and ask first above the limit. |
 | Data folders | Open | Shows and opens the data, cache, export and log folders. |
 

@@ -20,8 +20,11 @@ async function call(path, {method = 'GET', body = null} = {}) {
   }
   if (!res.ok) {
     const detail = data && (data.detail || data.error);
-    throw new Error(typeof detail === 'string' ? detail
-                    : `${res.status} ${res.statusText}`);
+    const err = new Error(typeof detail === 'string' ? detail
+                          : (detail && detail.message) || `${res.status} ${res.statusText}`);
+    err.status = res.status;
+    if (detail && typeof detail === 'object') err.detail = detail;
+    throw err;
   }
   return data;
 }
@@ -95,7 +98,8 @@ export const api = {
   },
   archiveFetch: (items) => call('/api/veda/archive/fetch', {method: 'POST', body: {items}}),
   // Any product, any payload: structure, table series, images, cubes (see product_routes.py)
-  productStructure: (ds, pid) => call(`${productBase(ds, pid)}/structure`),
+  productStructure: (ds, pid, confirmLarge = false) =>
+    call(`${productBase(ds, pid)}/structure${confirmLarge ? '?confirm_large=true' : ''}`),
   productTable: (ds, pid, params) => call(`${productBase(ds, pid)}/table?${query(params)}`),
   productImageUrl: (ds, pid, params) => `${productBase(ds, pid)}/image.png?${query(params)}`,
   productImageStats: (ds, pid, params) => call(`${productBase(ds, pid)}/image/stats?${query(params)}`),

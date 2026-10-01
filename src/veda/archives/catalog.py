@@ -564,14 +564,15 @@ def _case_variants(name: str) -> List[str]:
     return list(dict.fromkeys([name, name.upper(), name.lower()]))
 
 
-def _fetch_first(urls: List[str], dest: Path, login_url: Optional[str], progress=None, found=None) -> bool:
+def _fetch_first(urls: List[str], dest: Path, login_url: Optional[str], progress=None, found=None,
+                 max_bytes: Optional[int] = None) -> bool:
     for u in urls:
         try:
-            http.download(u, dest, login_url=login_url, progress=progress)
+            http.download(u, dest, login_url=login_url, progress=progress, max_bytes=max_bytes)
             if found:
                 found(u)
             return True
-        except http.LoginRequired:
+        except (http.LoginRequired, http.TooLarge):
             raise
         except http.ArchiveError:
             continue
@@ -579,14 +580,16 @@ def _fetch_first(urls: List[str], dest: Path, login_url: Optional[str], progress
 
 
 def fetch_product(dataset_id: str, product_id: str,
-                  progress: Optional[Callable[[int, int], None]] = None) -> Path:
+                  progress: Optional[Callable[[int, int], None]] = None,
+                  max_bytes: Optional[int] = None) -> Path:
     """Download a product's label and the files it points to; returns the label path.
 
     Pointer files are looked up the way PDS3 resolves them: next to the label
     first, then in the volume's LABEL/ (format files) or DOCUMENT/ (descriptions)
     folder.  Data objects (^TABLE, ^SERIES, ...) are required; format files are
     fetched because the table cannot be read without them; description texts
-    are optional.
+    are optional.  A data file larger than ``max_bytes`` raises net.TooLarge before
+    it is downloaded, so the user can be asked first.
     """
     ds = get_dataset(dataset_id)
     prod = get_product(dataset_id, product_id)
@@ -612,7 +615,7 @@ def fetch_product(dataset_id: str, product_id: str,
     if not label_path.is_file():
         for url in candidates:
             try:
-                http.download(url, label_path, login_url=ds.login_url)
+                http.download(url, label_path, login_url=ds.login_url, max_bytes=max_bytes)
                 # the spelling that worked goes first for the pointer files
                 product_dirs.insert(0, product_dirs.pop(product_dirs.index(url.rsplit("/", 1)[0] + "/")))
                 break
@@ -662,6 +665,7 @@ def fetch_product(dataset_id: str, product_id: str,
             names = _case_variants(name)
         urls = [f + n for f in folders for n in names]
         ok = _fetch_first(urls, dest, ds.login_url, progress=progress if not (is_format or is_doc) else None,
+                          max_bytes=None if (is_format or is_doc) else max_bytes,
                           found=(lambda u: _FORMAT_DIRS.__setitem__(prod["volume"], u.rsplit("/", 1)[0] + "/"))
                           if is_format else None)
         if not ok and not is_doc:

@@ -24,12 +24,13 @@ const st = { box: null, p: null, structure: null, object: null, token: 0, table:
              tableMode: undefined, prof: null };
 
 /** Open product ``p`` ({dataset_id, product_id, ...}) in ``box``. */
-export async function showProductViewer(box, p, { onGeometry } = {}) {
+export async function showProductViewer(box, p, { onGeometry, confirmLarge = false } = {}) {
   st.box = box; st.p = p; st.onGeometry = onGeometry || null; st.tableMode = undefined;
   const token = ++st.token;
-  box.innerHTML = `<div class="empty-state">Downloading and reading <code>${esc(p.product_id)}</code>&hellip;</div>`;
+  box.innerHTML = `<div class="empty-state">Downloading and reading <code>${esc(p.product_id)}</code>&hellip;
+    ${confirmLarge ? '<br><span class="hint">Large file: this can take a while. You can keep working in other tabs.</span>' : ''}</div>`;
   try {
-    const s = await api.productStructure(p.dataset_id, p.product_id);
+    const s = await api.productStructure(p.dataset_id, p.product_id, confirmLarge);
     if (token !== st.token) return;
     st.structure = s;
     // For the Cite panel: the archive's own data set identifier from the label
@@ -41,6 +42,19 @@ export async function showProductViewer(box, p, { onGeometry } = {}) {
     render(s.objects[0]?.name);
   } catch (err) {
     if (token !== st.token) return;
+    if (err.status === 413 && err.detail) {
+      const mb = err.detail.size_bytes / 1e6;
+      box.innerHTML = `<div class="empty-state">
+        <code>${esc(err.detail.file)}</code> is ${mb >= 1000 ? `${(mb / 1000).toFixed(1)} GB` : `${Math.round(mb)} MB`}
+        (photon lists and full-resolution cubes can be this large).
+        <br><span class="hint">At a typical archive speed of 1 to 5 MB/s this takes about
+        ${Math.max(1, Math.round(mb / 5 / 60))} to ${Math.max(1, Math.round(mb / 60))} minutes. The file is kept in the cache afterwards.
+        The limit is in Settings &gt; Network.</span>
+        <div class="settings-actions"><button type="button" class="btn small" data-pv="dl-large">Download and open</button></div></div>`;
+      box.querySelector('[data-pv="dl-large"]').addEventListener('click', () =>
+        showProductViewer(box, p, { onGeometry, confirmLarge: true }));
+      return;
+    }
     box.innerHTML = `<div class="pv">
       <div class="viewer-toolbar"><div class="viewer-title"><h3><code>${esc(p.product_id)}</code></h3></div>
         <div class="toolbar-actions"><button type="button" class="btn small ghost" data-pv="geometry">&#128752;&#65039; Geometry</button></div></div>

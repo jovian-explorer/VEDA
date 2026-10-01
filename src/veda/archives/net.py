@@ -39,6 +39,15 @@ class LoginRequired(ArchiveError):
         self.login_url = login_url
 
 
+class TooLarge(ArchiveError):
+    """A file is larger than the caller allowed; nothing was downloaded."""
+
+    def __init__(self, name: str, size_bytes: int):
+        super().__init__(f"{name} is {size_bytes / 1e6:,.0f} MB")
+        self.name = name
+        self.size_bytes = size_bytes
+
+
 def session() -> requests.Session:
     global _session
     with _lock:
@@ -113,12 +122,20 @@ def get_text(url: str, **kw) -> str:
     return r.text
 
 
-def download(url: str, dest: Path, progress: Optional[Callable[[int, int], None]] = None, **kw) -> Path:
-    """Stream ``url`` to ``dest`` atomically; returns ``dest``."""
+def download(url: str, dest: Path, progress: Optional[Callable[[int, int], None]] = None,
+             max_bytes: Optional[int] = None, **kw) -> Path:
+    """Stream ``url`` to ``dest`` atomically; returns ``dest``.
+
+    With ``max_bytes``, a file the server reports as larger raises TooLarge before
+    anything is written.
+    """
     dest.parent.mkdir(parents=True, exist_ok=True)
     tmp = dest.with_name(dest.name + ".part")
     r = get(url, stream=True, **kw)
     total = int(r.headers.get("Content-Length") or 0)
+    if max_bytes is not None and total > max_bytes:
+        r.close()
+        raise TooLarge(dest.name, total)
     done = 0
     try:
         with open(tmp, "wb") as fh:

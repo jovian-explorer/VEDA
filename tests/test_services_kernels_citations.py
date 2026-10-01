@@ -114,3 +114,53 @@ def test_index_rows_path_filename_and_long_paths():
     assert row["start_time"].startswith("2006-09-24T16:40")
     p = catalog.local_label_path("psa-mex-pfs", "V", "https://archives.esac.esa.int/psa/ftp/" + "A" * 200 + "/X.LBL")
     assert p.name == "X.LBL" and len(str(p.relative_to(catalog.PRODUCT_ROOT))) < 60
+
+
+# ---------------------------------------------------------------- large product files
+
+class _FakeResponse:
+    def __init__(self, body: bytes, length: int):
+        self.headers = {"Content-Length": str(length)}
+        self._body = body
+        self.closed = False
+
+    def iter_content(self, chunk_size):
+        yield self._body
+
+    def close(self):
+        self.closed = True
+
+
+def test_download_refuses_files_over_the_limit_before_writing(tmp_path, monkeypatch):
+    from veda.archives import net
+    resp = _FakeResponse(b"x" * 10, 1_200_000_000)
+    monkeypatch.setattr(net, "get", lambda url, **kw: resp)
+    with pytest.raises(net.TooLarge) as exc:
+        net.download("https://example.org/UVS.FIT", tmp_path / "UVS.FIT", max_bytes=250_000_000)
+    assert exc.value.size_bytes == 1_200_000_000 and resp.closed
+    assert not (tmp_path / "UVS.FIT").exists() and not (tmp_path / "UVS.FIT.part").exists()
+    small = _FakeResponse(b"abc", 3)
+    monkeypatch.setattr(net, "get", lambda url, **kw: small)
+    assert net.download("https://example.org/a.dat", tmp_path / "a.dat", max_bytes=250).read_bytes() == b"abc"
+
+
+def test_structure_answers_413_with_the_size_until_confirmed(monkeypatch):
+    from fastapi.testclient import TestClient
+    from veda.api import product_routes
+    from veda.api.app import create_app
+    from veda.archives import net
+    seen = []
+
+    def fake_fetch(ds, pid, progress=None, max_bytes=None):
+        seen.append(max_bytes)
+        if max_bytes is not None:
+            raise net.TooLarge("UVS.FIT", 1_200_000_000)
+        raise net.ArchiveError("stop here")
+
+    monkeypatch.setattr(product_routes.catalog, "get_product", lambda ds, pid: {"volume": "", "path": ""})
+    monkeypatch.setattr(product_routes.catalog, "fetch_product", fake_fetch)
+    c = TestClient(create_app())
+    r = c.get("/api/veda/product/pds-juno-uvs/x/structure")
+    assert r.status_code == 413 and r.json()["detail"]["size_bytes"] == 1_200_000_000
+    assert c.get("/api/veda/product/pds-juno-uvs/x/structure", params={"confirm_large": True}).status_code == 502
+    assert seen[0] == 250_000_000 and seen[1] is None

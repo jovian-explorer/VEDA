@@ -220,6 +220,7 @@ function settingsBody() {
         network_timeout_s: parseInt($('#s-timeout').value, 10),
         spice_auto_download: $('#s-spice-auto').checked,
         spice_auto_limit_mb: parseInt($('#s-spice-limit').value, 10),
+        product_confirm_mb: parseInt($('#s-product-limit').value, 10),
       };
       if ($('#s-default-body')) patch.default_body = $('#s-default-body').value;
       if ($('#s-default-mission')) patch.default_mission = $('#s-default-mission').value;
@@ -277,7 +278,10 @@ function settingsBody() {
         el('span', {}, 'Allow downloads from online archives (NASA PDS, ESA PSA, JAXA DARTS, ISRO ISSDC)')),
       field('Download timeout (seconds)',
         el('input', { type: 'number', id: 's-timeout', value: s.network_timeout_s || 30, min: 5, max: 300, required: true }),
-        'How long to wait for a slow archive before giving up.')),
+        'How long to wait for a slow archive before giving up.'),
+      field('Ask before downloading a product file larger than (MB)',
+        el('input', { type: 'number', id: 's-product-limit', value: s.product_confirm_mb || 250, min: 10, max: 20000, required: true }),
+        'Most products are well under 50 MB; photon lists (Juno UVS) and full cubes can exceed 1 GB.')),
     el('fieldset', {},
       el('legend', {}, 'Observation geometry (SPICE)'),
       el('label', { class: 'settings-check' },

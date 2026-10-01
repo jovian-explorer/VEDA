@@ -87,6 +87,7 @@ SETTING_CHOICES: Dict[str, Any] = {
     "network_timeout_s": (5, 300),
     "spice_auto_download": (False, True),
     "spice_auto_limit_mb": (10, 5000),
+    "product_confirm_mb": (10, 20000),
     "default_body": None,       # validated against the body registry
     "default_mission": None,    # validated against the mission registry
 }
@@ -105,6 +106,8 @@ class Settings:
     # Download the SPICE kernels an observation needs without asking (up to the size limit)
     spice_auto_download: bool = True
     spice_auto_limit_mb: int = 400
+    # Ask before downloading a single product file larger than this (photon lists, big cubes)
+    product_confirm_mb: int = 250
     default_body: str = "venus"
     default_mission: str = "akatsuki"
 

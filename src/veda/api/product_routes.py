@@ -23,12 +23,18 @@ from ..readers.product import DataObject, Product, ProductError, open_product
 router = APIRouter(prefix="/api/veda/product", tags=["product"])
 
 
-def _product(dataset_id: str, product_id: str) -> Product:
+def _product(dataset_id: str, product_id: str, confirm_large: bool = True) -> Product:
     if not catalog.get_product(dataset_id, product_id):
         raise HTTPException(404, f"Unknown product {dataset_id}/{product_id}")
+    from ..config import SETTINGS
     try:
-        label = catalog.fetch_product(dataset_id, product_id)
+        label = catalog.fetch_product(dataset_id, product_id, max_bytes=None if confirm_large
+                                      else SETTINGS.product_confirm_mb * 1_000_000)
         return open_product(str(label))
+    except net.TooLarge as exc:
+        # 413 with the size, so the viewer can ask before a very long download
+        raise HTTPException(413, {"message": f"{exc.name} is {exc.size_bytes / 1e6:,.0f} MB. Download it?",
+                                  "file": exc.name, "size_bytes": exc.size_bytes})
     except net.LoginRequired as exc:
         raise HTTPException(401, str(exc))
     except net.ArchiveError as exc:
@@ -96,9 +102,13 @@ def default_y(obj: DataObject, x: Optional[str]) -> Optional[str]:
 
 
 @router.get("/{dataset_id}/{product_id}/structure")
-def structure(dataset_id: str, product_id: str) -> Dict[str, Any]:
-    """The data objects of a product (tables with their fields, images, cubes)."""
-    prod = _product(dataset_id, product_id)
+def structure(dataset_id: str, product_id: str, confirm_large: bool = False) -> Dict[str, Any]:
+    """The data objects of a product (tables with their fields, images, cubes).
+
+    The first request for a product downloads it; a file larger than the
+    product_confirm_mb setting answers 413 until ``confirm_large`` is set.
+    """
+    prod = _product(dataset_id, product_id, confirm_large)
     d = prod.to_dict()
     d["product"] = catalog.get_product(dataset_id, product_id)
     return d
