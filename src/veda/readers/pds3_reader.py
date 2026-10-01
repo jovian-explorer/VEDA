@@ -104,6 +104,28 @@ def parse_pds3_label(label_text: str) -> Tuple[Dict[str, Any], List[ColumnDef]]:
         if l:
             clean_lines.append(l)
 
+    # Join quoted values that wrap onto following lines, e.g.
+    #   NAME = "SIGMA PRESSURE (LOWER TEMPERATURE AT
+    #           BOUNDARY)"
+    # Without this the name is truncated and text inside a wrapped DESCRIPTION
+    # that happens to contain "=" is misread as a keyword.
+    merged: List[str] = []
+    pending: Optional[str] = None
+    for l in clean_lines:
+        if pending is not None:
+            pending += " " + l
+            if pending.count('"') % 2 == 0:
+                merged.append(pending)
+                pending = None
+            continue
+        if "=" in l and l.split("=", 1)[1].count('"') % 2 == 1:
+            pending = l
+            continue
+        merged.append(l)
+    if pending is not None:
+        merged.append(pending + '"')
+    clean_lines = merged
+
     # State machine to capture global keywords and COLUMN blocks
     curr_obj = None
     curr_col: Dict[str, Any] = {}

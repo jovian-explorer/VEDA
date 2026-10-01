@@ -92,6 +92,11 @@ class ObservationProfile:
     derived: Dict[str, np.ndarray] = field(default_factory=dict)
     provenance: Optional[ProvenanceRecord] = None
     raw_attributes: Dict[str, Any] = field(default_factory=dict)
+    # 1-sigma uncertainty per level, keyed like the variables ("temperature_k", ...)
+    uncertainty: Dict[str, np.ndarray] = field(default_factory=dict)
+    # Per-level observation geometry along the tangent-point track:
+    # "latitude", "longitude" (deg), "sza" (deg), "lst" (h), "time_s" (s from first level)
+    track: Dict[str, np.ndarray] = field(default_factory=dict)
 
     def to_dict(self, decimate_max: int = 600) -> dict:
         """Serialize for frontend delivery with smart decimation for performance."""
@@ -136,6 +141,8 @@ class ObservationProfile:
             "refractivity": _dec(self.refractivity),
             "electron_density_cm3": _dec(self.electron_density_cm3),
             "derived": der_dict,
+            "uncertainty": {k: _dec(v) for k, v in self.uncertainty.items()},
+            "track": {k: _dec(v) for k, v in self.track.items()},
             "provenance": prov_dict,
             "n_points": int(self.altitude_km.size) if self.altitude_km is not None else 0,
         }
