@@ -3,8 +3,9 @@
  * Dedicated Planetary Science Laboratory Workstation Controller
  */
 import { api, state } from './api.js';
-import { renderMath, toast, cleanPlotlyMath, themedLayout, plotColors } from './ui.js';
+import { renderMath, toast, cleanPlotlyMath, themedLayout, plotColors, drawer } from './ui.js';
 import { setupArchiveBrowser, showMissionArchive } from './archive_browser.js';
+import { style as plotStyle, styleTrace, styleLayout, sigmaBand, orient, paletteColor, plotStyleBody, exportFigure } from './plot_style.js';
 
 // VEDA Global State
 export const vedaState = {
@@ -621,6 +622,14 @@ function setupBodyModeControls() {
     });
   }
 
+  const colorBy = document.getElementById('veda-compare-color-by');
+  if (colorBy) colorBy.addEventListener('change', () => { vedaState.compareColorBy = colorBy.value; renderComparisonPlot(); });
+  document.getElementById('veda-compare-show-mean')?.addEventListener('change', (e) => { vedaState.compareShowMean = e.target.checked; renderComparisonPlot(); });
+  document.getElementById('veda-compare-show-spread')?.addEventListener('change', (e) => { vedaState.compareShowSpread = e.target.checked; renderComparisonPlot(); });
+  document.getElementById('veda-btn-plot-style')?.addEventListener('click', openPlotStyle);
+  document.getElementById('veda-btn-export-figure')?.addEventListener('click', () =>
+    exportFigure(document.getElementById('veda-comparison-plot'), `veda_comparison_${vedaState.activeBodyId}_${vedaState.selectedCompareVariable}`));
+
   const btnExportCsv = document.getElementById('veda-btn-export-comparison-csv');
   if (btnExportCsv) {
     btnExportCsv.addEventListener('click', async () => {
@@ -846,99 +855,72 @@ function renderComparisonPlot() {
 
   const traces = [];
   const zGrid = data.grid_km;
+  const ink = plotColors().ink;
 
-  // 1. Shaded +/- 1 sigma confidence envelope
-  if (data.composite_plus_1sigma && data.composite_minus_1sigma && data.composite_plus_1sigma.some(v => v !== null)) {
-    traces.push({
-      x: data.composite_minus_1sigma,
-      y: zGrid,
-      type: 'scatter',
-      mode: 'lines',
-      line: { width: 0, color: 'transparent' },
-      name: '-1σ Lower Bound',
-      showlegend: false,
-      hoverinfo: 'skip',
-    });
-    traces.push({
-      x: data.composite_plus_1sigma,
-      y: zGrid,
-      type: 'scatter',
-      mode: 'lines',
-      fill: 'tonextx',
-      fillcolor: 'rgba(56, 189, 248, 0.18)',
-      line: { width: 0, color: 'transparent' },
-      name: '\u00b11\u03c3 Multi-Mission Spread',
-      showlegend: true,
-      hoverinfo: 'skip',
-    });
+  // Colour each profile by mission (default), by observation date or by
+  // tangent-point latitude (continuous scale with a colour bar).
+  const profs = (data.profiles || []).filter(p => p.interpolated_series && p.interpolated_series.some(v => v !== null));
+  const colorBy = vedaState.compareColorBy || 'mission';
+  const numericKey = colorBy === 'time' ? (p => (p.time_utc ? Date.parse(p.time_utc) : null))
+    : colorBy === 'latitude' ? (p => p.latitude) : null;
+  const vals = numericKey ? profs.map(numericKey).filter(v => v != null && !Number.isNaN(v)) : [];
+  const lo = vals.length ? Math.min(...vals) : 0, hi = vals.length ? Math.max(...vals) : 1;
+  const VIRIDIS = ['#440154', '#482878', '#3e4989', '#31688e', '#26828e', '#1f9e89', '#35b779', '#6ece58', '#b5de2b', '#fde725'];
+  const scaleColor = (v) => VIRIDIS[Math.min(VIRIDIS.length - 1, Math.max(0, Math.round((hi > lo ? (v - lo) / (hi - lo) : 0.5) * (VIRIDIS.length - 1))))];
+
+  // 1. Composite +/- 1 sigma spread
+  if (vedaState.compareShowSpread !== false && data.composite_plus_1sigma && data.composite_plus_1sigma.some(v => v !== null)) {
+    const lower = { ...orient(data.composite_minus_1sigma, zGrid), type: 'scatter', mode: 'lines',
+      line: { width: 0, color: 'transparent' }, showlegend: false, hoverinfo: 'skip' };
+    const upper = { ...orient(data.composite_plus_1sigma, zGrid), type: 'scatter', mode: 'lines',
+      fill: plotStyle.swapAxes ? 'tonexty' : 'tonextx', fillcolor: 'rgba(56, 189, 248, 0.18)',
+      line: { width: 0, color: 'transparent' }, name: '±1σ spread', hoverinfo: 'skip' };
+    traces.push(lower, upper);
   }
 
-  // 2. Individual mission traces
-  (data.profiles || []).forEach(p => {
-    if (p.interpolated_series && p.interpolated_series.some(v => v !== null)) {
-      const mColor = MISSION_COLORS[p.mission_id.toLowerCase()] || '#80deea';
-      traces.push({
-        x: p.interpolated_series,
-        y: zGrid,
-        type: 'scatter',
-        mode: 'lines',
-        line: { color: mColor, width: 2.2, dash: 'solid' },
-        // Several profiles of one mission must stay distinguishable in the legend.
-        name: `${p.mission_id.toUpperCase()} ${(p.time_utc || p.observation_id).replace("T", " ").slice(0, 16)}`,
-        hovertemplate: `<b>${p.mission_id.toUpperCase()}</b><br>Alt: %{y:.1f} km<br>${varCfg.label}: %{x:.2f} ${varCfg.units}<extra></extra>`,
-      });
+  // 2. Individual profiles
+  profs.forEach((p, i) => {
+    const when = (p.time_utc || '').replace('T', ' ').slice(0, 16);
+    let color;
+    if (numericKey) {
+      const v = numericKey(p);
+      color = v == null || Number.isNaN(v) ? '#888888' : scaleColor(v);
+    } else {
+      color = plotStyle.palette === 'veda' ? (MISSION_COLORS[p.mission_id.toLowerCase()] || paletteColor(i)) : paletteColor(i);
     }
+    const t = { ...orient(p.interpolated_series, zGrid), type: 'scatter',
+      name: `${p.mission_id.toUpperCase()} ${when || p.observation_id}`,
+      hovertemplate: `<b>${p.mission_id.toUpperCase()}</b> ${when}<br>${p.observation_id}<br>Lat ${p.latitude != null ? p.latitude.toFixed(1) : '?'}°<br>%{x:.4g}, %{y:.4g}<extra></extra>` };
+    traces.push(styleTrace(t, i, { color }));
   });
 
-  // 3. Thick composite mean trace
-  if (data.composite_mean && data.composite_mean.some(v => v !== null)) {
-    traces.push({
-      x: data.composite_mean,
-      y: zGrid,
-      type: 'scatter',
-      mode: 'lines',
-      line: { color: plotColors().ink, width: 3.2 },
-      name: 'Composite Mean \u03bc(z)',
-      hovertemplate: `<b>Composite Mean</b><br>Alt: %{y:.1f} km<br>${varCfg.label}: %{x:.2f} ${varCfg.units}<extra></extra>`,
-    });
+  // 3. Composite mean
+  if (vedaState.compareShowMean !== false && data.composite_mean && data.composite_mean.some(v => v !== null)) {
+    traces.push({ ...orient(data.composite_mean, zGrid), type: 'scatter', mode: 'lines',
+      line: { color: plotStyle.template === 'journal' ? '#000000' : ink, width: plotStyle.lineWidth + 1.5 },
+      name: 'Composite mean', hovertemplate: `<b>Composite mean</b><br>%{x:.4g}, %{y:.4g}<extra></extra>` });
   }
 
-  const fontScale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--font-scale') || '1.0');
-  const layout = {
-    title: {
-      text: cleanPlotlyMath(`${(data.body_name || data.body_id || '').toUpperCase()} &bull; Multi-Mission Cross-Comparison (${varCfg.label})`),
-      font: { color: '#ffffff', size: Math.round(15 * fontScale) },
-    },
-    paper_bgcolor: 'transparent',
-    plot_bgcolor: 'rgba(25, 30, 36, 0.6)',
-    font: { color: '#b0bec5', size: Math.round(12 * fontScale), family: 'Segoe UI, sans-serif' },
-    xaxis: {
-      title: { text: cleanPlotlyMath(varCfg.axis), font: { size: Math.round(12 * fontScale), color: '#e0e0e0' } },
-      gridcolor: '#2a3441',
-      zerolinecolor: '#37474f',
-      type: varCfg.logScale ? 'log' : 'linear',
-      tickfont: { size: Math.round(10.5 * fontScale) },
-    },
-    yaxis: {
-      title: { text: cleanPlotlyMath('Altitude Above Reference Surface (km)'), font: { size: Math.round(12 * fontScale), color: '#e0e0e0' } },
-      gridcolor: '#2a3441',
-      zerolinecolor: '#37474f',
-      tickfont: { size: Math.round(10.5 * fontScale) },
-    },
-    // Legend sits under the x-axis so it never collides with the title.
-    legend: {
-      orientation: 'h',
-      x: 0,
-      y: -0.16,
-      yanchor: 'top',
-      font: { size: Math.round(11 * fontScale) },
-    },
-    margin: { l: 65, r: 25, t: 56, b: 120 },
-    hovermode: 'closest',
-  };
+  // Colour bar for the continuous colourings
+  if (numericKey && vals.length) {
+    const fmt = colorBy === 'time' ? (v => new Date(v).toISOString().slice(0, 10)) : (v => `${v.toFixed(0)}°`);
+    traces.push({ x: [null], y: [null], type: 'scatter', mode: 'markers', hoverinfo: 'skip', showlegend: false,
+      marker: { color: [lo, hi], cmin: lo, cmax: hi, colorscale: 'Viridis', showscale: true,
+        colorbar: { title: { text: colorBy === 'time' ? 'Date' : 'Latitude' }, tickvals: [lo, (lo + hi) / 2, hi],
+          ticktext: [fmt(lo), fmt((lo + hi) / 2), fmt(hi)], len: 0.6, thickness: 12 } } });
+  }
 
-  const config = { responsive: true, displayModeBar: true };
-  window.Plotly.newPlot(plotDiv, traces, themedLayout(layout), config);
+  // The comparison grid is in altitude, so it always uses altitude vertically.
+  const savedVertical = plotStyle.vertical;
+  plotStyle.vertical = 'altitude';
+  const layout = styleLayout({
+    title: { text: cleanPlotlyMath(`${(data.body_name || data.body_id || '').toUpperCase()} • ${data.profile_count} profile${data.profile_count === 1 ? '' : 's'} (${varCfg.label})`) },
+    hovermode: 'closest',
+    margin: { l: 70, r: 25, t: 56, b: 60 },
+  }, { xLog: !!varCfg.logScale, varTitle: cleanPlotlyMath(varCfg.axis), coordTitle: 'Altitude above reference radius (km)' });
+  plotStyle.vertical = savedVertical;
+
+  window.Plotly.newPlot(plotDiv, traces, themedLayout(layout), { responsive: true, displayModeBar: true });
 }
 
 function renderComparisonTable() {
@@ -1393,6 +1375,8 @@ async function inspectProfileObservation(obs) {
             <h3>Observation: <code>${prof.observation_id}</code> &bull; ${instTag} (${bodyTag})</h3>
           </div>
           <div class="toolbar-actions">
+            <button type="button" class="btn small ghost" id="btn-plot-style" title="Lines, colours, uncertainty, axes, fonts, journal templates">🎨 Plot style</button>
+            <button type="button" class="btn small ghost" id="btn-export-figure" title="Download the plot at journal column width (set in Plot style)">🖼️ Export figure</button>
             ${prof.mission_id ? `
               <a class="btn small primary" href="${api.vedaExportProfileCsvUrl(prof.mission_id, prof.observation_id)}" download>📥 Export CSV</a>
               <a class="btn small ghost" href="${api.vedaExportProfileJsonUrl(prof.mission_id, prof.observation_id)}" download>Structured JSON</a>
@@ -1408,6 +1392,7 @@ async function inspectProfileObservation(obs) {
           <div class="diag-chip"><strong>Lat/Lon:</strong> ${latStr}, ${lonStr}</div>
           ${prof.provenance ? `<div class="diag-chip"><strong>Archive:</strong> ${prof.provenance.archive_source}</div>` : ''}
           ${prof.filename ? `<div class="diag-chip"><strong>File:</strong> ${prof.filename}</div>` : ''}
+          ${trackChips(prof)}
         </div>
 
         <div class="profile-variable-selector-row">
@@ -1416,6 +1401,11 @@ async function inspectProfileObservation(obs) {
               ${optionsHtml}
             </select>
           </label>
+          <div class="panel-picker" role="group" aria-label="Side-by-side panels">
+            <span class="hint">Side-by-side panels:</span>
+            ${candidateVars.filter(k => k !== 'temperature_c' && hasValidData(k)).map(k => `
+              <label class="inline"><input type="checkbox" data-panel="${k}" ${(vedaState.profilePanels || []).includes(k) ? 'checked' : ''} /> ${(VARIABLE_CONFIGS[k] || { label: k }).label}</label>`).join('')}
+          </div>
         </div>
 
         <!-- Quick Unit Switcher in Profile View -->
@@ -1479,6 +1469,14 @@ async function inspectProfileObservation(obs) {
       });
     });
 
+    viewer.querySelectorAll('input[data-panel]').forEach(cb => cb.addEventListener('change', () => {
+      vedaState.profilePanels = [...viewer.querySelectorAll('input[data-panel]:checked')].map(x => x.dataset.panel);
+      renderSingleProfilePlot(prof, varSelect ? varSelect.value : bestVar);
+    }));
+    document.getElementById('btn-plot-style')?.addEventListener('click', openPlotStyle);
+    document.getElementById('btn-export-figure')?.addEventListener('click', () =>
+      exportFigure(document.getElementById('veda-single-profile-plot'), `veda_${prof.mission_id || 'profile'}_${prof.observation_id}`));
+
     const btnLocalExport = document.getElementById('btn-export-local-profile-csv');
     if (btnLocalExport) {
       btnLocalExport.addEventListener('click', () => exportLocalProfileCsv(prof));
@@ -1538,101 +1536,118 @@ function exportLocalProfileCsv(prof) {
   URL.revokeObjectURL(downloadUrl);
 }
 
+// Values (with 1-sigma when the product has it) for one variable, in the
+// units chosen in the quick unit switcher.
+function profileSeries(prof, varKey) {
+  const cfg = VARIABLE_CONFIGS[varKey] || { label: varKey, units: '', axis: varKey };
+  const unc = prof.uncertainty || {};
+  let values = null, sigma = null, label = cfg.label, units = cfg.units, axis = cfg.axis, log = !!cfg.logScale;
+  if (varKey === 'temperature_k' || varKey === 'temperature_c') {
+    const c = vedaState.unitsTemperature === 'C';
+    const k = prof.temperature_k || (prof.temperature_c ? prof.temperature_c.map(t => (t != null ? t + 273.15 : null)) : null);
+    values = k ? (c ? k.map(t => (t != null ? t - 273.15 : null)) : k) : null;
+    sigma = unc.temperature_k || unc.temperature_c || null;
+    label = c ? 'Temperature (°C)' : 'Temperature (K)'; units = c ? '°C' : 'K';
+    axis = c ? 'Temperature T (°C)' : 'Temperature T (K)'; log = false;
+  } else if (varKey === 'pressure_hpa') {
+    const f = { bar: 1e-3, Pa: 100 }[vedaState.unitsPressure] || 1;
+    const u = { bar: 'bar', Pa: 'Pa' }[vedaState.unitsPressure] || 'hPa';
+    values = prof.pressure_hpa ? prof.pressure_hpa.map(p => (p != null ? p * f : null)) : null;
+    sigma = unc.pressure_hpa ? unc.pressure_hpa.map(s => (s != null ? s * f : null)) : null;
+    label = `Pressure (${u})`; units = u; axis = `Pressure P (${u})`; log = true;
+  } else if (varKey === 'electron_density_cm3') {
+    values = prof.electron_density_cm3;
+    sigma = unc.electron_density_cm3 || null;
+  } else if (prof.derived && prof.derived[varKey]) {
+    values = prof.derived[varKey];
+  }
+  const ok = Array.isArray(values) && values.some(v => v != null && !Number.isNaN(v));
+  return ok ? { values, sigma, label, units, axis, log, color: cfg.color } : null;
+}
+
+function verticalCoordinate(prof) {
+  const usePressure = plotStyle.vertical === 'pressure' && Array.isArray(prof.pressure_hpa)
+    && prof.pressure_hpa.some(p => p != null && p > 0);
+  return usePressure
+    ? { coord: prof.pressure_hpa, title: 'Pressure (hPa)', isPressure: true }
+    : { coord: prof.altitude_km || [], title: 'Altitude above reference radius (km)', isPressure: false };
+}
+
+function trackChips(prof) {
+  const t = prof.track || {};
+  const rng = (a, d = 1) => {
+    const v = (a || []).filter(x => x != null);
+    return v.length ? `${Math.min(...v).toFixed(d)} to ${Math.max(...v).toFixed(d)}` : null;
+  };
+  const chips = [];
+  if (rng(t.latitude)) chips.push(`<div class="diag-chip"><strong>Tangent lat:</strong> ${rng(t.latitude)}°</div>`);
+  if (rng(t.sza)) chips.push(`<div class="diag-chip"><strong>SZA:</strong> ${rng(t.sza)}°</div>`);
+  if (rng(t.lst)) chips.push(`<div class="diag-chip"><strong>Local time:</strong> ${rng(t.lst, 2)} h</div>`);
+  return chips.join('');
+}
+
+// Plot style drawer: redraws whatever profile/comparison plot is open.
+function openPlotStyle() {
+  const redraw = (reopen) => {
+    const prof = vedaState.currentProfileData;
+    const sel = document.getElementById('veda-profile-var-select');
+    if (prof && document.getElementById('veda-single-profile-plot')) renderSingleProfilePlot(prof, sel ? sel.value : 'temperature_k');
+    if (vedaState.mode === 'body') renderComparisonPlot();
+    if (reopen === true) openPlotStyle();
+  };
+  const target = () => (vedaState.mode === 'body'
+    ? { gd: document.getElementById('veda-comparison-plot'), name: `veda_comparison_${vedaState.activeBodyId}` }
+    : { gd: document.getElementById('veda-single-profile-plot'), name: 'veda_profile' });
+  drawer('Plot style', plotStyleBody(redraw, target));
+}
+
 function renderSingleProfilePlot(prof, varKey) {
+  const keys = (vedaState.profilePanels && vedaState.profilePanels.length > 1) ? vedaState.profilePanels : [varKey];
+  renderProfilePanels(prof, keys);
+}
+
+function renderProfilePanels(prof, varKeys) {
   const plotDiv = document.getElementById('veda-single-profile-plot');
   if (!plotDiv || !window.Plotly) return;
-
-  const z = prof.altitude_km || [];
-  let series = null;
-  const varCfg = VARIABLE_CONFIGS[varKey] || { label: varKey, units: '', axis: varKey, color: '#ff7043' };
-  let label = varCfg.label;
-  let units = varCfg.units;
-  let axisTitle = varCfg.axis;
-  let isLogScale = varCfg.logScale || false;
-
-  if (varKey === 'temperature_k' || varKey === 'temperature_c') {
-    if (vedaState.unitsTemperature === 'C') {
-      series = prof.temperature_c || (prof.temperature_k ? prof.temperature_k.map(t => t != null ? t - 273.15 : null) : null);
-      label = 'Temperature (°C)';
-      units = '°C';
-      axisTitle = 'Temperature T (°C)';
-      isLogScale = false;
-    } else {
-      series = prof.temperature_k || (prof.temperature_c ? prof.temperature_c.map(t => t != null ? t + 273.15 : null) : null);
-      label = 'Temperature (K)';
-      units = 'K';
-      axisTitle = 'Temperature T (K)';
-      isLogScale = false;
-    }
-  } else if (varKey === 'pressure_hpa') {
-    const rawP = prof.pressure_hpa;
-    if (rawP && rawP.length > 0) {
-      if (vedaState.unitsPressure === 'bar') {
-        series = rawP.map(p => p != null ? p / 1000.0 : null);
-        label = 'Atmospheric Pressure (bar)';
-        units = 'bar';
-        axisTitle = 'Atmospheric Pressure P (bar)';
-        isLogScale = true;
-      } else if (vedaState.unitsPressure === 'Pa') {
-        series = rawP.map(p => p != null ? p * 100.0 : null);
-        label = 'Atmospheric Pressure (Pa)';
-        units = 'Pa';
-        axisTitle = 'Atmospheric Pressure P (Pa)';
-        isLogScale = true;
-      } else {
-        series = rawP;
-        label = 'Atmospheric Pressure (hPa)';
-        units = 'hPa';
-        axisTitle = 'Atmospheric Pressure P (hPa)';
-        isLogScale = true;
-      }
-    }
-  } else if (varKey === 'electron_density_cm3') {
-    series = prof.electron_density_cm3;
-  } else if (prof.derived && prof.derived[varKey]) {
-    series = prof.derived[varKey];
-  }
-
-  if (!series || series.length === 0) {
-    plotDiv.innerHTML = '<div class="empty-state">Variable not present in this observation profile.</div>';
+  const series = varKeys.map(k => ({ key: k, s: profileSeries(prof, k) })).filter(x => x.s);
+  if (!series.length) {
+    plotDiv.innerHTML = '<div class="empty-state">This product does not contain the selected variable.</div>';
     return;
   }
-
-  const trace = {
-    x: series,
-    y: z,
-    type: 'scatter',
-    mode: 'lines+markers',
-    marker: { size: 3.5, color: varCfg.color },
-    line: { color: varCfg.color, width: 2.2 },
-    name: label,
-    hovertemplate: `Alt: %{y:.1f} km<br>${label}: %{x:.4g} ${units}<extra></extra>`,
+  const { coord, title: coordTitle } = verticalCoordinate(prof);
+  const n = series.length;
+  const gap = n > 1 ? 0.04 : 0;
+  const traces = [];
+  let layout = {
+    title: { text: cleanPlotlyMath(`${(prof.mission_id || 'LOCAL').toUpperCase()} • ${prof.observation_id}${prof.time_utc ? ' • ' + prof.time_utc.replace('T', ' ').slice(0, 19) : ''}`) },
+    hovermode: 'closest',
+    margin: { l: 70, r: 25, t: 50, b: 60 },
   };
-
-  const fontScale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--font-scale') || '1.0');
-  const layout = {
-    title: {
-      text: cleanPlotlyMath(`${(prof.mission_id || 'LOCAL').toUpperCase()} &bull; ${prof.observation_id} (${label})`),
-      font: { color: '#ffffff', size: Math.round(14 * fontScale) },
-    },
-    paper_bgcolor: 'transparent',
-    plot_bgcolor: 'rgba(25, 30, 36, 0.6)',
-    font: { color: '#b0bec5', size: Math.round(12 * fontScale), family: 'Segoe UI, sans-serif' },
-    xaxis: {
-      title: { text: cleanPlotlyMath(axisTitle), font: { size: Math.round(12 * fontScale), color: '#e0e0e0' } },
-      gridcolor: '#2a3441',
-      type: isLogScale ? 'log' : 'linear',
-      tickfont: { size: Math.round(10.5 * fontScale) },
-    },
-    yaxis: {
-      title: { text: cleanPlotlyMath('Altitude Above Surface (km)'), font: { size: Math.round(12 * fontScale), color: '#e0e0e0' } },
-      gridcolor: '#2a3441',
-      tickfont: { size: Math.round(10.5 * fontScale) },
-    },
-    margin: { l: 65, r: 25, t: 50, b: 50 },
-  };
-
-  window.Plotly.newPlot(plotDiv, [trace], themedLayout(layout), { responsive: true });
+  series.forEach(({ key, s }, i) => {
+    const color = n > 1 ? paletteColor(i) : (plotStyle.palette === 'veda' ? (s.color || paletteColor(0)) : paletteColor(0));
+    const axisSuffix = i === 0 ? '' : String(i + 1);
+    const xa = `x${axisSuffix}`;
+    const band = sigmaBand(s.values, coord, s.sigma, color, s.label).map(t => ({ ...t, xaxis: xa, yaxis: 'y' }));
+    traces.push(...band);
+    const t = { ...orient(s.values, coord), type: 'scatter', name: s.label, xaxis: xa, yaxis: 'y',
+      hovertemplate: `%{y:.4g}<br>${s.label}: %{x:.4g}<extra></extra>` };
+    traces.push(styleTrace(t, i, { color, sigma: s.sigma }));
+    if (i === 0) {
+      layout = styleLayout(layout, { xLog: s.log, varTitle: cleanPlotlyMath(s.axis), coordTitle });
+    } else {
+      const base = plotStyle.swapAxes ? layout.yaxis : layout.xaxis;
+      layout[`xaxis${axisSuffix}`] = { ...base, title: { ...base.title, text: cleanPlotlyMath(s.axis) },
+        type: plotStyle.xScale === 'auto' ? (s.log ? 'log' : 'linear') : plotStyle.xScale, anchor: 'y', autorange: true, range: undefined };
+    }
+  });
+  if (n > 1 && !plotStyle.swapAxes) {
+    const w = (1 - gap * (n - 1)) / n;
+    series.forEach((_, i) => {
+      const ax = i === 0 ? 'xaxis' : `xaxis${i + 1}`;
+      layout[ax] = { ...layout[ax], domain: [i * (w + gap), i * (w + gap) + w] };
+    });
+  }
+  window.Plotly.newPlot(plotDiv, traces, themedLayout(layout), { responsive: true });
 }
 
 async function inspectImageObservation(obs) {

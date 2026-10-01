@@ -1554,3 +1554,18 @@ kbd {
   border-radius: var(--radius-sm); background: var(--focal-soft); color: var(--ink);
 }
 .arch-results a { color: var(--focal); }
+.ps-range { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.compare-plot-options { display: grid; gap: 6px; margin: 10px 0; }
+.compare-plot-options label { margin: 0; }
+.compare-plot-buttons { display: flex; gap: 6px; flex-wrap: wrap; }
+.panel-picker { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-top: 8px; }
+.panel-picker label { margin: 0; color: var(--ink); }
+/* Links styled as buttons (toolbar exports) */
+a.btn {
+  display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
+  padding: 5px 12px; border-radius: var(--radius-sm); border: 1px solid var(--line);
+  color: var(--ink); background: var(--surface-glass); font-weight: 600;
+  font-size: calc(12px * var(--font-scale, 1.0));
+}
+a.btn.primary { background: var(--focal-gradient); color: #fff; border-color: var(--focal); }
+a.btn:hover { border-color: var(--focal); }

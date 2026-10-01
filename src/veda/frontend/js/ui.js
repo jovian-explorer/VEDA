@@ -274,6 +274,7 @@ function themeAxis(axis, c) {
 // Return the layout with its text, grid and background colours set for the
 // current theme.  Plot-specific settings (sizes, ranges, legends) are kept.
 export function themedLayout(layout) {
+  if (layout && layout.meta && layout.meta.journal) return layout;   // print template keeps its colours
   const c = plotColors();
   const l = { ...layout };
   l.paper_bgcolor = 'transparent';

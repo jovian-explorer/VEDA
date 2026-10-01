@@ -117,6 +117,21 @@
       </div>
 
       <div class="stack" style="gap: 8px; margin-top: 14px;">
+        <div class="compare-plot-options">
+          <label>Colour profiles by
+            <select id="veda-compare-color-by">
+              <option value="mission">Mission</option>
+              <option value="time">Observation date</option>
+              <option value="latitude">Tangent latitude</option>
+            </select>
+          </label>
+          <label class="inline"><input type="checkbox" id="veda-compare-show-mean" checked /> Composite mean</label>
+          <label class="inline"><input type="checkbox" id="veda-compare-show-spread" checked /> ±1σ spread</label>
+          <div class="compare-plot-buttons">
+            <button type="button" class="ghost small" id="veda-btn-plot-style">🎨 Plot style</button>
+            <button type="button" class="ghost small" id="veda-btn-export-figure">🖼️ Export figure</button>
+          </div>
+        </div>
         <button class="primary" id="veda-btn-export-comparison-csv" style="width: 100%;">📥 Export Comparison CSV</button>
         <button class="ghost" id="veda-btn-download-comparison-png" style="width: 100%;">📷 Snapshot Plot (PNG)</button>
         <button class="ghost" id="veda-btn-download-publication-fig" style="width: 100%;" title="Download publication-quality high-resolution figure (DPI 300)">🏛️ Publication Figure (DPI 300)</button>
