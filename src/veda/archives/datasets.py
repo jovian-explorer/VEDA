@@ -49,6 +49,17 @@ class Dataset:
     # Documented event time used when neither index nor labels give one
     # (e.g. the Galileo probe labels say START_TIME = "UNK").
     fixed_time: Optional[str] = None
+    # Volumes without an index: label paths (inside the volume) to list as products.
+    static_labels: Tuple[str, ...] = ()
+    # Multi-profile tables: one product per distinct value of these columns.
+    split_by: Tuple[str, ...] = ()
+    # How a split product's time is found: "ert_rollover" = fixed_time's date plus the
+    # first ERT (UT seconds of day) of the group, moving to the next day when ERT wraps.
+    split_time: Optional[str] = None
+    # Units for columns whose labels give none (taken from the data set's catalogue).
+    column_units: Dict[str, str] = field(default_factory=dict)
+    # Extra measured variables: key -> (column, uncertainty column or None, label, units)
+    extra_variables: Dict[str, Tuple[str, Optional[str]]] = field(default_factory=dict)
 
     def classify(self, file_name: str) -> Tuple[str, str]:
         name = file_name.lower()
@@ -129,7 +140,60 @@ HASI_CITATION = ("Fulchignoni, M., et al. (2005). In situ measurements of the ph
 GP_CITATION = ("Seiff, A., et al. (1998). Thermal structure of Jupiter's atmosphere near the edge of a "
                "5-um hot spot in the north equatorial belt. JGR, 103(E10), 22857-22889.")
 
+MGN_CITATION = ("Jenkins, J. M., Steffes, P. G., Hinson, D. P., Twicken, J. D., & Tyler, G. L. (1994). "
+                "Radio occultation studies of the Venus atmosphere with the Magellan spacecraft. "
+                "2. Results from the October 1991 experiments. Icarus, 110, 79-94.")
+MGN_UNITS = {   # from catalog/mgn_rtpd.cat and mgn_abs.cat (the labels give none)
+    "ALTITUDE": "KM", "TEMPERATURE": "K", "TEMP_DEV": "K", "PRESSURE": "BAR", "PRESS_DEV": "BAR",
+    "DENSITY": "KG/M**3", "DENS_DEV": "KG/M**3", "REFRACTIVITY": "N-UNITS", "REFRACT_DEV": "N-UNITS",
+    "ABSORPTIVITY": "DB/KM", "ABSORP_DEV": "DB/KM", "H2SO4_VOLMIX": "PPM", "H2SO4_VM_DEV": "PPM",
+}
+
 DATASETS: List[Dataset] = [
+    Dataset(
+        id="mgn-v-rss-5-occ-prof-rtpd-v1.0", mission_id="magellan", instrument="RSS (Radio Science)", level="L5",
+        title="Magellan radio occultation, October 1991: refractivity, temperature, pressure and density profiles",
+        body_ids=("venus",), archive="NASA PDS Atmospheres Node",
+        base_url="https://pds-atmospheres.nmsu.edu/PDS/data/",
+        volume_pattern=r"^mg_2401$",
+        static_labels=("data/mgn_rtpd.lbl",),
+        split_by=("ORBIT_NUMBER", "WAVELENGTH"),
+        split_time="ert_rollover", fixed_time="1991-10-05T00:00:00",
+        rules=((r"mgn_rtpd", "Temperature-pressure-density profile (per orbit and band)", "profile"),),
+        profile_columns={"altitude": "ALTITUDE", "temperature": "TEMPERATURE", "temperature_sigma": "TEMP_DEV",
+                         "pressure": "PRESSURE", "pressure_sigma": "PRESS_DEV", "refractivity": "REFRACTIVITY",
+                         "latitude": "LATITUDE", "longitude": "LONGITUDE", "sza": "ZENITH_ANGLE", "lst": "LOCAL_TIME"},
+        column_units=MGN_UNITS,
+        extra_variables={"density_measured": ("DENSITY", "DENS_DEV")},
+        citation=MGN_CITATION,
+    ),
+    Dataset(
+        id="mgn-v-rss-5-occ-prof-abs-h2so4-v1.0", mission_id="magellan", instrument="RSS (Radio Science)", level="L5",
+        title="Magellan radio occultation, October 1991: microwave absorptivity and H2SO4 vapour profiles",
+        body_ids=("venus",), archive="NASA PDS Atmospheres Node",
+        base_url="https://pds-atmospheres.nmsu.edu/PDS/data/",
+        volume_pattern=r"^mg_2401$",
+        static_labels=("data/mgn_abs.lbl",),
+        split_by=("ORBIT_NUMBER", "WAVELENGTH"),
+        split_time="ert_rollover", fixed_time="1991-10-05T00:00:00",
+        rules=((r"mgn_abs", "Absorptivity and H2SO4 vapour profile (per orbit and band)", "profile"),),
+        profile_columns={"altitude": "ALTITUDE", "latitude": "LATITUDE", "longitude": "LONGITUDE",
+                         "sza": "ZENITH_ANGLE", "lst": "LOCAL_TIME"},
+        column_units=MGN_UNITS,
+        extra_variables={"h2so4_ppm": ("H2SO4_VOLMIX", "H2SO4_VM_DEV"),
+                         "absorptivity_db_km": ("ABSORPTIVITY", "ABSORP_DEV")},
+        citation=MGN_CITATION,
+    ),
+    Dataset(
+        id="mgn-v-rss-1-rocc-v2.0", mission_id="magellan", instrument="RSS (Radio Science)", level="L1",
+        title="Magellan radio occultation raw data: open-loop (ODR) and tracking (TDF) records",
+        body_ids=("venus",), archive="NASA PDS Atmospheres Node",
+        base_url="https://pds-atmospheres.nmsu.edu/PDS/data/",
+        volume_pattern=r"^mg_22\d{2}$",
+        rules=((r"(^|/)odr/", "Open-loop data record (ODR)", "other"),
+               (r"(^|/)tdf/", "Tracking data file (TDF)", "other")),
+        citation=MGN_CITATION,
+    ),
     Dataset(
         id="gp-j-entry-v1.0", mission_id="galileo", instrument="Galileo Probe (ASI, NMS, NEP, NFR, ...)", level="L3",
         title="Galileo probe at Jupiter: atmospheric structure descent profile and probe instrument data",

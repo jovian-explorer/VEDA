@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import json
 import re
+
+import numpy as np
 import sqlite3
 import threading
 import time
@@ -212,6 +214,65 @@ def index_volume(ds: Dataset, volume: str) -> List[Dict[str, Any]]:
     return out
 
 
+def index_static(ds: Dataset, volume: str) -> List[Dict[str, Any]]:
+    """Products of a volume without an index: the data set's declared labels,
+    split into one product per distinct value of ``ds.split_by``."""
+    import datetime as _dt
+    from ..readers.pds3_reader import read_pds3_table
+    out: List[Dict[str, Any]] = []
+    for path in ds.static_labels:
+        stem = PurePosixPath(path).stem
+        ptype, kind = ds.classify(path)
+        target = (ds.body_ids[0] if len(ds.body_ids) == 1 else "").upper()
+        if not ds.split_by:
+            out.append({"dataset_id": ds.id, "product_id": stem, "volume": volume, "path": path,
+                        "start_time": ds.fixed_time or "", "stop_time": "", "target": target,
+                        "product_type": ptype, "kind": kind, "extra": "{}"})
+            continue
+        # The table must be read to know its groups: fetch label and data once.
+        tmp = {"dataset_id": ds.id, "product_id": stem, "volume": volume, "path": path,
+               "start_time": "", "stop_time": "", "target": target, "product_type": ptype,
+               "kind": kind, "extra": '{"STATIC": "yes"}'}
+        with _db_lock, _connect() as conn:
+            conn.execute("INSERT OR REPLACE INTO products VALUES (:dataset_id,:product_id,:volume,:path,"
+                         ":start_time,:stop_time,:target,:product_type,:kind,:extra)", tmp)
+        label = fetch_product(ds.id, stem)
+        with _db_lock, _connect() as conn:
+            conn.execute("DELETE FROM products WHERE dataset_id=? AND product_id=?", (ds.id, stem))
+        tbl = read_pds3_table(str(label))
+        keys = []
+        for col in ds.split_by:
+            if col in tbl.text_columns:
+                keys.append(tbl.text_columns[col])
+            else:
+                keys.append([("" if not np.isfinite(v) else str(int(v)) if float(v).is_integer() else str(v))
+                             for v in tbl.columns[col]])
+        groups: Dict[tuple, List[int]] = {}
+        for i, k in enumerate(zip(*keys)):
+            groups.setdefault(k, []).append(i)
+        # Observation time per group
+        times: Dict[tuple, str] = {}
+        if ds.split_time == "ert_rollover" and "ERT" in tbl.columns and ds.fixed_time:
+            day = _dt.datetime.fromisoformat(ds.fixed_time[:10])
+            first_ert = {k: float(np.nanmin(tbl.columns["ERT"][idx])) for k, idx in groups.items()}
+            prev, offset = None, 0
+            for k in sorted(groups, key=lambda g: g[0]):        # in orbit order
+                ert = first_ert[k]
+                if prev is not None and k[0] != prev[0] and ert < prev[1]:
+                    offset += 1                              # ERT wrapped: next UT day
+                prev = (k[0], ert)
+                times[k] = (day + _dt.timedelta(days=offset, seconds=ert)).isoformat(timespec="seconds")
+        for k, idx in groups.items():
+            out.append({
+                "dataset_id": ds.id, "product_id": f"{stem}_" + "_".join(k), "volume": volume, "path": path,
+                "start_time": times.get(k, ds.fixed_time or ""), "stop_time": "", "target": target,
+                "product_type": ptype, "kind": kind,
+                "extra": json.dumps({"SPLIT": dict(zip(ds.split_by, k)), "ROWS": len(idx),
+                                     "ORBIT_NUMBER": k[0] if "ORBIT_NUMBER" in ds.split_by[:1] else None}),
+            })
+    return out
+
+
 def refresh_dataset(ds: Dataset, force: bool = False,
                     progress: Optional[Callable[[int, int, str], None]] = None) -> int:
     """(Re)index every volume of ``ds``; returns the number of products."""
@@ -227,7 +288,7 @@ def refresh_dataset(ds: Dataset, force: bool = False,
             progress(i, len(volumes), vol)
         if not force and vol in known and now - known[vol] < INDEX_MAX_AGE_S:
             continue
-        rows = index_volume(ds, vol)
+        rows = index_static(ds, vol) if ds.static_labels else index_volume(ds, vol)
         with _db_lock, _connect() as conn:
             conn.execute("DELETE FROM products WHERE dataset_id=? AND volume=?", (ds.id, vol))
             conn.executemany(
@@ -322,6 +383,7 @@ def product_dict(r: sqlite3.Row) -> Dict[str, Any]:
         "url": f"{ds.base_url}{r['volume']}/{r['path']}" if ds else None,
         "downloaded": local.is_file(),
         "orbit": extra.get("ORBIT_NUMBER") or extra.get("REVOLUTION_NUMBER"),
+        "split": extra.get("SPLIT"),
     }
 
 

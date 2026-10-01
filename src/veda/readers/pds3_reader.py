@@ -34,6 +34,7 @@ class Pds3Table:
     columns: Dict[str, np.ndarray]
     units: Dict[str, str]
     descriptions: Dict[str, str] = field(default_factory=dict)
+    text_columns: Dict[str, List[str]] = field(default_factory=dict)   # CHARACTER columns, as text
 
     def row_count(self) -> int:
         """Number of rows in the longest column (0 for an empty table)."""
@@ -120,22 +121,35 @@ class TableDef:
 
 
 def _label_lines(label_text: str) -> List[str]:
-    lines = [l.strip() for l in _strip_comments(label_text).splitlines() if l.strip()]
-    merged, pending = [], None
-    for l in lines:
-        if pending is not None:
-            pending += " " + l
-            if pending.count('"') % 2 == 0:
-                merged.append(pending)
-                pending = None
+    """Label statements, one per KEY = VALUE, however the value is wrapped.
+
+    A statement ends at a newline outside quotes, so quoted values spanning
+    lines stay whole even when a continuation line starts with '=' (the
+    Magellan labels quote an SQL query). A keyword whose value starts on the
+    next line ("DESCRIPTION =" then the text) is joined to that value.
+    """
+    text = _strip_comments(label_text)
+    stmts, buf, in_quote = [], [], False
+    for ch in text:
+        if ch == '"':
+            in_quote = not in_quote
+        if ch in "\r\n" and not in_quote:
+            line = " ".join("".join(buf).split())
+            if line:
+                stmts.append(line)
+            buf = []
             continue
-        if "=" in l and l.split("=", 1)[1].count('"') % 2 == 1:
-            pending = l
-            continue
-        merged.append(l)
-    if pending is not None:
-        merged.append(pending + '"')
-    return merged
+        buf.append(" " if ch in "\r\n" else ch)
+    tail = " ".join("".join(buf).split())
+    if tail:
+        stmts.append(tail + ('"' if in_quote else ""))
+    out: List[str] = []
+    for s in stmts:
+        if out and out[-1].endswith("=") and "=" not in s.split('"', 1)[0]:
+            out[-1] = out[-1] + " " + s          # value on the line after the keyword
+        else:
+            out.append(s)
+    return out
 
 
 def _pointer(value: str) -> Tuple[Optional[str], int]:
@@ -292,6 +306,43 @@ def _read_rows(lines: List[str], cols: List[ColumnDef]) -> Dict[str, np.ndarray]
     return out
 
 
+def _read_text(lines: List[str], cols: List[ColumnDef]) -> Dict[str, List[str]]:
+    out: Dict[str, List[str]] = {}
+    for c in cols:
+        if "CHAR" not in (c.data_type or "").upper():
+            continue
+        s = c.start_byte - 1
+        out[c.name] = [ln[s:s + c.bytes_count].strip().strip('"').strip() for ln in lines]
+    return out
+
+
+def _rejoin_broken_records(lines: List[str]) -> List[str]:
+    """Repair fixed-length records split by stray line breaks.
+
+    Some archive copies have a newline inserted mid-record about every 32 KB
+    (seen in Magellan MGN_RTPD.DAT: 117-character records split 81 + 36). A
+    short line is joined to the next one when together they make exactly the
+    usual record length, so genuine short records are left alone.
+    """
+    from collections import Counter
+    lengths = Counter(len(l) for l in lines if l.strip())
+    if not lengths:
+        return lines
+    target, count = lengths.most_common(1)[0]
+    if count < 0.8 * sum(lengths.values()):
+        return lines            # not a fixed-length table
+    out, i = [], 0
+    while i < len(lines):
+        line = lines[i]
+        if 0 < len(line) < target and i + 1 < len(lines) and len(line) + len(lines[i + 1]) == target:
+            out.append(line + lines[i + 1])
+            i += 2
+            continue
+        out.append(line)
+        i += 1
+    return out
+
+
 def read_pds3_table(table_or_label_path: str) -> Pds3Table:
     """Read the main table of a PDS3 product (label + data file).
 
@@ -336,7 +387,7 @@ def read_pds3_table(table_or_label_path: str) -> Pds3Table:
     if data_p is None:
         raise FileNotFoundError(f"PDS3 table not found at {lbl_p.parent / (main.file or lbl_p.with_suffix('.tab').name)}")
 
-    all_lines = data_p.read_text(encoding="utf-8", errors="replace").splitlines()
+    all_lines = _rejoin_broken_records(data_p.read_text(encoding="utf-8", errors="replace").splitlines())
 
     def table_lines(t: TableDef) -> List[str]:
         if t.file and t.file.lower() != data_p.name.lower():
@@ -350,6 +401,7 @@ def read_pds3_table(table_or_label_path: str) -> Pds3Table:
         lines = [ln for ln in all_lines if ln.strip()]
     columns_data = _read_rows(lines, main.columns)
     units_dict = {c.name: c.unit for c in main.columns}
+    text_data = _read_text(lines, main.columns)
 
     headers = {}
     for t in tables:
@@ -368,6 +420,7 @@ def read_pds3_table(table_or_label_path: str) -> Pds3Table:
         metadata=metadata,
         columns=columns_data,
         units=units_dict,
+        text_columns=text_data,
     )
 
 

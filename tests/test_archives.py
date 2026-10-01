@@ -95,3 +95,24 @@ def test_dataset_registry_is_well_formed():
     for d in DATASETS:
         assert d.base_url.startswith("https://") and d.base_url.endswith("/")
         assert d.body_ids and d.mission_id and d.instrument
+
+
+def test_label_value_on_next_line_and_quoted_equals():
+    """Magellan labels: 'DESCRIPTION =' with the text on the next line, and a quoted SQL
+    query whose continuation line starts with '='. The table used to be swallowed."""
+    from veda.readers.pds3_reader import parse_pds3_tables
+    lbl = ('^TABLE = "X.DAT"\nDESCRIPTION =\n  "query WHERE (ORBIT_NUMBER\n  = 3212 OR ORBIT_NUMBER = 3213)"\n'
+           'OBJECT = TABLE\n  ROWS = 2\n  OBJECT = COLUMN\n    NAME = "WAVELENGTH"\n    DATA_TYPE = CHARACTER\n'
+           '    START_BYTE = 1\n    BYTES = 3\n  END_OBJECT\n  OBJECT = COLUMN\n    NAME = "ORBIT_NUMBER"\n'
+           '    START_BYTE = 4\n    BYTES = 5\n  END_OBJECT\nEND_OBJECT\nEND\n')
+    t = parse_pds3_tables(lbl)
+    assert len(t) == 1 and [c.name for c in t[0].columns] == ["WAVELENGTH", "ORBIT_NUMBER"] and t[0].file == "X.DAT"
+
+
+def test_records_split_by_stray_newlines_are_rejoined():
+    from veda.readers.pds3_reader import _rejoin_broken_records
+    rec = "A" * 40
+    lines = [rec] * 20 + [rec[:25], rec[25:]] + [rec] * 20 + ["short tail ok"]
+    assert _rejoin_broken_records(lines) == [rec] * 41 + ["short tail ok"]
+    free_text = ["a", "bb", "ccc", "dddd"]          # not fixed-length: left alone
+    assert _rejoin_broken_records(free_text) == free_text

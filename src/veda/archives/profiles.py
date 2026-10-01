@@ -33,9 +33,13 @@ def _col(tbl, name) -> Optional[np.ndarray]:
     return arr if np.isfinite(arr).any() else None
 
 
+_COLUMN_UNITS: Dict[str, str] = {}     # set per product from the data set's catalogue units
+
+
 def _unit(tbl, name) -> str:
     key = _key(tbl, name)
-    return (tbl.units.get(key, "") if key else "").upper().replace('"', "").strip()
+    unit = (tbl.units.get(key, "") if key else "") or _COLUMN_UNITS.get((key or "").upper().strip('"'), "")
+    return unit.upper().replace('"', "").strip()
 
 
 def _scale(unit: str) -> float:
@@ -97,6 +101,19 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
     cols = ds.profile_columns
     body = get_body(ds.body_ids[0])
     tbl = read_pds3_table(str(label))
+    _COLUMN_UNITS.clear()
+    _COLUMN_UNITS.update({k.upper(): v for k, v in ds.column_units.items()})
+    split = prod.get("split")
+    if split:
+        # Keep only this product's rows of a multi-profile table.
+        mask = np.ones(tbl.row_count(), dtype=bool)
+        for col, val in split.items():
+            if col in tbl.text_columns:
+                mask &= np.array([v == val for v in tbl.text_columns[col]])
+            else:
+                mask &= np.isclose(tbl.columns[col], float(val))
+        tbl.columns = {k: v[mask] for k, v in tbl.columns.items()}
+        tbl.text_columns = {k: [x for x, m in zip(v, mask) if m] for k, v in tbl.text_columns.items()}
 
     z = _col(tbl, cols.get("altitude"))
     if z is not None:
@@ -177,5 +194,12 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
     )
     if n is not None:
         prof.derived["number_density_m3"] = n
+    for key, (col, sig) in ds.extra_variables.items():
+        v = _col(tbl, col)
+        if v is not None:
+            prof.derived[key] = v
+            s = _col(tbl, sig) if sig else None
+            if s is not None:
+                prof.uncertainty[key] = s
     prof.derived.update(compute_atmospheric_diagnostics(prof, body))
     return prof

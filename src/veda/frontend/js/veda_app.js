@@ -52,6 +52,10 @@ const VARIABLE_CONFIGS = {
   density: { label: 'Mass Density (ρ)', units: 'kg/m³', axis: 'Mass Density ρ (kg/m³)', logScale: true, color: '#4db6ac' },
   scale_height: { label: 'Scale Height (H)', units: 'km', axis: 'Scale Height H (km)', color: '#90caf9' },
   electron_density_cm3: { label: 'Electron Density (Ne)', units: 'cm⁻³', axis: 'Electron Density Ne (cm⁻³)', logScale: true, color: '#f06292' },
+  h2so4_ppm: { label: 'H₂SO₄ vapour (ppm)', units: 'ppm', axis: 'H₂SO₄ vapour volume mixing ratio (ppm)', color: '#eab308' },
+  absorptivity_db_km: { label: 'Microwave absorptivity', units: 'dB/km', axis: 'Absorptivity (dB/km)', color: '#f97316' },
+  density_measured: { label: 'Mass density (archive)', units: 'kg/m³', axis: 'Mass density ρ (kg/m³)', logScale: true, color: '#14b8a6' },
+  number_density_m3: { label: 'Number density (archive)', units: 'm⁻³', axis: 'Number density (m⁻³)', logScale: true, color: '#22d3ee' },
   refractivity: { label: 'Radio Refractivity (N)', units: 'N-units', axis: 'Refractivity N', color: '#a1887f' },
 };
 
@@ -1340,6 +1344,10 @@ async function inspectProfileObservation(obs) {
       'lapse_rate',
       'temperature_c',
       'scale_height',
+      'h2so4_ppm',
+      'absorptivity_db_km',
+      'density_measured',
+      'number_density_m3',
     ];
 
     const hasValidData = (k) => {
