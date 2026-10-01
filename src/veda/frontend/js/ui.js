@@ -444,6 +444,26 @@ export function layoutBase(extra = {}) {
   }, extra);
 }
 
+/**
+ * Plots dropped from the page (a panel re-rendered with innerHTML, a drawer
+ * closed) keep a window resize handler and all their data until purged, so a
+ * long session got slower and slower.  Purge every plot as it leaves the page.
+ */
+export function installPlotJanitor() {
+  if (installPlotJanitor.done || !window.Plotly) return;
+  installPlotJanitor.done = true;
+  const purge = (node) => { try { window.Plotly.purge(node); } catch (_) { /* already gone */ } };
+  new MutationObserver((mutations) => {
+    for (const m of mutations) {
+      for (const node of m.removedNodes) {
+        if (node.nodeType !== 1 || node.isConnected) continue;
+        if (node.classList.contains('js-plotly-plot')) purge(node);
+        else if (node.firstElementChild) node.querySelectorAll('.js-plotly-plot').forEach(purge);
+      }
+    }
+  }).observe(document.body, { childList: true, subtree: true });
+}
+
 export function emptyPlot(nodeId, message) {
   Plotly.purge(nodeId);
   const node = document.getElementById(nodeId);

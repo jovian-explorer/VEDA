@@ -1,7 +1,7 @@
 """Build the standalone VEDA desktop app for the current OS with PyInstaller.
 
     pip install -e ".[build]"
-    python scripts/build_exe.py            # -> dist/VEDA.exe | dist/VEDA | dist/VEDA.app
+    python scripts/build_exe.py            # -> dist/VEDA/VEDA.exe | dist/VEDA/VEDA | dist/VEDA.app
     python scripts/build_exe.py --archive  # also writes dist/VEDA-<version>-<os>-<arch>.zip
 
 Works on Windows, macOS and Linux; each OS builds its own binary.
@@ -32,11 +32,16 @@ def _os_tag() -> str:
 
 
 def _artifact() -> Path:
+    """The folder (or .app bundle) to distribute."""
+    return DIST / ("VEDA.app" if sys.platform == "darwin" else "VEDA")
+
+
+def _launcher() -> Path:
     if sys.platform == "win32":
-        return DIST / "VEDA.exe"
+        return DIST / "VEDA" / "VEDA.exe"
     if sys.platform == "darwin":
         return DIST / "VEDA.app"
-    return DIST / "VEDA"
+    return DIST / "VEDA" / "VEDA"
 
 
 def main() -> int:
@@ -52,10 +57,10 @@ def main() -> int:
         check=True, cwd=ROOT,
     )
     out = _artifact()
-    if not out.exists():
-        print(f"build finished but {out} is missing", file=sys.stderr)
+    if not _launcher().exists():
+        print(f"build finished but {_launcher()} is missing", file=sys.stderr)
         return 1
-    print(f"built {out}")
+    print(f"built {_launcher()}")
 
     if args.archive:
         arch = platform.machine().lower().replace("amd64", "x86_64")
@@ -68,9 +73,8 @@ def main() -> int:
         else:
             staging = DIST / name
             shutil.rmtree(staging, ignore_errors=True)
-            staging.mkdir()
-            shutil.copy2(out, staging / out.name)
-            for doc in ("README.md", "LICENSE", "THIRD_PARTY_LICENSES.md"):
+            shutil.copytree(out, staging)          # VEDA.exe/VEDA plus _internal/
+            for doc in ("README.md", "LICENSE", "TERMS.md", "THIRD_PARTY_LICENSES.md"):
                 shutil.copy2(ROOT / doc, staging / doc)
             zip_path = Path(shutil.make_archive(str(DIST / name), "zip", DIST, name))
             shutil.rmtree(staging)

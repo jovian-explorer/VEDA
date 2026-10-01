@@ -183,6 +183,46 @@ export function styleLayout(layout, { xLog = false, varTitle = '', coordTitle = 
   return out;
 }
 
+/**
+ * The style settings (fonts, grid, ticks, frame, legend, journal colours) for
+ * any plot: time series, spectrograms, images.  Unlike styleLayout it keeps
+ * the axis types, ranges and orientation chosen by the caller.
+ */
+export function styleGeneric(layout) {
+  const journal = style.template === 'journal';
+  const ink = journal ? '#000000' : plotColors().ink;
+  const size = journal ? (JOURNALS[style.journal] || JOURNALS.agu).size + 2 : style.fontSize;
+  const out = { ...layout };
+  for (const key of Object.keys(out)) {
+    if (!/^[xy]axis\d*$/.test(key)) continue;
+    const ax = { ...out[key] };
+    ax.showgrid = ax.showgrid === false ? false : style.grid;
+    ax.mirror = style.mirror || journal ? 'ticks' : false;
+    ax.ticks = journal ? 'inside' : style.ticks;
+    ax.showline = journal || style.mirror;
+    ax.linecolor = ink;
+    if (ax.title) ax.title = { ...ax.title, font: { size, color: ink, family: fontFamily() } };
+    ax.tickfont = { size: size - 1, color: ink, family: fontFamily() };
+    if (journal) ax.gridcolor = '#e5e5e5';
+    out[key] = ax;
+  }
+  out.font = { ...(layout.font || {}), family: fontFamily(), size, color: ink };
+  if (out.title) out.title = { ...out.title, font: { ...(out.title.font || {}), family: fontFamily(), color: ink, size: size + 1 } };
+  if (journal) {
+    out.meta = { ...(out.meta || {}), journal: true };
+    out.paper_bgcolor = '#ffffff';
+    out.plot_bgcolor = '#ffffff';
+  }
+  if (out.showlegend !== false) {
+    out.showlegend = style.legend !== 'hidden';
+    if (style.legend === 'right') out.legend = { orientation: 'v', x: 1.02, y: 1, xanchor: 'left' };
+    else if (style.legend === 'top-inside') out.legend = { orientation: 'v', x: 0.99, y: 0.99, xanchor: 'right', yanchor: 'top' };
+    else out.legend = { orientation: 'h', x: 0, y: 1.02, yanchor: 'bottom' };
+    out.legend.font = { size: size - 1, color: ink, family: fontFamily() };
+  }
+  return out;
+}
+
 /** Put (value, coordinate) into plot orientation. */
 export function orient(values, coord) {
   return style.swapAxes ? { x: coord, y: values } : { x: values, y: coord };

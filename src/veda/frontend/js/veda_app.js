@@ -7,7 +7,10 @@ import { renderMath, toast, cleanPlotlyMath, themedLayout, plotColors, drawer } 
 import { setupArchiveBrowser, showMissionArchive } from './archive_browser.js';
 import { showGeometry } from './geometry.js';
 import { setupBodySearch, showBodySearch } from './body_search.js';
+import { showProductViewer } from './product_viewer.js';
 import { style as plotStyle, styleTrace, styleLayout, sigmaBand, orient, paletteColor, plotStyleBody, exportFigure } from './plot_style.js';
+
+let imageViewerListeners = null;   // AbortController for the open image's window listeners
 
 // VEDA Global State
 export const vedaState = {
@@ -384,21 +387,12 @@ export async function initVeda() {
   setupModeSwitching();
   setupBodyModeControls();
   setupMissionModeControls();
-  setupArchiveBrowser({
-    onOpen: (p) => inspectProfileObservation({
-      mission_id: p.mission_id, observation_id: p.product_id, dataset_id: p.dataset_id,
-      instrument: p.instrument, data_type: 'profile', time_utc: p.start_time,
-    }),
-    onCompare: compareSelectedProducts,
-  });
+  setupArchiveBrowser({ onOpen: openArchiveProduct, onCompare: compareSelectedProducts });
   setupBodySearch({
     onOpen: async (p) => {
       switchMode('mission');
       await loadAndRenderMission(p.mission_id);
-      await inspectProfileObservation({
-        mission_id: p.mission_id, observation_id: p.product_id, dataset_id: p.dataset_id,
-        instrument: p.instrument, data_type: 'profile', time_utc: p.start_time,
-      });
+      await openArchiveProduct(p);
       document.getElementById('veda-observation-viewer')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     },
     onCompare: compareSelectedProducts,
@@ -1337,6 +1331,18 @@ export async function inspectObservation(obs) {
   }
 }
 
+/** Open an archive product: profiles in the profile viewer, everything else in the product viewer. */
+async function openArchiveProduct(p) {
+  if (p.kind === 'profile') {
+    return inspectProfileObservation({
+      mission_id: p.mission_id, observation_id: p.product_id, dataset_id: p.dataset_id,
+      instrument: p.instrument, data_type: 'profile', time_utc: p.start_time,
+    });
+  }
+  const viewer = document.getElementById('veda-observation-viewer');
+  if (viewer) await showProductViewer(viewer, p);
+}
+
 async function inspectProfileObservation(obs) {
   const viewer = document.getElementById('veda-observation-viewer');
   if (!viewer) return;
@@ -1402,6 +1408,7 @@ async function inspectProfileObservation(obs) {
             <button type="button" class="btn small ghost" id="btn-plot-style" title="Lines, colours, uncertainty, axes, fonts, journal templates">🎨 Plot style</button>
             <button type="button" class="btn small ghost" id="btn-export-figure" title="Download the plot at journal column width (set in Plot style)">🖼️ Export figure</button>
             <button type="button" class="btn small ghost" id="btn-geometry" title="Orbit, view from Earth, tangent-point map and solar angles (SPICE)">🛰️ Geometry</button>
+            ${prof.dataset_id || obs.dataset_id ? '<button type="button" class="btn small ghost" id="btn-all-fields" title="Plot any column of the product against any other">🔬 All fields</button>' : ''}
             ${prof.mission_id ? `
               <a class="btn small primary" href="${api.vedaExportProfileCsvUrl(prof.mission_id, prof.observation_id)}" download>📥 Export CSV</a>
               <a class="btn small ghost" href="${api.vedaExportProfileJsonUrl(prof.mission_id, prof.observation_id)}" download>Structured JSON</a>
@@ -1500,6 +1507,9 @@ async function inspectProfileObservation(obs) {
       renderSingleProfilePlot(prof, varSelect ? varSelect.value : bestVar);
     }));
     document.getElementById('btn-plot-style')?.addEventListener('click', openPlotStyle);
+    document.getElementById('btn-all-fields')?.addEventListener('click', () =>
+      showProductViewer(viewer, { dataset_id: prof.dataset_id || obs.dataset_id, product_id: prof.observation_id,
+                                  mission_id: prof.mission_id, start_time: prof.time_utc }));
     document.getElementById('btn-geometry')?.addEventListener('click', () => {
       const box = document.getElementById('veda-geometry-box');
       box.hidden = !box.hidden;
@@ -1770,6 +1780,12 @@ async function inspectImageObservation(obs) {
   if (stretchSelect) stretchSelect.onchange = updateImage;
   if (cmapSelect) cmapSelect.onchange = updateImage;
 
+  // Window-level listeners belong to the image on screen; drop the previous
+  // image's ones (they used to pile up with every image opened).
+  imageViewerListeners?.abort();
+  imageViewerListeners = new AbortController();
+  const winOpts = { signal: imageViewerListeners.signal };
+
   // Interactive Drag-to-Slice Line Transect
   let isDragging = false;
   let startX = 0, startY = 0;
@@ -1838,7 +1854,7 @@ async function inspectImageObservation(obs) {
     resizeOverlay();
     drawTransectLine(vedaState.transectCoords.x0, vedaState.transectCoords.y0, vedaState.transectCoords.x1, vedaState.transectCoords.y1);
   };
-  window.addEventListener('resize', resizeOverlay);
+  window.addEventListener('resize', resizeOverlay, winOpts);
 
   if (canvasWrap) {
     canvasWrap.addEventListener('mousemove', (e) => {
@@ -1868,14 +1884,14 @@ async function inspectImageObservation(obs) {
     });
 
     window.addEventListener('mouseup', (e) => {
-      if (!isDragging) return;
+      if (!isDragging || !imgEl.isConnected) return;
       isDragging = false;
       const coords = getImgCoords(e);
       vedaState.transectCoords.x1 = coords.imgX;
       vedaState.transectCoords.y1 = coords.imgY;
       drawTransectLine(vedaState.transectCoords.x0, vedaState.transectCoords.y0, vedaState.transectCoords.x1, vedaState.transectCoords.y1);
       loadTransect(obs.mission_id, obs.observation_id, vedaState.transectCoords.x0, vedaState.transectCoords.y0, vedaState.transectCoords.x1, vedaState.transectCoords.y1);
-    });
+    }, winOpts);
   }
 
   // Preset transect buttons

@@ -106,7 +106,7 @@ function rows() {
         <td>${esc(p.product_type)}</td>
         <td>${esc(`${p.instrument || ''} ${p.level || ''}`)}</td>
         <td>${p.downloaded ? '<span class="badge badge-ok">Downloaded</span>' : '<span class="badge">In archive</span>'}</td>
-        <td>${p.kind === 'profile' ? `<button type="button" class="ghost small" data-open="${i}">Open</button>` : ''}</td>
+        <td><button type="button" class="ghost small" data-open="${i}">${p.kind === 'profile' ? 'Open' : 'View'}</button></td>
       </tr>`).join('');
     body.querySelectorAll('input[data-sel]').forEach(cb => cb.addEventListener('change', () => {
       const p = st.results[+cb.dataset.sel];

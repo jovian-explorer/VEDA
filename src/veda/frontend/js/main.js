@@ -3,7 +3,7 @@
  * Main Application Shell and Orchestrator
  */
 import { api, state } from './api.js';
-import { $, $$, el, banner, toast, drawer, closeDrawer, renderMath, updatePlotlyFonts, rethemePlots } from './ui.js';
+import { $, $$, el, banner, toast, drawer, closeDrawer, renderMath, updatePlotlyFonts, rethemePlots, installPlotJanitor } from './ui.js';
 import { initVeda, switchMode, vedaState, applyUserPreferences } from './veda_app.js';
 
 const FONT_SCALES = [0.85, 0.92, 1.0, 1.10, 1.20, 1.32, 1.45];
@@ -607,6 +607,7 @@ function dataPolicyBody() {
 async function boot() {
   // Wire chrome and event listeners immediately
   wireChrome();
+  installPlotJanitor();
 
   try {
     state.meta = await api.meta();

@@ -166,7 +166,7 @@ VEDA does not own or host any data. Each archive's terms apply to the data you d
   title        = {{VEDA: Visualization, Exploration, and Data Analysis - A Multi-Mission Planetary Science Data Laboratory}},
   year         = {2026},
   publisher    = {Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO},
-  version      = {3.0.0},
+  version      = {0.3.0},
   url          = {https://github.com/jovian-explorer/VEDA},
   address      = {Thiruvananthapuram, Kerala, India}
 }

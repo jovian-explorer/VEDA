@@ -117,9 +117,9 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 16px 0; }
 .topbar {
   display: flex; align-items: center; gap: 18px;
   padding: 10px 22px;
-  background: var(--surface);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  /* Opaque, no backdrop blur: blurring the page behind a sticky bar made
+     every scroll frame re-composite the plots underneath. */
+  background: var(--surface-solid);
   border-bottom: 1px solid var(--line);
   position: sticky; top: 0; z-index: 40;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
@@ -189,8 +189,6 @@ main { padding: 20px 22px 60px; max-width: 1600px; margin: 0 auto; }
 
 .card {
   background: var(--surface);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
@@ -488,8 +486,7 @@ body.no-curious [data-curious] { display: none; }
 .toast.good { background: #064e3b; border-color: rgba(52, 211, 153, 0.3); }
 
 .drawer-backdrop {
-  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(6px); z-index: 69;
+  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.65); z-index: 69;
 }
 .drawer {
   position: fixed; top: 0; right: 0; width: 480px; max-width: 94vw; height: 100%;
@@ -1329,8 +1326,7 @@ button.unit-pill.active:hover:not(:disabled) {
   position: fixed;
   inset: 0;
   z-index: 99999;
-  background: rgba(10, 15, 29, 0.88);
-  backdrop-filter: blur(8px);
+  background: rgba(10, 15, 29, 0.9);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1341,6 +1337,7 @@ button.unit-pill.active:hover:not(:disabled) {
   opacity: 0;
   visibility: hidden;
 }
+.drag-drop-overlay.hidden .drag-drop-modal { animation: none; }
 .drag-drop-modal {
   border: 2.5px dashed #00e5ff;
   border-radius: 18px;
@@ -1597,3 +1594,31 @@ a.btn:hover { border-color: var(--focal); }
 .geo-proj[hidden] { display: none; }
 .arch-portal { cursor: default; }
 .arch-portal-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+
+/* ---------- product viewer (any payload) ---------- */
+.pv .viewer-title .hint { margin-top: 2px; }
+.pv-objects { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.pv-objects .hint { margin-left: 4px; font-size: 0.85em; }
+.pv-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin: 8px 0 10px; }
+.pv-controls label { display: inline-flex; align-items: center; gap: 6px; font-size: 0.92em; }
+.pv-controls select { max-width: 320px; }
+.pv-split { display: grid; grid-template-columns: minmax(220px, 280px) 1fr; gap: 12px; align-items: start; }
+.pv-fields { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 8px; background: var(--surface-elevated); }
+.pv-filter { width: 100%; margin-bottom: 6px; }
+.pv-field-list { max-height: 520px; overflow-y: auto; display: flex; flex-direction: column; gap: 1px; }
+.pv-field { display: grid; grid-template-columns: auto 1fr auto; gap: 6px; align-items: center; padding: 3px 4px;
+  border-radius: 4px; cursor: pointer; font-size: 0.86em; }
+.pv-field:hover { background: var(--focal-soft); }
+.pv-field span:nth-child(2) { overflow-wrap: anywhere; }
+.pv-field .hint { font-size: 0.85em; white-space: nowrap; max-width: 90px; overflow: hidden; text-overflow: ellipsis; }
+.pv-field-text { opacity: 0.6; cursor: default; }
+.pv-plot-wrap { min-width: 0; }
+.pv-plot.loading { opacity: 0.55; transition: opacity 0.2s; }
+.pv-image { display: grid; grid-template-columns: 1fr minmax(280px, 34%); gap: 12px; }
+.pv-image .pv-controls { grid-column: 1 / -1; }
+.pv-side { min-width: 0; }
+.pv-readout { font-family: var(--mono); }
+@media (max-width: 1000px) {
+  .pv-split, .pv-image { grid-template-columns: 1fr; }
+  .pv-field-list { max-height: 240px; }
+}

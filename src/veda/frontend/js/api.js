@@ -26,6 +26,18 @@ async function call(path, {method = 'GET', body = null} = {}) {
   return data;
 }
 
+const productBase = (ds, pid) => `/api/veda/product/${encodeURIComponent(ds)}/${encodeURIComponent(pid)}`;
+
+/** URL query from an object; arrays repeat the key, empty values are left out. */
+function query(params = {}) {
+  const q = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (v === undefined || v === null || v === '' || v === false) continue;
+    if (Array.isArray(v)) v.forEach(x => q.append(k, x)); else q.append(k, v);
+  }
+  return q.toString();
+}
+
 export const api = {
   health:        ()          => call('/api/health'),
   meta:          ()          => call('/api/meta'),
@@ -114,6 +126,13 @@ export const api = {
     return call(`/api/veda/archive/search?${q.toString()}`);
   },
   archiveFetch: (items) => call('/api/veda/archive/fetch', {method: 'POST', body: {items}}),
+  // Any product, any payload: structure, table series, images, cubes (see product_routes.py)
+  productStructure: (ds, pid) => call(`${productBase(ds, pid)}/structure`),
+  productTable: (ds, pid, params) => call(`${productBase(ds, pid)}/table?${query(params)}`),
+  productImageUrl: (ds, pid, params) => `${productBase(ds, pid)}/image.png?${query(params)}`,
+  productImageStats: (ds, pid, params) => call(`${productBase(ds, pid)}/image/stats?${query(params)}`),
+  productTransect: (ds, pid, params) => call(`${productBase(ds, pid)}/image/transect?${query(params)}`),
+  productSpectrum: (ds, pid, params) => call(`${productBase(ds, pid)}/cube/spectrum?${query(params)}`),
   archiveJob: (jobId) => call(`/api/veda/archive/jobs/${encodeURIComponent(jobId)}`),
   vedaPublicationFigureUrl: (bodyId, variable = 'temperature_k', missions, dpi = 300, fmt = 'png') => {
     const q = [`body_id=${encodeURIComponent(bodyId)}`, `variable=${encodeURIComponent(variable)}`, `dpi=${dpi}`, `fmt=${fmt}`];

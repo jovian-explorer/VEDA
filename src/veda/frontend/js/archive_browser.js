@@ -234,7 +234,7 @@ function renderRows() {
       <td>${esc(p.orbit || '')}</td>
       <td>${esc(ds ? `${ds.instrument} ${ds.level}` : p.dataset_id)}</td>
       <td>${p.downloaded ? '<span class="badge badge-ok">Downloaded</span>' : '<span class="badge">In archive</span>'}</td>
-      <td>${p.kind === 'profile' ? `<button type="button" class="ghost small" data-open="${i}">Open</button>` : ''}
+      <td><button type="button" class="ghost small" data-open="${i}" title="${p.kind === 'profile' ? 'Plot the profile' : 'Plot the data (tables, spectra, images)'}">${p.kind === 'profile' ? 'Open' : 'View'}</button>
           <a class="small" href="${esc(p.url)}" target="_blank" rel="noopener" title="Open the archive file">Label</a></td>
     </tr>`;
   }).join('');

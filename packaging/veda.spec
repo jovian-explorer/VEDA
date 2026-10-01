@@ -63,11 +63,15 @@ if sys.platform == "darwin":
         info_plist={"NSHighResolutionCapable": True},
     )
 else:
+    # A folder build (VEDA/VEDA.exe + VEDA/_internal), not --onefile: a onefile
+    # exe unpacks ~200 MB to a temp folder on every launch (and antivirus scans
+    # it each time), which made start-up take a minute or more.
     exe = EXE(
-        pyz, a.scripts, a.binaries, a.datas, [],
+        pyz, a.scripts, [],
+        exclude_binaries=True,
         name="VEDA",
         console=False,
         upx=False,
-        runtime_tmpdir=None,
         icon=ICON if sys.platform == "win32" else None,
     )
+    coll = COLLECT(exe, a.binaries, a.datas, name="VEDA", upx=False)

@@ -1,5 +1,5 @@
 """
-Frozen-build launch verification (Windows, needs ``dist/VEDA.exe``).
+Frozen-build launch verification (Windows, needs ``dist/VEDA/VEDA.exe``).
 
 Reproduces the conditions under which Windows Explorer launches an EXE:
 the CWD is something other than the EXE directory (Desktop, home, temp),
@@ -22,7 +22,7 @@ from pathlib import Path
 import pytest
 
 PROJECT = Path(__file__).resolve().parents[1]
-EXE = PROJECT / "dist" / "VEDA.exe"
+EXE = PROJECT / "dist" / "VEDA" / "VEDA.exe"
 
 pytestmark = [
     pytest.mark.skipif(sys.platform != "win32", reason="Windows EXE launch test"),

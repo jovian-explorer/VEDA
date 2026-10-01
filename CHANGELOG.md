@@ -1,8 +1,8 @@
 # Changelog
 
-All notable changes to VEDA. Versions follow [semantic versioning](https://semver.org/).
+All notable changes to VEDA. Versions follow [semantic versioning](https://semver.org/). VEDA stays at 0.x until its public release; 0.1.0 and 0.2.0 were first tagged as v2.0.0 and v2.1.0.
 
-## 3.0.0
+## 0.3.0 (unreleased)
 
 VEDA now works only with real archive data and can search it by body, mission, payload and date.
 
@@ -32,7 +32,7 @@ VEDA now works only with real archive data and can search it by body, mission, p
 - New **TERMS.md** (warranty, responsibility for results, fair use of the archives, privacy). **DATA_POLICY.md** rewritten around the connected data sets, each archive's terms and the reference publications to cite. README, USAGE, third-party licenses (SpiceyPy, NAIF CSPICE, Natural Earth added; Three.js removed, as it is not used), and the in-app Help, About and Data & Licenses panels updated. Data & Licenses lists the connected data sets from the catalogue and offers a copyable data availability statement.
 - CSV exports name the source file and VEDA version and state which columns are archived and which are derived.
 
-## 2.1.0
+## 0.2.0
 
 ### Science fix
 - **Akatsuki temperature profile.** Column lookup took the first name that merely
@@ -88,7 +88,7 @@ VEDA now works only with real archive data and can search it by body, mission, p
 ### Performance
 - Text tables are parsed column-wise with NumPy instead of cell by cell.
 
-## 2.0.0
+## 0.1.0
 
 - Installable Python package (`pip install git+https://github.com/jovian-explorer/VEDA.git`)
   with `veda` and `veda-server` commands.

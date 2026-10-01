@@ -445,9 +445,9 @@ def generate_publication_figure(
     if fmt not in ("png", "svg", "pdf"):
         raise HTTPException(status_code=400, detail="fmt must be png, svg or pdf")
 
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
+    # The object-oriented API, not pyplot: pyplot keeps global state and is not
+    # safe in the server's worker threads (two figures at once could crash it).
+    from matplotlib.figure import Figure
 
     mgr = get_mission_manager()
 
@@ -462,7 +462,8 @@ def generate_publication_figure(
             f"None of the selected {b.name} profiles contain '{variable}'. "
             "Choose another variable or add profiles that measure it."))
 
-    fig, ax = plt.subplots(figsize=(6.5, 7.5), dpi=dpi)
+    fig = Figure(figsize=(6.5, 7.5), dpi=dpi)
+    ax = fig.add_subplot(111)
 
     var_labels = {
         "temperature_k": "Temperature $T$ (K)",
@@ -508,7 +509,6 @@ def generate_publication_figure(
 
     buf = io.BytesIO()
     fig.savefig(buf, format=fmt, dpi=dpi, bbox_inches="tight")
-    plt.close(fig)
     buf.seek(0)
 
     media_type = "image/png" if fmt == "png" else ("image/svg+xml" if fmt == "svg" else "application/pdf")
