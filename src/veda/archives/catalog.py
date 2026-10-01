@@ -616,7 +616,7 @@ def fetch_product(dataset_id: str, product_id: str,
         refused = None          # a server that answers 403/5xx is not the same as a missing file
         for url in candidates:
             try:
-                http.download(url, label_path, login_url=ds.login_url, max_bytes=max_bytes)
+                http.download(url, label_path, login_url=ds.login_url, max_bytes=max_bytes, progress=progress)
                 # the spelling that worked goes first for the pointer files
                 product_dirs.insert(0, product_dirs.pop(product_dirs.index(url.rsplit("/", 1)[0] + "/")))
                 break

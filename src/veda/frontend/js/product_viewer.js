@@ -28,9 +28,11 @@ export async function showProductViewer(box, p, { onGeometry, confirmLarge = fal
   st.box = box; st.p = p; st.onGeometry = onGeometry || null; st.tableMode = undefined;
   const token = ++st.token;
   box.innerHTML = `<div class="empty-state">Downloading and reading <code>${esc(p.product_id)}</code>&hellip;
-    ${confirmLarge ? '<br><span class="hint">Large file: this can take a while. You can keep working in other tabs.</span>' : ''}</div>`;
+    <div class="pv-progress" hidden><progress max="1" value="0"></progress> <span class="hint"></span></div>
+    ${confirmLarge ? '<span class="hint">Large file: this can take a while. You can keep working in other tabs.</span>' : ''}</div>`;
+  const stopProgress = watchProgress(box, p, token);
   try {
-    const s = await api.productStructure(p.dataset_id, p.product_id, confirmLarge);
+    const s = await api.productStructure(p.dataset_id, p.product_id, confirmLarge).finally(stopProgress);
     if (token !== st.token) return;
     st.structure = s;
     // For the Cite panel: the archive's own data set identifier from the label
@@ -67,6 +69,28 @@ export async function showProductViewer(box, p, { onGeometry, confirmLarge = fal
       if (!geo.hidden) showGeometry(geo, { dataset_id: p.dataset_id, product_id: p.product_id });
     });
   }
+}
+
+/** Poll the download progress of ``p`` into the loading message until stopped. */
+function watchProgress(box, p, token) {
+  let timer = 0, stopped = false;
+  const tick = async () => {
+    if (stopped || token !== st.token) return;
+    try {
+      const pr = await api.productProgress(p.dataset_id, p.product_id);
+      const wrap = box.querySelector('.pv-progress');
+      if (wrap && pr.active && !stopped) {
+        wrap.hidden = false;
+        const bar = wrap.querySelector('progress');
+        const mb = (n) => (n / 1e6).toFixed(n < 1e7 ? 1 : 0);
+        if (pr.total > 0) { bar.max = pr.total; bar.value = pr.done; } else bar.removeAttribute('value');
+        wrap.querySelector('.hint').textContent = pr.total > 0 ? `${mb(pr.done)} of ${mb(pr.total)} MB` : `${mb(pr.done)} MB`;
+      }
+    } catch { /* progress is cosmetic */ }
+    if (!stopped) timer = setTimeout(tick, 800);
+  };
+  timer = setTimeout(tick, 600);
+  return () => { stopped = true; clearTimeout(timer); };
 }
 
 function render(objectName) {

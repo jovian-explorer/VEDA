@@ -1637,3 +1637,5 @@ a.btn:hover { border-color: var(--focal); }
   border-radius: var(--radius-sm); background: var(--surface-elevated); font: 12px/1.45 var(--mono);
   white-space: pre; tab-size: 8; }
 .pv-text mark { background: #f5c54266; color: inherit; }
+.pv-progress { margin: 10px auto 4px; display: flex; gap: 8px; align-items: center; justify-content: center; }
+.pv-progress progress { width: min(320px, 70%); accent-color: var(--accent); }

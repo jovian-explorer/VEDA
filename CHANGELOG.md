@@ -17,6 +17,7 @@ All notable changes to VEDA. VEDA is pre-release software at version **0.0.1** u
 #### Reading products
 - **Byte-order repair**: floats written in the opposite byte order to their label (Juno JIRAM RDR spectra are labelled MSB but written LSB) are detected from the values (about 70 orders of magnitude of spread and NaNs, against a few for the swapped bytes) and read correctly. Previously these spectra plotted as noise around 1e38.
 - **Text products** (operations logs, PDS3 TEXT/DOCUMENT objects, PDS4 Stream_Text) open in the viewer as searchable text with a Save button, instead of the message "cannot be plotted". The data file of a live PDS4 product is now always downloaded, even when it is a .txt (it was skipped as an optional description).
+- Opening a product shows download progress (MB received of the total).
 - Signalling NaNs in data files no longer raise warnings.
 - **Large files ask first**: opening a product whose data file is larger than the new *Large-file limit* setting (default 250 MB) shows its size and an estimated download time, with a button to download it, instead of starting a download of possibly over an hour (Juno UVS photon lists are about 1.2 GB).
 

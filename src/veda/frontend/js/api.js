@@ -107,6 +107,7 @@ export const api = {
   productSpectrum: (ds, pid, params) => call(`${productBase(ds, pid)}/cube/spectrum?${query(params)}`),
   productRows: (ds, pid, params) => call(`${productBase(ds, pid)}/rows?${query(params)}`),
   productText: (ds, pid, params) => call(`${productBase(ds, pid)}/text?${query(params)}`),
+  productProgress: (ds, pid) => call(`${productBase(ds, pid)}/progress`),
   archiveJob: (jobId) => call(`/api/veda/archive/jobs/${encodeURIComponent(jobId)}`),
   archiveLive: (req) => call('/api/veda/archive/live', {method: 'POST', body: req}),
   geometryKernels: (ds, pid) => call(`/api/veda/geometry/${encodeURIComponent(ds)}/${encodeURIComponent(pid)}/kernels`),

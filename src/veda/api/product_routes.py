@@ -22,14 +22,22 @@ from ..readers.product import DataObject, Product, ProductError, open_product
 
 router = APIRouter(prefix="/api/veda/product", tags=["product"])
 
+# Bytes received for products being downloaded, so the viewer can show progress
+_PROGRESS: Dict[str, Dict[str, int]] = {}
+
 
 def _product(dataset_id: str, product_id: str, confirm_large: bool = True) -> Product:
     if not catalog.get_product(dataset_id, product_id):
         raise HTTPException(404, f"Unknown product {dataset_id}/{product_id}")
     from ..config import SETTINGS
+    key = f"{dataset_id}/{product_id}"
+
+    def progress(done: int, total: int) -> None:
+        _PROGRESS[key] = {"done": done, "total": total}
+
     try:
-        label = catalog.fetch_product(dataset_id, product_id, max_bytes=None if confirm_large
-                                      else SETTINGS.product_confirm_mb * 1_000_000)
+        label = catalog.fetch_product(dataset_id, product_id, progress=progress,
+                                      max_bytes=None if confirm_large else SETTINGS.product_confirm_mb * 1_000_000)
         return open_product(str(label))
     except net.TooLarge as exc:
         # 413 with the size, so the viewer can ask before a very long download
@@ -43,6 +51,8 @@ def _product(dataset_id: str, product_id: str, confirm_large: bool = True) -> Pr
         raise HTTPException(422, str(exc))
     except (OSError, ValueError) as exc:
         raise HTTPException(422, f"Could not read this product: {exc}")
+    finally:
+        _PROGRESS.pop(key, None)
 
 
 def _object(prod: Product, name: Optional[str], kinds=None) -> DataObject:
@@ -195,6 +205,13 @@ def _band_array(obj: DataObject, band: int, max_dim: int) -> tuple:
     except (OSError, ValueError, MemoryError) as exc:
         raise HTTPException(422, f"Could not read {obj.name}: {exc}")
     return a, step
+
+
+@router.get("/{dataset_id}/{product_id}/progress")
+def progress(dataset_id: str, product_id: str) -> Dict[str, Any]:
+    """Bytes received so far of the data file being downloaded (total 0 when unknown)."""
+    p = _PROGRESS.get(f"{dataset_id}/{product_id}")
+    return {"active": p is not None, **(p or {"done": 0, "total": 0})}
 
 
 @router.get("/{dataset_id}/{product_id}/text")

@@ -183,3 +183,23 @@ def test_refused_server_is_reported_as_refused_not_missing(monkeypatch):
     monkeypatch.setattr(net, "download", too_big)
     with pytest.raises(net.TooLarge):
         catalog.fetch_product(ds.id, "p", max_bytes=1000)
+
+
+def test_download_progress_is_visible_while_a_product_downloads(monkeypatch):
+    from fastapi.testclient import TestClient
+    from veda.api import product_routes
+    from veda.api.app import create_app
+    from veda.archives import net
+    seen = {}
+
+    def fake_fetch(ds, pid, progress=None, max_bytes=None):
+        progress(3_000_000, 12_000_000)
+        seen["during"] = product_routes.progress(ds, pid)
+        raise net.ArchiveError("stop here")
+
+    monkeypatch.setattr(product_routes.catalog, "get_product", lambda ds, pid: {"volume": "", "path": ""})
+    monkeypatch.setattr(product_routes.catalog, "fetch_product", fake_fetch)
+    c = TestClient(create_app())
+    c.get("/api/veda/product/pds-lro-diviner/x/structure")
+    assert seen["during"] == {"active": True, "done": 3_000_000, "total": 12_000_000}
+    assert c.get("/api/veda/product/pds-lro-diviner/x/progress").json()["active"] is False
