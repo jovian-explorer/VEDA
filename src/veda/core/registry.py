@@ -858,7 +858,7 @@ FIELD_REGISTRY: Dict[str, dict] = {
         "category": "thermodynamic",
         "formula": r"T_C = T - 273.15",
         "reference": "BIPM International Temperature Scale (ITS-90)",
-        "doi": "10.1086/111096",
+        "doi": "",
         "archive": "NASA PDS / ESA PSA / JAXA DARTS",
         "description": "Atmospheric temperature converted to degrees Celsius."
     },
@@ -890,8 +890,8 @@ FIELD_REGISTRY: Dict[str, dict] = {
         "units": "el/cm³",
         "category": "ionosphere",
         "formula": r"N_e(r) = -\frac{f^2}{40.3 \pi} \int_r^{r_{sc}} \frac{d\alpha_{iono}/da}{\sqrt{a^2 - r^2}}\,da",
-        "reference": "Withers, P., et al. (2014), J. Geophys. Res. Space Physics, 119(9), 7720-7732",
-        "doi": "10.1002/2014JA020182",
+        "reference": "Fjeldbo, G., Kliore, A. J., & Eshleman, V. R. (1971), Astron. J., 76, 123-140 (radio occultation retrieval)",
+        "doi": "10.1086/111096",
         "archive": "NASA PDS / ESA PSA / ISRO ISSDC",
         "description": "Planetary ionospheric electron density inverted from dual-frequency radio occultation excess phase."
     },
@@ -901,7 +901,7 @@ FIELD_REGISTRY: Dict[str, dict] = {
         "units": "K",
         "category": "derived_stability",
         "formula": r"\theta = T \left(\frac{P_{ref}}{P}\right)^\kappa, \quad \kappa = \frac{R_{spec}}{c_p}",
-        "reference": "Holton, J. R., & Hakim, G. J. (2012), An Introduction to Dynamic Meteorology, Academic Press",
+        "reference": "Holton, J. R., & Hakim, G. J. (2013), An Introduction to Dynamic Meteorology, 5th ed., Academic Press",
         "doi": "10.1016/C2009-0-63394-8",
         "archive": "Planetary Thermodynamic Formulation",
         "description": "Potential temperature evaluated with body-specific gas constant R and isobaric heat capacity Cp."
@@ -913,7 +913,7 @@ FIELD_REGISTRY: Dict[str, dict] = {
         "category": "derived_stability",
         "formula": r"\Gamma = -\frac{dT}{dz}",
         "reference": "Salby, M. L. (1996), Fundamentals of Atmospheric Physics, Academic Press",
-        "doi": "10.1016/S0074-6142(96)80005-7",
+        "doi": "",
         "archive": "Planetary Thermodynamic Formulation",
         "description": "Negative vertical derivative of temperature with respect to geometric altitude."
     },
@@ -924,7 +924,7 @@ FIELD_REGISTRY: Dict[str, dict] = {
         "category": "derived_structure",
         "formula": r"H = \frac{R_{spec} T}{g(z)} = \frac{k_B T}{\mu m_u g(z)}",
         "reference": "Chamberlain, J. W., & Hunten, D. M. (1987), Theory of Planetary Atmospheres, Academic Press",
-        "doi": "10.1016/B978-0-12-167252-2.50005-1",
+        "doi": "",
         "archive": "Planetary Thermodynamic Formulation",
         "description": "Atmospheric pressure e-folding scale height incorporating altitude-dependent planetary gravity g(z)."
     },
@@ -950,14 +950,25 @@ FIELD_REGISTRY: Dict[str, dict] = {
         "archive": "Planetary Thermodynamic Formulation",
         "description": "Brunt-Vaisala static stability frequency squared determining atmospheric convective stability on other worlds."
     },
+    "dry_adiabatic_lapse_rate": {
+        "id": "dry_adiabatic_lapse_rate",
+        "label": "Dry Adiabatic Lapse Rate",
+        "units": "K/km",
+        "category": "derived_stability",
+        "formula": r"\Gamma_d = \frac{g(z)}{c_p(T)}",
+        "reference": "Salby, M. L. (1996), Fundamentals of Atmospheric Physics, Academic Press; cp(T) from the JANAF thermochemical tables",
+        "doi": "",
+        "archive": "Planetary Thermodynamic Formulation",
+        "description": "Temperature decrease of a dry parcel rising adiabatically. VEDA uses a temperature-dependent cp for CO2 and N2 atmospheres (Venus, Mars, Titan, Pluto); a layer is statically unstable where the observed lapse rate exceeds it."
+    },
     "t_prime": {
         "id": "t_prime",
         "label": "Temperature Perturbation T'",
         "units": "K",
         "category": "waves",
         "formula": r"T' = T - T_{background}",
-        "reference": "Ando, H., et al. (2020), J. Geophys. Res. Planets, 125(6), e2019JE006208",
-        "doi": "10.1029/2019JE006208",
+        "reference": "Tsuda, T., et al. (2000), J. Geophys. Res., 105(D6), 7257-7273",
+        "doi": "10.1029/1999jd901005",
         "archive": "Planetary Wave Analysis",
         "description": "Small-scale atmospheric gravity wave temperature perturbation extracted by high-pass polynomial filtering."
     },
@@ -979,7 +990,7 @@ FIELD_REGISTRY: Dict[str, dict] = {
         "category": "acoustics",
         "formula": r"c_s = \sqrt{\gamma R_{spec} T}, \quad \gamma = \frac{c_p}{c_p - R_{spec}}",
         "reference": "Salby, M. L. (1996), Fundamentals of Atmospheric Physics, Academic Press",
-        "doi": "10.1016/S0074-6142(96)80005-7",
+        "doi": "",
         "archive": "Planetary Acoustic Formulation",
         "description": "Adiabatic speed of sound in planetary gas mixtures."
     },
@@ -990,7 +1001,7 @@ FIELD_REGISTRY: Dict[str, dict] = {
         "category": "derived_stability",
         "formula": r"\tau_B = \frac{2\pi}{N} \cdot \frac{1}{60}",
         "reference": "Gill, A. E. (1982), Atmosphere-Ocean Dynamics, Academic Press",
-        "doi": "10.1016/S0074-6142(08)60029-9",
+        "doi": "",
         "archive": "Planetary Stability Formulation",
         "description": "Natural oscillation period of vertically displaced air parcels in a stably stratified planetary atmosphere."
     },

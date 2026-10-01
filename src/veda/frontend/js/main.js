@@ -409,8 +409,8 @@ function helpBody() {
         <li><strong>Potential temperature ($\\theta$):</strong>
           <p>$$\\theta(z) = T(z) \\left(\\frac{P_0}{P(z)}\\right)^{R_{spec}/C_p}$$</p></li>
         <li><strong>Brunt-V&auml;is&auml;l&auml; frequency ($N^2$):</strong>
-          <p>$$N^2(z) = \\frac{g(z)}{T(z)}\\left(\\frac{dT}{dz} + \\Gamma_d\\right), \\quad \\Gamma_d = g/C_p$$</p>
-          Negative $N^2$ marks convectively unstable layers.</li>
+          <p>$$N^2(z) = \\frac{g(z)}{T(z)}\\left(\\frac{dT}{dz} + \\Gamma_d\\right), \\quad \\Gamma_d = g/c_p(T)$$</p>
+          Negative $N^2$ marks convectively unstable layers. For Venus, Mars, Titan and Pluto $c_p$ depends on temperature (JANAF ideal-gas values of the main gases weighted by composition): about 740 J/(kg K) on Mars at 200 K, 850 to 1140 J/(kg K) from 300 to 735 K on Venus.</li>
         <li><strong>Gravity-wave potential energy:</strong>
           <p>$$E_p(z) = \\frac{1}{2}\\left(\\frac{g}{N}\\right)^2 \\overline{\\left(\\frac{T'}{\\overline{T}}\\right)^2}$$</p></li>
         <li><strong>Radio occultation (Abel inversion):</strong>

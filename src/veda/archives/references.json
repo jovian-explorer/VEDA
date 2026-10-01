@@ -2345,7 +2345,7 @@
    ],
    "et_al": false,
    "year": 1998,
-   "title": "Thermal structure of Jupiter's atmosphere near the edge of a 5‐μm hot spot in the north equatorial belt",
+   "title": "Thermal structure of Jupiter's atmosphere near the edge of a 5-μm hot spot in the north equatorial belt",
    "journal": "Journal of Geophysical Research: Planets",
    "volume": "103",
    "issue": "E10",
@@ -5004,70 +5004,6 @@
     }
    ],
    "note": "Extra: Chandrayaan-2 XSM instrument paper."
-  },
-  {
-   "key": "schreiner2020",
-   "authors": [
-    "Schreiner, W.",
-    "Weiss, J.",
-    "Anthes, R.",
-    "Braun, J.",
-    "Chu, V.",
-    "Fong, J.",
-    "Hunt, D.",
-    "Kuo, Y.",
-    "Meehan, T.",
-    "Serafino, W."
-   ],
-   "et_al": true,
-   "year": 2020,
-   "title": "COSMIC‐2 Radio Occultation Constellation: First Results",
-   "journal": "Geophysical Research Letters",
-   "volume": "47",
-   "issue": "4",
-   "pages": "e2019GL086841",
-   "doi": "10.1029/2019gl086841",
-   "verified": true,
-   "type": "article",
-   "used_for": [
-    {
-     "mission": "cosmic2",
-     "payload": "RO"
-    }
-   ],
-   "note": "GRL 47(4), article e2019GL086841."
-  },
-  {
-   "key": "ho2020",
-   "authors": [
-    "Ho, S.-p.",
-    "Anthes, R. A.",
-    "Ao, C. O.",
-    "Healy, S.",
-    "Horanyi, A.",
-    "Hunt, D.",
-    "Mannucci, A. J.",
-    "Pedatella, N.",
-    "Randel, W. J.",
-    "Simmons, A."
-   ],
-   "et_al": true,
-   "year": 2020,
-   "title": "The COSMIC/FORMOSAT-3 Radio Occultation Mission after 12 Years: Accomplishments, Remaining Challenges, and Potential Impacts of COSMIC-2",
-   "journal": "Bulletin of the American Meteorological Society",
-   "volume": "101",
-   "issue": "7",
-   "pages": "E1107-E1136",
-   "doi": "10.1175/bams-d-18-0290.1",
-   "verified": true,
-   "type": "article",
-   "used_for": [
-    {
-     "mission": "cosmic2",
-     "payload": "RO"
-    }
-   ],
-   "note": "Hint said \"Ho et al. 2020 BAMS\". Crossref title is about COSMIC/FORMOSAT-3 after 12 years and the potential impacts of COSMIC-2 (BAMS 101(7):E1107-E1136)."
   },
   {
    "key": "acton1996",

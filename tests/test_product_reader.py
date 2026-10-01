@@ -177,11 +177,24 @@ END
         open_product(str(lbl))
 
 
-def test_netcdf_profile_table():
-    nc = sorted((SAMPLES / "earth_cosmic2").glob("atmPrf_*"))
-    if not nc:
-        pytest.skip("no COSMIC-2 sample")
-    p = open_product(str(nc[0]))
-    t = next(o for o in p.objects if o.kind == "table")
-    d = t.read_table(limit=10)
-    assert "MSL_alt" in d and len(d["MSL_alt"]) == 10
+def test_netcdf_map_and_profile_table(tmp_path):
+    netCDF4 = pytest.importorskip("netCDF4")
+    f = tmp_path / "sample.nc"
+    with netCDF4.Dataset(f, "w") as ds:
+        ds.createDimension("time", 1); ds.createDimension("lat", 4); ds.createDimension("lon", 8)
+        ds.createDimension("alt", 5)
+        t = ds.createVariable("time", "f8", ("time",)); t.units = "hours since 2000-01-01 00:00:00"; t[:] = [24.0]
+        la = ds.createVariable("lat", "f4", ("lat",)); la[:] = [-67.5, -22.5, 22.5, 67.5]
+        lo = ds.createVariable("lon", "f4", ("lon",)); lo[:] = np.arange(8) * 45 + 22.5
+        rad = ds.createVariable("radiance", "f4", ("time", "lat", "lon"), fill_value=-1.0); rad.units = "W/m2/sr/m"
+        data = np.arange(32, dtype="f4").reshape(1, 4, 8); data[0, 0, 0] = -1.0; rad[:] = data
+        z = ds.createVariable("alt", "f4", ("alt",)); z[:] = [10, 20, 30, 40, 50]
+        tk = ds.createVariable("temperature", "f4", ("alt",)); tk.units = "K"; tk[:] = [220, 210, 200, 190, 185]
+    p = open_product(str(f))
+    img = next(o for o in p.objects if o.kind == "image")
+    assert img.name == "radiance" and img.extent["x"][2] == "lon" and img.extent["y"][0] == -67.5
+    a = img.read_array()
+    assert a.shape == (1, 4, 8) and np.isnan(a[0, 0, 0]) and a[0, 3, 7] == 31
+    tab = next(o for o in p.objects if o.kind == "table")
+    d = tab.read_table()
+    assert list(d["alt"]) == [10, 20, 30, 40, 50] and d["temperature"][2] == 200

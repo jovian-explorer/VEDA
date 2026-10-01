@@ -1,66 +1,80 @@
 # Changelog
 
-All notable changes to VEDA. Versions follow [semantic versioning](https://semver.org/). VEDA stays at 0.x until its public release; 0.1.0 and 0.2.0 were first tagged as v2.0.0 and v2.1.0.
+All notable changes to VEDA. VEDA is pre-release software at version **0.0.1** until the repository is published; the public release will be **1.0.0**. The version number does not change before then. Work done during development is recorded below as milestones (the first two were briefly tagged v2.0.0 and v2.1.0; those tags are withdrawn).
 
-## 0.3.0 (unreleased)
+## 0.0.1 (pre-release, in development)
+
+### Milestone 5 (2026-10-02): reconciliation and scientific corrections
+
+#### Science
+- **Temperature-dependent heat capacity** for Venus, Mars, Titan and Pluto: cp(T) from the JANAF ideal-gas tables of the main constituents, weighted by composition (Mars 740 J/(kg K) at 200 K instead of a fixed 830; Venus 850 at 300 K rising to 1140 at 735 K). Used for N^2, the new dry adiabatic lapse rate g/cp(T) and the speed of sound; potential temperature keeps the conventional constant kappa at the reference cp.
+- N^2, buoyancy period and dry adiabatic lapse rate are computed from temperature alone (they were skipped for profiles without a pressure column).
+- Removed a second, Earth-constant implementation of potential temperature and N^2 (dry-air R and cp, 1000 hPa) that was not used by the app, so every derived value comes from one body-aware implementation.
+- New analytic tests: isothermal Mars (scale height, N^2 = g^2/(cp T), density, sound speed), a true dry adiabat through the deep Venus atmosphere (N^2 = 0 with cp(T)), potential temperature at the reference pressure, Chapman-layer TEC.
+
+#### Clean-up
+- Version is 0.0.1 until the public 1.0.0 release; the v2.0.0 and v2.1.0 tags and releases are withdrawn. Release builds of 0.x tags are marked as pre-releases.
+- Removed the unused COSMIC-2 (Earth) reader, adapter, samples and references (Earth is outside VEDA's scope), the COSMIC-era API client calls to endpoints VEDA never had, and unused client state.
+
+### Milestone 4 (2026-10-01): every payload, geometry for all missions, citations
 
 VEDA now covers nearly every payload of every mission, searchable by date, plottable, with geometry and tailored citations.
 
-### Every payload, searched by date
+#### Every payload, searched by date
 - Live search of whole instrument archives for the dates you give: ESA PSA EPN-TAP (Mars Express, Venus Express, Rosetta, BepiColombo, Huygens), the NASA PDS Registry API (MAVEN, Juno, New Horizons, MESSENGER, LRO, Galileo, Magellan, MGS, MRO, Pioneer Venus, Dawn) and OPUS (Cassini, Galileo and New Horizons imaging and spectra). 106 live data sets; answers are cached per window.
 - New indexed data sets: all Akatsuki cameras (UVI, IR1, IR2, LIR: raw, calibrated, geometry), MRO MCS DDR/EDR/RDR from cumulative indexes, CTX and MARCI on request, JunoCam, Juno magnetometer, Cassini INMS, Pioneer Venus ONMS. 141 data sets in all.
 - Index files are read four at a time; cumulative indexes are streamed from disk.
 
-### Plot any product
+#### Plot any product
 - New reader for PDS3 (ASCII and binary tables, containers, record arrays, multi-line records, images, qubes, arrays), PDS4 (binary, character and delimited tables, arrays), FITS and netCDF, memory-mapped.
 - Product viewer: fields against fields and time, spectrograms, profiles per row (MCS), images and maps with stretch, transects and value read-out, cubes with per-pixel spectra. Peak-preserving decimation for large tables.
 - Tolerant of common label errors (record lengths, integers labelled as floats, files shorter than their label) and clear messages when a product has no plottable layout.
 
-### Observation geometry for all missions
+#### Observation geometry for all missions
 - SPICE kernel sources for 17 missions (file-name coverage, PDS3 coverage tables or archive read-me tables); Pluto, Ceres, Vesta and 67P body kernels and frames.
 - Kernels download automatically when a mission or observation is opened (Settings: on/off and a size limit).
 - Orbit geometry for any observation: 3D orbit, ground track, altitude, local time, solar zenith, emission and phase angles.
 
-### What to cite
-- Cite panel: references for exactly the data sets and features you used (174 Crossref-verified references), archive acknowledgements, BibTeX, text and a data availability statement.
+#### What to cite
+- Cite panel: references for exactly the data sets and features you used (172 references with Crossref-verified DOIs), archive acknowledgements, BibTeX, text and a data availability statement.
 
-### Speed and stability
+#### Speed and stability
 - Plots removed from the page are purged (they leaked resize handlers and memory); image-viewer listeners no longer accumulate; no backdrop blur on cards and the top bar.
 - Thread-safe publication figures; SQLite WAL; Windows paths kept short for long archive URLs; folder builds instead of a onefile exe (start-up in seconds instead of a minute).
 
-### Earlier in 0.3.0
+### Milestone 3 (2026-10-01): real archive data only
 
 VEDA now works only with real archive data and can search it by body, mission, payload and date.
 
-### Breaking
+#### Breaking
 - **All synthetic data removed.** The generated sample granules, the mission adapters that served them and `scripts/generate_sample_granules.py` are gone. Every mission now shows only products from its archive; the bundled samples are unmodified archive products (Akatsuki RS L4 and UVI, Mars Express MaRS L4, Cassini RSS Titan, COSMIC-2).
 
-### Archive engine
+#### Archive engine
 - Reads PDS3 volume indexes (`INDEX.TAB`, format files, DARTS and PSA layouts) and PDS4 bundles into a local SQLite catalogue; products are downloaded on request with retries and atomic writes.
 - **Find observations of a body by date** searches every connected data set for that body at once.
 - **Archive data** per mission: choose payloads and data sets, filter by date, product type, text, profiles only or downloaded only, sort, download, open and compare.
 - Connected data sets: Akatsuki RS L2 to L4 (DARTS); Mars Express MaRS L4 and Venus Express VeRa (PSA); Magellan radio occultation profiles, H2SO4 and raw records, Venus Express VeRa (PDS copy), Mars Global Surveyor RS, Galileo probe, Huygens HASI, Cassini RSS Titan ionosphere (PDS4) and Juno MWR (PDS Atmospheres).
 - ISRO ISSDC (Mars Orbiter Mission, Chandrayaan-2): sign in on PRADAN, download there, then import into VEDA.
 
-### Readers
+#### Readers
 - PDS3: stack-based label parser with quote-aware tokenising, `^STRUCTURE` format files, multiple tables per file, character columns, record repair, declared missing constants; PDS4 character and delimited tables.
 - Unit-aware loading (pressure, temperature, number and electron density including scaled units, radius and altitude in metres); times from the index, label or file name, never from product creation dates.
 
-### Plotting and analysis
+#### Plotting and analysis
 - Multi-panel profiles of every quantity in a product, with the archived 1-sigma uncertainty as bands or error bars, and the product's time, location, SZA and local time.
 - **Plot style**: lines, markers, palettes, uncertainty, axes (log, swapped, pressure as vertical axis), fonts, legend, and AGU, Elsevier, A&A and MNRAS templates; **Export figure** at journal column width as PNG or SVG.
 - Comparisons coloured by mission, date or latitude.
 
-### Observation geometry
+#### Observation geometry
 - SPICE geometry for Akatsuki and Mars Express: orbit (planet-fixed and J2000), view from Earth, tangent-point map in four projections, SZA, local time and Sun-Earth-probe angle along the profile. Kernels are listed with their size and downloaded on confirmation; light time is corrected for Earth-received times.
 
-### Documentation and terms
+#### Documentation and terms
 - New **TERMS.md** (warranty, responsibility for results, fair use of the archives, privacy). **DATA_POLICY.md** rewritten around the connected data sets, each archive's terms and the reference publications to cite. README, USAGE, third-party licenses (SpiceyPy, NAIF CSPICE, Natural Earth added; Three.js removed, as it is not used), and the in-app Help, About and Data & Licenses panels updated. Data & Licenses lists the connected data sets from the catalogue and offers a copyable data availability statement.
 - CSV exports name the source file and VEDA version and state which columns are archived and which are derived.
 
-## 0.2.0
+### Milestone 2 (2026-10-01, briefly tagged v2.1.0): science fixes, stability, security
 
-### Science fix
+#### Science fix
 - **Akatsuki temperature profile.** Column lookup took the first name that merely
   *contained* the query, so `TEMPERATURE` matched
   `PRESSURE (LOWER TEMPERATURE AT BOUNDARY)` and the Akatsuki radio-science
@@ -70,7 +84,7 @@ VEDA now works only with real archive data and can search it by body, mission, p
   reads 147-288 K over 54-95 km. No other bundled profile changes. The same fix
   applies to uploaded tables, where a bare `T` could previously match `LATITUDE`.
 
-### Stability
+#### Stability
 - The multi-mission comparison crashed on every body when no selected
   observation carried the chosen variable; it now explains what to do.
 - Uploaded images opened in the profile viewer and failed; they open in the
@@ -84,14 +98,14 @@ VEDA now works only with real archive data and can search it by body, mission, p
   returned 404.
 - Three Workflow Guide buttons did nothing.
 
-### Security
+#### Security
 - The local API no longer allows cross-origin requests from other websites and
   checks the `Host` header (DNS rebinding). Set `VEDA_ALLOWED_HOSTS` when serving
   on a network with `veda-server --host 0.0.0.0`.
 - Settings are validated and saved atomically; a damaged `settings.json`
   falls back to defaults.
 
-### Features
+#### Features
 - Select or drop several files at once; a PDS3 `.lbl` is sent with its `.tab`.
 - Recently loaded files are kept under the *user_imported* mission.
 - Settings now all take effect: theme (dark, light, follow system), font size,
@@ -105,16 +119,16 @@ VEDA now works only with real archive data and can search it by body, mission, p
   troubleshooting.
 - Download failures explain the cause (offline, timeout, file removed).
 
-### Interface
+#### Interface
 - Plots follow the light/dark theme; the light theme is readable throughout.
 - The comparison legend no longer covers the plot title.
 - Header fits on one row at laptop widths; fixed the unreadable active tab and
   unit buttons, the squeezed mission list and the observation table.
 
-### Performance
+#### Performance
 - Text tables are parsed column-wise with NumPy instead of cell by cell.
 
-## 0.1.0
+### Milestone 1 (2026-09-30, briefly tagged v2.0.0): packaging and first builds
 
 - Installable Python package (`pip install git+https://github.com/jovian-explorer/VEDA.git`)
   with `veda` and `veda-server` commands.

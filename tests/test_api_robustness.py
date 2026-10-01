@@ -1,4 +1,4 @@
-"""Regression tests for API input validation, uploads and security fixes (v0.2.0).
+"""Regression tests for API input validation, uploads and security fixes.
 
 Each test names the bug it guards against.
 """

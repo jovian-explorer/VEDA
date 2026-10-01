@@ -83,21 +83,37 @@ def compute_atmospheric_diagnostics(
     g0 = body.surface_gravity
     gz = g0 * (r_body / (r_body + np.clip(z, 0.0, None))) ** 2
 
-    # 3. Scale Height H = R_spec * T / g(z) in km
+    # 3. Scale height H = R_spec T / g(z) (km) and speed of sound with cp(T)
+    from .thermo import cp_model, heat_capacity
     r_spec = body.gas_constant_r
-    cp = body.isobaric_heat_capacity_cp
+    cp_t = heat_capacity(body, t_k)                 # J/(kg K), temperature dependent for CO2/N2 atmospheres
+    profile.raw_attributes["cp_model"] = cp_model(body)
     with np.errstate(invalid="ignore", divide="ignore"):
         h_scale = (r_spec * t_k) / (gz * 1000.0)
-        gamma = cp / max(cp - r_spec, 1.0) if cp > r_spec else 1.4
+        gamma = np.where(cp_t > r_spec, cp_t / (cp_t - r_spec), np.nan)
         cs = np.sqrt(gamma * r_spec * t_k)
     derived["scale_height"] = h_scale
     derived["speed_of_sound"] = cs
 
-    # 4. Pressure and Potential Temperature
+    # 4. Static stability, from temperature alone:
+    #    N^2 = (g / T) (dT/dz + g / cp(T)),  dry adiabatic lapse rate Gamma_d = g / cp(T)
+    #    (z in km, so dT/dz in K/km is divided by 1000; g in m/s^2; cp in J/(kg K))
+    dtdz_m = dtdz / 1000.0
+    with np.errstate(invalid="ignore", divide="ignore"):
+        gamma_d = gz / cp_t                          # K/m
+        n2 = (gz / t_k) * (dtdz_m + gamma_d)
+        tau_b = np.where(n2 > 0, (2.0 * np.pi / np.sqrt(n2)) / 60.0, np.nan)
+    derived["dry_adiabatic_lapse_rate"] = gamma_d * 1000.0      # K/km
+    derived["buoyancy_freq_sq"] = n2
+    derived["buoyancy_period"] = tau_b
+
+    # 5. Pressure-based quantities
     p_hpa = profile.pressure_hpa
     if p_hpa is not None and p_hpa.size == z.size:
-        # Poisson constant kappa = R / Cp
-        kappa = r_spec / cp
+        # Potential temperature with the conventional constant kappa = R / cp_ref, cp_ref
+        # being cp at the body's reference temperature (registry value); referenced to
+        # the body's reference pressure (e.g. 1 bar for the giant planets, 6.1 hPa for Mars).
+        kappa = r_spec / body.isobaric_heat_capacity_cp
         p_ref = body.reference_pressure_hpa
 
         with np.errstate(invalid="ignore", divide="ignore"):
@@ -109,17 +125,7 @@ def compute_atmospheric_diagnostics(
         derived["dtheta_dz"] = _gradient_nan_safe(z, theta)
         derived["density"] = rho
 
-        # Brunt-Vaisala frequency squared N^2 = (g / theta) * (d_theta / dz)
-        # Or equivalently: N^2 = (g / T) * (dT/dz + g/Cp)
-        # Note: z is in km, so dtdz is in K/km = 1e-3 K/m; gz is in m/s^2; Cp is in J/(kg K)
-        dtdz_m = dtdz / 1000.0
-        with np.errstate(invalid="ignore", divide="ignore"):
-            n2 = (gz / t_k) * (dtdz_m + gz / cp)
-            tau_b = np.where(n2 > 0, (2.0 * np.pi / np.sqrt(n2)) / 60.0, np.nan)
-        derived["buoyancy_freq_sq"] = n2
-        derived["buoyancy_period"] = tau_b
-
-    # 5. Ionospheric VTEC & F2 peak diagnostics if electron density is present
+    # 6. Ionospheric VTEC & F2 peak diagnostics if electron density is present
     if profile.electron_density_cm3 is not None and profile.electron_density_cm3.size >= 2:
         try:
             from .advanced_science import compute_vtec
@@ -130,7 +136,7 @@ def compute_atmospheric_diagnostics(
         except Exception:
             pass
 
-    # 6. Tropopause, Gravity Waves, and Ionospheric Chapman Modeling
+    # 7. Tropopause, Gravity Waves, and Ionospheric Chapman Modeling
     try:
         from .wave_and_stability import detect_tropopause, extract_gravity_wave_activity, fit_chapman_ionosphere
         tropo = detect_tropopause(z, t_k)

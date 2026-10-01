@@ -210,7 +210,6 @@ Generic kernels (naif0012.tls, pck00011.tpc, de440s.bsp and the Mars, Pluto, Cer
 | `sampledata/venus_akatsuki` | Akatsuki RS Level 4 profile and a UVI geometry image | JAXA DARTS, `vco-v-rs-5-occ-v1.0` and `vco-v-uvi-3-sedr-v1.0` |
 | `sampledata/mars_express` | MaRS L4 neutral atmosphere and ionosphere profiles | ESA PSA, `mex-m-mrs-5-occ` |
 | `sampledata/titan_cassini_rss` | Cassini RSS Titan electron density (PDS4) | NASA PDS Atmospheres, `corss_occul_el_dens` |
-| `sampledata/earth_cosmic2` | COSMIC-2 radio occultation granules | UCAR COSMIC Data Analysis and Archive Center (CDAAC) |
 
 ---
 
@@ -228,7 +227,7 @@ When you publish figures, tables or values produced with VEDA, please cite:
   title        = {{VEDA: Visualization, Exploration, and Data Analysis - A Multi-Mission Planetary Science Data Laboratory}},
   year         = {2026},
   publisher    = {Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO},
-  version      = {0.3.0},
+  version      = {0.0.1},
   url          = {https://github.com/jovian-explorer/VEDA},
   address      = {Thiruvananthapuram, Kerala, India}
 }
@@ -237,7 +236,7 @@ When you publish figures, tables or values produced with VEDA, please cite:
 ### Data availability statement (template)
 Remove the archives you did not use and add the data set DOIs:
 
-> The spacecraft observations analysed in this study are publicly available from the NASA Planetary Data System (PDS) Atmospheres Node (https://pds-atmospheres.nmsu.edu/), the ESA Planetary Science Archive (PSA) (https://archives.esac.esa.int/psa/) and the JAXA Data Archives and Transmission System (DARTS) (https://data.darts.isas.jaxa.jp/); ISRO mission data are available to registered users from the Indian Space Science Data Centre (ISSDC/PRADAN) (https://pradan.issdc.gov.in/). Spacecraft and planetary ephemerides were obtained from the NASA NAIF SPICE archive (https://naif.jpl.nasa.gov/) and the mission SPICE archives at ESA and JAXA. Archived values were read, unit-converted and compared with VEDA version 0.3.0 (https://github.com/jovian-explorer/VEDA).
+> The spacecraft observations analysed in this study are publicly available from the NASA Planetary Data System (PDS) Atmospheres Node (https://pds-atmospheres.nmsu.edu/), the ESA Planetary Science Archive (PSA) (https://archives.esac.esa.int/psa/) and the JAXA Data Archives and Transmission System (DARTS) (https://data.darts.isas.jaxa.jp/); ISRO mission data are available to registered users from the Indian Space Science Data Centre (ISSDC/PRADAN) (https://pradan.issdc.gov.in/). Spacecraft and planetary ephemerides were obtained from the NASA NAIF SPICE archive (https://naif.jpl.nasa.gov/) and the mission SPICE archives at ESA and JAXA. Archived values were read, unit-converted and compared with VEDA version 0.0.1 (https://github.com/jovian-explorer/VEDA).
 
 ---
 
