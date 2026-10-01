@@ -73,8 +73,8 @@ function render(objectName) {
           <div class="hint">${facts} &middot; ${esc(s.format)}${prod.product_type ? ` &middot; ${esc(prod.product_type)}` : ''}</div>
         </div>
         <div class="toolbar-actions">
-          <button type="button" class="btn small ghost" data-pv="style">&#127912; Plot style</button>
-          <button type="button" class="btn small ghost" data-pv="export">&#128444;&#65039; Export figure</button>
+          ${obj.kind === 'text' ? '' : `<button type="button" class="btn small ghost" data-pv="style">&#127912; Plot style</button>
+          <button type="button" class="btn small ghost" data-pv="export">&#128444;&#65039; Export figure</button>`}
           <button type="button" class="btn small ghost" data-pv="geometry" title="Where the spacecraft was: orbit, ground track, altitude, illumination (SPICE)">&#128752;&#65039; Geometry</button>
           ${obj.kind === 'table' ? '<button type="button" class="btn small ghost" data-pv="csv">&#128229; CSV of shown fields</button>' : ''}
         </div>
@@ -86,9 +86,9 @@ function render(objectName) {
       <div class="geo-box pv-geo" hidden></div>
     </div>`;
   st.box.querySelectorAll('[data-obj]').forEach(b => b.addEventListener('click', () => render(b.dataset.obj)));
-  st.box.querySelector('[data-pv="style"]').addEventListener('click', () =>
+  st.box.querySelector('[data-pv="style"]')?.addEventListener('click', () =>
     drawer('Plot style', plotStyleBody(() => redraw(), plotDiv())));
-  st.box.querySelector('[data-pv="export"]').addEventListener('click', () => {
+  st.box.querySelector('[data-pv="export"]')?.addEventListener('click', () => {
     const gd = plotDiv();
     if (gd) exportFigure(gd, `veda_${st.p.product_id}_${obj.name}`.replace(/[^\w.-]+/g, '_'));
   });
@@ -103,9 +103,54 @@ function render(objectName) {
   st.box.querySelector('[data-pv="csv"]')?.addEventListener('click', downloadCsv);
   const body = st.box.querySelector('.pv-body');
   if (obj.kind === 'table') renderTableControls(body, obj);
+  else if (obj.kind === 'text') renderText(body, obj);
   else {
     import('./citations.js').then(m => m.recordFeature('image')).catch(() => {});
     renderImageControls(body, obj);
+  }
+}
+
+// ================================================================ text (logs, documents)
+
+async function renderText(body, obj) {
+  const token = st.token;
+  body.innerHTML = `<div class="hint">Reading ${esc(obj.name)}&hellip;</div>`;
+  try {
+    const t = await api.productText(st.p.dataset_id, st.p.product_id, { object: obj.name });
+    if (token !== st.token) return;
+    body.innerHTML = `
+      <div class="pv-text-bar">
+        <span class="hint">${esc(obj.description || 'Text document')} &middot; ${t.lines.toLocaleString()} lines${t.truncated ? ' (first part shown)' : ''}</span>
+        <input type="search" class="pv-text-find" placeholder="Find in text" aria-label="Find in text" />
+        <span class="hint pv-text-count"></span>
+        <button type="button" class="btn small ghost" data-pv="savetext">&#128229; Save text</button>
+      </div>
+      <pre class="pv-text" tabindex="0"></pre>`;
+    const pre = body.querySelector('.pv-text');
+    pre.textContent = t.text;
+    const count = body.querySelector('.pv-text-count');
+    let timer = 0;
+    body.querySelector('.pv-text-find').addEventListener('input', (e) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        const q = e.target.value.trim();
+        if (!q) { pre.textContent = t.text; count.textContent = ''; return; }
+        let n = 0;
+        pre.innerHTML = esc(t.text).replace(new RegExp(esc(q).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'),
+          m => { n++; return `<mark>${m}</mark>`; });
+        count.textContent = `${n} match${n === 1 ? '' : 'es'}`;
+        pre.querySelector('mark')?.scrollIntoView({ block: 'center' });
+      }, 200);
+    });
+    body.querySelector('[data-pv="savetext"]').addEventListener('click', () => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([t.text], { type: 'text/plain' }));
+      a.download = `${st.p.product_id}.txt`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    });
+  } catch (err) {
+    if (token === st.token) body.innerHTML = `<div class="empty-state">${esc(err.message)}</div>`;
   }
 }
 

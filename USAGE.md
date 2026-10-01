@@ -85,8 +85,11 @@ Very large indexes (MRO CTX and MARCI, about 95 MB each) are read only when you 
 | Profiles per row (e.g. MRO MCS DDR) | **View: Profiles (one per row)**: plot one vector against another (temperature against pressure, dust against altitude ...), step through rows with the arrows, overlay up to 12. |
 | Image or map | Stretch, colour map, band slider, value read-out at a click, transects (two clicks) and the histogram. Maps keep their longitude and latitude axes. |
 | Spectral cube | Band slider; clicking a pixel plots its spectrum (3 x 3 pixel mean), keeping the last few for comparison. |
+| Text (operations logs, notes, documents) | Read it in the viewer, find text (matches highlighted), save it as a .txt file. |
 
 Products with several data objects (an image and its housekeeping table, several tables) show one tab per object. Products described only as raw bytes in their label can be downloaded but not plotted; the viewer says so.
+
+Some archive labels contain errors, and VEDA repairs the common ones from the values themselves: floats written in the opposite byte order to the label (Juno JIRAM spectra), integers labelled as floats (VEX SPICAV), wrong record lengths and files shorter than their label.
 
 ### What to cite
 **Cite** in the toolbar lists the references for what you have opened and used on this computer: each data set with the archive data set identifiers of the products you opened, the instrument and mission papers, the archive acknowledgements, SPICE and SpiceyPy if you used geometry, the libraries behind derived quantities and figures, and VEDA. Copy everything as BibTeX or text, or copy the data availability statement. **Start a new list** clears it (for a new paper).

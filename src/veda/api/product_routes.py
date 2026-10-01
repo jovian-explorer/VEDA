@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import math
 import re
+import warnings
 from typing import Any, Dict, List, Optional
 
 import numpy as np
@@ -157,7 +158,8 @@ def table(dataset_id: str, product_id: str, object: Optional[str] = None,
             ch_step = max(1, math.ceil(rows.shape[1] / max_channels))
             if ch_step > 1:
                 cut = rows.shape[1] // ch_step * ch_step
-                with np.errstate(invalid="ignore"):
+                with np.errstate(invalid="ignore"), warnings.catch_warnings():
+                    warnings.simplefilter("ignore", RuntimeWarning)       # all-NaN channel groups stay NaN
                     rows = np.nanmean(rows[:, :cut].reshape(rows.shape[0], -1, ch_step), axis=2)
             row_idx = np.linspace(0, v.shape[0] - 1, rows.shape[0]).astype(int)
             xs = data[x] if x else None
@@ -183,6 +185,19 @@ def _band_array(obj: DataObject, band: int, max_dim: int) -> tuple:
     except (OSError, ValueError, MemoryError) as exc:
         raise HTTPException(422, f"Could not read {obj.name}: {exc}")
     return a, step
+
+
+@router.get("/{dataset_id}/{product_id}/text")
+def text(dataset_id: str, product_id: str, object: Optional[str] = None,
+         max_bytes: int = Query(400_000, ge=1000, le=4_000_000)) -> Dict[str, Any]:
+    """A text object (operations log, document) for reading in the viewer."""
+    prod = _product(dataset_id, product_id)
+    obj = _object(prod, object, ("text",))
+    try:
+        body, truncated = obj.read_text(max_bytes)
+    except (OSError, ProductError) as exc:
+        raise HTTPException(422, f"Could not read {obj.name}: {exc}")
+    return {"object": obj.name, "lines": obj.shape[0], "truncated": truncated, "text": body}
 
 
 @router.get("/{dataset_id}/{product_id}/image.png")

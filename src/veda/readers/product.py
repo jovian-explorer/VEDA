@@ -61,7 +61,7 @@ def _unit(u: str) -> str:
 @dataclass
 class DataObject:
     name: str
-    kind: str                      # "table" | "image" | "cube" | "array"
+    kind: str                      # "table" | "image" | "cube" | "array" | "text"
     shape: Tuple[int, ...]
     fields: List[Field] = field(default_factory=list)
     description: str = ""
@@ -88,14 +88,20 @@ class DataObject:
         select a part, so a quick look at a very large image never loads all of it:
         the file is memory-mapped and only the selected bytes are converted.
         """
-        if self.kind == "table":
-            raise ProductError(f"{self.name} is a table")
+        if self.kind not in ("image", "cube", "array"):
+            raise ProductError(f"{self.name} is a {self.kind}")
         view, clean = self._reader()
         if view.ndim == 3:
             view = view[bands or slice(None), lines or slice(None, None, step), samples or slice(None, None, step)]
         elif view.ndim >= 2 and step > 1:
             view = view[..., ::step, ::step]
         return clean(np.asarray(view)).astype(np.float32, copy=False)
+
+    def read_text(self, max_bytes: int = 400_000) -> Tuple[str, bool]:
+        """A text object (log, document, label-described ASCII stream): (text, truncated)."""
+        if self.kind != "text":
+            raise ProductError(f"{self.name} is not a text object")
+        return self._reader(max_bytes)
 
     def to_dict(self) -> Dict[str, Any]:
         return {"name": self.name, "kind": self.kind, "shape": list(self.shape),
@@ -238,13 +244,48 @@ def _vax_to_float(raw: np.ndarray, nbytes: int) -> np.ndarray:
     return np.where(sign == 1, -val, val)
 
 
-def _fix_mislabelled_float(raw: np.ndarray) -> np.ndarray:
-    """A float column whose non-zero values are all denormal (|x| < 1e-30) is integer data
-    labelled as REAL (seen in VEX SPICAV IR): reinterpret the same bytes as integers."""
-    if raw.dtype.kind != "f" or raw.size == 0:
+def _decades(sample: np.ndarray) -> float:
+    """How many orders of magnitude the bulk (5-95 %) of the non-zero values spans; values
+    read in the wrong byte order span ~70, measurements a few.  NaN/Inf count as extreme."""
+    with np.errstate(invalid="ignore", over="ignore", divide="ignore"):
+        s = sample.astype(np.float64)
+        nz = s[s != 0]
+        if nz.size < 20:
+            return 0.0
+        lg = np.log10(np.abs(nz))
+    lg = np.where(np.isfinite(lg), lg, 400.0)
+    lo, hi = np.percentile(lg, [5, 95])
+    return float(hi - lo)
+
+
+def _fix_byte_order(raw: np.ndarray) -> np.ndarray:
+    """Floats written in the opposite byte order to the label read back as values spread
+    over ~70 decades (and NaNs); when the swapped bytes look like measurements, use them."""
+    if raw.dtype.kind != "f" or raw.size == 0 or raw.dtype.itemsize < 4:
         return raw
-    sample = raw.reshape(-1)[:5000]
-    nz = sample[(sample != 0) & np.isfinite(sample)]
+    flat = raw.reshape(-1)
+    sample = flat[:: max(1, flat.size // 5000)][:5000]
+    if _decades(sample) > 30 and _decades(sample.view(sample.dtype.newbyteorder())) < 15:
+        return raw.view(raw.dtype.newbyteorder())
+    return raw
+
+
+def _fix_mislabelled_float(raw: np.ndarray) -> np.ndarray:
+    """Repair two label errors seen in the archives, judged from the values themselves:
+
+    * floats in the opposite byte order to the label (Juno JIRAM RDR spectra are labelled
+      MSB but written LSB): read as labelled they are denormals, ~1e38 and NaNs, while the
+      swapped bytes are ordinary numbers;
+    * a float column whose non-zero values are all denormal (|x| < 1e-30) is integer data
+      labelled as REAL (VEX SPICAV IR): reinterpret the same bytes as integers.
+    """
+    if raw.dtype.kind != "f" or raw.size == 0 or raw.dtype.itemsize < 4:
+        return raw
+    raw = _fix_byte_order(raw)
+    flat = raw.reshape(-1)
+    sample = flat[:: max(1, flat.size // 5000)][:5000]
+    with np.errstate(invalid="ignore"):
+        nz = sample[(sample != 0) & np.isfinite(sample)]
     if nz.size and np.all(np.abs(nz) < 1e-30):
         return raw.view(raw.dtype.str.replace("f", "i"))
     return raw
@@ -270,7 +311,8 @@ def _strided(buf: np.ndarray, dtype: np.dtype, offset: int, shape: Tuple[int, ..
 
 def _clean(values: np.ndarray, missing: List[float], scale: float = 1.0, offset: float = 0.0,
            valid_range: Optional[Tuple[float, float]] = None) -> np.ndarray:
-    out = values.astype(np.float64)
+    with np.errstate(invalid="ignore"):          # signalling NaNs in the file
+        out = values.astype(np.float64)
     bad = ~np.isfinite(out)
     for m in missing:
         bad |= np.isclose(out, m, rtol=0, atol=max(abs(m) * 1e-7, 1e-9))
@@ -743,6 +785,7 @@ def _pds3_qube(node: _Node, ptr: str, record_bytes: int, label: Path) -> DataObj
             v = np.transpose(v, [order.index(w) for w in want])
 
         def clean(raw):
+            raw = _fix_byte_order(raw)
             arr = _clean(raw, missing, mult, base_v)
             if vmin is not None and dt.kind in "iu":
                 arr[raw < vmin] = np.nan
@@ -842,6 +885,7 @@ def _open_pds3(label: Path) -> Product:
     pointers = {k[1:]: v for k, v in tree.attrs.items() if k.startswith("^") and k != "^STRUCTURE"}
     record_bytes = _int(tree.get("RECORD_BYTES"), 0) or 1
     objects: List[DataObject] = []
+    texts: List[DataObject] = []
     errors: List[str] = []
     for node in tree.children:
         if node.kind != "OBJECT":
@@ -868,6 +912,8 @@ def _open_pds3(label: Path) -> Product:
                 objects.append(_pds3_array(node, ptr, record_bytes, label))
             elif any(node.name.endswith(t) for t in _TABLE_NAMES) or node.name.endswith("TABLE_OBJECT"):
                 objects.append(_pds3_table(node, ptr, record_bytes, label))
+            elif node.name.endswith(("TEXT", "DOCUMENT")) and not node.name.endswith("HEADER"):
+                texts.append(_text_object(node.name, label, ptr, record_bytes, str(node.get("DESCRIPTION") or "").strip('"')))
         except ProductError as exc:
             errors.append(f"{node.name}: {exc}")
         except (OSError, ValueError) as exc:
@@ -891,6 +937,8 @@ def _open_pds3(label: Path) -> Product:
             prod.metadata = {**meta, **prod.metadata}
             prod.path = str(label)
             return prod
+        if texts:
+            return Product(path=str(label), format="PDS3", metadata=meta, objects=texts)
         raise ProductError("; ".join(errors) if errors else
                            f"{label.name} describes no table, image or cube VEDA can read")
     return Product(path=str(label), format="PDS3", metadata=meta, objects=objects)
@@ -1020,6 +1068,7 @@ def _pds4_binary_reader(path: Path, offset: int, rows: int, rec_len: int,
             raw = np.asarray(_strided(buf, dt, base, tuple(shape), tuple(strides)))
             if dt.kind == "c":
                 raw = np.abs(raw)
+            raw = _fix_mislabelled_float(raw)
             arr = _clean(raw, s["missing"], s["scale"], s["offset"]).reshape(n, -1)
             out[f.name] = arr[:, 0] if arr.shape[1] == 1 else arr
         return out
@@ -1097,6 +1146,7 @@ def _open_pds4(label: Path) -> Product:
             _t(obs, "Observing_System/Observing_System_Component[type='Spacecraft']/name")
         meta["PROCESSING_LEVEL_ID"] = _t(obs, "Primary_Result_Summary/processing_level")
     objects: List[DataObject] = []
+    texts: List[DataObject] = []
     errors: List[str] = []
     for fao in root.findall("File_Area_Observational"):
         fname = _t(fao, "File/file_name")
@@ -1106,7 +1156,11 @@ def _open_pds4(label: Path) -> Product:
             if tag in ("File", "Header", "Encoded_Header", "Encoded_Image", "Encoded_Binary"):
                 continue
             if tag == "Stream_Text":
-                errors.append(f"{fname} is a text document (no table or array to plot)")
+                if data is None:
+                    errors.append(f"{fname} (named in {label.name}) is not here; download the product again")
+                else:
+                    texts.append(_text_file_object(_t(el, "name") or fname, data, _int(_t(el, "offset"), 0),
+                                                   _int(_t(el, "object_length"), 0), _t(el, "description")))
                 continue
             if data is None:
                 errors.append(f"{fname} (named in {label.name}) is not here; download the product again")
@@ -1151,9 +1205,34 @@ def _open_pds4(label: Path) -> Product:
                 objects.append(obj)
             except (ProductError, OSError, ValueError, AttributeError) as exc:
                 errors.append(f"{name}: {exc}")
+    if not objects and texts:
+        return Product(path=str(label), format="PDS4", metadata=meta, objects=texts)
     if not objects:
         raise ProductError("; ".join(errors) if errors else f"{label.name} describes no table or array VEDA can read")
     return Product(path=str(label), format="PDS4", metadata=meta, objects=objects)
+
+
+def _text_file_object(name: str, data: Path, offset: int = 0, length: int = 0, description: str = "") -> DataObject:
+    """An ASCII stream (operations log, document) shown as text."""
+    size = data.stat().st_size
+    length = length if 0 < length <= size - offset else size - offset
+
+    def read(max_bytes: int):
+        with data.open("rb") as fh:
+            fh.seek(offset)
+            raw = fh.read(min(length, max_bytes))
+        return raw.decode("utf-8", errors="replace").replace("\r\n", "\n"), length > max_bytes
+
+    with data.open("rb") as fh:
+        fh.seek(offset)
+        lines = fh.read(min(length, 4_000_000)).count(b"\n")
+    return DataObject(name, "text", (lines,), [], description or "", _reader=read)
+
+
+def _text_object(name: str, label: Path, ptr: Any, record_bytes: int, description: str = "") -> DataObject:
+    """A PDS3 TEXT or DOCUMENT object: a separate file, or text attached after the label."""
+    data, off = _pds3_offset(ptr, record_bytes, label)
+    return _text_file_object(name, data, off, 0, description)
 
 
 def _pds4_array(el: ET.Element, name: str, data: Path, off: int) -> DataObject:
@@ -1172,7 +1251,7 @@ def _pds4_array(el: ET.Element, name: str, data: Path, off: int) -> DataObject:
     def clean(raw):
         if raw.dtype.kind == "c":
             raw = np.abs(raw)
-        return _clean(raw, missing, scale, offs)
+        return _clean(_fix_byte_order(raw), missing, scale, offs)
 
     def view():
         buf = _mmap(data)
@@ -1434,7 +1513,7 @@ def open_product(path: str) -> Product:
         prod = _open_pds3(lbl)
     # Images and cubes first: a product holding an image and a small telemetry
     # table (Cassini ISS, Rosetta OSIRIS) should open on the image.
-    has_array = any(x.kind != "table" for x in prod.objects)   # (computed before sorting: the list is empty during sort)
+    has_array = any(x.kind in ("image", "cube", "array") for x in prod.objects)   # (computed before sorting: the list is empty during sort)
     prod.objects.sort(key=lambda o: o.kind == "table" and has_array)
     if len(_CACHE) > 64:
         _CACHE.clear()

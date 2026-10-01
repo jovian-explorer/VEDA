@@ -13,6 +13,11 @@ All notable changes to VEDA. VEDA is pre-release software at version **0.0.1** u
 - **Comparisons**: pressure, densities and electron density are interpolated and averaged in log space (geometric mean, multiplicative spread); the spread is the sample standard deviation and is shown only where at least two profiles overlap; data gaps are no longer bridged; altitudes below the reference level (Mars below the MOLA datum, the Galileo probe below 1 bar) are kept instead of cut at 0 km, and gravity is computed correctly there.
 - New analytic tests: isothermal Mars (scale height, N^2 = g^2/(cp T), density, sound speed), a true dry adiabat through the deep Venus atmosphere (N^2 = 0 with cp(T)), potential temperature at the reference pressure, Chapman-layer TEC.
 
+#### Reading products
+- **Byte-order repair**: floats written in the opposite byte order to their label (Juno JIRAM RDR spectra are labelled MSB but written LSB) are detected from the values (about 70 orders of magnitude of spread and NaNs, against a few for the swapped bytes) and read correctly. Previously these spectra plotted as noise around 1e38.
+- **Text products** (operations logs, PDS3 TEXT/DOCUMENT objects, PDS4 Stream_Text) open in the viewer as searchable text with a Save button, instead of the message "cannot be plotted". The data file of a live PDS4 product is now always downloaded, even when it is a .txt (it was skipped as an optional description).
+- Signalling NaNs in data files no longer raise warnings.
+
 #### Clean-up
 - Version is 0.0.1 until the public 1.0.0 release; the v2.0.0 and v2.1.0 tags and releases are withdrawn. Release builds of 0.x tags are marked as pre-releases.
 - Removed the unused COSMIC-2 (Earth) reader, adapter, samples and references (Earth is outside VEDA's scope), the COSMIC-era API client calls to endpoints VEDA never had, and unused client state.

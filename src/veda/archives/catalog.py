@@ -638,8 +638,9 @@ def fetch_product(dataset_id: str, product_id: str,
         if dest.is_file():
             continue
         is_format = name.lower().endswith(".fmt") or pointer == "STRUCTURE"
-        is_doc = "DESCRIPTION" in pointer or name.lower().endswith(
-            (".txt", ".asc", ".cat", ".pdf", ".htm", ".html", ".doc", ".docx", ".ps", ".tex"))
+        # (a PDS4 <file_name> is the product's own data, even when it is a .txt or .asc stream)
+        is_doc = "DESCRIPTION" in pointer or (pointer != "FILE" and name.lower().endswith(
+            (".txt", ".asc", ".cat", ".pdf", ".htm", ".html", ".doc", ".docx", ".ps", ".tex")))
         if is_doc and ancestors:
             continue      # live products: description texts are optional and every miss costs a request
         folders = list(product_dirs)

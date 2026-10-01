@@ -198,3 +198,66 @@ def test_netcdf_map_and_profile_table(tmp_path):
     tab = next(o for o in p.objects if o.kind == "table")
     d = tab.read_table()
     assert list(d["alt"]) == [10, 20, 30, 40, 50] and d["temperature"][2] == 200
+
+
+_PDS4_HEAD = """<?xml version="1.0" encoding="UTF-8"?>
+<Product_Observational xmlns="http://pds.nasa.gov/pds4/pds/v1">
+  <Identification_Area><logical_identifier>urn:nasa:pds:test:data:x</logical_identifier><title>t</title></Identification_Area>
+  <File_Area_Observational>
+    <File><file_name>{name}</file_name></File>
+"""
+
+
+def test_floats_in_the_opposite_byte_order_to_the_label_are_repaired(tmp_path):
+    """Juno JIRAM RDR spectra are labelled MSB but written LSB."""
+    rng = np.random.default_rng(1)
+    spec = (rng.random((64, 32)) * 0.5 + 1e-3).astype("<f4")      # radiances, W/(m2 sr um)
+    (tmp_path / "s.dat").write_bytes(spec.tobytes())
+    (tmp_path / "s.xml").write_text(_PDS4_HEAD.format(name="s.dat") + """
+    <Table_Binary><offset unit="byte">0</offset><records>64</records>
+      <Record_Binary><fields>0</fields><groups>1</groups><record_length unit="byte">128</record_length>
+        <Group_Field_Binary><repetitions>32</repetitions><fields>1</fields><groups>0</groups>
+          <group_location unit="byte">1</group_location><group_length unit="byte">128</group_length>
+          <Field_Binary><name>BAND</name><field_location unit="byte">1</field_location>
+            <data_type>IEEE754MSBSingle</data_type><field_length unit="byte">4</field_length></Field_Binary>
+        </Group_Field_Binary></Record_Binary></Table_Binary>
+  </File_Area_Observational></Product_Observational>""")
+    v = open_product(str(tmp_path / "s.xml")).objects[0].read_table()["BAND"]
+    np.testing.assert_allclose(v, spec, rtol=1e-6)
+
+
+def test_correct_byte_order_is_left_alone(tmp_path):
+    wide = np.geomspace(1e-6, 1e6, 1000).astype(">f4")             # 12 decades of real dynamic range
+    from veda.readers.product import _fix_byte_order
+    assert _fix_byte_order(wide).dtype == wide.dtype
+
+
+def test_text_stream_product_opens_as_text(tmp_path):
+    log = "".join(f"2016-01-01T00:{i:02d}:00 FSW event {i}\r\n" for i in range(50))
+    (tmp_path / "log.txt").write_bytes(log.encode())
+    (tmp_path / "log.xml").write_text(_PDS4_HEAD.format(name="log.txt") + """
+    <Stream_Text><name>Operations Log</name><offset unit="byte">0</offset>
+      <parsing_standard_id>ASCII_String</parsing_standard_id>
+      <record_delimiter>carriage-return line-feed</record_delimiter></Stream_Text>
+  </File_Area_Observational></Product_Observational>""")
+    o = open_product(str(tmp_path / "log.xml")).objects[0]
+    assert o.kind == "text" and o.shape == (50,)
+    text, truncated = o.read_text()
+    assert text.startswith("2016-01-01T00:00:00 FSW event 0\n") and not truncated
+    assert o.read_text(1000)[1] is True
+    with pytest.raises(ProductError):
+        o.read_array()
+
+
+def test_pds3_text_object_when_nothing_else_is_readable(tmp_path):
+    label = """PDS_VERSION_ID = PDS3
+^TEXT = "notes.txt"
+OBJECT = TEXT
+  PUBLICATION_DATE = 2020-01-01
+  NOTE = "Instrument notes"
+END_OBJECT = TEXT
+END
+"""
+    lbl = _write(tmp_path, "notes.txt", label, b"Line one\r\nLine two\r\n")
+    o = open_product(str(lbl)).objects[0]
+    assert o.kind == "text" and o.read_text()[0] == "Line one\nLine two\n"
