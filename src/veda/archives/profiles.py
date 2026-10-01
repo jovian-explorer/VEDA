@@ -103,6 +103,9 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
         r = _col(tbl, cols.get("radius"))
         if r is None:
             raise ValueError(f"{label.name}: no altitude or radius column")
+        r_unit = _unit(tbl, cols.get("radius"))
+        if "METER" in r_unit and "KILO" not in r_unit:
+            r = r / 1000.0            # e.g. MGS radio science gives RADIUS in metres
         z = r - body.radius_km
 
     # Units come from the label, so Pa/hPa/bar and m^-3/cm^-3 are all handled.

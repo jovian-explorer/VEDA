@@ -112,7 +112,26 @@ RS_PROFILE_COLUMNS = {  # ESA/JAXA radio-science L4 layout (MaRS, VeRa heritage)
     "et": "EPHEMERIS SECONDS",
 }
 
+MGS_CITATION = ("Hinson, D. P., et al. (1999). Initial results from radio occultation measurements with "
+                "Mars Global Surveyor. JGR, 104(E11), 26997-27012; Tyler, G. L., et al. (2001), JGR 106(E10).")
+
 DATASETS: List[Dataset] = [
+    Dataset(
+        id="mgs-m-rss-5-sdp-v1.0", mission_id="mgs", instrument="RS (Radio Science)", level="L5 (SDP)",
+        title="Mars Global Surveyor radio occultation: temperature-pressure and electron density profiles",
+        body_ids=("mars",), archive="NASA PDS Atmospheres Node",
+        base_url="https://pds-atmospheres.nmsu.edu/PDS/data/",
+        volume_pattern=r"^mors_1\d{3}$",
+        rules=(
+            (r"(^|/)tps/", "Temperature-pressure profile", "profile"),
+            (r"(^|/)eds/", "Ionosphere electron density profile", "profile"),
+            (r"(^|/)ocs/", "Occultation summary", "other"),
+            (r"(^|/)sha/", "Gravity field (spherical harmonics)", "other"),
+            (r"(^|/)img/", "Gravity / topography map", "other"),
+        ),
+        profile_columns=RS_PROFILE_COLUMNS,
+        citation=MGS_CITATION,
+    ),
     Dataset(
         id="mex-m-mrs-5-occ", mission_id="mex", instrument="MaRS (Radio Science)", level="L4",
         title="Mars Express radio occultation: neutral atmosphere and ionosphere profiles (L4)",

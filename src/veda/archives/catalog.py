@@ -175,7 +175,7 @@ def index_volume(ds: Dataset, volume: str) -> List[Dict[str, Any]]:
         if ".." in PurePosixPath(path).parts:
             continue  # never let an index entry point outside the volume
         product_id = PurePosixPath(path).stem
-        ptype, kind = ds.classify(PurePosixPath(path).name)
+        ptype, kind = ds.classify(path)   # full path: some archives encode the type in the folder
         extra = {k: v for k, v in row.items()
                  if k not in ("FILE_SPECIFICATION_NAME", "PATH_NAME", "FILE_NAME") and v}
         out.append({
@@ -363,10 +363,24 @@ def fetch_product(dataset_id: str, product_id: str,
     if not ds or not prod:
         raise http.ArchiveError(f"Unknown product {dataset_id}/{product_id}; refresh the dataset index.")
     label_path = local_label_path(ds.id, prod["volume"], prod["path"])
-    remote_dir = prod["url"].rsplit("/", 1)[0] + "/"
     volume_url = f"{ds.base_url}{prod['volume']}/"
+    # Indexes often list upper-case paths for volumes served in lower case
+    # (MGS mors_1xxx) or the reverse, so try the path as listed, then both cases.
+    candidates = [volume_url + p for p in dict.fromkeys([prod["path"], prod["path"].lower(), prod["path"].upper()])]
+    product_dirs = list(dict.fromkeys(u.rsplit("/", 1)[0] + "/" for u in candidates))
     if not label_path.is_file():
-        http.download(prod["url"], label_path, login_url=ds.login_url)
+        for url in candidates:
+            try:
+                http.download(url, label_path, login_url=ds.login_url)
+                # the spelling that worked goes first for the pointer files
+                product_dirs.insert(0, product_dirs.pop(product_dirs.index(url.rsplit("/", 1)[0] + "/")))
+                break
+            except http.LoginRequired:
+                raise
+            except http.ArchiveError:
+                continue
+        else:
+            raise http.ArchiveError(f"{prod['path']} is not on the archive server ({volume_url})")
     if label_path.suffix.lower() != ".lbl":
         return label_path
 
@@ -384,7 +398,7 @@ def fetch_product(dataset_id: str, product_id: str,
             continue
         is_format = name.lower().endswith(".fmt") or pointer == "STRUCTURE"
         is_doc = "DESCRIPTION" in pointer or name.lower().endswith((".txt", ".asc", ".cat"))
-        folders = [remote_dir]
+        folders = list(product_dirs)
         if is_format:
             folders += [volume_url + d for d in ("LABEL/", "label/")]
         if is_doc:

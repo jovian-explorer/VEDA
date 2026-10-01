@@ -108,6 +108,101 @@ def _strip_comments(text: str) -> str:
     return "".join(out)
 
 
+
+@dataclass
+class TableDef:
+    """One TABLE object of a PDS3 label and where its rows are."""
+    name: str
+    rows: int
+    columns: List[ColumnDef]
+    file: Optional[str] = None      # data file from the ^NAME pointer
+    record: int = 1                 # first record (1-based) of the table in that file
+
+
+def _label_lines(label_text: str) -> List[str]:
+    lines = [l.strip() for l in _strip_comments(label_text).splitlines() if l.strip()]
+    merged, pending = [], None
+    for l in lines:
+        if pending is not None:
+            pending += " " + l
+            if pending.count('"') % 2 == 0:
+                merged.append(pending)
+                pending = None
+            continue
+        if "=" in l and l.split("=", 1)[1].count('"') % 2 == 1:
+            pending = l
+            continue
+        merged.append(l)
+    if pending is not None:
+        merged.append(pending + '"')
+    return merged
+
+
+def _pointer(value: str) -> Tuple[Optional[str], int]:
+    """^X = "f.tab" | ("f.tab", 4) | ("f.tab", 1200 <BYTES>) | 4 -> (file, record)."""
+    v = value.strip()
+    m = re.match(r'^\(?\s*"?([^",)\s]+)"?\s*(?:,\s*(\d+)\s*(<BYTES>)?)?\s*\)?$', v)
+    if not m:
+        return None, 1
+    first = m.group(1)
+    if first.isdigit() and m.group(2) is None:
+        return None, int(first)           # record in the label's own file
+    rec = int(m.group(2)) if m.group(2) and not m.group(3) else 1
+    return first, rec
+
+
+def parse_pds3_tables(label_text: str) -> List[TableDef]:
+    """TABLE / SERIES / SPREADSHEET objects with their own columns and pointers."""
+    lines = _label_lines(label_text)
+    pointers: Dict[str, str] = {}
+    for l in lines:
+        if l.startswith("^") and "=" in l:
+            k, v = l.split("=", 1)
+            pointers[k.strip()[1:].upper()] = v.strip()
+    tables: List[TableDef] = []
+    stack: List[Tuple[str, Dict[str, Any], List[ColumnDef]]] = []
+    for l in lines:
+        if "=" not in l:
+            continue
+        key, val = (x.strip() for x in l.split("=", 1))
+        key = key.upper()
+        val_c = val.strip('"').strip()
+        if key == "OBJECT":
+            stack.append((val_c.upper(), {}, []))
+        elif key == "END_OBJECT":
+            if not stack:
+                continue
+            name, attrs, cols = stack.pop()
+            if name == "COLUMN" and stack:
+                try:
+                    stack[-1][2].append(ColumnDef(
+                        name=attrs.get("NAME", f"COL_{len(stack[-1][2]) + 1}"),
+                        column_number=int(attrs.get("COLUMN_NUMBER", len(stack[-1][2]) + 1)),
+                        start_byte=int(attrs.get("START_BYTE", 1)), bytes_count=int(attrs.get("BYTES", 10)),
+                        data_type=attrs.get("DATA_TYPE", "ASCII_REAL"), unit=attrs.get("UNIT", ""),
+                        invalid_constant=_num(attrs.get("INVALID_CONSTANT")),
+                        missing_constant=_num(attrs.get("MISSING_CONSTANT"))))
+                except ValueError:
+                    pass
+            elif cols and (name.endswith("TABLE") or name.endswith("SERIES") or name.endswith("SPREADSHEET")):
+                f, rec = _pointer(pointers.get(name, ""))
+                try:
+                    rows = int(attrs.get("ROWS", 0))
+                except ValueError:
+                    rows = 0
+                tables.append(TableDef(name=name, rows=rows, columns=cols, file=f, record=rec))
+        elif stack:
+            stack[-1][1][key] = val_c
+    return tables
+
+
+def _num(v: Optional[str]) -> Optional[float]:
+    try:
+        return float(v) if v is not None else None
+    except ValueError:
+        return None
+
+
 def parse_pds3_label(label_text: str) -> Tuple[Dict[str, Any], List[ColumnDef]]:
     """Parse key-value pairs and COLUMN objects from a PDS3 label."""
     metadata: Dict[str, Any] = {}
@@ -205,112 +300,124 @@ def parse_pds3_label(label_text: str) -> Tuple[Dict[str, Any], List[ColumnDef]]:
     return metadata, columns
 
 
-def read_pds3_table(table_or_label_path: str) -> Pds3Table:
-    """Read a PDS3 label (.lbl) and its corresponding data table (.tab)."""
-    p = Path(table_or_label_path)
-    if p.suffix.lower() == ".tab":
-        lbl_p = p.with_suffix(".lbl")
-        if not lbl_p.exists():
-            lbl_p = p.with_suffix(".LBL")
-        tab_p = p
-    else:
-        lbl_p = p
-        tab_p = p.with_suffix(".tab")
-        if not tab_p.exists():
-            tab_p = p.with_suffix(".TAB")
+def _find_file(folder: Path, name: str) -> Optional[Path]:
+    for cand in (name, name.lower(), name.upper()):
+        p = folder / cand
+        if p.exists():
+            return p
+    return None
 
+
+def _parse_value(chunk: str, c: ColumnDef) -> float:
+    f_val = float(chunk)
+    if c.invalid_constant is not None and abs(f_val - c.invalid_constant) < 1e-4:
+        return np.nan
+    if c.missing_constant is not None and abs(f_val - c.missing_constant) < 1e-4:
+        return np.nan
+    if c.invalid_constant is None and c.missing_constant is None and             (abs(f_val + 999.0) < 1e-3 or abs(f_val + 9999.0) < 1e-3):
+        return np.nan            # common undeclared fill values
+    return f_val
+
+
+def _read_rows(lines: List[str], cols: List[ColumnDef]) -> Dict[str, np.ndarray]:
+    """Numeric columns of a table, by CSV when the rows are comma separated, else by byte position."""
+    n = len(lines)
+    out: Dict[str, np.ndarray] = {}
+    first = lines[0] if lines else ""
+    import csv
+    rows = list(csv.reader(lines)) if ("," in first and len(first.split(",")) >= len(cols)) else None
+    for idx, c in enumerate(cols):
+        arr = np.full(n, np.nan, dtype=np.float64)
+        for r_i in range(n):
+            if rows is not None:
+                c_idx = c.column_number - 1 if 0 <= c.column_number - 1 < len(rows[r_i]) else idx
+                chunk = rows[r_i][c_idx] if c_idx < len(rows[r_i]) else ""
+            else:
+                s = c.start_byte - 1
+                chunk = lines[r_i][s:s + c.bytes_count] if s < len(lines[r_i]) else ""
+            chunk = chunk.strip().strip(",").strip('"').strip("'")
+            if chunk:
+                try:
+                    arr[r_i] = _parse_value(chunk, c)
+                except ValueError:
+                    pass
+        out[c.name] = arr
+    return out
+
+
+def read_pds3_table(table_or_label_path: str) -> Pds3Table:
+    """Read the main table of a PDS3 product (label + data file).
+
+    The data file is found through the table's pointer (any extension, either
+    case), falling back to <label>.tab. Labels with several tables (e.g. a
+    one-row header table and the profile table in the same file, MGS RS) are
+    read table by table from their starting record; the largest table is
+    returned and one-row tables are kept in ``metadata['HEADER_TABLES']``.
+    """
+    p = Path(table_or_label_path)
+    if p.suffix.lower() == ".lbl":
+        lbl_p = p
+    else:
+        lbl_p = _find_file(p.parent, p.with_suffix(".lbl").name) or p.with_suffix(".lbl")
     if not lbl_p.exists():
         raise FileNotFoundError(f"PDS3 label not found at {lbl_p}")
 
     lbl_text = lbl_p.read_text(encoding="utf-8", errors="replace")
     metadata, col_defs = parse_pds3_label(lbl_text)
+    tables = parse_pds3_tables(lbl_text)
+    if not tables and col_defs:
+        # Loosely written labels put COLUMN objects outside any TABLE object.
+        ptr = next((metadata[k] for k in metadata if k.startswith("^") and
+                    (k.endswith("TABLE") or k.endswith("SPREADSHEET") or k.endswith("SERIES"))), "")
+        f, rec = _pointer(str(ptr)) if ptr else (None, 1)
+        tables = [TableDef(name="TABLE", rows=0, columns=col_defs, file=f, record=rec)]
 
-    if not col_defs:
-        is_img = any(k.endswith("_IMAGE") or k.endswith("_HEADER") for k in metadata) or str(metadata.get("FILE_NAME", "")).lower().endswith((".fit", ".fits"))
-        if is_img:
-            raise ValueError(f"PDS3 label references an image file ({metadata.get('FILE_NAME')}), not a tabular dataset")
+    if not tables:
+        is_img = any(k.endswith("_IMAGE") or k.endswith("_HEADER") for k in metadata) or             str(metadata.get("FILE_NAME", "")).lower().endswith((".fit", ".fits"))
+        if is_img or metadata.get("^IMAGE"):
+            raise ValueError(f"PDS3 label references an image file ({metadata.get('FILE_NAME') or metadata.get('^IMAGE')}), not a tabular dataset")
+        raise ValueError(f"{lbl_p.name} describes no table")
 
-    if not tab_p.exists():
-        # Check if ^TABLE or ^SPREADSHEET pointer specifies filename in directory
-        table_pointer = metadata.get("^TABLE") or metadata.get("^SPREADSHEET")
-        if table_pointer:
-            ptr_name = str(table_pointer).strip('()"\' ')
-            cand = lbl_p.parent / ptr_name
-            if cand.exists():
-                tab_p = cand
-            elif (lbl_p.parent / ptr_name.lower()).exists():
-                tab_p = lbl_p.parent / ptr_name.lower()
-            elif (lbl_p.parent / ptr_name.upper()).exists():
-                tab_p = lbl_p.parent / ptr_name.upper()
+    main = max(tables, key=lambda t: (t.rows, len(t.columns)))
+    data_p = None
+    if main.file:
+        data_p = _find_file(lbl_p.parent, main.file)
+    if data_p is None and p.suffix.lower() != ".lbl" and p.exists():
+        data_p = p
+    if data_p is None:
+        data_p = _find_file(lbl_p.parent, lbl_p.with_suffix(".tab").name)
+    if data_p is None:
+        raise FileNotFoundError(f"PDS3 table not found at {lbl_p.parent / (main.file or lbl_p.with_suffix('.tab').name)}")
 
-    if not tab_p.exists():
-        if metadata.get("^IMAGE") or metadata.get("^HEADER"):
-            raise ValueError(f"PDS3 label references an image object ({metadata.get('^IMAGE')}), not a table")
-        raise FileNotFoundError(f"PDS3 table not found at {tab_p}")
+    all_lines = data_p.read_text(encoding="utf-8", errors="replace").splitlines()
 
-    # Read the table file lines
-    with tab_p.open("r", encoding="utf-8", errors="replace") as f:
-        lines = [ln for ln in f.read().splitlines() if ln.strip()]
+    def table_lines(t: TableDef) -> List[str]:
+        if t.file and t.file.lower() != data_p.name.lower():
+            return []
+        start = max(t.record - 1, 0)
+        chunk = all_lines[start:start + t.rows] if t.rows else all_lines[start:]
+        return [ln for ln in chunk if ln.strip()]
 
-    n_rows = len(lines)
-    columns_data: Dict[str, np.ndarray] = {}
-    units_dict: Dict[str, str] = {}
+    lines = table_lines(main)
+    if not lines and main.rows == 0:
+        lines = [ln for ln in all_lines if ln.strip()]
+    columns_data = _read_rows(lines, main.columns)
+    units_dict = {c.name: c.unit for c in main.columns}
 
-    # Check if comma-delimited or fixed-width
-    first_line = lines[0] if lines else ""
-    is_csv = "," in first_line and len(first_line.split(",")) >= len(col_defs)
-
-    if is_csv:
-        import csv
-        reader = csv.reader(lines)
-        raw_rows = list(reader)
-        for idx, c in enumerate(col_defs):
-            c_idx = c.column_number - 1 if 0 <= c.column_number - 1 < len(raw_rows[0]) else idx
-            arr = np.full(n_rows, np.nan, dtype=np.float64)
-            for r_i, r_data in enumerate(raw_rows):
-                if c_idx < len(r_data):
-                    val_s = r_data[c_idx].strip().strip('"').strip("'")
-                    try:
-                        f_val = float(val_s)
-                        if c.invalid_constant is not None and abs(f_val - c.invalid_constant) < 1e-4:
-                            continue
-                        if c.missing_constant is not None and abs(f_val - c.missing_constant) < 1e-4:
-                            continue
-                        if abs(f_val - (-999.0)) < 1e-3 or abs(f_val - (-9999.0)) < 1e-3:
-                            continue
-                        arr[r_i] = f_val
-                    except ValueError:
-                        pass
-            columns_data[c.name] = arr
-            units_dict[c.name] = c.unit
-    else:
-        # Fixed-width column slicing by START_BYTE and BYTES
-        for c in col_defs:
-            arr = np.full(n_rows, np.nan, dtype=np.float64)
-            s_idx = c.start_byte - 1
-            e_idx = s_idx + c.bytes_count
-
-            for r_i, line in enumerate(lines):
-                if s_idx < len(line):
-                    chunk = line[s_idx:min(e_idx, len(line))].strip().strip(',').strip('"').strip("'")
-                    if chunk:
-                        try:
-                            f_val = float(chunk)
-                            if c.invalid_constant is not None and abs(f_val - c.invalid_constant) < 1e-4:
-                                continue
-                            if c.missing_constant is not None and abs(f_val - c.missing_constant) < 1e-4:
-                                continue
-                            if abs(f_val - (-999.0)) < 1e-3 or abs(f_val - (-9999.0)) < 1e-3:
-                                continue
-                            arr[r_i] = f_val
-                        except ValueError:
-                            pass
-            columns_data[c.name] = arr
-            units_dict[c.name] = c.unit
+    headers = {}
+    for t in tables:
+        if t is main or t.rows != 1:
+            continue
+        hl = table_lines(t)
+        if hl:
+            vals = _read_rows(hl[:1], t.columns)
+            headers[t.name] = {c.name: (float(vals[c.name][0]) if np.isfinite(vals[c.name][0]) else None) for c in t.columns}
+    if headers:
+        metadata["HEADER_TABLES"] = headers
 
     return Pds3Table(
         label_path=str(lbl_p),
-        table_path=str(tab_p),
+        table_path=str(data_p),
         metadata=metadata,
         columns=columns_data,
         units=units_dict,
