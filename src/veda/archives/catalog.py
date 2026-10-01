@@ -352,6 +352,7 @@ def dataset_status(ds: Dataset) -> Dict[str, Any]:
 @dataclass
 class SearchQuery:
     mission_id: Optional[str] = None
+    body_id: Optional[str] = None
     dataset_ids: Optional[List[str]] = None
     target: Optional[str] = None
     start: Optional[str] = None       # ISO date/time, inclusive
@@ -367,7 +368,9 @@ class SearchQuery:
 
 def search(q: SearchQuery) -> Dict[str, Any]:
     ds_ids = [d.lower() for d in q.dataset_ids] if q.dataset_ids else \
-        [d.id for d in DATASETS if not q.mission_id or d.mission_id == q.mission_id.lower()]
+        [d.id for d in DATASETS if not d.portal_only
+         and (not q.mission_id or d.mission_id == q.mission_id.lower())
+         and (not q.body_id or q.body_id.lower() in d.body_ids)]
     if not ds_ids:
         return {"total": 0, "products": []}
     where = [f"dataset_id IN ({','.join('?' * len(ds_ids))})"]

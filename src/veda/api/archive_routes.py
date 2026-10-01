@@ -85,6 +85,7 @@ def index_dataset(dataset_id: str, force: bool = False) -> Dict[str, Any]:
 @router.get("/search")
 def search(
     mission_id: Optional[str] = None,
+    body_id: Optional[str] = None,
     dataset_id: Optional[List[str]] = Query(None),
     target: Optional[str] = None,
     start: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}"),
@@ -104,7 +105,7 @@ def search(
     if start and end and end < start:
         raise HTTPException(400, "End date is before start date")
     return catalog.search(catalog.SearchQuery(
-        mission_id=mission_id, dataset_ids=dataset_id, target=target, start=start, end=end,
+        mission_id=mission_id, body_id=body_id, dataset_ids=dataset_id, target=target, start=start, end=end,
         kind=kind, product_type=product_type, text=q, limit=limit, offset=offset,
         newest_first=newest_first, downloaded_only=downloaded_only))
 

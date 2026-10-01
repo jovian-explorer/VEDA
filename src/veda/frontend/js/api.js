@@ -97,8 +97,12 @@ export const api = {
   vedaExportProfileJsonUrl: (missionId, obsId) =>
       `/api/veda/export/profile/${missionId}/${encodeURIComponent(obsId)}/json`,
   // Real archive data sets (see veda/archives)
-  archiveDatasets: (missionId) =>
-      call(`/api/veda/archive/datasets${missionId ? `?mission_id=${encodeURIComponent(missionId)}` : ''}`),
+  archiveDatasets: (missionId, bodyId) => {
+    const q = new URLSearchParams();
+    if (missionId) q.append('mission_id', missionId);
+    if (bodyId) q.append('body_id', bodyId);
+    return call(`/api/veda/archive/datasets${q.toString() ? `?${q}` : ''}`);
+  },
   archiveIndex: (datasetId, force = false) =>
       call(`/api/veda/archive/datasets/${encodeURIComponent(datasetId)}/index${force ? '?force=true' : ''}`, {method: 'POST'}),
   archiveSearch: (params) => {

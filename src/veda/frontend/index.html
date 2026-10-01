@@ -80,6 +80,40 @@
     <!-- Populated dynamically with body physical constants -->
   </div>
 
+  <!-- Every connected archive data set for this body, by date -->
+  <div class="card archive-browser" id="veda-body-search">
+    <div class="card-head archive-head">
+      <h2>Find observations of <span id="bs-body-name">this body</span></h2>
+      <span class="hint" id="bs-coverage"></span>
+    </div>
+    <form class="arch-filters" id="bs-form" autocomplete="off">
+      <label>From <input type="date" id="bs-start" /></label>
+      <label>To <input type="date" id="bs-end" /></label>
+      <label>Show <select id="bs-kind">
+        <option value="profile">Profiles (plottable)</option>
+        <option value="">Everything (incl. raw data)</option>
+      </select></label>
+      <button type="submit" class="primary">Search all missions</button>
+    </form>
+    <div class="arch-progress" id="bs-progress" hidden><div class="arch-progress-bar"><span id="bs-progress-fill"></span></div><span class="hint" id="bs-progress-text"></span></div>
+    <div class="arch-results-wrap">
+      <table class="data-table arch-results">
+        <thead><tr>
+          <th class="arch-col-check"><input type="checkbox" id="bs-select-all" aria-label="Select all results" /></th>
+          <th>Mission</th><th>Time (UTC)</th><th>Product</th><th>Type</th><th>Payload / level</th><th>Status</th><th></th>
+        </tr></thead>
+        <tbody id="bs-results"></tbody>
+      </table>
+    </div>
+    <div class="arch-footer">
+      <span class="hint" id="bs-count"></span>
+      <button type="button" class="ghost small" id="bs-more" hidden>Load more</button>
+      <span class="arch-spacer"></span>
+      <button type="button" class="ghost" id="bs-download" disabled>Download selected</button>
+      <button type="button" class="primary" id="bs-compare" disabled>Compare selected</button>
+    </div>
+  </div>
+
   <!-- Multi-Mission Selection & Comparative Visualizer Grid -->
   <div class="grid-2" style="grid-template-columns: 340px 1fr; gap: 14px;">
     <!-- Left Column: Multi-Mission Checkboxes & Controls -->

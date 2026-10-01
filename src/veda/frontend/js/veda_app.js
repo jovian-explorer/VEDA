@@ -6,6 +6,7 @@ import { api, state } from './api.js';
 import { renderMath, toast, cleanPlotlyMath, themedLayout, plotColors, drawer } from './ui.js';
 import { setupArchiveBrowser, showMissionArchive } from './archive_browser.js';
 import { showGeometry } from './geometry.js';
+import { setupBodySearch, showBodySearch } from './body_search.js';
 import { style as plotStyle, styleTrace, styleLayout, sigmaBand, orient, paletteColor, plotStyleBody, exportFigure } from './plot_style.js';
 
 // VEDA Global State
@@ -390,6 +391,18 @@ export async function initVeda() {
     }),
     onCompare: compareSelectedProducts,
   });
+  setupBodySearch({
+    onOpen: async (p) => {
+      switchMode('mission');
+      await loadAndRenderMission(p.mission_id);
+      await inspectProfileObservation({
+        mission_id: p.mission_id, observation_id: p.product_id, dataset_id: p.dataset_id,
+        instrument: p.instrument, data_type: 'profile', time_utc: p.start_time,
+      });
+      document.getElementById('veda-observation-viewer')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    },
+    onCompare: compareSelectedProducts,
+  });
   setupWorkflowGuideInteractions();
   setupGlobalDragAndDrop();
 
@@ -503,6 +516,7 @@ export async function loadAndRenderCelestialBody(bodyId) {
 
   // Render Planetary Body Physical Constants Quick-Card
   renderPlanetaryBodyQuickCard(bodyId, bodyDetails);
+  showBodySearch(bodyId, bodyDetails.name);
 
   // Update Body Physics Banner
   const banner = document.getElementById('veda-body-banner');
