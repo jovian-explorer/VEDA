@@ -112,6 +112,8 @@ class MissionManager:
         mission_ids: Optional[List[str]] = None,
         variable_name: str = "temperature_k",
         selection: Optional["ProfileFilter"] = None,
+        group_by: str = "",
+        group_width: float = 0.0,
     ) -> Dict[str, Any]:
         """Load multiple profiles across missions and compute cross-mission comparison.
 
@@ -145,6 +147,8 @@ class MissionManager:
             body=body,
             altitude_step_km=0.5 if body_id in ("mars", "pluto", "venus") else 2.0,
             variable_name=variable_name,
+            group_by=group_by,
+            group_width=group_width,
         )
         if report is not None and isinstance(out, dict):
             out["selection"] = report

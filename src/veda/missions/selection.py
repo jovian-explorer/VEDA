@@ -17,7 +17,9 @@ import numpy as np
 
 from ..archives import catalog
 from ..archives.datasets import datasets_for, get_dataset
+from ..archives.profiles import load_profiles
 from ..core.models import ObservationProfile
+from ..parallel import cpu_workers
 
 IONOSPHERE_VARIABLES = {"electron_density_cm3"}
 _IONO = re.compile(r"ionosph|electron", re.I)
@@ -150,23 +152,29 @@ def select_profiles(manager, body_id: str, mission_ids: List[str], variable: str
             r["not_indexed"] = not_indexed
         r["in_date_range"], cands = _candidates(ds_ids, f, variable, budget)
         n_kept = 0
-        for p in cands:
-            if n_kept >= f.per_mission:
-                break
-            r["tried"] += 1
-            try:
-                prof = manager.load_profile(mid, p["product_id"])
-            except Exception:  # noqa: BLE001 - one bad product must not stop the comparison
-                prof = None
-            if prof is None:
-                r["failed"] += 1
-                continue
-            ok, why = passes(profile_geometry(prof), f)
-            if not ok:
-                r["left_out"][why] = r["left_out"].get(why, 0) + 1
-                continue
-            kept.append(prof)
-            n_kept += 1
+        # Candidates are read in batches across the worker processes; a batch is the
+        # number still needed (twice that when geometry limits will reject some), and
+        # at least one per worker.  Batches keep the spread order, so what is kept
+        # still spans the dates.
+        i = 0
+        while i < len(cands) and n_kept < f.per_mission:
+            need = f.per_mission - n_kept
+            size = max(need * (2 if f.geometry_limits() else 1), cpu_workers())
+            batch = cands[i:i + size]
+            i += len(batch)
+            for p, prof in zip(batch, load_profiles([(p["dataset_id"], p["product_id"]) for p in batch])):
+                if n_kept >= f.per_mission:
+                    break
+                r["tried"] += 1
+                if not isinstance(prof, ObservationProfile):
+                    r["failed"] += 1            # one bad product must not stop the comparison
+                    continue
+                ok, why = passes(profile_geometry(prof), f)
+                if not ok:
+                    r["left_out"][why] = r["left_out"].get(why, 0) + 1
+                    continue
+                kept.append(prof)
+                n_kept += 1
         r["kept"] = n_kept
     if f.include_uploads:
         kept += _uploads(manager, body_id, f, report)

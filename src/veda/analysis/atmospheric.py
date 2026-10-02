@@ -197,6 +197,72 @@ def _vertical_reference_warning(summaries: List[Dict[str, Any]]) -> str:
     return f"Altitudes are measured from different references ({parts}), so they are offset from each other."
 
 
+def _geom(p) -> Dict[str, Any]:
+    from ..missions.selection import profile_geometry
+    return profile_geometry(p)
+
+
+GROUPINGS = ("latitude", "lst", "sza", "year", "month", "month_of_year", "mission")
+_MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+
+def _group_key(s: Dict[str, Any], by: str, width: float):
+    """(sort key, label) of a profile's group, or None when the profile lacks the quantity."""
+    if by in ("latitude", "lst", "sza"):
+        v = s.get(by)
+        if v is None or not np.isfinite(v):
+            return None
+        w = width or {"latitude": 30.0, "lst": 3.0, "sza": 30.0}[by]
+        lo = np.floor(v / w) * w
+        unit = {"latitude": "°", "lst": " h", "sza": "°"}[by]
+        name = {"latitude": "Latitude", "lst": "Local time", "sza": "SZA"}[by]
+        return lo, f"{name} {lo:g} to {lo + w:g}{unit}"
+    t = s.get("time_utc") or ""
+    if by == "year":
+        return (t[:4], t[:4]) if len(t) >= 4 else None
+    if by == "month":
+        return (t[:7], t[:7]) if len(t) >= 7 else None
+    if by == "month_of_year":                           # calendar month on Earth, all years together (not a planetary season)
+        return (int(t[5:7]), _MONTHS[int(t[5:7]) - 1]) if len(t) >= 7 and t[5:7].isdigit() else None
+    if by == "mission":
+        m = (s.get("mission_label") or s.get("mission_id") or "").upper()
+        return (m, m) if m else None
+    return None
+
+
+def _group_composites(mat: np.ndarray, summaries: List[Dict[str, Any]], log_like: bool, by: str,
+                      width: float, sig) -> List[Dict[str, Any]]:
+    """Composite mean and spread of each group of profiles (climatology bins).  Same rules
+    as the overall composite: the spread where two or more of the group's profiles
+    overlap, the mean where at least half of them (and at least one) do."""
+    import warnings
+    keys = [_group_key(s, by, width) for s in summaries]
+    out = []
+    for key in sorted({k for k in keys if k is not None}, key=lambda k: k[0]):
+        idx = [i for i, k in enumerate(keys) if k == key]
+        sub = mat[idx]
+        n = np.sum(np.isfinite(sub), axis=0)
+        with np.errstate(invalid="ignore"), warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            m = np.nanmean(sub, axis=0)
+            s = np.nanstd(sub, axis=0, ddof=1) if len(idx) > 1 else np.full(sub.shape[1], np.nan)
+        s = np.where(n >= 2, s, np.nan)
+        m = np.where(n >= max(1, int(np.ceil(0.5 * len(idx)))), m, np.nan)
+        if log_like:
+            mean, lo, hi = np.exp(m), np.exp(m - s), np.exp(m + s)
+        else:
+            mean, lo, hi = m, m - s, m + s
+        out.append({"label": key[1], "n": len(idx), "observation_ids": [summaries[i]["observation_id"] for i in idx],
+                    "mean": [sig(x) for x in mean], "plus_1sigma": [sig(x) for x in hi],
+                    "minus_1sigma": [sig(x) for x in lo], "profiles_per_level": [int(x) for x in n]})
+    unknown = sum(1 for k in keys if k is None)
+    if unknown:
+        out.append({"label": f"{unknown} profile{'s' if unknown > 1 else ''} without {by}", "n": unknown,
+                    "observation_ids": [summaries[i]["observation_id"] for i, k in enumerate(keys) if k is None],
+                    "mean": [], "plus_1sigma": [], "minus_1sigma": [], "profiles_per_level": [], "ungrouped": True})
+    return out
+
+
 # Variables compared in log space (they change by orders of magnitude with height)
 LOG_VARIABLES = {"pressure_hpa", "density", "density_measured", "number_density_m3", "electron_density_cm3"}
 
@@ -206,6 +272,8 @@ def compare_profiles_on_body(
     body: BodyInfo,
     altitude_step_km: float = 0.5,
     variable_name: str = "temperature_k",
+    group_by: str = "",
+    group_width: float = 0.0,
 ) -> Dict[str, Any]:
     """Cross-compare multi-mission profiles for a target planetary body.
 
@@ -300,6 +368,7 @@ def compare_profiles_on_body(
             "altitude_reference": (p.raw_attributes or {}).get("ALTITUDE_REFERENCE", ""),
             # the mission a loaded file comes from, as the user said (for legends and colours)
             "mission_label": (p.raw_attributes or {}).get("SOURCE_MISSION") or p.mission_id,
+            **{k: v for k, v in _geom(p).items() if k in ("lst", "sza")},
             "interpolated_series": v_interp,
         })
 
@@ -330,8 +399,12 @@ def compare_profiles_on_body(
         s["interpolated_series"] = [None if not np.isfinite(x) else float(f"{x:.6g}")
                                     for x in s["interpolated_series"]]
     sig = (lambda x: None if not np.isfinite(x) else float(f"{x:.6g}"))
+    groups = _group_composites(mat, profile_summaries, log_like, group_by, group_width, sig) if group_by else []
 
     return {
+        "group_by": group_by or "",
+        "group_width": group_width,
+        "groups": groups,
         "averaging": "geometric mean and 1-sigma factor (log space)" if log_like else "arithmetic mean and 1-sigma (sample)",
         "profiles_per_level": [int(n) for n in n_per_level],
         "vertical_reference_warning": _vertical_reference_warning(profile_summaries),

@@ -188,6 +188,27 @@
               <option value="latitude">Tangent latitude</option>
             </select>
           </label>
+          <label>Group composites by
+            <select id="veda-compare-group-by">
+              <option value="">No grouping</option>
+              <option value="latitude">Latitude band</option>
+              <option value="lst">Local solar time</option>
+              <option value="sza">Solar zenith angle</option>
+              <option value="year">Year</option>
+              <option value="month">Month</option>
+              <option value="month_of_year">Month of the year (all years)</option>
+              <option value="mission">Mission</option>
+            </select>
+          </label>
+          <label title="Width of the latitude, local time or zenith angle bins; empty: 30°, 3 h, 30°">Bin width
+            <input type="number" id="veda-compare-group-width" min="0" max="360" step="any" placeholder="auto" />
+          </label>
+          <label>Show
+            <select id="veda-compare-show-as">
+              <option value="values">Values</option>
+              <option value="deviation">Deviation from the mean (group mean when grouped)</option>
+            </select>
+          </label>
           <label class="inline"><input type="checkbox" id="veda-compare-show-mean" checked /> Composite mean</label>
           <label class="inline"><input type="checkbox" id="veda-compare-show-spread" checked /> ±1σ spread</label>
           <div class="compare-plot-buttons">

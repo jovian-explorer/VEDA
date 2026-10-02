@@ -30,6 +30,9 @@ export const vedaState = {
   selectedMissionIdsForBody: new Set(['akatsuki', 'vex']),
   selectedCompareVariable: 'temperature_k',
   compareFilter: null,   // dates and geometry limits for the comparison (null: downloaded profiles)
+  compareGroupBy: '',    // climatology bins: latitude | lst | sza | year | month | month_of_year | mission
+  compareGroupWidth: '',
+  compareShowAs: 'values',  // values | deviation
   lastComparisonData: null,
   bodySubtab: 'soundings', // 'soundings' | 'map'
   planetaryMapProjection: '2d', // '2d' | '3d'
@@ -594,6 +597,41 @@ function currentComparisonRequest() {
     missions: Array.from(vedaState.selectedMissionIdsForBody),
     variable: vedaState.selectedCompareVariable,
     filter: vedaState.comparisonProducts ? undefined : (vedaState.compareFilter || undefined),
+    group_by: vedaState.compareGroupBy || undefined,
+    group_width: Number(vedaState.compareGroupWidth) || 0,
+  };
+}
+
+// Variables averaged in log space (their deviations are shown in percent)
+const LOG_COMPARE_VARIABLES = new Set(['pressure_hpa', 'density', 'density_measured', 'number_density_m3', 'electron_density_cm3']);
+
+/**
+ * The comparison as it is drawn: values, or each profile's deviation from the mean
+ * (its group's mean when grouped; percent for log-averaged variables), with the group
+ * means as deviations from the overall mean.
+ */
+function comparisonView(data) {
+  const groups = (data.groups || []).filter(g => !g.ungrouped && g.mean && g.mean.length);
+  if (vedaState.compareShowAs !== 'deviation') return { data, groups, deviation: false };
+  const logVar = LOG_COMPARE_VARIABLES.has(vedaState.selectedCompareVariable);
+  const overall = data.composite_mean || [];
+  const groupOf = {};
+  groups.forEach((g, gi) => g.observation_ids.forEach(id => { groupOf[id] = gi; }));
+  const dev = (series, ref) => (series || []).map((v, k) => (v == null || ref[k] == null || (logVar && !ref[k])
+    ? null : (logVar ? 100 * (v / ref[k] - 1) : v - ref[k])));
+  const zero = overall.map(v => (v == null ? null : 0));
+  return {
+    deviation: true, logVar,
+    data: {
+      ...data,
+      composite_mean: zero,
+      composite_plus_1sigma: dev(data.composite_plus_1sigma, overall),
+      composite_minus_1sigma: dev(data.composite_minus_1sigma, overall),
+      profiles: (data.profiles || []).map(p => ({ ...p, interpolated_series:
+        dev(p.interpolated_series, groupOf[p.observation_id] != null ? groups[groupOf[p.observation_id]].mean : overall) })),
+    },
+    groups: groups.map(g => ({ ...g, mean: dev(g.mean, overall), plus_1sigma: dev(g.plus_1sigma, overall),
+                               minus_1sigma: dev(g.minus_1sigma, overall) })),
   };
 }
 
@@ -654,6 +692,12 @@ function setupCompareFilter() {
 
 function setupBodyModeControls() {
   setupCompareFilter();
+  const groupSel = document.getElementById('veda-compare-group-by');
+  const groupWidth = document.getElementById('veda-compare-group-width');
+  const showAs = document.getElementById('veda-compare-show-as');
+  groupSel?.addEventListener('change', () => { vedaState.compareGroupBy = groupSel.value; updateComparison(); });
+  groupWidth?.addEventListener('change', () => { vedaState.compareGroupWidth = groupWidth.value; if (vedaState.compareGroupBy) updateComparison(); });
+  showAs?.addEventListener('change', () => { vedaState.compareShowAs = showAs.value; renderComparisonPlot(); });
   const varSelect = document.getElementById('veda-compare-variable-select');
   if (varSelect) {
     varSelect.innerHTML = Object.entries(VARIABLE_CONFIGS).map(([key, cfg]) => `
@@ -942,13 +986,19 @@ function renderComparisonPlot() {
   }
 
   const sc = a => (pScale === 1 || !Array.isArray(a)) ? a : a.map(v => (v === null ? v : v * pScale));
-  const data = pScale === 1 ? raw : {
+  const scaled = pScale === 1 ? raw : {
     ...raw,
     composite_mean: sc(raw.composite_mean),
     composite_plus_1sigma: sc(raw.composite_plus_1sigma),
     composite_minus_1sigma: sc(raw.composite_minus_1sigma),
     profiles: (raw.profiles || []).map(pr => ({ ...pr, interpolated_series: sc(pr.interpolated_series) })),
+    groups: (raw.groups || []).map(g => ({ ...g, mean: sc(g.mean), plus_1sigma: sc(g.plus_1sigma), minus_1sigma: sc(g.minus_1sigma) })),
   };
+  const view = comparisonView(scaled);
+  const data = view.data;
+  const groupColor = (gi) => paletteColor(gi + 1);
+  const groupIndex = {};
+  view.groups.forEach((g, gi) => g.observation_ids.forEach(id => { groupIndex[id] = gi; }));
 
   const traces = [];
   const zGrid = data.grid_km;
@@ -982,6 +1032,8 @@ function renderComparisonPlot() {
     if (numericKey) {
       const v = numericKey(p);
       color = v == null || Number.isNaN(v) ? '#888888' : scaleColor(v);
+    } else if (view.groups.length && groupIndex[p.observation_id] != null) {
+      color = groupColor(groupIndex[p.observation_id]);      // grouped: profiles take their group's colour
     } else {
       color = plotStyle.palette === 'veda' ? (MISSION_COLORS[(p.mission_label || p.mission_id).toLowerCase()] || paletteColor(i)) : paletteColor(i);
     }
@@ -989,7 +1041,24 @@ function renderComparisonPlot() {
     const t = { ...orient(p.interpolated_series, zGrid), type: 'scatter',
       name: `${who} ${when || p.observation_id}`,
       hovertemplate: `<b>${who}</b> ${when}<br>${p.observation_id}<br>Lat ${p.latitude != null ? p.latitude.toFixed(1) : '?'}°<br>%{x:.4g}, %{y:.4g}<extra></extra>` };
-    traces.push(styleTrace(t, i, { color }));
+    const styled = styleTrace(t, i, { color });
+    if (view.groups.length) { styled.opacity = 0.3; styled.showlegend = false; }   // grouped: the group means stand out
+    traces.push(styled);
+  });
+
+  // 2b. Group composites (climatology bins): thick lines with their own spread
+  view.groups.forEach((g, gi) => {
+    const c = groupColor(gi);
+    if (vedaState.compareShowSpread !== false && g.plus_1sigma.some(v => v != null)) {
+      traces.push({ ...orient(g.minus_1sigma, zGrid), type: 'scatter', mode: 'lines', line: { width: 0, color: 'transparent' },
+        showlegend: false, hoverinfo: 'skip', legendgroup: `g${gi}` });
+      traces.push({ ...orient(g.plus_1sigma, zGrid), type: 'scatter', mode: 'lines', fill: plotStyle.swapAxes ? 'tonexty' : 'tonextx',
+        fillcolor: c.startsWith('#') && c.length === 7 ? `${c}26` : 'rgba(128,128,128,0.15)', line: { width: 0, color: 'transparent' },
+        showlegend: false, hoverinfo: 'skip', legendgroup: `g${gi}` });
+    }
+    traces.push({ ...orient(g.mean, zGrid), type: 'scatter', mode: 'lines', legendgroup: `g${gi}`,
+      line: { color: c, width: plotStyle.lineWidth + 2.5 }, name: `${g.label} (n = ${g.n})`,
+      hovertemplate: `<b>${escHtml(g.label)}</b> (n = ${g.n})<br>%{x:.4g}, %{y:.4g}<extra></extra>` });
   });
 
   // 3. Composite mean
@@ -1015,7 +1084,11 @@ function renderComparisonPlot() {
     title: { text: cleanPlotlyMath(`${(data.body_name || data.body_id || '').toUpperCase()} • ${data.profile_count} profile${data.profile_count === 1 ? '' : 's'} (${varCfg.label})`) },
     hovermode: 'closest',
     margin: { l: 70, r: 25, t: 56, b: 60 },
-  }, { xLog: !!varCfg.logScale, varTitle: cleanPlotlyMath(varCfg.axis), coordTitle: 'Altitude above reference radius (km)' });
+  }, { xLog: !!varCfg.logScale && !view.deviation,
+       varTitle: view.deviation
+         ? `Deviation from the ${view.groups.length ? 'group' : 'composite'} mean (${view.logVar ? '%' : cleanPlotlyMath(varCfg.units || '')})`
+         : cleanPlotlyMath(varCfg.axis),
+       coordTitle: 'Altitude above reference radius (km)' });
   plotStyle.vertical = savedVertical;
 
   window.Plotly.newPlot(plotDiv, traces, themedLayout(layout), { responsive: true, displayModeBar: true });

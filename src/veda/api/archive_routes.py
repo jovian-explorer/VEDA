@@ -178,16 +178,23 @@ def fetch(req: FetchRequest) -> Dict[str, Any]:
     job = _new_job("fetch", total=len(req.items))
 
     def work(j):
+        # several products at a time (Settings > Performance > parallel downloads)
+        from ..parallel import thread_map
         fetched = []
-        for i, it in enumerate(req.items):
-            j.update(done=i, message=f"Downloading {it.product_id}")
-            try:
-                catalog.fetch_product(it.dataset_id, it.product_id)
+        count = [0]
+
+        def done(i, res):
+            it = req.items[i]
+            count[0] += 1
+            if isinstance(res, Exception):
+                j["errors"].append(f"{it.product_id}: {res}")
+            else:
                 fetched.append(it.product_id)
-            except net.LoginRequired:
-                raise
-            except net.ArchiveError as exc:
-                j["errors"].append(f"{it.product_id}: {exc}")
+            j.update(done=count[0], message=f"Downloaded {len(fetched)} of {len(req.items)}")
+        results = thread_map(catalog.fetch_product, [(it.dataset_id, it.product_id) for it in req.items], on_done=done)
+        login = next((r for r in results if isinstance(r, net.LoginRequired)), None)
+        if login is not None and not fetched:
+            raise login
         j.update(done=len(req.items), message=f"Downloaded {len(fetched)} of {len(req.items)}")
         return {"fetched": fetched}
 

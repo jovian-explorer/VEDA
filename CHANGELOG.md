@@ -4,6 +4,15 @@ All notable changes to VEDA. Versions follow [semantic versioning](https://semve
 
 ## Unreleased
 
+### Performance
+- **Multiprocessing.** Profiles for comparisons are read and derived in parallel worker processes; the number is set in **Settings > Performance** (default: all CPU cores but one; 1 turns it off). The workers start in the background when VEDA opens and are reused, and work is sent in chunks; reading 240 Venus Express profiles took 1.0 s with 4 workers against 5.5 s before.
+- **Parallel downloads**: selected products, and the index pages of archive volumes, are fetched several at a time (Settings > Performance, default 4).
+- Profiles already read are kept in memory for the session, so re-plotting a comparison with another variable, grouping or unit is immediate.
+
+### Comparisons
+- **Group composites (climatologies)** by latitude band, local solar time, solar zenith angle, year, month, month of the year or mission, each with its own mean and spread.
+- **Deviation view**: each profile minus its group (or composite) mean, in percent for pressure and densities.
+
 ### Data
 - **Venus Express temperature profiles**, which PSA and PDS do not hold, from the teams' research data repositories (all CC-BY-4.0):
   - VeRa radio occultations of 2014 (NASA DSN), 25 profiles with time, latitude, longitude, solar zenith angle and local time (Gramigna et al. 2023; Zenodo doi:10.5281/zenodo.20056665);

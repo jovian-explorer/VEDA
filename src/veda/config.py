@@ -88,6 +88,8 @@ SETTING_CHOICES: Dict[str, Any] = {
     "spice_auto_download": (False, True),
     "spice_auto_limit_mb": (10, 5000),
     "product_confirm_mb": (10, 20000),
+    "cpu_workers": (1, 64),
+    "download_workers": (1, 16),
     "default_body": None,       # validated against the body registry
     "default_mission": None,    # validated against the mission registry
 }
@@ -108,6 +110,11 @@ class Settings:
     spice_auto_limit_mb: int = 400
     # Ask before downloading a single product file larger than this (photon lists, big cubes)
     product_confirm_mb: int = 250
+    # Worker processes for CPU-heavy batch work (reading and deriving many profiles,
+    # climatologies, batch export); 1 keeps everything in the main process.
+    cpu_workers: int = max(1, min(64, (os.cpu_count() or 2) - 1))
+    # Simultaneous downloads from an archive (indexing, fetching selections)
+    download_workers: int = 4
     default_body: str = "venus"
     default_mission: str = "akatsuki"
 

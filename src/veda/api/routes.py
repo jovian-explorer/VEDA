@@ -236,6 +236,9 @@ class CrossCompareRequest(BaseModel):
     missions: Optional[List[str]] = None  # e.g. ["akatsuki", "vex"]
     variable: str = "temperature_k"  # "temperature_k", "temperature_c", "pressure_hpa", "lapse_rate", "buoyancy_freq_sq"
     filter: Optional[CompareFilter] = None
+    # climatology bins: latitude | lst | sza | year | month | month_of_year | mission
+    group_by: Optional[str] = Field(None, max_length=20)
+    group_width: float = Field(0.0, ge=0.0, le=360.0)
 
 
 @router.post("/compare/body/{body_id}")
@@ -254,8 +257,12 @@ def _compare_or_404(body_id: str, req: "CrossCompareRequest") -> dict:
     sel = ProfileFilter(**req.filter.model_dump()) if req.filter else None
     if sel and sel.start and sel.end and sel.start > sel.end:
         raise HTTPException(status_code=422, detail="The start date is after the end date")
+    from ..analysis.atmospheric import GROUPINGS
+    if req.group_by and req.group_by not in GROUPINGS:
+        raise HTTPException(status_code=422, detail=f"group_by must be one of: {', '.join(GROUPINGS)}")
     comp = get_mission_manager().compare_on_body(
-        body_id, req.observations, mission_ids=req.missions, variable_name=req.variable, selection=sel)
+        body_id, req.observations, mission_ids=req.missions, variable_name=req.variable, selection=sel,
+        group_by=req.group_by or "", group_width=req.group_width)
     if isinstance(comp, dict) and comp.get("error"):
         raise HTTPException(status_code=400, detail=comp["error"])
     return comp

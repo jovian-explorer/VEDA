@@ -393,6 +393,8 @@ def refresh_dataset(ds: Dataset, force: bool = False,
             conn.execute("INSERT OR REPLACE INTO volumes VALUES (?,?,?,?)", (ds.id, "repository", time.time(), len(rows)))
         if progress:
             progress(1, 1, "done")
+        from .profiles import forget_dataset
+        forget_dataset(ds.id)
         return len(rows)
     volumes = http.list_directory(ds.base_url, ds.volume_pattern, dirs_only=True, login_url=ds.login_url)
     if not volumes:
@@ -439,7 +441,8 @@ def refresh_dataset(ds: Dataset, force: bool = False,
         # A few index files at a time: large data sets (MRO CTX, MCS, Akatsuki cameras)
         # have hundreds of volumes.  Four parallel requests stay polite to the archive.
         from concurrent.futures import ThreadPoolExecutor, as_completed
-        with ThreadPoolExecutor(max_workers=4) as pool:
+        from ..parallel import download_workers
+        with ThreadPoolExecutor(max_workers=download_workers()) as pool:
             futures = [pool.submit(read, v) for v in todo]
             for fut in as_completed(futures):
                 vol, rows = fut.result()

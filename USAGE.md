@@ -73,6 +73,12 @@ Selected profiles, from one mission or many, are interpolated onto a common alti
 
 Choose the variable and units on the left, colour the curves by mission, date or latitude, and toggle the mean and spread. **Export Comparison CSV** writes the gridded table.
 
+**Climatologies (group composites).** *Group composites by* splits the compared profiles into bins and draws a mean and spread for each, with the individual profiles faded in their group's colour: latitude band, local solar time, solar zenith angle (bin width set under *Bin width*; by default 30°, 3 h and 30°), year, month, month of the year (all years together, a seasonal climatology) or mission. Each group follows the same rules as the overall composite (log-space averaging for pressure and densities; the mean where at least half of the group's profiles overlap). Profiles that lack the grouping quantity (for example no local time in the archive) are counted in the legend and left out of the group means.
+
+**Deviations.** *Show: Deviation from the mean* plots each profile minus its group's mean (or the composite mean when not grouped), and the group means minus the overall mean; for pressure and densities the deviation is in percent. This shows waves, tides and latitudinal structure that are invisible on a log axis spanning several decades.
+
+Profiles read once are kept in memory for the session (the 512 most recent), so changing the variable, grouping or units does not read the files again.
+
 ### Live data sets
 Data sets marked **live search** are not copied as an index: when you give **From** and **To** dates, VEDA asks the archive server for that instrument and window (ESA PSA EPN-TAP for Mars Express, Venus Express, Rosetta, BepiColombo and Huygens; the NASA PDS Registry API for MAVEN, Juno, New Horizons, MESSENGER, LRO, Galileo, Magellan, MGS, MRO, Pioneer Venus and Dawn; OPUS for Cassini, Galileo and New Horizons imaging and spectra). Up to 5,000 products per data set and window are listed; if there are more, VEDA says so and you can narrow the dates. Windows already searched in the last week are answered from the local catalogue.
 
@@ -251,6 +257,7 @@ Open **Settings** in the toolbar. Changes apply as soon as you save; **Reset to 
 | Start-up | Open on body, Default mission | Where VEDA opens next time. |
 | Figures | Publication figure DPI | Resolution of exported publication figures. |
 | Network | Allow downloads, Timeout, Large-file limit | Turn online archive downloads off (offline work), set how long to wait for a slow archive, and the size (default 250 MB) above which opening a product asks first, showing the file size and an estimated download time. |
+| Performance | CPU worker processes, Parallel downloads | Worker processes read and derive many profiles at once (filtered comparisons, batch reading); the default is all cores but one, 1 runs everything in the main process. Profiles are read in batches across the workers, which is several times faster for comparisons of tens to hundreds of profiles. Parallel downloads (1 to 16, default 4) sets how many products are fetched at the same time. |
 | Observation geometry | Automatic SPICE downloads, size limit | Download the kernels for opened missions and observations by themselves, and ask first above the limit. |
 | Data folders | Open | Shows and opens the data, cache, export and log folders. |
 

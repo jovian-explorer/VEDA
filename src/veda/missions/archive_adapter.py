@@ -82,11 +82,11 @@ class ArchiveMissionAdapter(BaseMissionAdapter):
         return None
 
     def load_profile(self, observation_id: str) -> Optional[ObservationProfile]:
-        from ..archives.profiles import load_profile
+        from ..archives.profiles import load_profile_cached
         p = self._find(observation_id)
         if not p or p["kind"] != "profile":
             return None
-        return load_profile(p["dataset_id"], p["product_id"])
+        return load_profile_cached(p["dataset_id"], p["product_id"])
 
     def load_image(self, observation_id: str) -> Optional[ObservationImage]:
         return self._images.load_image(observation_id) if self._images else None

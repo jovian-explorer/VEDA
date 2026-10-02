@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict, Optional
+import threading
+from collections import OrderedDict
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -84,6 +86,61 @@ def _sigma(tbl, name) -> Optional[np.ndarray]:
                 if np.isfinite(arr).any():
                     return arr
     return None
+
+
+# Profiles already read in this session (a comparison re-plotted with another variable,
+# or the same profile opened again, is not read and derived again).
+_PROFILE_CACHE: "OrderedDict[Tuple[str, str], ObservationProfile]" = OrderedDict()
+_PROFILE_CACHE_MAX = 512
+_cache_lock = threading.Lock()
+
+
+def load_profile_cached(dataset_id: str, product_id: str) -> ObservationProfile:
+    key = (dataset_id, product_id)
+    with _cache_lock:
+        if key in _PROFILE_CACHE:
+            _PROFILE_CACHE.move_to_end(key)
+            return _PROFILE_CACHE[key]
+    prof = load_profile(dataset_id, product_id)
+    _remember(key, prof)
+    return prof
+
+
+def _remember(key, prof) -> None:
+    with _cache_lock:
+        _PROFILE_CACHE[key] = prof
+        _PROFILE_CACHE.move_to_end(key)
+        while len(_PROFILE_CACHE) > _PROFILE_CACHE_MAX:
+            _PROFILE_CACHE.popitem(last=False)
+
+
+def forget_dataset(dataset_id: str) -> None:
+    """Drop cached profiles of a data set (after it is re-indexed)."""
+    with _cache_lock:
+        for k in [k for k in _PROFILE_CACHE if k[0] == dataset_id]:
+            del _PROFILE_CACHE[k]
+
+
+def load_profiles(pairs: List[Tuple[str, str]]) -> List[Any]:
+    """Several profiles at once: cached ones directly, the others read (downloaded if
+    needed) in the worker processes (Settings > Performance).  Each item of the result
+    is the profile or the exception that reading it raised, in the order of ``pairs``."""
+    from ..parallel import cpu_map
+    out: List[Any] = [None] * len(pairs)
+    todo = []
+    with _cache_lock:
+        for i, key in enumerate(pairs):
+            if key in _PROFILE_CACHE:
+                _PROFILE_CACHE.move_to_end(key)
+                out[i] = _PROFILE_CACHE[key]
+            else:
+                todo.append(i)
+    results = cpu_map(load_profile, [pairs[i] for i in todo])
+    for i, res in zip(todo, results):
+        out[i] = res
+        if isinstance(res, ObservationProfile):
+            _remember(pairs[i], res)
+    return out
 
 
 def load_profile(dataset_id: str, product_id: str, download: bool = True) -> ObservationProfile:

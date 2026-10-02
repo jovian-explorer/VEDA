@@ -56,6 +56,8 @@ def _warm_imports() -> None:
         for mod in ("veda.analysis.wave_and_stability", "veda.analysis.thermo", "matplotlib.figure",
                     "veda.readers.product", "veda.geometry.compute"):
             importlib.import_module(mod)
+        from ..parallel import warm_up
+        warm_up()                     # start the worker processes (Settings > Performance)
     except Exception:  # noqa: BLE001 - warm-up is only an optimisation
         pass
 
@@ -112,6 +114,7 @@ def create_app() -> FastAPI:
                 "version": APP_VERSION,
             },
             "settings": SETTINGS.to_dict(),
+            "system": {"cpu_count": os.cpu_count() or 1},
             "paths": {
                 "data_root": str(DATA_ROOT),
                 "cache": str(CACHE_DIR),

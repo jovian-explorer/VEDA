@@ -183,6 +183,7 @@ function settingsBody() {
   const bodies = (vedaState.bodies || []).map(b => [b.id, b.name]);
   const missions = (vedaState.missions || []).map(m => [m.id, m.name]);
   const currentScale = FONT_SCALES[currentScaleIdx];
+  const cpuCount = (state.meta && state.meta.system && state.meta.system.cpu_count) || 64;
 
   const errorBox = el('div', { class: 'settings-error hidden', role: 'alert' });
   const showError = (msg) => {
@@ -220,6 +221,8 @@ function settingsBody() {
         spice_auto_download: $('#s-spice-auto').checked,
         spice_auto_limit_mb: parseInt($('#s-spice-limit').value, 10),
         product_confirm_mb: parseInt($('#s-product-limit').value, 10),
+        cpu_workers: parseInt($('#s-cpu-workers').value, 10),
+        download_workers: parseInt($('#s-download-workers').value, 10),
       };
       if ($('#s-default-body')) patch.default_body = $('#s-default-body').value;
       if ($('#s-default-mission')) patch.default_mission = $('#s-default-mission').value;
@@ -281,6 +284,15 @@ function settingsBody() {
       field('Ask before downloading a product file larger than (MB)',
         el('input', { type: 'number', id: 's-product-limit', value: s.product_confirm_mb || 250, min: 10, max: 20000, required: true }),
         'Most products are well under 50 MB; photon lists (Juno UVS) and full cubes can exceed 1 GB.')),
+    el('fieldset', {},
+      el('legend', {}, 'Performance'),
+      field(`CPU worker processes (this computer has ${cpuCount})`,
+        el('input', { type: 'number', id: 's-cpu-workers', value: s.cpu_workers || 1, min: 1, max: Math.min(64, cpuCount), required: true }),
+        'Used to read and derive many profiles at once (comparisons, batch analysis). 1 runs everything in the main process; '
+        + 'more is faster for large comparisons, up to about the number of physical cores. Takes effect on the next comparison.'),
+      field('Parallel downloads',
+        el('input', { type: 'number', id: 's-download-workers', value: s.download_workers || 4, min: 1, max: 16, required: true }),
+        '1 to 16. Archives may throttle many simultaneous connections; 4 is a good default.')),
     el('fieldset', {},
       el('legend', {}, 'Observation geometry (SPICE)'),
       el('label', { class: 'settings-check' },
