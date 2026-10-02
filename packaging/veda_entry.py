@@ -1,8 +1,9 @@
 """PyInstaller entry script for the VEDA desktop app."""
 import multiprocessing
 
-from veda.desktop import main
-
 if __name__ == "__main__":
-    multiprocessing.freeze_support()  # required for a PyInstaller onefile build
+    # Worker processes (Settings > Performance) start this same executable; freeze_support
+    # hands them to multiprocessing before the desktop app is imported.
+    multiprocessing.freeze_support()
+    from veda.desktop import main
     raise SystemExit(main())
