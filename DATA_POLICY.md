@@ -82,6 +82,7 @@ The authoritative list is VEDA's own catalogue (`src/veda/archives/datasets.py`,
 | Akatsuki (VCO) | LIR camera | L1b | `vco-v-lir-2-edr-v1.0` | JAXA DARTS | Fukuhara et al. (2011); Taguchi et al. (2007); Fukuhara et al. (2017); Nakamura et al. (2016) |
 | Akatsuki (VCO) | LIR camera | L2b+L2c | `vco-v-lir-3-cdr-v1.0` | JAXA DARTS | Fukuhara et al. (2011); Taguchi et al. (2007); Fukuhara et al. (2017); Nakamura et al. (2016) |
 | Akatsuki (VCO) | LIR camera | geometry | `vco-v-lir-3-sedr-v1.0` | JAXA DARTS | Fukuhara et al. (2011); Taguchi et al. (2007); Fukuhara et al. (2017); Nakamura et al. (2016) |
+| VEGA 1 and 2 | VEGA 2 lander METEO descent profile; VEGA 1/2 balloon records | L2-L3 | `vega1-vega2-v-2-3-venus-v1.0` | NASA PDS Atmospheres Node | Lorenz, Crisp & Huber (2018) |
 | Pioneer Venus Orbiter (PVO) | ORO radio occultation profiles (temperature-pressure, electron density) | Derived (PDS4) | `pvoro-nssdc` | NASA PDS Atmospheres Node | Withers et al. (2020a, 2020b); data doi:10.17189/tm55-bj87; Kliore & Patel (1980) |
 | Pioneer Venus Orbiter (PVO) | ONMS (Neutral mass spectrometer) | L2-L4 | `pvo-v-onms` | NASA PDS | Niemann et al. (1980); Niemann et al. (1980); Colin, L. (1980) |
 | Mars Reconnaissance Orbiter (MRO) | MCS (Mars Climate Sounder) | DDR (L2) | `mro-m-mcs-5-ddr-v1.0` | NASA PDS | McCleese et al. (2007); Kleinböhl et al. (2009); Zurek, R. W., & Smrekar, S. E. (2007) |

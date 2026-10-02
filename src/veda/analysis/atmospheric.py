@@ -18,8 +18,8 @@ from ..core.models import BodyInfo, ObservationProfile
 from ..core.registry import get_body
 
 
-# Vertical derivatives (lapse rate, N^2, d(theta)/dz) of profiles sampled more finely
-# than this are central differences over +-this distance (100 m resolution).
+# Vertical derivatives (lapse rate, N^2, d(theta)/dz) are central differences over at
+# least +-this distance (100 m resolution), however finely a profile is sampled.
 MIN_DERIVATIVE_HALF_WINDOW_KM = 0.05
 
 
@@ -38,17 +38,18 @@ def _gradient_nan_safe(z_km: np.ndarray, v: np.ndarray) -> np.ndarray:
     vu = np.bincount(inv, weights=val[ok]) / np.bincount(inv)
     if zu.size < 2:
         return out
-    dz = np.diff(zu)
-    if np.median(dz) >= MIN_DERIVATIVE_HALF_WINDOW_KM:
-        grad_u = np.gradient(vu, zu)
-    else:
-        # Very dense data (entry accelerometers sample every few metres): a central
-        # difference over +-50 m, so sample-to-sample noise is not amplified into the
-        # derivative.  Within 50 m of either end the window is one-sided.
-        h = MIN_DERIVATIVE_HALF_WINDOW_KM
-        lo = np.maximum(zu - h, zu[0])
-        hi = np.minimum(zu + h, zu[-1])
-        grad_u = (np.interp(hi, zu, vu) - np.interp(lo, zu, vu)) / (hi - lo)
+    # Central difference over the neighbouring levels, but never over less than +-50 m:
+    # dense data (entry accelerometers every few metres, a lander's altitude jitter after
+    # touchdown) would otherwise turn sample noise into huge gradients.  On an even,
+    # coarser grid this is exactly the ordinary central difference.  Near the ends the
+    # window is one-sided.
+    half = np.empty_like(zu)
+    half[1:-1] = (zu[2:] - zu[:-2]) / 2.0
+    half[0], half[-1] = zu[1] - zu[0], zu[-1] - zu[-2]
+    half = np.maximum(half, MIN_DERIVATIVE_HALF_WINDOW_KM)
+    lo = np.maximum(zu - half, zu[0])
+    hi = np.minimum(zu + half, zu[-1])
+    grad_u = (np.interp(hi, zu, vu) - np.interp(lo, zu, vu)) / (hi - lo)
     out[ok] = grad_u[inv]
     return out
 

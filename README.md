@@ -47,7 +47,7 @@ All 19 missions in VEDA are connected (141 data sets). Highlights:
 |---|---|---|---|
 | Venus | Akatsuki | RS (L2-L4), UVI, IR1, IR2 and LIR (raw, calibrated, geometry) | JAXA DARTS, indexed |
 | Venus | Venus Express | VeRa (indexed), VMC, VIRTIS, SPICAV/SOIR, ASPERA-4, MAG | ESA PSA, live |
-| Venus | Magellan, Pioneer Venus | Radio occultation profiles (Magellan; PVO 1978-1989 temperature-pressure and electron density, recovered by Withers et al. 2020), radar, gravity; PVO OIMS, ONMS, probes | NASA PDS |
+| Venus | Magellan, Pioneer Venus, VEGA | Radio occultation profiles (Magellan; PVO 1978-1989 temperature-pressure and electron density, recovered by Withers et al. 2020), radar, gravity; the VEGA 2 lander descent (63 km to the surface) and VEGA balloon records; PVO OIMS, ONMS, probes | NASA PDS |
 | Mars | Mars Express | MaRS L4 profiles (indexed); SPICAM, PFS, OMEGA, ASPERA-3, MARSIS, HRSC, VMC | ESA PSA |
 | Mars | MRO | MCS DDR/EDR/RDR (indexed), CRISM, SHARAD; CTX and MARCI on request | NASA PDS |
 | Mars | MAVEN, MGS, MRO, MER, Phoenix, MSL, InSight | NGIMS, IUVS, ACC; MGS and MRO radio occultation profiles; entry profiles of Spirit, Opportunity, Phoenix, Curiosity and InSight; TES, MOLA | NASA PDS |

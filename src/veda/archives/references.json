@@ -5823,6 +5823,35 @@
     }
    ],
    "note": "Author list in the archive: Koskinen, T. T., et al."
+  },
+  {
+   "key": "lorenz2018",
+   "authors": [
+    "Lorenz, R. D.",
+    "Crisp, D.",
+    "Huber, L."
+   ],
+   "et_al": false,
+   "year": 2018,
+   "title": "Venus atmospheric structure and dynamics from the VEGA lander and balloons: New results and PDS archive",
+   "journal": "Icarus",
+   "volume": "305",
+   "issue": "",
+   "pages": "277-283",
+   "doi": "10.1016/j.icarus.2017.12.044",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "vega",
+     "payload": "METEO"
+    },
+    {
+     "mission": "vega",
+     "payload": "Balloons"
+    }
+   ],
+   "note": ""
   }
  ]
 }

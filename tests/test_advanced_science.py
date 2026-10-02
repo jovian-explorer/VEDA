@@ -208,3 +208,13 @@ def test_non_positive_temperature_and_pressure_are_fill():
                                    "product_type": "profile"}, tmp / "p.lbl")
     assert np.isnan(prof.temperature_k[2]) and np.isnan(prof.pressure_hpa[2])
     assert prof.temperature_k[0] == 200.0 and prof.pressure_hpa[0] == pytest.approx(3.0)
+
+
+def test_gradient_with_altitude_jitter_after_touchdown():
+    """VEGA 2: after landing the reconstructed altitude jitters by metres at constant T."""
+    from veda.analysis.atmospheric import _gradient_nan_safe
+    z = np.concatenate([np.arange(3.0, 0.0, -0.15), [0.00079, -0.00079, 0.00032, 0.00143, -0.00663, -0.00553]])
+    t = np.concatenate([734.0 + 8.0 * (0.0 - np.arange(3.0, 0.0, -0.15)), np.full(6, 734.3)])
+    g = _gradient_nan_safe(z, t)
+    assert np.all(np.abs(g) < 12.0)                     # was ~1e4 K/km at the jitter
+    assert np.median(g[:10]) == pytest.approx(-8.0, abs=0.01)
