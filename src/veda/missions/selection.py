@@ -35,13 +35,15 @@ class ProfileFilter:
     lst_max: Optional[float] = None
     sza_min: Optional[float] = None        # solar zenith angle, degrees
     sza_max: Optional[float] = None
+    ls_min: Optional[float] = None         # Mars solar longitude (season), degrees; min > max wraps 360
+    ls_max: Optional[float] = None
     per_mission: int = 10                  # profiles kept per mission
     download: bool = True                  # fetch profiles not yet downloaded
     include_uploads: bool = True           # files the user loaded for this body
 
     def geometry_limits(self) -> bool:
         return any(v is not None for v in (self.lat_min, self.lat_max, self.lst_min, self.lst_max,
-                                           self.sza_min, self.sza_max))
+                                           self.sza_min, self.sza_max, self.ls_min, self.ls_max))
 
 
 def _median(a) -> Optional[float]:
@@ -62,7 +64,8 @@ def profile_geometry(p: ObservationProfile) -> Dict[str, Optional[float]]:
         lst = float(attrs["LST"])
     if sza is None and isinstance(attrs.get("SZA"), (int, float)):
         sza = float(attrs["SZA"])
-    return {"latitude": p.latitude, "lst": lst, "sza": sza}
+    ls = float(attrs["LS"]) if isinstance(attrs.get("LS"), (int, float)) else None
+    return {"latitude": p.latitude, "lst": lst, "sza": sza, "ls": ls}
 
 
 def _in(v: Optional[float], lo: Optional[float], hi: Optional[float]) -> Optional[bool]:
@@ -85,7 +88,8 @@ def _lst_in(v: Optional[float], lo: Optional[float], hi: Optional[float]) -> Opt
 def passes(geom: Dict[str, Optional[float]], f: ProfileFilter) -> Tuple[bool, str]:
     checks = (("latitude", _in(geom["latitude"], f.lat_min, f.lat_max)),
               ("local time", _lst_in(geom["lst"], f.lst_min, f.lst_max)),
-              ("solar zenith angle", _in(geom["sza"], f.sza_min, f.sza_max)))
+              ("solar zenith angle", _in(geom["sza"], f.sza_min, f.sza_max)),
+              ("solar longitude Ls", _lst_in(geom.get("ls"), f.ls_min, f.ls_max)))
     for name, ok in checks:
         if ok is None:
             return False, f"{name} unknown"

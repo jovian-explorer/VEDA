@@ -410,7 +410,15 @@ def read_pds3_table(table_or_label_path: str) -> Pds3Table:
         hl = table_lines(t)
         if hl:
             vals = _read_rows(hl[:1], t.columns)
-            headers[t.name] = {c.name: (float(vals[c.name][0]) if np.isfinite(vals[c.name][0]) else None) for c in t.columns}
+            row = {}
+            for c in t.columns:
+                v = vals[c.name][0]
+                if np.isfinite(v):
+                    row[c.name] = float(v)
+                else:                          # text and times (MRO/MGS "SPACECRAFT TIME")
+                    s = hl[0][c.start_byte - 1:c.start_byte - 1 + c.bytes_count].strip().strip(",").strip().strip('"').strip()
+                    row[c.name] = s or None
+            headers[t.name] = row
     if headers:
         metadata["HEADER_TABLES"] = headers
 

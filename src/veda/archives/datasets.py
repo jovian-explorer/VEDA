@@ -80,6 +80,10 @@ class Dataset:
     sigma_from_siblings: Dict[str, Tuple[Tuple[str, str], ...]] = field(default_factory=dict)
     # Factor turning the archive's error column into 1 sigma (0.5 for a full error-bar width)
     sigma_factor: Dict[str, float] = field(default_factory=dict)
+    # The per-sample times ("et" column) are when the signal reached the ground station,
+    # not when it crossed the atmosphere (Mars Express MaRS: EPHEMERIS_SECONDS is the
+    # ground received time); VEDA subtracts the one-way light time for the geometry.
+    times_earth_received: bool = False
     # Profiles published in a research data repository (Zenodo, BIRA-IASB) without PDS
     # labels: how to list and read them (see archives/repositories.py)
     repository: Dict[str, Any] = field(default_factory=dict)
@@ -176,7 +180,7 @@ RS_PROFILE_COLUMNS = {  # ESA/JAXA radio-science L4 layout (MaRS, VeRa heritage)
     "latitude": "LATITUDE",
     "longitude": "LONGITUDE",
     "sza": "SOLAR ZENITH ANGLE",
-    "lst": "LOCAL SOLAR TIME",
+    "lst": ("LOCAL SOLAR TIME", "LOCAL TRUE SOLAR TIME OF OCCULTATION"),   # the latter: MRO header
     "et": "EPHEMERIS SECONDS",
 }
 
@@ -672,10 +676,14 @@ DATASETS: List[Dataset] = [
         mirrors=(("https://pds-geosciences.wustl.edu/mex/mex-m-mrs-5-occ-v1/",
                   r"^MEX-M-MRS-5-OCC-(\d{4})-V\d\.\d$", r"mexmrs_\1"),),
         rules=(
+            # AIO / IIO: text files with the occultation point's position and illumination,
+            # one per profile; not tables (they used to be offered as profiles and fail)
+            (r"l04_[ai]\wo_", "L4 occultation geometry (text)", "other"),
             (r"l04_a(\w{2})_", "L4 neutral atmosphere profile", "profile"),
             (r"l04_i(\w{2})_", "L4 ionosphere electron density profile", "profile"),
         ),
         profile_columns=RS_PROFILE_COLUMNS,
+        times_earth_received=True,
         citation=MEX_CITATION,
         # e.g. M65RSR0L04_AIX_041601543_60.LBL -> 2004 day 160 15:43
         time_from_name=r"_(?P<yy>\d{2})(?P<doy>\d{3})(?P<hh>\d{2})(?P<mm>\d{2})_\d+\.",

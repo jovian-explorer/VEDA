@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS products (
     product_type TEXT, kind TEXT, extra TEXT,
     PRIMARY KEY (dataset_id, product_id));
 CREATE INDEX IF NOT EXISTS idx_products_time ON products(dataset_id, start_time);
+CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
 -- "profiles only" and product-type filters and counts (5x faster on 200,000 rows)
 CREATE INDEX IF NOT EXISTS idx_products_kind ON products(dataset_id, kind, start_time);
 CREATE INDEX IF NOT EXISTS idx_products_type ON products(dataset_id, product_type);
@@ -63,12 +64,45 @@ BUNDLED_SAMPLES = [
 _seeded = False
 
 
+def _rules_key(ds: Dataset) -> str:
+    import hashlib
+    return hashlib.sha1(repr(ds.rules).encode("utf-8")).hexdigest()[:16]
+
+
+def _reclassify(conn: sqlite3.Connection) -> None:
+    """Re-apply each data set's product rules to its catalogued rows when the rules
+    changed since they were indexed (a fixed rule then reaches existing catalogues
+    without re-indexing).  Once per changed data set; cheap otherwise."""
+    stored = dict(conn.execute("SELECT key, value FROM meta WHERE key LIKE 'rules:%'").fetchall())
+    for ds in DATASETS:
+        if not ds.rules or ds.repository or ds.service:
+            continue
+        key = _rules_key(ds)
+        if stored.get(f"rules:{ds.id}") == key:
+            continue
+        rows = conn.execute("SELECT product_id, path, product_type, kind FROM products WHERE dataset_id=?",
+                            (ds.id,)).fetchall()
+        changes = []
+        for r in rows:
+            ptype, kind = ds.classify(r["path"])
+            if (ptype, kind) != (r["product_type"], r["kind"]):
+                changes.append((ptype, kind, ds.id, r["product_id"]))
+        if changes:
+            conn.executemany("UPDATE products SET product_type=?, kind=? WHERE dataset_id=? AND product_id=?", changes)
+        conn.execute("INSERT OR REPLACE INTO meta VALUES (?, ?)", (f"rules:{ds.id}", key))
+    conn.commit()
+
+
 def _seed(conn: sqlite3.Connection) -> None:
     """Copy the bundled samples into the archive cache and catalogue (once per process)."""
     global _seeded
     if _seeded:
         return
     _seeded = True
+    try:
+        _reclassify(conn)
+    except sqlite3.Error:
+        pass                      # read-only or busy catalogue: classify again next time
     import shutil
     from ..config import sampledata_dir
     for ds_id, vol, path, folder, t0, ptype, kind, target in BUNDLED_SAMPLES:

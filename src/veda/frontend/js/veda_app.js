@@ -643,6 +643,7 @@ function readCompareFilter() {
     lat_min: num('cf-lat-min'), lat_max: num('cf-lat-max'),
     lst_min: num('cf-lst-min'), lst_max: num('cf-lst-max'),
     sza_min: num('cf-sza-min'), sza_max: num('cf-sza-max'),
+    ls_min: num('cf-ls-min'), ls_max: num('cf-ls-max'),
     per_mission: num('cf-per-mission') || 10,
     download: !!document.getElementById('cf-download')?.checked,
   };
@@ -1016,6 +1017,7 @@ function renderAltitudeCut() {
   const hover = o => `<b>${escHtml((o.p.mission_label || o.p.mission_id).toUpperCase())}</b> ${escHtml(o.p.observation_id)}<br>`
     + `${escHtml(o.p.time_utc || '')}<br>lat ${o.p.latitude != null ? o.p.latitude.toFixed(1) : '?'}°`
     + `, LST ${o.p.lst != null ? o.p.lst.toFixed(1) + ' h' : '?'}, SZA ${o.p.sza != null ? o.p.sza.toFixed(0) + '°' : '?'}`
+    + (o.p.ls != null ? `, Ls ${o.p.ls.toFixed(1)}°` : '')
     + `<br>${(o.y * pScale).toPrecision(5)} at ${grid[k]} km`;
   const addTrace = (name, list, marker) => traces.push({
     type: 'scatter', mode: 'markers', name, x: list.map(o => o.x), y: list.map(o => o.y * pScale),
@@ -1045,13 +1047,14 @@ function renderAltitudeCut() {
     });
   }
   const xTitles = { time: 'Time (UTC)', latitude: 'Latitude (°)', lst: 'Local solar time (h)', sza: 'Solar zenith angle (°)',
-                    longitude: 'Longitude (°)', season: 'Day of year' };
+                    ls: 'Solar longitude Ls (°)', longitude: 'Longitude (°)', season: 'Day of year' };
   const layout = {
     title: { text: `${cleanPlotlyMath(cfg.label || cfg.axis)} at ${grid[k]} km (${pts.length} profile${pts.length === 1 ? '' : 's'})` },
     hovermode: 'closest',
     margin: { l: 75, r: 25, t: 56, b: 60 },
     xaxis: { title: { text: xTitles[xKey] }, type: xKey === 'time' ? 'date' : 'linear',
-             ...(xKey === 'lst' ? { range: [0, 24], dtick: 3 } : {}), ...(xKey === 'latitude' ? { range: [-90, 90], dtick: 30 } : {}) },
+             ...(xKey === 'lst' ? { range: [0, 24], dtick: 3 } : {}), ...(xKey === 'latitude' ? { range: [-90, 90], dtick: 30 } : {}),
+             ...(xKey === 'ls' ? { range: [0, 360], dtick: 30 } : {}) },
     yaxis: { title: { text: yTitle }, type: cfg.logScale ? 'log' : 'linear' },
     legend: { orientation: 'h', y: -0.18 },
   };
@@ -1909,6 +1912,16 @@ function trackChips(prof) {
   if (rng(t.latitude)) chips.push(`<div class="diag-chip"><strong>Tangent lat:</strong> ${rng(t.latitude)}°</div>`);
   if (rng(t.sza)) chips.push(`<div class="diag-chip"><strong>SZA:</strong> ${rng(t.sza)}°</div>`);
   if (rng(t.lst)) chips.push(`<div class="diag-chip"><strong>Local time:</strong> ${rng(t.lst, 2)} h</div>`);
+  const g = prof.geometry || {};
+  const how = g.computed ? 'Computed by VEDA from the time and position (no archive value)' : 'From the archive';
+  if (!rng(t.lst) && g.lst != null) chips.push(`<div class="diag-chip" title="${how}"><strong>Local time:</strong> ${g.lst.toFixed(2)} h${g.computed ? '*' : ''}</div>`);
+  if (!rng(t.sza) && g.sza != null) chips.push(`<div class="diag-chip" title="${how}"><strong>SZA:</strong> ${g.sza.toFixed(1)}°${g.computed ? '*' : ''}</div>`);
+  if (g.ls != null) chips.push(`<div class="diag-chip" title="Mars solar longitude: 0 northern spring equinox, 90 summer solstice, 180 autumn, 270 winter"><strong>Ls:</strong> ${g.ls.toFixed(1)}°</div>`);
+  if (g.computed && (rng(t.lst) || rng(t.sza))) chips.push(`<div class="diag-chip" title="${how}"><strong>Geometry:</strong> computed*</div>`);
+  if (g.label_time) {
+    const lt = g.light_time_s ? `; the one-way light time (${(g.light_time_s / 60).toFixed(1)} min) was subtracted` : '';
+    chips.push(`<div class="diag-chip" title="The time shown is the measurement at the planet (lowest level), from the archive's per-sample or spacecraft times${lt}. The label or file name gives ${escHtml(g.label_time)}, a ground-station or pass time."><strong>Label time:</strong> ${escHtml(g.label_time)}</div>`);
+  }
   return chips.join('');
 }
 

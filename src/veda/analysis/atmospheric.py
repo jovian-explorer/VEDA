@@ -202,20 +202,20 @@ def _geom(p) -> Dict[str, Any]:
     return profile_geometry(p)
 
 
-GROUPINGS = ("latitude", "lst", "sza", "year", "month", "month_of_year", "mission")
+GROUPINGS = ("latitude", "lst", "sza", "ls", "year", "month", "month_of_year", "mission")
 _MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 
 
 def _group_key(s: Dict[str, Any], by: str, width: float):
     """(sort key, label) of a profile's group, or None when the profile lacks the quantity."""
-    if by in ("latitude", "lst", "sza"):
+    if by in ("latitude", "lst", "sza", "ls"):
         v = s.get(by)
         if v is None or not np.isfinite(v):
             return None
-        w = width or {"latitude": 30.0, "lst": 3.0, "sza": 30.0}[by]
+        w = width or {"latitude": 30.0, "lst": 3.0, "sza": 30.0, "ls": 30.0}[by]
         lo = np.floor(v / w) * w
-        unit = {"latitude": "°", "lst": " h", "sza": "°"}[by]
-        name = {"latitude": "Latitude", "lst": "Local time", "sza": "SZA"}[by]
+        unit = {"latitude": "°", "lst": " h", "sza": "°", "ls": "°"}[by]
+        name = {"latitude": "Latitude", "lst": "Local time", "sza": "SZA", "ls": "Ls"}[by]
         return lo, f"{name} {lo:g} to {lo + w:g}{unit}"
     t = s.get("time_utc") or ""
     if by == "year":
@@ -368,7 +368,7 @@ def compare_profiles_on_body(
             "altitude_reference": (p.raw_attributes or {}).get("ALTITUDE_REFERENCE", ""),
             # the mission a loaded file comes from, as the user said (for legends and colours)
             "mission_label": (p.raw_attributes or {}).get("SOURCE_MISSION") or p.mission_id,
-            **{k: v for k, v in _geom(p).items() if k in ("lst", "sza")},
+            **{k: v for k, v in _geom(p).items() if k in ("lst", "sza", "ls")},
             "interpolated_series": v_interp,
         })
 
@@ -529,7 +529,7 @@ def export_profiles_long_csv(profiles: List[ObservationProfile], body: Optional[
             lines.append(f"# {p.observation_id}: {p.provenance.archive_source}, {p.provenance.original_file}"
                          + (f", {p.provenance.doi_or_citation}" if p.provenance.doi_or_citation else ""))
     header = (["mission", "instrument", "observation_id", "time_utc", "profile_latitude_deg", "profile_longitude_deg",
-               "profile_lst_h", "profile_sza_deg", "altitude_km"]
+               "profile_lst_h", "profile_sza_deg", "profile_ls_deg", "altitude_km"]
               + var_cols + [f"sigma_{k}" for k in sigma_cols]
               + [f"level_{k}" + {"latitude": "_deg", "longitude": "_deg", "lst": "_h", "sza": "_deg"}[k] for k in track_cols])
     lines.append(",".join(header))
@@ -539,7 +539,7 @@ def export_profiles_long_csv(profiles: List[ObservationProfile], body: Optional[
         geom = profile_geometry(p)
         fixed = [_csv_field((p.raw_attributes or {}).get("SOURCE_MISSION") or p.mission_id), _csv_field(p.instrument),
                  _csv_field(p.observation_id), _csv_field(p.time_utc), _csv_num(p.latitude), _csv_num(p.longitude),
-                 _csv_num(geom.get("lst")), _csv_num(geom.get("sza"))]
+                 _csv_num(geom.get("lst")), _csv_num(geom.get("sza")), _csv_num(geom.get("ls"))]
         cols = [arr(getattr(p, k, None) if k in _MEASURED else p.derived.get(k), n) for k in var_cols]
         cols += [arr((p.uncertainty or {}).get(k), n) for k in sigma_cols]
         cols += [arr((p.track or {}).get(k), n) for k in track_cols]
@@ -571,7 +571,7 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
         "# Altitude above the body's reference radius (km)."
         + (f" Note: {comparison['vertical_reference_warning']}" if comparison.get("vertical_reference_warning") else ""),
         f"# Processed with VEDA {__version__} (https://github.com/jovian-explorer/VEDA), MIT License",
-        "# column, mission, instrument, observation, time_utc, latitude_deg, longitude_deg, lst_h, sza_deg",
+        "# column, mission, instrument, observation, time_utc, latitude_deg, longitude_deg, lst_h, sza_deg, ls_deg",
     ]
     cols = []
     for p in profiles:
@@ -580,7 +580,7 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
         lines.append("# " + ", ".join(_csv_field(x) for x in (
             col, p.get("mission_label") or p.get("mission_id"), p.get("instrument"), p.get("observation_id"),
             p.get("time_utc"), _csv_num(p.get("latitude")), _csv_num(p.get("longitude")),
-            _csv_num(p.get("lst")), _csv_num(p.get("sza")))))
+            _csv_num(p.get("lst")), _csv_num(p.get("sza")), _csv_num(p.get("ls")))))
     for g in groups:
         lines.append(f"# group {_csv_field(g['label'])}: n={g['n']}, profiles={' '.join(g['observation_ids'])}")
 

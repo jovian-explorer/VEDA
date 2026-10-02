@@ -156,10 +156,20 @@ def load_profile(dataset_id: str, product_id: str, download: bool = True) -> Obs
 
 def _meta_value(tbl, name) -> Optional[float]:
     """A number from the label metadata (e.g. a PDS4 header table), by column-style name."""
+    headers = list((tbl.metadata.get("HEADER_TABLES") or {}).values())
     for n in ([name] if isinstance(name, str) else list(name or ())):
-        v = tbl.metadata.get(n)
-        if isinstance(v, (int, float)) and np.isfinite(v):
-            return float(v)
+        for src in [tbl.metadata] + headers:       # the label, then one-row header tables
+            v = src.get(n)
+            if isinstance(v, (int, float)) and not isinstance(v, bool) and np.isfinite(v):
+                return float(v)
+    return None
+
+
+def _header_text(attrs: Dict, name: str) -> Optional[str]:
+    for h in (attrs.get("HEADER_TABLES") or {}).values():
+        v = h.get(name)
+        if isinstance(v, str) and v:
+            return v
     return None
 
 
@@ -342,5 +352,74 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
             s = _col(tbl, sig) if sig else None
             if s is not None:
                 prof.uncertainty[key] = s * factor
+    _add_solar_geometry(prof, ds)
     prof.derived.update(compute_atmospheric_diagnostics(prof, body))
     return prof
+
+
+def _add_solar_geometry(prof: ObservationProfile, ds: Dataset) -> None:
+    """Local true solar time and solar zenith angle (per level along the ray path when the
+    track has positions) where the archive does not give them, and Mars' Ls, computed
+    from the time and position (analysis/solar_geometry.py).  The measurement time is
+    the lowest level's; when the archive's times are ground received times the light
+    time is subtracted, and that time becomes the profile's time."""
+    from ..analysis import solar_geometry as sg
+    if not sg.supported(prof.body_id):
+        return
+    attrs = prof.raw_attributes
+    track = prof.track
+    time = prof.time_utc
+    # The archive's own time at the spacecraft (MRO / MGS radio science header), when the
+    # label times are ground received times
+    sc_time = _header_text(attrs, "SPACECRAFT TIME")
+    if sc_time and sg.parse_utc(sc_time):
+        attrs.setdefault("LABEL_TIME", prof.time_utc)
+        prof.time_utc = time = sc_time
+    archive_ls = next((h.get("SOLAR LONGITUDE") for h in (attrs.get("HEADER_TABLES") or {}).values()
+                       if isinstance(h.get("SOLAR LONGITUDE"), (int, float))), None)
+    if archive_ls is not None:
+        attrs["LS"] = float(archive_ls)
+    et = track.get("et")
+    z = np.asarray(prof.altitude_km, float)
+    if et is not None and np.isfinite(et).any():
+        ok = np.isfinite(et) & np.isfinite(z) if z.size == et.size else np.isfinite(et)
+        i = int(np.nanargmin(np.where(ok, z, np.nan))) if z.size == et.size and ok.any() else int(np.nanargmin(et))
+        time = sg.et_to_utc(et[i])
+        if ds.times_earth_received:
+            lt = sg.light_time_s(prof.body_id, time)
+            if lt:
+                time = sg.et_to_utc(et[i] - lt)
+                attrs["LIGHT_TIME_S"] = round(lt, 1)
+                attrs.setdefault("LABEL_TIME", prof.time_utc)
+                prof.time_utc = time             # the time of the measurement at the planet
+    if len(time or "") < 13:
+        return                                   # a date without a clock time gives no local time
+    lat, lon = track.get("latitude"), track.get("longitude")
+    have_lst = "lst" in track or isinstance(attrs.get("LST"), (int, float))
+    have_sza = "sza" in track or isinstance(attrs.get("SZA"), (int, float))
+    ss = sg.subsolar_point(prof.body_id, time)
+    if ss is None:
+        return
+    attrs["SUBSOLAR_LATITUDE"] = round(ss["subsolar_latitude"], 3)
+    attrs["SUBSOLAR_LONGITUDE"] = round(ss["subsolar_longitude"], 3)
+    if "ls" in ss and archive_ls is None:
+        attrs["LS"] = round(ss["ls"], 3)
+    if have_lst and have_sza:
+        return
+    if lat is not None and lon is not None and np.size(lat) == np.size(lon):
+        g = [sg.solar_geometry(prof.body_id, time, a, o) if np.isfinite(a) and np.isfinite(o) else None
+             for a, o in zip(np.asarray(lat, float), np.asarray(lon, float))]
+        if any(g):
+            if not have_lst:
+                track["lst"] = np.array([x["lst"] if x else np.nan for x in g])
+            if not have_sza:
+                track["sza"] = np.array([x["sza"] if x else np.nan for x in g])
+            attrs["GEOMETRY_COMPUTED"] = "local time / solar zenith angle computed by VEDA from time and position"
+        return
+    g = sg.solar_geometry(prof.body_id, time, prof.latitude, prof.longitude)
+    if g:
+        if not have_lst:
+            attrs["LST"] = round(g["lst"], 4)
+        if not have_sza:
+            attrs["SZA"] = round(g["sza"], 3)
+        attrs["GEOMETRY_COMPUTED"] = "local time / solar zenith angle computed by VEDA from time and position"

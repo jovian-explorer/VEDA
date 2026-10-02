@@ -147,6 +147,15 @@ class ObservationProfile:
             "n_points": int(self.altitude_km.size) if self.altitude_km is not None else 0,
             "dataset_id": self.raw_attributes.get("DATASET_ID"),
             "altitude_reference": self.raw_attributes.get("ALTITUDE_REFERENCE", ""),
+            # profile-level local time, zenith angle and Ls (archive or computed), and how
+            # the time was obtained
+            "geometry": {
+                **{k: v for k, v in (("lst", self.raw_attributes.get("LST")), ("sza", self.raw_attributes.get("SZA")),
+                                     ("ls", self.raw_attributes.get("LS"))) if isinstance(v, (int, float))},
+                "computed": bool(self.raw_attributes.get("GEOMETRY_COMPUTED")),
+                "label_time": self.raw_attributes.get("LABEL_TIME"),
+                "light_time_s": self.raw_attributes.get("LIGHT_TIME_S"),
+            },
         }
 
 

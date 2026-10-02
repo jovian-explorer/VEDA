@@ -226,6 +226,8 @@ class CompareFilter(BaseModel):
     lst_max: Optional[float] = Field(None, ge=0, le=24)
     sza_min: Optional[float] = Field(None, ge=0, le=180)
     sza_max: Optional[float] = Field(None, ge=0, le=180)
+    ls_min: Optional[float] = Field(None, ge=0, le=360)
+    ls_max: Optional[float] = Field(None, ge=0, le=360)
     per_mission: int = Field(10, ge=1, le=100)
     download: bool = True
     include_uploads: bool = True

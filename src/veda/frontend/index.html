@@ -143,6 +143,8 @@
           <label>to <input type="number" id="cf-lst-max" min="0" max="24" step="any" placeholder="24" /> h</label>
           <label>Solar zenith angle from <input type="number" id="cf-sza-min" min="0" max="180" step="any" placeholder="0" /></label>
           <label>to <input type="number" id="cf-sza-max" min="0" max="180" step="any" placeholder="180" />&deg;</label>
+          <label title="Mars solar longitude (season): 0 northern spring equinox, 90 northern summer solstice, 180 autumn, 270 winter; 330 to 30 wraps through 0. Other bodies: leave empty">Mars season Ls from <input type="number" id="cf-ls-min" min="0" max="360" step="any" placeholder="0" /></label>
+          <label>to <input type="number" id="cf-ls-max" min="0" max="360" step="any" placeholder="360" />&deg;</label>
           <label>Profiles per mission <input type="number" id="cf-per-mission" min="1" max="100" value="10" /></label>
         </div>
         <label class="inline"><input type="checkbox" id="cf-download" checked /> Download profiles not yet downloaded</label>
@@ -194,13 +196,14 @@
               <option value="latitude">Latitude band</option>
               <option value="lst">Local solar time</option>
               <option value="sza">Solar zenith angle</option>
+              <option value="ls">Mars season (Ls)</option>
               <option value="year">Year</option>
               <option value="month">Month</option>
               <option value="month_of_year">Month of the year (all years)</option>
               <option value="mission">Mission</option>
             </select>
           </label>
-          <label title="Width of the latitude, local time or zenith angle bins; empty: 30°, 3 h, 30°">Bin width
+          <label title="Width of the latitude, local time, zenith angle or Ls bins; empty: 30°, 3 h, 30°, 30°">Bin width
             <input type="number" id="veda-compare-group-width" min="0" max="360" step="any" placeholder="auto" />
           </label>
           <label>Show
@@ -249,6 +252,7 @@
               <option value="latitude">Latitude</option>
               <option value="lst">Local solar time</option>
               <option value="sza">Solar zenith angle</option>
+              <option value="ls">Mars season (Ls)</option>
               <option value="longitude">Longitude</option>
               <option value="season">Day of year (all years)</option>
             </select>

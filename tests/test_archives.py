@@ -339,3 +339,29 @@ def test_downloaded_only_finds_label_and_repository_products():
         with catalog._db_lock, catalog._connect() as conn:
             conn.executemany("DELETE FROM products WHERE dataset_id=:dataset_id AND product_id=:product_id", rows)
         label.unlink(); csv.unlink()
+
+
+@pytest.mark.parametrize("name,kind", [
+    ("M65RSR0L04_AIO_041391512_05.LBL", "other"),      # occultation geometry text, not a table
+    ("M32ICL2L04_IIO_043622341_05.LBL", "other"),
+    ("M32ICL2L04_AIX_040931105_60.LBL", "profile"),
+    ("M32ICL2L04_IIX_040931105_60.LBL", "profile"),
+    ("M32ICL2L04_IID_040931105_60.LBL", "profile"),
+])
+def test_mex_occultation_geometry_files_are_not_profiles(name, kind):
+    assert get_dataset("mex-m-mrs-5-occ").classify(f"DATA/X/{name}")[1] == kind
+
+
+def test_changed_rules_reclassify_catalogued_rows():
+    from veda.archives import catalog
+    row = dict(dataset_id="mex-m-mrs-5-occ", product_id="M65RSR0L04_AIO_041391512_05", volume="V",
+               path="DATA/X/M65RSR0L04_AIO_041391512_05.LBL")
+    with catalog._db_lock, catalog._connect() as conn:
+        conn.execute("INSERT OR REPLACE INTO products VALUES (:dataset_id,:product_id,:volume,:path,"
+                     "'2004-05-18T15:26:42','','MARS','L4 neutral atmosphere profile','profile','{}')", row)
+        conn.execute("DELETE FROM meta WHERE key='rules:mex-m-mrs-5-occ'")      # as indexed by an older VEDA
+        catalog._reclassify(conn)
+        kind = conn.execute("SELECT kind FROM products WHERE dataset_id=? AND product_id=?",
+                            (row["dataset_id"], row["product_id"])).fetchone()[0]
+        conn.execute("DELETE FROM products WHERE dataset_id=? AND product_id=?", (row["dataset_id"], row["product_id"]))
+    assert kind == "other"
