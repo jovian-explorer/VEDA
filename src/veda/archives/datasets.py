@@ -370,6 +370,18 @@ DATASETS: List[Dataset] = [
         citation=MGS_CITATION,
     ),
     Dataset(
+        id="mro-m-rss-5-tps-v1.0", mission_id="mro", instrument="RSS (Radio Science)", level="L5 (derived)",
+        title="Mars Reconnaissance Orbiter radio occultation: temperature-pressure profiles (2008-2012, D. Hinson)",
+        body_ids=("mars",), archive="NASA PDS Atmospheres Node",
+        base_url="https://pds-atmospheres.nmsu.edu/PDS/data/",
+        volume_pattern=r"^mrors_2\d{3}$",
+        rules=((r"(^|/)tps/", "Temperature-pressure profile", "profile"),),
+        profile_columns=RS_PROFILE_COLUMNS,
+        citation=("Hinson, D. P., et al. (2008). Radio occultation measurements and MGCM simulations of Kelvin "
+                  "waves on Mars. Icarus, 193, 125-138. Data: MRO-M-RSS-5-TPS-V1.0, NASA PDS Atmospheres Node."),
+        doi="10.1016/j.icarus.2007.09.009",
+    ),
+    Dataset(
         id="mex-m-mrs-5-occ", mission_id="mex", instrument="MaRS (Radio Science)", level="L4",
         title="Mars Express radio occultation: neutral atmosphere and ionosphere profiles (L4)",
         body_ids=("mars",), archive="ESA PSA",
@@ -434,6 +446,7 @@ _REFS = {
     "gp-j-entry-v1.0": ("seiff1998", "johnson1992"),
     "hp-ssa-hasi-2-3-4-mission-v1.1": ("fulchignoni2005", "fulchignoni2002", "matson2002"),
     "mgs-m-rss-5-sdp-v1.0": ("tyler2001", "hinson1999", "albee2001"),
+    "mro-m-rss-5-tps-v1.0": ("hinson2008", "hinson1999", "zurek2007"),
     "mex-m-mrs-5-occ": ("patzold2016", "patzold2004", "chicarro2004"),
     "vco-v-rs-5-occ-v1.0": ("imamura2017", "nakamura2016"),
     "vco-v-rs-3-occ-v1.0": ("imamura2017", "nakamura2016"),

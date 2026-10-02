@@ -1238,6 +1238,38 @@
     {
      "mission": "mgs",
      "payload": "RS"
+    },
+    {
+     "mission": "mro",
+     "payload": "RSS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "hinson2008",
+   "authors": [
+    "Hinson, D. P.",
+    "Pätzold, M.",
+    "Wilson, R. J.",
+    "Häusler, B.",
+    "Tellmann, S.",
+    "Tyler, G. L."
+   ],
+   "et_al": false,
+   "year": 2008,
+   "title": "Radio occultation measurements and MGCM simulations of Kelvin waves on Mars",
+   "journal": "Icarus",
+   "volume": "193",
+   "issue": "1",
+   "pages": "125-138",
+   "doi": "10.1016/j.icarus.2007.09.009",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mro",
+     "payload": "RSS"
     }
    ],
    "note": ""

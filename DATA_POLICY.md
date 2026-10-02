@@ -59,6 +59,7 @@ The authoritative list is VEDA's own catalogue (`src/veda/archives/datasets.py`,
 | Galileo | Galileo Probe (ASI, NMS, NEP, NFR, ...) | L3 | `gp-j-entry-v1.0` | NASA PDS Atmospheres Node | Seiff et al. (1998); Johnson et al. (1992) |
 | Cassini-Huygens | Huygens HASI | L2-L4 | `hp-ssa-hasi-2-3-4-mission-v1.1` | NASA PDS Atmospheres Node | Fulchignoni et al. (2005); Fulchignoni et al. (2002); Matson et al. (2002) |
 | Mars Global Surveyor (MGS) | RS (Radio Science) | L5 (SDP) | `mgs-m-rss-5-sdp-v1.0` | NASA PDS Atmospheres Node | Tyler et al. (2001); Hinson et al. (1999); Albee et al. (2001) |
+| Mars Reconnaissance Orbiter (MRO) | RSS (Radio Science) | L5 (derived T-P) | `mro-m-rss-5-tps-v1.0` | NASA PDS Atmospheres Node | Hinson et al. (2008); Hinson et al. (1999); Zurek & Smrekar (2007) |
 | Mars Express (MEX) | MaRS (Radio Science) | L4 | `mex-m-mrs-5-occ` | ESA PSA | Pätzold et al. (2016); Pätzold et al. (2004); Chicarro et al. (2004) |
 | Akatsuki (VCO) | RS (Radio Science) | L3/L4 | `vco-v-rs-5-occ-v1.0` | JAXA DARTS | Imamura et al. (2017); Nakamura et al. (2016) |
 | Akatsuki (VCO) | RS (Radio Science) | L2 | `vco-v-rs-3-occ-v1.0` | JAXA DARTS | Imamura et al. (2017); Nakamura et al. (2016) |

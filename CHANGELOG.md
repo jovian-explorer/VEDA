@@ -14,6 +14,11 @@ All notable changes to VEDA. VEDA is pre-release software at version **0.0.1** u
 - **One vertical reference for comparisons**: altitudes are measured from the body's reference sphere for every mission. Magellan RSS altitudes, given above 6052 km, are moved up 0.2 km onto the 6051.8 km Venus reference used for VEX radii. Each profile shows its altitude reference, and a comparison that mixes references (the Galileo probe's 1-bar level, the Huygens landing site) says so.
 - New analytic tests: isothermal Mars (scale height, N^2 = g^2/(cp T), density, sound speed), a true dry adiabat through the deep Venus atmosphere (N^2 = 0 with cp(T)), potential temperature at the reference pressure, Chapman-layer TEC.
 
+#### Data sources
+- **MRO radio occultation profiles** (`mrors_2001`, MRO-M-RSS-5-TPS-V1.0, D. Hinson): 186 temperature-pressure-density profiles with uncertainties, 2008 to 2012, from the PDS Atmospheres Node; they compare directly with MGS and MEX profiles (same radius-based vertical reference). Cited as Hinson et al. (2008), Icarus 193, 125-138.
+- **FTP fallback**: the PDS Atmospheres and Geosciences nodes and the ESA SPICE server also serve their trees over anonymous FTP; when HTTPS fails (server busy or down, not a missing file), VEDA retries the same path over FTP. The PDS Rings, PPI and NAIF nodes, ESA PSA and JAXA DARTS have no FTP that answers (checked 2026-10-02) and are read over HTTPS.
+- A 403 from a public archive (the PDS Rings Node sheds load this way) is retried with back-off instead of failing at once.
+
 #### Reading products
 - **Byte-order repair**: floats written in the opposite byte order to their label (Juno JIRAM RDR spectra are labelled MSB but written LSB) are detected from the values (about 70 orders of magnitude of spread and NaNs, against a few for the swapped bytes) and read correctly. Previously these spectra plotted as noise around 1e38.
 - **Text products** (operations logs, PDS3 TEXT/DOCUMENT objects, PDS4 Stream_Text) open in the viewer as searchable text with a Save button, instead of the message "cannot be plotted". The data file of a live PDS4 product is now always downloaded, even when it is a .txt (it was skipped as an optional description).
