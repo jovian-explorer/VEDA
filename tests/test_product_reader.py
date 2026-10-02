@@ -261,3 +261,33 @@ END
     lbl = _write(tmp_path, "notes.txt", label, b"Line one\r\nLine two\r\n")
     o = open_product(str(lbl)).objects[0]
     assert o.kind == "text" and o.read_text()[0] == "Line one\nLine two\n"
+
+
+def test_table_of_grid_cells_becomes_a_map(tmp_path):
+    """Akatsuki LIR L3d layout: binary rows (lon index, lat index, value) with empty cells
+    left out; scaling turns indices into degrees."""
+    nx, ny = 40, 20
+    jj, ii = np.meshgrid(np.arange(ny), np.arange(nx), indexing="ij")
+    keep = (ii + jj) % 3 != 0                                  # some cells empty
+    rec = np.zeros(int(keep.sum()), dtype=[("lon", ">i2"), ("lat", ">i2"), ("v", ">f4")])
+    rec["lon"], rec["lat"] = ii[keep], jj[keep]
+    rec["v"] = (200.0 + ii + 0.5 * jj)[keep]
+    (tmp_path / "m.dat").write_bytes(rec.tobytes())
+    def fld(n, loc, t, ln, extra=""):
+        return (f"<Field_Binary><name>{n}</name><field_location unit='byte'>{loc}</field_location><data_type>{t}</data_type>"
+                f"<field_length unit='byte'>{ln}</field_length><unit>deg</unit>{extra}</Field_Binary>")
+    (tmp_path / "m.xml").write_text(_PDS4_HEAD.format(name="m.dat") + f"""
+    <Table_Binary><offset unit="byte">0</offset><records>{rec.size}</records>
+      <Record_Binary><fields>3</fields><groups>0</groups><record_length unit="byte">8</record_length>
+        {fld("Longitude", 1, "SignedMSB2", 2, "<scaling_factor>0.25</scaling_factor><value_offset>0.125</value_offset>")}
+        {fld("Latitude", 3, "SignedMSB2", 2, "<scaling_factor>0.25</scaling_factor><value_offset>-89.875</value_offset>")}
+        {fld("Value", 5, "IEEE754MSBSingle", 4)}
+      </Record_Binary></Table_Binary>
+  </File_Area_Observational></Product_Observational>""")
+    p = open_product(str(tmp_path / "m.xml"))
+    m = p.get("Value map")
+    assert m.kind == "image" and m.shape == (1, ny, nx)
+    assert m.extent["x"][:2] == [0.125, 0.125 + 0.25 * (nx - 1)] and m.extent["y"][0] == -89.875
+    a = m.read_array()
+    assert a[0, 5, 8] == pytest.approx(200.0 + 8 + 2.5)          # lat row 5, lon column 8
+    assert np.isnan(a[0, 0, 0]) and np.isfinite(a).sum() == keep.sum()

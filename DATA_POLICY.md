@@ -80,6 +80,8 @@ The authoritative list is VEDA's own catalogue (`src/veda/archives/datasets.py`,
 | Akatsuki (VCO) | IR2 camera | L2b | `vco-v-ir2-3-cdr-v1.0` | JAXA DARTS | Satoh et al. (2016); Satoh et al. (2017); Nakamura et al. (2016) |
 | Akatsuki (VCO) | IR2 camera | geometry | `vco-v-ir2-3-sedr-v1.0` | JAXA DARTS | Satoh et al. (2016); Satoh et al. (2017); Nakamura et al. (2016) |
 | Akatsuki (VCO) | LIR camera | L1b | `vco-v-lir-2-edr-v1.0` | JAXA DARTS | Fukuhara et al. (2011); Taguchi et al. (2007); Fukuhara et al. (2017); Nakamura et al. (2016) |
+| Akatsuki (VCO) | LIR camera | L2b, L2c, L2d (2023 recalibration), L3d maps, geometry; 2010-2024 | `vco-lir-pds4` | JAXA DARTS (PDS4) | Taguchi et al. (2023); Fukuhara et al. (2017); Fukuhara et al. (2011); Nakamura et al. (2016) |
+| Akatsuki (VCO) | UVI camera | L2b, 2010-2024 | `vco-uvi-pds4` | JAXA DARTS (PDS4) | Yamazaki et al. (2018); Nakamura et al. (2016) |
 | Akatsuki (VCO) | LIR camera | L2b+L2c | `vco-v-lir-3-cdr-v1.0` | JAXA DARTS | Fukuhara et al. (2011); Taguchi et al. (2007); Fukuhara et al. (2017); Nakamura et al. (2016) |
 | Akatsuki (VCO) | LIR camera | geometry | `vco-v-lir-3-sedr-v1.0` | JAXA DARTS | Fukuhara et al. (2011); Taguchi et al. (2007); Fukuhara et al. (2017); Nakamura et al. (2016) |
 | VEGA 1 and 2 | VEGA 2 lander METEO descent profile; VEGA 1/2 balloon records | L2-L3 | `vega1-vega2-v-2-3-venus-v1.0` | NASA PDS Atmospheres Node | Lorenz, Crisp & Huber (2018) |

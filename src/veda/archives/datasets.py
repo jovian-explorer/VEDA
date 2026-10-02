@@ -80,8 +80,12 @@ class Dataset:
     sigma_from_siblings: Dict[str, Tuple[Tuple[str, str], ...]] = field(default_factory=dict)
     # Factor turning the archive's error column into 1 sigma (0.5 for a full error-bar width)
     sigma_factor: Dict[str, float] = field(default_factory=dict)
-    # PDS4 bundle: folder (inside the bundle) holding the product XML labels.
-    pds4_product_dir: Optional[str] = None
+    # PDS4 bundle: folder (inside the bundle) holding the product XML labels; a tuple
+    # gives several folders (Akatsuki LIR: calibrated levels, maps, geometry).
+    pds4_product_dir: Optional[Union[str, Tuple[str, ...]]] = None
+    # Products sit one level further down, in subfolders listed by the server
+    # (Akatsuki: one folder per orbit, r0001 ...): list those too.
+    pds4_walk: bool = False
     # Archive that only works through its own website with an account (no
     # public index): VEDA links to the login page and imports what is downloaded.
     portal_only: bool = False

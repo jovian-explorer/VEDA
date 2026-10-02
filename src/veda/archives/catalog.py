@@ -177,16 +177,36 @@ def _pds4_times(text: str) -> tuple:
 
 
 def index_pds4(ds: Dataset, volume: str) -> List[Dict[str, Any]]:
-    """Products of a PDS4 bundle folder: every product XML label in it."""
-    folder = f"{ds.base_url}{volume}/{ds.pds4_product_dir}"
-    names = [n for n in http.list_directory(folder, login_url=ds.login_url)
-             if n.lower().endswith(".xml") and not n.lower().startswith("collection")]
+    """Products of a PDS4 bundle folder: every product label (.xml, .lblx) in it, or in
+    its subfolders when ``ds.pds4_walk`` (listed in parallel)."""
+    from concurrent.futures import ThreadPoolExecutor
+    root = f"{ds.base_url}{volume}/"
+    dirs = [ds.pds4_product_dir] if isinstance(ds.pds4_product_dir, str) else list(ds.pds4_product_dir)
+    if ds.pds4_walk:
+        def subdirs(d):
+            try:
+                return [f"{d}{s}/" for s in http.list_directory(root + d, dirs_only=True, login_url=ds.login_url)]
+            except http.LoginRequired:
+                raise
+            except http.ArchiveError:
+                return []
+        with ThreadPoolExecutor(8) as pool:
+            dirs = [s for subs in pool.map(subdirs, dirs) for s in subs]
+
+    def labels(d):
+        names = http.list_directory(root + d, login_url=ds.login_url)
+        return [d + n for n in names if n.lower().endswith((".xml", ".lblx")) and not n.lower().startswith("collection")]
+    with ThreadPoolExecutor(8 if len(dirs) > 1 else 1) as pool:
+        paths = [p for ps in pool.map(labels, dirs) for p in ps]
     out = []
-    for n in names:
-        path = ds.pds4_product_dir + n
+    for path in paths:
+        n = path.rsplit("/", 1)[-1]
+        folder = root + path[:len(path) - len(n)]
         ptype, kind = ds.classify(path)
         t0 = t1 = ""
-        if ds.times_from_labels:
+        if ds.time_from_name:
+            t0 = ds.time_from_filename(n)
+        elif ds.times_from_labels:
             try:
                 t0, t1 = _pds4_times(http.get_text(folder + n, login_url=ds.login_url))
             except http.LoginRequired:

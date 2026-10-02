@@ -1205,11 +1205,70 @@ def _open_pds4(label: Path) -> Product:
                 objects.append(obj)
             except (ProductError, OSError, ValueError, AttributeError) as exc:
                 errors.append(f"{name}: {exc}")
+    objects = _gridded_maps(objects, meta) + objects
     if not objects and texts:
         return Product(path=str(label), format="PDS4", metadata=meta, objects=texts)
     if not objects:
         raise ProductError("; ".join(errors) if errors else f"{label.name} describes no table or array VEDA can read")
     return Product(path=str(label), format="PDS4", metadata=meta, objects=objects)
+
+
+def _gridded_maps(objects: List[DataObject], meta: Dict[str, Any]) -> List[DataObject]:
+    """Maps rebuilt from tables of grid cells: rows of (Longitude, Latitude, values...) on
+    a regular grid with empty cells left out (Akatsuki LIR L3d: 0.25 deg, 1440 x 720).
+    One map per value column, gridded when first read."""
+    maps: List[DataObject] = []
+    for obj in objects:
+        if obj.kind != "table" or obj.shape[0] < 100:
+            continue
+        names = {f.name.lower(): f.name for f in obj.fields}
+        lon_f, lat_f = names.get("longitude"), names.get("latitude")
+        if not lon_f or not lat_f:
+            continue
+        try:
+            d = obj.read_table([lon_f, lat_f])
+            lon, lat = np.asarray(d[lon_f], float), np.asarray(d[lat_f], float)
+        except (ProductError, OSError, ValueError, KeyError):
+            continue
+        ok = np.isfinite(lon) & np.isfinite(lat)
+        if ok.sum() < 100:
+            continue
+        ulon, ulat = np.unique(lon[ok]), np.unique(lat[ok])
+        if ulon.size < 2 or ulat.size < 2:
+            continue
+        dlon, dlat = float(np.min(np.diff(ulon))), float(np.min(np.diff(ulat)))
+        ix = np.rint((lon - ulon[0]) / dlon)
+        iy = np.rint((lat - ulat[0]) / dlat)
+        # regular grid only: every cell centre within 1 % of a grid node
+        if np.nanmax(np.abs(ix - (lon - ulon[0]) / dlon)) > 0.01 or np.nanmax(np.abs(iy - (lat - ulat[0]) / dlat)) > 0.01:
+            continue
+        nx, ny = int(np.nanmax(ix[ok])) + 1, int(np.nanmax(iy[ok])) + 1
+        if nx * ny > 20_000_000:
+            continue
+        ext = {"x": [float(ulon[0]), float(ulon[0] + (nx - 1) * dlon), "Longitude", "deg"],
+               "y": [float(ulat[0]), float(ulat[0] + (ny - 1) * dlat), "Latitude", "deg"]}
+        title = str(meta.get("TITLE", ""))
+        for f in obj.fields:
+            if f.name in (lon_f, lat_f) or f.kind != "number" or f.items != 1:
+                continue
+            unit, note = f.unit, ""
+            if "Longwave Infrared Camera" in title and f.name.lower() == "radiance" and unit.startswith("W/"):
+                # The LIR L3d label calls the mapped value a radiance in W/(m**2*sr*m), but
+                # the values (about 170-260) are brightness temperatures in kelvin.
+                unit, note = "K", " Brightness temperature: the label gives W/(m**2*sr*m), which does not match the values."
+
+            def reader(obj=obj, col=f.name, ix=ix, iy=iy, ok=ok, nx=nx, ny=ny, cache={}):
+                if "grid" not in cache:
+                    v = np.asarray(obj.read_table([col])[col], float)
+                    grid = np.full((1, ny, nx), np.nan, np.float32)
+                    sel = ok & np.isfinite(v)
+                    grid[0, iy[sel].astype(int), ix[sel].astype(int)] = v[sel]
+                    cache["grid"] = grid
+                return cache["grid"], (lambda a: a)
+            maps.append(DataObject(f"{f.name} map", "image", (1, ny, nx), [], (f.description or "") + note +
+                                   f" Gridded from {obj.name} ({dlon:g} x {dlat:g} deg).",
+                                   ("BAND", "LATITUDE", "LONGITUDE"), unit, ext, _reader=reader))
+    return maps
 
 
 def _text_file_object(name: str, data: Path, offset: int = 0, length: int = 0, description: str = "") -> DataObject:

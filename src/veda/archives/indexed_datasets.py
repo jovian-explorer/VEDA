@@ -7,7 +7,39 @@ from .datasets import Dataset
 
 AKATSUKI_CAMERA_CITATION = ('Nakamura, M., et al. (2016). AKATSUKI returns to Venus. Earth, Planets and Space, 68, 75.')
 
+_VCO4 = "https://data.darts.isas.jaxa.jp/pub/pds4/data/vco/"
+_VCO_TIME = r"_(?P<year>\d{4})(?P<month>\d\d)(?P<day>\d\d)_(?P<hh>\d\d)(?P<mm>\d\d)(?P<ss>\d\d)_"
+
 INDEXED_DATASETS = [
+    Dataset(
+        id='vco-lir-pds4', mission_id='akatsuki', instrument='LIR camera', level='L2b, L2c, L2d, L3d, geometry (PDS4)',
+        title='VCO LIR brightness temperature 2010-2024 (PDS4): L2d with the 2023 recalibration, L3d maps, geometry',
+        body_ids=('venus',), archive='JAXA DARTS (PDS4)',
+        base_url=_VCO4, volume_pattern='^vco_lir$',
+        pds4_product_dir=('data_calibrated/l2b/', 'data_calibrated/l2c/', 'data_calibrated/l2d/',
+                          'data_map/l3d/', 'geometry/l1b/'),
+        pds4_walk=True, time_from_name=_VCO_TIME,
+        rules=(('_l2d_v', 'LIR brightness temperature, recalibrated 2023 (L2d; Taguchi et al. 2023)', 'image'),
+               ('_l3d_v', 'LIR brightness temperature map, longitude-latitude (L3d)', 'image'),
+               ('_l2c_v', 'LIR brightness temperature, background-bias corrected (L2c)', 'image'),
+               ('_l2b_v', 'LIR brightness temperature, no background correction (L2b)', 'image'),
+               ('_geo_v', 'LIR geometry backplanes', 'geometry')),
+        citation=AKATSUKI_CAMERA_CITATION,
+        refs=('taguchi2023', 'fukuhara2017', 'fukuhara2011', 'nakamura2016'),
+    ),
+    Dataset(
+        id='vco-uvi-pds4', mission_id='akatsuki', instrument='UVI camera', level='L2b (PDS4)',
+        title='VCO UVI calibrated images 2010-2024 (PDS4, through the end of the mission)',
+        body_ids=('venus',), archive='JAXA DARTS (PDS4)',
+        base_url=_VCO4, volume_pattern='^vco_uvi$',
+        pds4_product_dir='data_calibrated/l2b/', pds4_walk=True, time_from_name=_VCO_TIME,
+        rules=(('_283_l2b_v', 'UVI 283 nm (SO2 absorption), calibrated (L2b)', 'image'),
+               ('_365_l2b_v', 'UVI 365 nm (unknown UV absorber), calibrated (L2b)', 'image'),
+               ('_dif_l2b_v', 'UVI diffuser, calibrated (L2b)', 'image'),
+               ('_sht_l2b_v', 'UVI shutter dark, calibrated (L2b)', 'image')),
+        citation=AKATSUKI_CAMERA_CITATION,
+        refs=('yamazaki2018', 'nakamura2016'),
+    ),
     Dataset(
         id='vco-v-uvi-2-edr-v1.0', mission_id='akatsuki', instrument='UVI camera', level='L1b',
         title='VCO UVI raw data (L1b counts)',

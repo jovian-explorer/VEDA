@@ -5852,6 +5852,33 @@
     }
    ],
    "note": ""
+  },
+  {
+   "key": "taguchi2023",
+   "authors": [
+    "Taguchi, M.",
+    "Kouyama, T.",
+    "Sugawa, T.",
+    "Murakami, S.",
+    "Futaguchi, M."
+   ],
+   "et_al": false,
+   "year": 2023,
+   "title": "In-orbit recalibration of Longwave Infrared Camera onboard Akatsuki",
+   "journal": "Earth, Planets and Space",
+   "volume": "75",
+   "issue": "",
+   "pages": "53",
+   "doi": "10.1186/s40623-023-01803-w",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "akatsuki",
+     "payload": "LIR"
+    }
+   ],
+   "note": "Article number 53."
   }
  ]
 }
