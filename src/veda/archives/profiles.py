@@ -369,9 +369,9 @@ def _add_solar_geometry(prof: ObservationProfile, ds: Dataset) -> None:
     attrs = prof.raw_attributes
     track = prof.track
     time = prof.time_utc
-    # The archive's own time at the spacecraft (MRO / MGS radio science header), when the
-    # label times are ground received times
-    sc_time = _header_text(attrs, "SPACECRAFT TIME")
+    # The archive's own time of the measurement (radio science header tables: MRO
+    # "SPACECRAFT TIME", MGS "OCCULTATION TIME"), when the label times are ground received times
+    sc_time = _header_text(attrs, "SPACECRAFT TIME") or _header_text(attrs, "OCCULTATION TIME")
     if sc_time and sg.parse_utc(sc_time):
         attrs.setdefault("LABEL_TIME", prof.time_utc)
         prof.time_utc = time = sc_time
