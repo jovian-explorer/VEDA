@@ -121,7 +121,7 @@ where the dry adiabatic lapse rate is $\Gamma_d = g(z) / c_p(T)$. VEDA evaluates
 * $N^2(z) = 0$: Neutral stability.
 * $N^2(z) < 0$: Superadiabatic, convective overturning instability.
 
-**Vertical derivatives** ($dT/dz$, $d\theta/dz$): samples at the same altitude are averaged first. Profiles sampled more finely than 50 m (entry accelerometers record every few metres) are differentiated with a central difference over $\pm 50$ m, a 100 m vertical resolution, so sample-to-sample noise is not amplified; coarser profiles use ordinary central differences between neighbouring levels.
+**Vertical derivatives** ($dT/dz$, $d\theta/dz$): samples at the same altitude are averaged first. Each derivative is a central difference between the neighbouring levels, but never over less than $\pm 50$ m (a 100 m vertical resolution): finely sampled profiles (entry accelerometers record every few metres) and altitude jitter (a lander after touchdown) would otherwise turn sample noise into huge gradients. On an even grid coarser than 50 m this is the ordinary central difference.
 
 **Fill values**: temperatures, pressures and densities that are zero or negative are treated as missing (some archives, such as the MER and Phoenix entry profiles, mark missing levels with -1 without declaring it).
 
