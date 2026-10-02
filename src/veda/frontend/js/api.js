@@ -46,6 +46,7 @@ export const api = {
   meta:          ()          => call('/api/meta'),
   saveSettings:  (patch)     => call('/api/settings', {method: 'POST', body: patch}),
   resetSettings: ()          => call('/api/settings/reset', {method: 'POST'}),
+  updateCheck:   (force)     => call(`/api/update${force ? '?force=true' : ''}`),
 
   revealFolder:  (which)     => call(`/api/reveal-folder?which=${which}`),
 

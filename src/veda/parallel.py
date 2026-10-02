@@ -35,6 +35,9 @@ def _worker_init(home: Optional[str]) -> None:
     # Same data folder as the main process (the catalogue, cache and settings).
     if home:
         os.environ["VEDA_HOME"] = home
+    # Exit when VEDA does.  A worker only notices a normal shutdown; if the app is
+    # killed or crashes, the workers would otherwise stay running, holding memory.
+    threading.Thread(target=_exit_with_parent, daemon=True).start()
     # Import the heavy modules now, in parallel across the workers, instead of on each
     # worker's first task (SciPy's signal module alone takes seconds).
     try:
@@ -43,6 +46,14 @@ def _worker_init(home: Optional[str]) -> None:
             importlib.import_module(mod)
     except Exception:  # noqa: BLE001 - only an optimisation
         pass
+
+
+def _exit_with_parent() -> None:
+    import multiprocessing
+    parent = multiprocessing.parent_process()
+    if parent is not None:
+        parent.join()          # returns when the parent process has ended
+        os._exit(0)
 
 
 def warm_up() -> None:

@@ -21,6 +21,8 @@ from fastapi.staticfiles import StaticFiles
 
 from contextlib import asynccontextmanager
 
+from ..updates import build_info
+
 from ..config import (
     APP_NAME,
     APP_TITLE,
@@ -115,6 +117,7 @@ def create_app() -> FastAPI:
             },
             "settings": SETTINGS.to_dict(),
             "system": {"cpu_count": os.cpu_count() or 1},
+            "build": build_info(),
             "paths": {
                 "data_root": str(DATA_ROOT),
                 "cache": str(CACHE_DIR),
@@ -144,6 +147,12 @@ def create_app() -> FastAPI:
             raise HTTPException(422, str(exc))
         SETTINGS.save()
         return SETTINGS.to_dict()
+
+    @app.get("/api/update")
+    def update_check(force: bool = False) -> Dict[str, Any]:
+        """This build and the latest published one (Settings > Network > check for updates)."""
+        from .. import updates
+        return updates.check(force=force)
 
     @app.post("/api/settings/reset")
     def reset_settings() -> Dict[str, Any]:

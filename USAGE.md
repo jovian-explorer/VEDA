@@ -256,7 +256,7 @@ Open **Settings** in the toolbar. Changes apply as soon as you save; **Reset to 
 | Units | Temperature, Pressure | Default units for the comparison plot and the quick unit switcher. |
 | Start-up | Open on body, Default mission | Where VEDA opens next time. |
 | Figures | Publication figure DPI | Resolution of exported publication figures. |
-| Network | Allow downloads, Timeout, Large-file limit | Turn online archive downloads off (offline work), set how long to wait for a slow archive, and the size (default 250 MB) above which opening a product asks first, showing the file size and an estimated download time. |
+| Network | Allow downloads, Update notices, Timeout, Large-file limit | Turn online archive downloads off (offline work), whether VEDA tells you when a newer build is published (one request to GitHub per session), how long to wait for a slow archive, and the size (default 250 MB) above which opening a product asks first, showing the file size and an estimated download time. |
 | Performance | CPU worker processes, Parallel downloads | Worker processes read and derive many profiles at once (filtered comparisons, batch reading); the default is all cores but one, 1 runs everything in the main process. Profiles are read in batches across the workers, which is several times faster for comparisons of tens to hundreds of profiles. Parallel downloads (1 to 16, default 4) sets how many products are fetched at the same time. |
 | Observation geometry | Automatic SPICE downloads, size limit | Download the kernels for opened missions and observations by themselves, and ask first above the limit. |
 | Data folders | Open | Shows and opens the data, cache, export and log folders. |

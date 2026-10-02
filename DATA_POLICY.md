@@ -7,6 +7,7 @@ VEDA is a tool for finding, downloading, reading and analysing planetary science
 * Products are downloaded from the official archive, on your request, into a cache on your own computer.
 * The downloaded files are kept exactly as the archive published them. Unit conversions, derived quantities and comparisons are computed in memory, and exports say which archive file they came from.
 * The terms of the archive that published a product apply to it. VEDA's MIT License applies only to the VEDA software.
+* Apart from the archives you search or download from, VEDA contacts only GitHub, once per session, to see whether a newer VEDA has been published (the request sends nothing about you or your data; turn it off in Settings > Network). With downloads turned off, VEDA makes no network requests at all.
 
 The sample products bundled with VEDA (`src/veda/sampledata`) are unmodified copies of public archive products, included so the demonstrations and tests work offline. Each is listed in section 3 with its source.
 
@@ -241,7 +242,7 @@ When you publish figures, tables or values produced with VEDA, please cite:
   author       = {Keshav Aggarwal},
   title        = {{VEDA: Visualization, Exploration, and Data Analysis - A Multi-Mission Planetary Science Data Laboratory}},
   year         = {2026},
-  version      = {0.1.0},
+  version      = {0.2.0},
   url          = {https://github.com/jovian-explorer/VEDA},
   address      = {Thiruvananthapuram, Kerala, India}
 }
@@ -250,7 +251,7 @@ When you publish figures, tables or values produced with VEDA, please cite:
 ### Data availability statement (template)
 Remove the archives you did not use and add the data set DOIs:
 
-> The spacecraft observations analysed in this study are publicly available from the NASA Planetary Data System (PDS) Atmospheres Node (https://pds-atmospheres.nmsu.edu/), the ESA Planetary Science Archive (PSA) (https://archives.esac.esa.int/psa/) and the JAXA Data Archives and Transmission System (DARTS) (https://data.darts.isas.jaxa.jp/); ISRO mission data are available to registered users from the Indian Space Science Data Centre (ISSDC/PRADAN) (https://pradan.issdc.gov.in/). Spacecraft and planetary ephemerides were obtained from the NASA NAIF SPICE archive (https://naif.jpl.nasa.gov/) and the mission SPICE archives at ESA and JAXA. Archived values were read, unit-converted and compared with VEDA version 0.1.0 (https://github.com/jovian-explorer/VEDA).
+> The spacecraft observations analysed in this study are publicly available from the NASA Planetary Data System (PDS) Atmospheres Node (https://pds-atmospheres.nmsu.edu/), the ESA Planetary Science Archive (PSA) (https://archives.esac.esa.int/psa/) and the JAXA Data Archives and Transmission System (DARTS) (https://data.darts.isas.jaxa.jp/); ISRO mission data are available to registered users from the Indian Space Science Data Centre (ISSDC/PRADAN) (https://pradan.issdc.gov.in/). Spacecraft and planetary ephemerides were obtained from the NASA NAIF SPICE archive (https://naif.jpl.nasa.gov/) and the mission SPICE archives at ESA and JAXA. Archived values were read, unit-converted and compared with VEDA version 0.2.0 (https://github.com/jovian-explorer/VEDA).
 
 ---
 

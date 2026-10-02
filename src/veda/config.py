@@ -84,6 +84,7 @@ SETTING_CHOICES: Dict[str, Any] = {
     "units_temperature": ("K", "C"),
     "units_pressure": ("hPa", "bar", "Pa"),
     "network_enabled": (False, True),
+    "check_updates": (False, True),
     "network_timeout_s": (5, 300),
     "spice_auto_download": (False, True),
     "spice_auto_limit_mb": (10, 5000),
@@ -104,6 +105,7 @@ class Settings:
     units_temperature: str = "K"
     units_pressure: str = "hPa"
     network_enabled: bool = True
+    check_updates: bool = True
     network_timeout_s: int = 30
     # Download the SPICE kernels an observation needs without asking (up to the size limit)
     spice_auto_download: bool = True

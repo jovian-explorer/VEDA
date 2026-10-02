@@ -129,6 +129,47 @@ function appVersion() {
   return (state.meta && state.meta.app && state.meta.app.version) || '';
 }
 
+/** "0.2.0 build 42" for published builds, "0.2.0" from source. */
+function appBuildLabel() {
+  const b = state.meta && state.meta.build;
+  return appVersion() + (b && b.build ? ` build ${b.build}` : '');
+}
+
+/**
+ * Tell the user when a newer build has been published (every tested change to VEDA
+ * is published as the latest release).  One check per session; a dismissed build is
+ * not announced again.
+ */
+async function checkForUpdate({ force = false, quiet = true } = {}) {
+  let r;
+  try { r = await api.updateCheck(force); } catch (err) { if (!quiet) toast(err.message, 'bad'); return null; }
+  if (!r.checked) {
+    if (!quiet) toast(r.error ? `Could not check for updates: ${r.error}` : 'Update checks are off (Settings > Network)', 'bad');
+    return r;
+  }
+  if (!r.newer) {
+    if (!quiet) toast(`VEDA ${appBuildLabel()} is the latest version`, 'good');
+    return r;
+  }
+  let dismissed = '';
+  try { dismissed = localStorage.getItem('veda.update.dismissed') || ''; } catch (_) { /* storage blocked */ }
+  if (quiet && dismissed === r.latest.tag) return r;
+  const b = $('#banner');
+  b.className = 'banner update';
+  b.replaceChildren(
+    el('span', {}, `A newer VEDA is available: ${r.latest.name || r.latest.tag}. `),
+    el('a', { href: r.url, target: '_blank', rel: 'noopener' }, 'Download it'),
+    el('span', {}, ' (your data, settings and downloads are kept). '),
+    el('button', {
+      type: 'button', class: 'ghost small',
+      onclick: () => {
+        try { localStorage.setItem('veda.update.dismissed', r.latest.tag); } catch (_) { /* storage blocked */ }
+        b.classList.add('hidden');
+      },
+    }, 'Dismiss'));
+  return r;
+}
+
 function vedaBibtex() {
   return `@software{Aggarwal_VEDA_${new Date().getFullYear()},
   author    = {Keshav Aggarwal},
@@ -218,6 +259,7 @@ function settingsBody() {
         plot_dpi: parseInt($('#s-plot-dpi').value, 10),
         network_enabled: $('#s-network').checked,
         network_timeout_s: parseInt($('#s-timeout').value, 10),
+        check_updates: $('#s-check-updates').checked,
         spice_auto_download: $('#s-spice-auto').checked,
         spice_auto_limit_mb: parseInt($('#s-spice-limit').value, 10),
         product_confirm_mb: parseInt($('#s-product-limit').value, 10),
@@ -278,6 +320,9 @@ function settingsBody() {
       el('label', { class: 'settings-check' },
         el('input', { type: 'checkbox', id: 's-network', checked: s.network_enabled !== false }),
         el('span', {}, 'Allow downloads from online archives (NASA PDS, ESA PSA, JAXA DARTS, ISRO ISSDC)')),
+      el('label', { class: 'settings-check' },
+        el('input', { type: 'checkbox', id: 's-check-updates', checked: s.check_updates !== false }),
+        el('span', {}, 'Tell me when a newer VEDA is published (one request to GitHub at start-up)')),
       field('Download timeout (seconds)',
         el('input', { type: 'number', id: 's-timeout', value: s.network_timeout_s || 30, min: 5, max: 300, required: true }),
         'How long to wait for a slow archive before giving up.'),
@@ -491,6 +536,17 @@ async function fillDatasetTable(box) {
   }
 }
 
+function escAttr(s) {
+  return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+function buildLine() {
+  const b = state.meta && state.meta.build;
+  const parts = b && b.build ? [`Build ${b.build}`, b.date, b.commit && `commit ${b.commit}`].filter(Boolean)
+                             : ['Running from source'];
+  return `<p class="hint">${escAttr(parts.join(' · '))} &middot; <a href="#" id="about-check-update">Check for updates</a></p>`;
+}
+
 function aboutBody() {
   const version = appVersion();
   const paths = (state.meta && state.meta.paths) || {};
@@ -499,7 +555,8 @@ function aboutBody() {
     <div class="about-hero">
       <img src="img/veda_logo.png" alt="" width="56" height="56" />
       <div>
-        <h2>VEDA ${version ? `<span class="badge">v${version}</span>` : ''}</h2>
+        <h2>VEDA ${version ? `<span class="badge">v${escAttr(appBuildLabel())}</span>` : ''}</h2>
+        ${buildLine()}
         <p>Visualization, Exploration, and Data Analysis: search the official planetary archives by body, mission, payload and date, then plot, derive, compare and export the real spacecraft observations, with SPICE observation geometry.</p>
         <p><a href="${REPO_URL}" target="_blank" rel="noopener">Source code &amp; releases</a> &middot;
            <a href="${REPO_URL}/issues" target="_blank" rel="noopener">Report a problem</a> &middot;
@@ -536,6 +593,10 @@ function aboutBody() {
     } catch (_) {
       toast('Could not copy; select the text and copy it manually', 'bad');
     }
+  });
+  container.querySelector('#about-check-update')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    checkForUpdate({ force: true, quiet: false });
   });
   return container;
 }
@@ -657,7 +718,7 @@ async function boot() {
   try {
     state.meta = await api.meta();
     if (state.meta && state.meta.app) {
-      $('#version-tag').textContent = `v${state.meta.app.version}`;
+      $('#version-tag').textContent = `v${appBuildLabel()}`;
       document.querySelectorAll('.veda-version').forEach(n => { n.textContent = state.meta.app.version; });
       document.title = `${state.meta.app.title} ${state.meta.app.version}`;
     }
@@ -671,6 +732,7 @@ async function boot() {
 
   await initVeda();
   renderMath(document.body);
+  setTimeout(() => checkForUpdate(), 4000);   // after start-up, not competing with it
 }
 
 boot();

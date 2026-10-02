@@ -2,7 +2,13 @@
 
 All notable changes to VEDA. Versions follow [semantic versioning](https://semver.org/): 0.x releases are public and in active development (feedback from users shapes them), 1.0.0 will mark a stable interface.
 
-## Unreleased
+## 0.2.0 (2026-10-02)
+
+From this version on, every tested change is published straight away as the latest release ("VEDA 0.2.0 build N"), so this log lists changes by version but the builds in between already contain them.
+
+### Updates
+- **Automatic builds**: each change to VEDA that passes the tests on Windows, macOS and Linux is built for all three and published as the latest release.
+- VEDA tells you when a newer build has been published (a notice with a download link; About > *Check for updates*). About shows the build number, date and commit. Turn it off in Settings > Network.
 
 ### Performance
 - **Multiprocessing.** Profiles for comparisons are read and derived in parallel worker processes; the number is set in **Settings > Performance** (default: all CPU cores but one; 1 turns it off). The workers start in the background when VEDA opens and are reused, and work is sent in chunks; reading 240 Venus Express profiles took 1.0 s with 4 workers against 5.5 s before.

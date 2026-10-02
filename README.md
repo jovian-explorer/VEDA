@@ -8,7 +8,7 @@
 
 All data shown in VEDA come straight from the mission archives (NASA PDS, ESA PSA, JAXA DARTS, ISRO ISSDC, OPUS). Nothing is simulated. Nearly every payload of every mission in VEDA can be searched by date and plotted; the few that cannot (no searchable archive route yet) are listed in DATA_POLICY.md.
 
-> **VEDA 0.1.0 is the first public release.** It is ready for use and for testing; please report problems, wrong results and suggestions through **Feedback** in the app or on the [issue tracker](https://github.com/jovian-explorer/VEDA/issues/new/choose).
+> **VEDA is public and updated continuously** (version 0.2.0; every tested change is published as the latest build). It is ready for use and for testing; please report problems, wrong results and suggestions through **Feedback** in the app or on the [issue tracker](https://github.com/jovian-explorer/VEDA/issues/new/choose).
 
 ---
 
@@ -125,6 +125,8 @@ Open the [latest release](https://github.com/jovian-explorer/VEDA/releases/lates
 | macOS (Apple Silicon) | `VEDA-<version>-macos-arm64.zip` | unzip, right-click `VEDA.app` > Open the first time (the app is not notarized) |
 | Linux (x86_64) | `VEDA-<version>-linux-x86_64.zip` | unzip, `cd VEDA-*; chmod +x VEDA && ./VEDA` |
 
+**Updates.** Every tested change to VEDA is built for all three systems and published as the latest release ("VEDA 0.2.0 build 42"), usually within half an hour. VEDA checks for a newer build when it starts and shows a notice with a download link; About > *Check for updates* checks on demand. To update, download the new archive and replace the old VEDA folder: your data, downloads, settings and exports live in a separate folder (below) and are kept. Turn the check off in Settings > Network.
+
 
 ### Option B: install with pip (any OS, Python 3.10+)
 ```bash
@@ -195,7 +197,7 @@ VEDA does not own or host any data. Each archive's terms apply to the data you d
   author       = {Keshav Aggarwal},
   title        = {{VEDA: Visualization, Exploration, and Data Analysis - A Multi-Mission Planetary Science Data Laboratory}},
   year         = {2026},
-  version      = {0.1.0},
+  version      = {0.2.0},
   url          = {https://github.com/jovian-explorer/VEDA}
 }
 ```
