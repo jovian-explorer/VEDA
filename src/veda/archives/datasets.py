@@ -163,6 +163,11 @@ RS_PROFILE_COLUMNS = {  # ESA/JAXA radio-science L4 layout (MaRS, VeRa heritage)
     "et": "EPHEMERIS SECONDS",
 }
 
+# Entry-accelerometer profiles (MER, Phoenix): RADIAL_DISTANCE in metres from the centre of Mars
+EDL_PROFILE_COLUMNS = {"radius": "RADIAL_DISTANCE", "temperature": "TEMP", "temperature_sigma": "SIGMA_TEMP",
+                       "pressure": "PRESS", "pressure_sigma": "SIGMA_PRESS", "latitude": "LATITUDE",
+                       "longitude": "LONGITUDE"}
+
 MGS_CITATION = ("Hinson, D. P., et al. (1999). Initial results from radio occultation measurements with "
                 "Mars Global Surveyor. JGR, 104(E11), 26997-27012; Tyler, G. L., et al. (2001), JGR 106(E10).")
 
@@ -374,6 +379,78 @@ DATASETS: List[Dataset] = [
         citation=MGS_CITATION,
     ),
     Dataset(
+        id="mer-m-imu-5-edl-derived-v1.0", mission_id="mer", instrument="IMU (entry)", level="L5 (derived)",
+        title="Spirit and Opportunity entry profiles: density, pressure and temperature (January 2004)",
+        body_ids=("mars",), archive="NASA PDS Atmospheres Node",
+        base_url="https://pds-atmospheres.nmsu.edu/PDS/data/",
+        volume_pattern=r"^merimu_2001$",
+        rules=((r"mer\dprofiles", "Entry profile (density, pressure, temperature)", "profile"),),
+        profile_columns=EDL_PROFILE_COLUMNS,
+        extra_variables={"density_measured": ("RHO", "SIGMA_RHO")},
+        citation=("Withers, P., & Smith, M. D. (2006). Atmospheric entry profiles from the Mars Exploration Rovers "
+                  "Spirit and Opportunity. Icarus, 185, 133-142. Data: MER1/MER2-M-IMU-5-EDL-DERIVED-V1.0."),
+        doi="10.1016/j.icarus.2006.06.013",
+        label_from_data=True,
+    ),
+    Dataset(
+        id="phx-m-ase-5-edl-rdr-v1.0", mission_id="phoenix", instrument="ASE (entry)", level="L5 (RDR)",
+        title="Phoenix entry profile at 68 N: density, pressure and temperature (May 2008)",
+        body_ids=("mars",), archive="NASA PDS Atmospheres Node",
+        base_url="https://pds-atmospheres.nmsu.edu/PDS/data/",
+        volume_pattern=r"^phxase_0002$",
+        rules=((r"phxprofiles", "Entry profile (density, pressure, temperature)", "profile"),
+               (r"phxcompact", "Entry profile, compact version", "other")),
+        profile_columns=EDL_PROFILE_COLUMNS,
+        extra_variables={"density_measured": ("RHO", "SIGMA_RHO")},
+        citation=("Withers, P., & Catling, D. C. (2010). Observations of atmospheric tides on Mars at the season and "
+                  "latitude of the Phoenix atmospheric entry. GRL, 37(24). Data: PHX-M-ASE-5-EDL-RDR-V1.0."),
+        doi="10.1029/2010gl045382",
+        label_from_data=True,
+    ),
+    Dataset(
+        id="msl-edl-atmosphere", mission_id="msl", instrument="EDL reconstruction", level="Derived (PDS4)",
+        title="Curiosity entry profile over Gale crater: density, pressure and temperature (August 2012)",
+        body_ids=("mars",), archive="NASA PDS Atmospheres Node (PDS4)",
+        base_url="https://pds-atmospheres.nmsu.edu/PDS/data/PDS4/",
+        volume_pattern=r"^msledl_bundle$",
+        pds4_product_dir="data/",
+        rules=((r"bu_pds_edldata", "Entry profile (density, pressure, temperature)", "profile"),),
+        # (the label gives units only in the field descriptions)
+        profile_columns={"radius": "Radial distance [km]", "temperature": "Atmospheric temperature",
+                         "temperature_sigma": "Temperature uncertainty", "pressure": "Atmospheric pressure",
+                         "pressure_sigma": "Atmospheric pressure uncertainty", "latitude": "Latitude",
+                         "longitude": "Longitude"},
+        column_units={"Atmospheric temperature": "K", "Temperature uncertainty": "K", "Atmospheric pressure": "Pa",
+                      "Atmospheric pressure uncertainty": "Pa", "Atmospheric Density": "kg/m^3",
+                      "Radial distance [km]": "KILOMETER"},
+        extra_variables={"density_measured": ("Atmospheric Density", "Density uncertainty")},
+        citation=("Holstein-Rathlou, C., Maue, A., & Withers, P. (2016). PSS, 120, 15-23. "
+                  "Data: Holstein-Rathlou & Withers (2015), https://doi.org/10.17189/1518944."),
+        doi="10.17189/1518944",
+        times_from_labels=True,
+    ),
+    Dataset(
+        id="insight-edl-atmosphere", mission_id="insight", instrument="EDL reconstruction", level="Derived (PDS4)",
+        title="InSight entry profile over Elysium Planitia: density, pressure and temperature (November 2018)",
+        body_ids=("mars",), archive="NASA PDS Atmospheres Node (PDS4)",
+        base_url="https://pds-atmospheres.nmsu.edu/PDS/data/PDS4/",
+        volume_pattern=r"^insight_edl_bundle$",
+        pds4_product_dir="data/",
+        rules=((r"edl_atmosphere", "Entry profile (density, pressure, temperature)", "profile"),
+               (r"edl_complete", "Entry reconstruction, all quantities", "other"),
+               (r"edl_imu", "Entry IMU data", "other")),
+        # Radial distance, not "Planetocentric Altitude" (which is above 3396.19 km), so the
+        # profile shares VEDA's 3389.5 km Mars reference with the other missions.
+        profile_columns={"radius": "Radial Distance", "temperature": "Atmospheric Temperature",
+                         "temperature_sigma": "Std Dev Temperature", "pressure": "Atmospheric Pressure",
+                         "pressure_sigma": "Std Dev Pressure", "latitude": "Planetocentric Latitude",
+                         "longitude": "Planetocentric Longitude", "lst": "Local Solar Time (LST)"},
+        extra_variables={"density_measured": ("Atmospheric Density", "Std Dev Density")},
+        citation="Karatekin, O., Banfield, D., & Ashley, J. (2020). InSight EDL atmospheric reconstruction. NASA PDS.",
+        doi="10.17189/1518935",
+        times_from_labels=True,
+    ),
+    Dataset(
         id="mro-m-rss-5-tps-v1.0", mission_id="mro", instrument="RSS (Radio Science)", level="L5 (derived)",
         title="Mars Reconnaissance Orbiter radio occultation: temperature-pressure profiles (2008-2012, D. Hinson)",
         body_ids=("mars",), archive="NASA PDS Atmospheres Node",
@@ -453,6 +530,10 @@ _REFS = {
     "hp-ssa-hasi-2-3-4-mission-v1.1": ("fulchignoni2005", "fulchignoni2002", "matson2002"),
     "mgs-m-rss-5-sdp-v1.0": ("tyler2001", "hinson1999", "albee2001"),
     "mro-m-rss-5-tps-v1.0": ("hinson2008", "hinson1999", "zurek2007"),
+    "mer-m-imu-5-edl-derived-v1.0": ("withers2006",),
+    "phx-m-ase-5-edl-rdr-v1.0": ("withers2010",),
+    "msl-edl-atmosphere": ("holsteinrathlou2016", "holsteinrathlou2015data"),
+    "insight-edl-atmosphere": ("karatekin2020data",),
     "mex-m-mrs-5-occ": ("patzold2016", "patzold2004", "chicarro2004"),
     "vco-v-rs-5-occ-v1.0": ("imamura2017", "nakamura2016"),
     "vco-v-rs-3-occ-v1.0": ("imamura2017", "nakamura2016"),

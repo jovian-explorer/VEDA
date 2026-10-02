@@ -5429,6 +5429,128 @@
     }
    ],
    "note": "Adv. Space Res. 5(11):3-58 (VIRA chapter)."
+  },
+  {
+   "key": "withers2006",
+   "authors": [
+    "Withers, P.",
+    "Smith, M. D."
+   ],
+   "et_al": false,
+   "year": 2006,
+   "title": "Atmospheric entry profiles from the Mars Exploration Rovers Spirit and Opportunity",
+   "journal": "Icarus",
+   "volume": "185",
+   "issue": "1",
+   "pages": "133-142",
+   "doi": "10.1016/j.icarus.2006.06.013",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mer",
+     "payload": "IMU"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "withers2010",
+   "authors": [
+    "Withers, P.",
+    "Catling, D. C."
+   ],
+   "et_al": false,
+   "year": 2010,
+   "title": "Observations of atmospheric tides on Mars at the season and latitude of the Phoenix atmospheric entry",
+   "journal": "Geophysical Research Letters",
+   "volume": "37",
+   "issue": "24",
+   "pages": "",
+   "doi": "10.1029/2010gl045382",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "phoenix",
+     "payload": "ASE"
+    }
+   ],
+   "note": "GRL 37(24); the article number is not in the Crossref record."
+  },
+  {
+   "key": "holsteinrathlou2016",
+   "authors": [
+    "Holstein-Rathlou, C.",
+    "Maue, A.",
+    "Withers, P."
+   ],
+   "et_al": false,
+   "year": 2016,
+   "title": "Atmospheric studies from the Mars Science Laboratory Entry, Descent and Landing atmospheric structure reconstruction",
+   "journal": "Planetary and Space Science",
+   "volume": "120",
+   "issue": "",
+   "pages": "15-23",
+   "doi": "10.1016/j.pss.2015.10.015",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "msl",
+     "payload": "EDL"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "holsteinrathlou2015data",
+   "authors": [
+    "Holstein-Rathlou, C.",
+    "Withers, P."
+   ],
+   "et_al": false,
+   "year": 2015,
+   "title": "MSL EDL atmospheric reconstruction (PDS4 bundle urn:nasa:pds:msledl)",
+   "journal": "NASA Planetary Data System",
+   "volume": "",
+   "issue": "",
+   "pages": "",
+   "doi": "10.17189/1518944",
+   "verified": true,
+   "type": "dataset",
+   "used_for": [
+    {
+     "mission": "msl",
+     "payload": "EDL"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "karatekin2020data",
+   "authors": [
+    "Karatekin, O.",
+    "Banfield, D.",
+    "Ashley, J."
+   ],
+   "et_al": false,
+   "year": 2020,
+   "title": "InSight EDL atmospheric reconstruction (PDS4 bundle urn:nasa:pds:insight_edl)",
+   "journal": "NASA Planetary Data System",
+   "volume": "",
+   "issue": "",
+   "pages": "",
+   "doi": "10.17189/1518935",
+   "verified": true,
+   "type": "dataset",
+   "used_for": [
+    {
+     "mission": "insight",
+     "payload": "EDL"
+    }
+   ],
+   "note": ""
   }
  ]
 }

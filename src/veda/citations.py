@@ -107,7 +107,7 @@ def ref_bibtex(r: Dict[str, Any]) -> str:
         authors.append("others")
     fields = [("author", " and ".join(authors)), ("title", "{" + (r.get("title") or "") + "}"), ("year", str(r.get("year") or ""))]
     if r.get("journal"):
-        fields.append(("journal" if kind == "article" else "booktitle", r["journal"]))
+        fields.append(({"article": "journal", "misc": "howpublished"}.get(kind, "booktitle"), r["journal"]))
     for k in ("volume", "issue", "pages", "doi"):
         v = _pages(r) if k == "pages" else r.get(k)
         if v:

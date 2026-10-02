@@ -162,3 +162,49 @@ def test_comparison_keeps_negative_altitudes_and_does_not_bridge_gaps():
     assert series[r["grid_km"].index(20.0)] is None                  # inside the gap
     assert r["composite_plus_1sigma"][0] is None                     # one profile: no spread
     assert r["profiles_per_level"][0] == 1
+
+
+# ---------------------------------------------------------------- dense and repeated altitudes
+
+def test_gradient_with_repeated_altitudes_is_not_inflated():
+    """Descending probes repeat altitudes; the old guard nudged them 1e-6 km apart, turning
+    any difference into a gradient of order 1e6 K/km."""
+    from veda.analysis.atmospheric import _gradient_nan_safe
+    z = np.array([0.0, 1.0, 1.0, 2.0, 3.0])
+    t = np.array([210.0, 208.0, 208.4, 206.0, 204.0])
+    g = _gradient_nan_safe(z, t)
+    assert np.all(np.abs(g) < 3.0)
+    assert g[1] == g[2]                                  # one value per altitude
+
+
+def test_gradient_of_dense_noisy_entry_data_resolves_100_m():
+    from veda.analysis.atmospheric import _gradient_nan_safe
+    rng = np.random.default_rng(0)
+    z = np.arange(10.0, 40.0, 0.003)                     # 3 m sampling, as entry accelerometers
+    t = 220.0 - 2.0 * z + rng.normal(0, 0.05, z.size)    # 0.05 K noise
+    g = _gradient_nan_safe(z, t)
+    inner = (z > 11) & (z < 39)
+    assert np.median(g[inner]) == pytest.approx(-2.0, abs=0.02)
+    assert np.percentile(np.abs(g[inner] + 2.0), 99) < 2.0    # adjacent-sample differences would give ~25 K/km
+
+
+def test_non_positive_temperature_and_pressure_are_fill():
+    import dataclasses
+    from veda.archives.datasets import get_dataset
+    from veda.archives.profiles import profile_from_label
+    import tempfile, pathlib
+    tmp = pathlib.Path(tempfile.mkdtemp())
+    rows = [(3400000.0, 200.0, 300.0), (3410000.0, 180.0, 100.0), (3500000.0, -1.0, -1.0)]
+    (tmp / "p.tab").write_text("".join(f"{r:12.1f} {t:8.2f} {p:8.2f}\r\n" for r, t, p in rows), newline="")
+    cols = [("RADIAL_DISTANCE", 1, 12, "METER"), ("TEMP", 14, 8, "KELVIN"), ("PRESS", 23, 8, "PASCAL")]
+    body = "".join(f"OBJECT = COLUMN\nNAME = {n}\nDATA_TYPE = ASCII_REAL\nSTART_BYTE = {s}\nBYTES = {b}\nUNIT = {u}\n"
+                   f"END_OBJECT = COLUMN\n" for n, s, b, u in cols)
+    (tmp / "p.lbl").write_text(f"PDS_VERSION_ID = PDS3\nRECORD_TYPE = FIXED_LENGTH\nRECORD_BYTES = 32\n^TABLE = \"p.tab\"\n"
+                               f"OBJECT = TABLE\nINTERCHANGE_FORMAT = ASCII\nROWS = 3\nCOLUMNS = 3\nROW_BYTES = 32\n{body}"
+                               f"END_OBJECT = TABLE\nEND\n")
+    ds = dataclasses.replace(get_dataset("phx-m-ase-5-edl-rdr-v1.0"), extra_variables={},
+                             profile_columns={"radius": "RADIAL_DISTANCE", "temperature": "TEMP", "pressure": "PRESS"})
+    prof = profile_from_label(ds, {"product_id": "p", "start_time": "2008-05-25T23:30:00", "volume": "v", "url": "",
+                                   "product_type": "profile"}, tmp / "p.lbl")
+    assert np.isnan(prof.temperature_k[2]) and np.isnan(prof.pressure_hpa[2])
+    assert prof.temperature_k[0] == 200.0 and prof.pressure_hpa[0] == pytest.approx(3.0)

@@ -153,6 +153,13 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
     ne = _col(tbl, cols.get("electron_density"))
     ne_cm3 = _to_per_cm3(ne, ne_unit) if ne is not None else None
     n = _col(tbl, cols.get("number_density"))
+    # Absolute temperature, pressure and densities are positive: zero or negative
+    # values are fill (MER and Phoenix entry profiles use -1 above their valid range
+    # without declaring it).  Electron densities can be legitimately negative noise.
+    for a in (t_k, p_hpa, n):
+        if a is not None:
+            with np.errstate(invalid="ignore"):
+                a[a <= 0] = np.nan
 
     unc: Dict[str, np.ndarray] = {}
     s = _sigma(tbl, cols.get("temperature_sigma"))
@@ -208,6 +215,8 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
         prof.derived["number_density_m3"] = n
     for key, (col, sig) in ds.extra_variables.items():
         v = _col(tbl, col)
+        if v is not None and key.startswith("density"):
+            v = np.where(v > 0, v, np.nan)
         if v is not None:
             prof.derived[key] = v
             s = _col(tbl, sig) if sig else None

@@ -60,6 +60,10 @@ The authoritative list is VEDA's own catalogue (`src/veda/archives/datasets.py`,
 | Cassini-Huygens | Huygens HASI | L2-L4 | `hp-ssa-hasi-2-3-4-mission-v1.1` | NASA PDS Atmospheres Node | Fulchignoni et al. (2005); Fulchignoni et al. (2002); Matson et al. (2002) |
 | Mars Global Surveyor (MGS) | RS (Radio Science) | L5 (SDP) | `mgs-m-rss-5-sdp-v1.0` | NASA PDS Atmospheres Node | Tyler et al. (2001); Hinson et al. (1999); Albee et al. (2001) |
 | Mars Reconnaissance Orbiter (MRO) | RSS (Radio Science) | L5 (derived T-P) | `mro-m-rss-5-tps-v1.0` | NASA PDS Atmospheres Node | Hinson et al. (2008); Hinson et al. (1999); Zurek & Smrekar (2007) |
+| Mars Exploration Rovers (Spirit, Opportunity) | IMU (entry profiles) | L5 (derived) | `mer-m-imu-5-edl-derived-v1.0` | NASA PDS Atmospheres Node | Withers & Smith (2006) |
+| Phoenix | ASE (entry profile) | L5 (RDR) | `phx-m-ase-5-edl-rdr-v1.0` | NASA PDS Atmospheres Node | Withers & Catling (2010) |
+| Mars Science Laboratory (Curiosity) | EDL atmospheric reconstruction | Derived (PDS4) | `msl-edl-atmosphere` | NASA PDS Atmospheres Node | Holstein-Rathlou et al. (2016); data doi:10.17189/1518944 |
+| InSight | EDL atmospheric reconstruction | Derived (PDS4) | `insight-edl-atmosphere` | NASA PDS Atmospheres Node | Karatekin, Banfield & Ashley (2020), data doi:10.17189/1518935 |
 | Mars Express (MEX) | MaRS (Radio Science) | L4 | `mex-m-mrs-5-occ` | ESA PSA (mirror: NASA PDS Geosciences Node) | Pätzold et al. (2016); Pätzold et al. (2004); Chicarro et al. (2004) |
 | Akatsuki (VCO) | RS (Radio Science) | L3/L4 | `vco-v-rs-5-occ-v1.0` | JAXA DARTS | Imamura et al. (2017); Nakamura et al. (2016) |
 | Akatsuki (VCO) | RS (Radio Science) | L2 | `vco-v-rs-3-occ-v1.0` | JAXA DARTS | Imamura et al. (2017); Nakamura et al. (2016) |

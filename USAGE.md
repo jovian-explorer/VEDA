@@ -121,6 +121,10 @@ where the dry adiabatic lapse rate is $\Gamma_d = g(z) / c_p(T)$. VEDA evaluates
 * $N^2(z) = 0$: Neutral stability.
 * $N^2(z) < 0$: Superadiabatic, convective overturning instability.
 
+**Vertical derivatives** ($dT/dz$, $d\theta/dz$): samples at the same altitude are averaged first. Profiles sampled more finely than 50 m (entry accelerometers record every few metres) are differentiated with a central difference over $\pm 50$ m, a 100 m vertical resolution, so sample-to-sample noise is not amplified; coarser profiles use ordinary central differences between neighbouring levels.
+
+**Fill values**: temperatures, pressures and densities that are zero or negative are treated as missing (some archives, such as the MER and Phoenix entry profiles, mark missing levels with -1 without declaring it).
+
 ### Heat capacity
 For Venus, Mars, Titan and Pluto, $c_p$ depends on temperature: it is the mole-fraction weighted ideal-gas heat capacity of the main constituents (CO2, N2, Ar, O2, CH4, CO; JANAF thermochemical tables) divided by the mean molar mass. CO2's $c_p$ rises steeply with temperature, so this matters: Mars at 200 K has $c_p \approx 740$ J kg$^{-1}$ K$^{-1}$ (a constant 830 would understate $\Gamma_d$ by 11 %), and in the deep Venus atmosphere $c_p$ grows from about 850 at 300 K to about 1140 at 735 K. $c_p(T)$ is used for $N^2$, $\Gamma_d$ and the speed of sound $c_s = \sqrt{\gamma R_{spec} T}$ with $\gamma = c_p/(c_p - R_{spec})$. Potential temperature uses the conventional constant $\kappa = R_{spec}/c_p$ at the body's reference $c_p$. Other bodies use their constant $c_p$ (shown with the body constants).
 

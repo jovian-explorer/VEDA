@@ -18,6 +18,11 @@ from ..core.models import BodyInfo, ObservationProfile
 from ..core.registry import get_body
 
 
+# Vertical derivatives (lapse rate, N^2, d(theta)/dz) of profiles sampled more finely
+# than this are central differences over +-this distance (100 m resolution).
+MIN_DERIVATIVE_HALF_WINDOW_KM = 0.05
+
+
 def _gradient_nan_safe(z_km: np.ndarray, v: np.ndarray) -> np.ndarray:
     """Compute dv/dz robustly handling non-finite values and non-monotonic or duplicate altitudes."""
     z = np.asarray(z_km, dtype=np.float64)
@@ -27,25 +32,24 @@ def _gradient_nan_safe(z_km: np.ndarray, v: np.ndarray) -> np.ndarray:
     if ok.sum() < 2:
         return out
 
-    z_ok = z[ok]
-    val_ok = val[ok]
-
-    sort_order = np.argsort(z_ok)
-    z_sorted = z_ok[sort_order].copy()
-    val_sorted = val_ok[sort_order]
-
-    # Guard against duplicate altitudes that could cause division by zero
-    diffs = np.diff(z_sorted)
-    if np.any(diffs <= 0):
-        for j in range(1, len(z_sorted)):
-            if z_sorted[j] <= z_sorted[j - 1]:
-                z_sorted[j] = z_sorted[j - 1] + 1e-6
-
-    grad_sorted = np.gradient(val_sorted, z_sorted)
-
-    inv_order = np.empty_like(sort_order)
-    inv_order[sort_order] = np.arange(len(sort_order))
-    out[ok] = grad_sorted[inv_order]
+    # Samples at the same altitude are averaged (descending probes and entry data
+    # repeat altitudes); the derivative is taken on the unique, increasing altitudes.
+    zu, inv = np.unique(z[ok], return_inverse=True)
+    vu = np.bincount(inv, weights=val[ok]) / np.bincount(inv)
+    if zu.size < 2:
+        return out
+    dz = np.diff(zu)
+    if np.median(dz) >= MIN_DERIVATIVE_HALF_WINDOW_KM:
+        grad_u = np.gradient(vu, zu)
+    else:
+        # Very dense data (entry accelerometers sample every few metres): a central
+        # difference over +-50 m, so sample-to-sample noise is not amplified into the
+        # derivative.  Within 50 m of either end the window is one-sided.
+        h = MIN_DERIVATIVE_HALF_WINDOW_KM
+        lo = np.maximum(zu - h, zu[0])
+        hi = np.minimum(zu + h, zu[-1])
+        grad_u = (np.interp(hi, zu, vu) - np.interp(lo, zu, vu)) / (hi - lo)
+    out[ok] = grad_u[inv]
     return out
 
 
