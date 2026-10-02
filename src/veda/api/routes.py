@@ -442,6 +442,27 @@ def export_compare_csv(body_id: str, req: CrossCompareRequest):
     )
 
 
+@router.post("/export/compare/{body_id}/profiles")
+def export_compare_profiles(body_id: str, req: CrossCompareRequest):
+    """The compared profiles at their own levels with every archived and derived
+    quantity (long format), instead of one variable on the common grid."""
+    from ..analysis.atmospheric import export_profiles_long_csv
+    body = get_body(body_id)
+    if not body:
+        raise HTTPException(status_code=404, detail=f"Body '{body_id}' not found")
+    from ..missions.selection import ProfileFilter
+    sel = ProfileFilter(**req.filter.model_dump()) if req.filter else None
+    profiles, _ = get_mission_manager().profiles_for_comparison(
+        body_id, req.observations, mission_ids=req.missions, variable_name=req.variable, selection=sel)
+    # the profiles on screen: those that carry the compared variable
+    has = (lambda p: getattr(p, req.variable, None) is not None or req.variable in p.derived)
+    profiles = [p for p in profiles if has(p)]
+    if not profiles:
+        raise HTTPException(status_code=400, detail=f"No {body.name} profiles with '{req.variable}' to export")
+    return Response(content=export_profiles_long_csv(profiles, body), media_type="text/csv",
+                    headers={"Content-Disposition": f'attachment; filename="veda_profiles_{body_id}.csv"'})
+
+
 # ---------------------------------------------------------------------------
 # Publication-Quality Figure Generator (Journal-Ready Vector / High-DPI)
 # ---------------------------------------------------------------------------

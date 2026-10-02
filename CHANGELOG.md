@@ -18,6 +18,7 @@ From this version on, every tested change is published straight away as the late
 ### Comparisons
 - **Fix: comparison CSV wrote small values as zero.** Values had four fixed decimals, so densities (1e-7 kg/m3 in the thermosphere) and pressures above about 60 km on Mars were exported as 0.0000; they now have six significant figures. The CSV also gains the group composites, the number of profiles at each level, and a header line per profile with mission, instrument, time, latitude, longitude, local time and solar zenith angle.
 - **Fix: "downloaded only" missed repository data sets.** The Venus Express VeRa, FSI and SOIR profiles were never found by *Downloaded only* searches, by comparisons with *Download* unticked, or by the default comparison (they are kept as converted CSV files, not PDS labels), although the tables showed them as downloaded.
+- **Export profiles, all variables**: the compared profiles at their own levels with every archived and derived quantity, uncertainties and per-level geometry, one row per profile and level, for analysis in Python, R or a spreadsheet.
 - The publication figure follows the grouping: group means with their own spread over the faded profiles; loaded files are labelled with the mission they came from.
 - **Group composites (climatologies)** by latitude band, local solar time, solar zenith angle, year, month, month of the year or mission, each with its own mean and spread.
 - **Deviation view**: each profile minus its group (or composite) mean, in percent for pressure and densities.

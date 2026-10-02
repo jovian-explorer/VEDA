@@ -485,6 +485,71 @@ def _csv_field(s: Any) -> str:
     return f'"{s.replace(chr(34), chr(34) * 2)}"' if any(c in s for c in ',"\n') else s
 
 
+_MEASURED = ("temperature_k", "pressure_hpa", "refractivity", "electron_density_cm3")
+_TRACK = ("latitude", "longitude", "lst", "sza")
+
+
+def export_profiles_long_csv(profiles: List[ObservationProfile], body: Optional[BodyInfo] = None) -> str:
+    """Every profile at its own levels, one row per profile and level ("tidy" or long
+    format, for pandas, R or a spreadsheet pivot): the archived quantities, everything
+    VEDA derives from them, their 1-sigma uncertainties, and the position along the
+    ray path where the archive gives it.  Nothing is interpolated."""
+    from ..missions.selection import profile_geometry
+
+    def arr(a, n):
+        a = np.asarray(a, dtype=float).ravel() if a is not None else None
+        return a if a is not None and a.size == n else None
+
+    var_cols: List[str] = []
+    for p in profiles:
+        for k in list(_MEASURED) + sorted(p.derived):
+            v = getattr(p, k, None) if k in _MEASURED else p.derived.get(k)
+            if v is not None and k not in var_cols:
+                var_cols.append(k)
+    sigma_cols = [k for k in var_cols if any(k in (p.uncertainty or {}) for p in profiles)]
+    track_cols = [k for k in _TRACK if any(k in (p.track or {}) for p in profiles)]
+
+    lines = [
+        f"# VEDA profiles at their archived levels (long format): {len(profiles)} profiles"
+        + (f", body={body.name}" if body else ""),
+        "# One row per profile and level. Archived quantities are as published, converted to the units in the column names;",
+        "# the other quantities are derived by VEDA (see the User Guide). sigma_* columns are 1-sigma uncertainties.",
+        "# altitude_km is above the body's reference radius; profile_* columns are each profile's header values,",
+        "# level_* columns the position of each level along the ray path where the archive gives it.",
+        f"# Processed with VEDA {__version__} (https://github.com/jovian-explorer/VEDA), MIT License",
+    ]
+    from ..core.registry import get_variable_info
+    extra_units = {"dtheta_dz": "K/km", "number_density_m3": "m^-3"}
+    unit_of = (lambda k: (get_variable_info(k) or {}).get("units") or extra_units.get(k))
+    units = [f"{k}={unit_of(k)}" for k in var_cols if unit_of(k)]
+    if units:
+        lines.append("# units: " + "; ".join(units) + " (sigma_* as their quantity)")
+    for p in profiles:
+        if p.provenance:
+            lines.append(f"# {p.observation_id}: {p.provenance.archive_source}, {p.provenance.original_file}"
+                         + (f", {p.provenance.doi_or_citation}" if p.provenance.doi_or_citation else ""))
+    header = (["mission", "instrument", "observation_id", "time_utc", "profile_latitude_deg", "profile_longitude_deg",
+               "profile_lst_h", "profile_sza_deg", "altitude_km"]
+              + var_cols + [f"sigma_{k}" for k in sigma_cols]
+              + [f"level_{k}" + {"latitude": "_deg", "longitude": "_deg", "lst": "_h", "sza": "_deg"}[k] for k in track_cols])
+    lines.append(",".join(header))
+    for p in profiles:
+        z = np.asarray(p.altitude_km, dtype=float).ravel()
+        n = z.size
+        geom = profile_geometry(p)
+        fixed = [_csv_field((p.raw_attributes or {}).get("SOURCE_MISSION") or p.mission_id), _csv_field(p.instrument),
+                 _csv_field(p.observation_id), _csv_field(p.time_utc), _csv_num(p.latitude), _csv_num(p.longitude),
+                 _csv_num(geom.get("lst")), _csv_num(geom.get("sza"))]
+        cols = [arr(getattr(p, k, None) if k in _MEASURED else p.derived.get(k), n) for k in var_cols]
+        cols += [arr((p.uncertainty or {}).get(k), n) for k in sigma_cols]
+        cols += [arr((p.track or {}).get(k), n) for k in track_cols]
+        for i in range(n):
+            if not np.isfinite(z[i]):
+                continue
+            lines.append(",".join(fixed + [f"{z[i]:.4f}"] + [_csv_num(c[i]) if c is not None else "" for c in cols]))
+    return "\n".join(lines) + "\n"
+
+
 def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
     """The comparison as on screen: gridded composite, group composites and every
     profile, with a header describing each profile (time, position, geometry)."""

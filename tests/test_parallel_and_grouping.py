@@ -124,3 +124,23 @@ def test_grouped_publication_figure_renders():
     r = client.post("/api/veda/figure/publication?body_id=venus",
                     json={"variable": "temperature_k", "group_by": "latitude", "dpi": 72, "fmt": "png"})
     assert r.status_code in (200, 400), r.text            # 400 only when no profiles are available offline
+
+
+def test_long_profile_export_has_every_level_and_variable():
+    from veda.analysis.atmospheric import export_profiles_long_csv
+    a, b = _profile("a", 5.0, 0.0), _profile("b", 10.0, 2.0)
+    a.pressure_hpa = 1e-3 * np.exp(-a.altitude_km / 5.0)
+    a.uncertainty = {"temperature_k": np.full(a.altitude_km.size, 1.5)}
+    a.track = {"sza": np.linspace(80.0, 90.0, a.altitude_km.size)}
+    b.derived["scale_height"] = np.full(b.altitude_km.size, 15.0)
+    text = export_profiles_long_csv([a, b], get_body("venus"))
+    rows = [l.split(",") for l in text.splitlines() if not l.startswith("#")]
+    header, data = rows[0], rows[1:]
+    assert len(data) == a.altitude_km.size + b.altitude_km.size        # no interpolation, no lost levels
+    for col in ("temperature_k", "pressure_hpa", "scale_height", "sigma_temperature_k", "level_sza_deg"):
+        assert col in header
+    first_a = dict(zip(header, data[0]))
+    assert first_a["observation_id"] == "a" and float(first_a["pressure_hpa"]) == pytest.approx(1e-3)
+    assert float(first_a["sigma_temperature_k"]) == 1.5 and float(first_a["level_sza_deg"]) == 80.0
+    first_b = dict(zip(header, data[a.altitude_km.size]))
+    assert first_b["pressure_hpa"] == "" and float(first_b["scale_height"]) == 15.0

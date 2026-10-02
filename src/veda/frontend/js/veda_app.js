@@ -766,31 +766,41 @@ function setupBodyModeControls() {
   document.getElementById('veda-btn-export-figure')?.addEventListener('click', () =>
     exportFigure(document.getElementById('veda-comparison-plot'), `veda_comparison_${vedaState.activeBodyId}_${vedaState.selectedCompareVariable}`));
 
-  const btnExportCsv = document.getElementById('veda-btn-export-comparison-csv');
-  if (btnExportCsv) {
-    btnExportCsv.addEventListener('click', async () => {
-      try {
-        const res = await fetch(`/api/veda/export/compare/${vedaState.activeBodyId}/csv`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(currentComparisonRequest()),
-        });
-        if (!res.ok) {
-          let detail = `${res.status} ${res.statusText}`;
-          try { detail = (await res.json()).detail || detail; } catch (_) {}
-          throw new Error(detail);
-        }
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `veda_comparison_${vedaState.activeBodyId}_${vedaState.selectedCompareVariable}.csv`;
-        a.click();
-      } catch (e) {
-        toast(`Export failed: ${e.message}`, 'bad');
+  // Exports of the comparison on screen (same profiles, filters and grouping)
+  const exportComparison = async (button, path, filename) => {
+    const old = button.textContent;
+    button.disabled = true;
+    button.textContent = 'Exporting...';
+    try {
+      const res = await fetch(`/api/veda/export/compare/${vedaState.activeBodyId}/${path}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(currentComparisonRequest()),
+      });
+      if (!res.ok) {
+        let detail = `${res.status} ${res.statusText}`;
+        try { detail = (await res.json()).detail || detail; } catch (_) {}
+        throw new Error(detail);
       }
-    });
-  }
+      const url = window.URL.createObjectURL(await res.blob());
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+      setTimeout(() => window.URL.revokeObjectURL(url), 10000);
+    } catch (e) {
+      toast(`Export failed: ${e.message}`, 'bad');
+    } finally {
+      button.disabled = false;
+      button.textContent = old;
+    }
+  };
+  const btnExportCsv = document.getElementById('veda-btn-export-comparison-csv');
+  btnExportCsv?.addEventListener('click', () => exportComparison(btnExportCsv, 'csv',
+    `veda_comparison_${vedaState.activeBodyId}_${vedaState.selectedCompareVariable}.csv`));
+  const btnExportProfiles = document.getElementById('veda-btn-export-profiles-csv');
+  btnExportProfiles?.addEventListener('click', () => exportComparison(btnExportProfiles, 'profiles',
+    `veda_profiles_${vedaState.activeBodyId}.csv`));
 
   const btnDownloadPng = document.getElementById('veda-btn-download-comparison-png');
   if (btnDownloadPng) {

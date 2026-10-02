@@ -5,7 +5,7 @@ comparative analysis across all supported planetary spacecraft.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from ..core.base_adapter import BaseMissionAdapter
 from ..core.models import ObservationImage, ObservationProfile, ProvenanceRecord
 from ..core.registry import BODIES, MISSIONS, get_body, get_mission
@@ -105,6 +105,29 @@ class MissionManager:
             return None
         return adapter.load_image(observation_id)
 
+    def profiles_for_comparison(
+        self,
+        body_id: str,
+        selected_observations: Optional[List[Dict[str, str]]] = None,
+        mission_ids: Optional[List[str]] = None,
+        variable_name: str = "temperature_k",
+        selection: Optional["ProfileFilter"] = None,
+    ) -> Tuple[List[ObservationProfile], Optional[Dict[str, Any]]]:
+        """The profiles a comparison uses, and the selection report (None when hand-picked)."""
+        from .selection import ProfileFilter, select_profiles
+        body = get_body(body_id)
+        if selected_observations:
+            out = []
+            for item in selected_observations:
+                m_id, o_id = item.get("mission_id"), item.get("observation_id")
+                if m_id and o_id:
+                    prof = self.load_profile(m_id, o_id)
+                    if prof:
+                        out.append(prof)
+            return out, None
+        sel = selection or ProfileFilter(per_mission=3, download=False)
+        return select_profiles(self, body_id, list(mission_ids or body.supported_missions), variable_name, sel)
+
     def compare_on_body(
         self,
         body_id: str,
@@ -121,25 +144,11 @@ class MissionManager:
         profiles are chosen from the archive catalogue by date and geometry (see
         missions/selection.py); without it, from the profiles already downloaded.
         """
-        from .selection import ProfileFilter, select_profiles
         body = get_body(body_id)
         if not body:
             return {"error": f"Unknown planetary body: {body_id}"}
-
-        loaded_profiles: List[ObservationProfile] = []
-        report: Optional[Dict[str, Any]] = None
-        if not (selected_observations and len(selected_observations) > 0):
-            sel = selection or ProfileFilter(per_mission=3, download=False)
-            loaded_profiles, report = select_profiles(self, body_id, list(mission_ids or body.supported_missions),
-                                                      variable_name, sel)
-        if selected_observations and len(selected_observations) > 0:
-            for item in selected_observations:
-                m_id = item.get("mission_id")
-                o_id = item.get("observation_id")
-                if m_id and o_id:
-                    prof = self.load_profile(m_id, o_id)
-                    if prof:
-                        loaded_profiles.append(prof)
+        loaded_profiles, report = self.profiles_for_comparison(body_id, selected_observations, mission_ids,
+                                                               variable_name, selection)
 
         # Compute multi-mission composite
         out = compare_profiles_on_body(
