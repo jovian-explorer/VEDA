@@ -203,3 +203,48 @@ def test_download_progress_is_visible_while_a_product_downloads(monkeypatch):
     c.get("/api/veda/product/pds-lro-diviner/x/structure")
     assert seen["during"] == {"active": True, "done": 3_000_000, "total": 12_000_000}
     assert c.get("/api/veda/product/pds-lro-diviner/x/progress").json()["active"] is False
+
+
+def test_ftp_fallback_only_for_mirrored_hosts_and_not_for_missing_files(tmp_path, monkeypatch):
+    from veda.archives import net
+    calls = []
+
+    def https_fails(msg):
+        def f(url, dest, *a, **kw):
+            raise net.ArchiveError(msg)
+        return f
+
+    def ftp_ok(url, dest, *a, **kw):
+        calls.append(url)
+        dest.write_bytes(b"ok")
+        return dest
+    monkeypatch.setattr(net, "_ftp_download", ftp_ok)
+    monkeypatch.setattr(net, "_https_download", https_fails("pds-atmospheres.nmsu.edu refused the request (HTTP 503)."))
+    net.download("https://pds-atmospheres.nmsu.edu/PDS/data/mg_2401/data/mgn_abs.lbl", tmp_path / "a.lbl")
+    assert calls == ["ftp://pds-atmospheres.nmsu.edu/PDS/data/mg_2401/data/mgn_abs.lbl"]
+    monkeypatch.setattr(net, "_https_download", https_fails("pds-atmospheres.nmsu.edu does not have /x (HTTP 404)."))
+    with pytest.raises(net.ArchiveError, match="404"):
+        net.download("https://pds-atmospheres.nmsu.edu/x", tmp_path / "x")
+    monkeypatch.setattr(net, "_https_download", https_fails("pds-rings.seti.org refused the request (HTTP 503)."))
+    with pytest.raises(net.ArchiveError):
+        net.download("https://pds-rings.seti.org/pds4/x.xml", tmp_path / "y")     # no FTP there
+    assert len(calls) == 1
+
+
+def test_busy_server_403_is_retried(monkeypatch):
+    from veda.archives import net
+    codes = iter([403, 403, 200])
+
+    class R:
+        def __init__(self, code):
+            self.status_code = code
+
+        def raise_for_status(self):
+            pass
+
+    class S:
+        def get(self, *a, **kw):
+            return R(next(codes))
+    monkeypatch.setattr(net, "session", lambda: S())
+    monkeypatch.setattr(net.time, "sleep", lambda s: None)
+    assert net.get("https://pds-rings.seti.org/pds4/bundles/gll.rss/").status_code == 200

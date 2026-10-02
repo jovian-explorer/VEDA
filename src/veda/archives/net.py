@@ -7,6 +7,7 @@ apply everywhere.
 """
 from __future__ import annotations
 
+import ftplib
 import re
 import threading
 import time
@@ -21,6 +22,11 @@ from .. import __version__
 from ..config import SETTINGS
 
 USER_AGENT = f"VEDA/{__version__} (+https://github.com/jovian-explorer/VEDA)"
+
+# Archives that also serve the same tree by anonymous FTP (checked 2026-10): used
+# when HTTPS fails for any reason other than a missing file.  The PDS Rings, PPI and
+# NAIF nodes, ESA PSA and JAXA DARTS have no public FTP; they are HTTPS only.
+FTP_MIRRORS = {"pds-atmospheres.nmsu.edu", "pds-geosciences.wustl.edu", "spiftp.esac.esa.int"}
 
 _session: Optional[requests.Session] = None
 _lock = threading.Lock()
@@ -98,7 +104,9 @@ def get(url: str, *, login_url: Optional[str] = None, stream: bool = False,
                               allow_redirects=True, params=params)
             if r.status_code in (401, 403) and login_url:
                 raise LoginRequired(urlparse(url).netloc, login_url)
-            if r.status_code in (429, 502, 503, 504) and attempt < RETRIES:
+            # (a 403 from a public archive is usually a busy server shedding load,
+            # e.g. the PDS Rings Node after many requests: wait and try again)
+            if r.status_code in (403, 429, 502, 503, 504) and attempt < RETRIES:
                 time.sleep(2 ** attempt)
                 continue
             r.raise_for_status()
@@ -122,13 +130,68 @@ def get_text(url: str, **kw) -> str:
     return r.text
 
 
+def _ftp_url(url: str) -> Optional[str]:
+    u = urlparse(url)
+    return f"ftp://{u.netloc}{u.path}" if u.scheme == "https" and u.netloc in FTP_MIRRORS else None
+
+
+def _ftp_download(url: str, dest: Path, progress=None, max_bytes: Optional[int] = None) -> Path:
+    u = urlparse(url)
+    tmp = dest.with_name(dest.name + ".part")
+    try:
+        with ftplib.FTP(u.netloc, timeout=SETTINGS.network_timeout_s) as ftp:
+            ftp.login()
+            ftp.voidcmd("TYPE I")
+            try:
+                total = ftp.size(u.path) or 0
+            except ftplib.error_perm:
+                total = 0
+            if max_bytes is not None and total > max_bytes:
+                raise TooLarge(dest.name, total)
+            done = 0
+            with open(tmp, "wb") as fh:
+                def write(chunk: bytes) -> None:
+                    nonlocal done
+                    fh.write(chunk)
+                    done += len(chunk)
+                    if progress:
+                        progress(done, total)
+                ftp.retrbinary(f"RETR {u.path}", write, blocksize=256 * 1024)
+        tmp.replace(dest)
+        return dest
+    except ftplib.error_perm as exc:
+        tmp.unlink(missing_ok=True)
+        raise ArchiveError(f"{u.netloc} does not have {u.path} (FTP {str(exc)[:3]}).") from exc
+    except (ftplib.Error, OSError, EOFError) as exc:
+        tmp.unlink(missing_ok=True)
+        raise ArchiveError(f"FTP from {u.netloc} failed: {exc}") from exc
+
+
 def download(url: str, dest: Path, progress: Optional[Callable[[int, int], None]] = None,
              max_bytes: Optional[int] = None, **kw) -> Path:
     """Stream ``url`` to ``dest`` atomically; returns ``dest``.
 
     With ``max_bytes``, a file the server reports as larger raises TooLarge before
-    anything is written.
+    anything is written.  For archives in FTP_MIRRORS, a failed HTTPS transfer
+    (server busy or down, not a missing file) is retried over FTP.
     """
+    try:
+        return _https_download(url, dest, progress, max_bytes, **kw)
+    except (LoginRequired, TooLarge):
+        raise
+    except ArchiveError as exc:
+        ftp = _ftp_url(url)
+        if ftp is None or "HTTP 404" in str(exc) or not SETTINGS.network_enabled:
+            raise
+        try:
+            return _ftp_download(ftp, dest, progress, max_bytes)
+        except TooLarge:
+            raise
+        except ArchiveError:
+            raise exc from None          # report the HTTPS failure, the primary route
+
+
+def _https_download(url: str, dest: Path, progress=None, max_bytes: Optional[int] = None, **kw) -> Path:
     dest.parent.mkdir(parents=True, exist_ok=True)
     tmp = dest.with_name(dest.name + ".part")
     r = get(url, stream=True, **kw)
@@ -167,13 +230,42 @@ class _Links(HTMLParser):
                 self.hrefs.append(href)
 
 
+def _ftp_list(url: str, dirs_only: bool) -> List[str]:
+    u = urlparse(url)
+    try:
+        with ftplib.FTP(u.netloc, timeout=SETTINGS.network_timeout_s) as ftp:
+            ftp.login()
+            try:
+                return [n for n, facts in ftp.mlsd(u.path) if n not in (".", "..")
+                        and (not dirs_only or facts.get("type") == "dir")]
+            except ftplib.error_perm:          # server without MLSD
+                names = [n.rsplit("/", 1)[-1] for n in ftp.nlst(u.path)]
+                return [n for n in names if not dirs_only or "." not in n]
+    except (ftplib.Error, OSError, EOFError) as exc:
+        raise ArchiveError(f"FTP listing of {url} failed: {exc}") from exc
+
+
 def list_directory(url: str, pattern: Optional[str] = None, dirs_only: bool = False,
                    login_url: Optional[str] = None) -> List[str]:
     """Names in an Apache/nginx/FTP-style HTML index, optionally filtered by regex."""
     if not url.endswith("/"):
         url += "/"
+    try:
+        html = get_text(url, login_url=login_url)
+    except LoginRequired:
+        raise
+    except ArchiveError as exc:
+        ftp = _ftp_url(url)
+        if ftp is None or "HTTP 404" in str(exc):
+            raise
+        try:
+            names = _ftp_list(ftp, dirs_only)
+        except ArchiveError:
+            raise exc from None
+        rx = re.compile(pattern, re.I) if pattern else None
+        return [n for n in names if not rx or rx.search(n)]
     p = _Links()
-    p.feed(get_text(url, login_url=login_url))
+    p.feed(html)
     base = urlparse(url)
     rx = re.compile(pattern, re.I) if pattern else None
     names: List[str] = []
