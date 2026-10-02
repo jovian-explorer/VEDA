@@ -1,11 +1,12 @@
 """
-Frozen-build launch verification (Windows, needs ``dist/VEDA/VEDA.exe``).
+Frozen-build launch verification (Windows): ``dist/VEDA/VEDA.exe``, else the installed app.
 
 Reproduces the conditions under which Windows Explorer launches an EXE:
 the CWD is something other than the EXE directory (Desktop, home, temp),
 so every bundled resource must resolve from ``sys._MEIPASS``.
 
-Build first with ``python scripts/build_exe.py``; the tests skip otherwise.
+Build with ``python scripts/build_exe.py``, or install a release (the tests then check
+the installed app); they skip when neither exists.  ``VEDA_EXE`` names another EXE.
 Each launch uses ``--no-window`` and a throwaway VEDA_HOME, and only the
 process tree started by the test is terminated.
 """
@@ -22,7 +23,11 @@ from pathlib import Path
 import pytest
 
 PROJECT = Path(__file__).resolve().parents[1]
-EXE = PROJECT / "dist" / "VEDA" / "VEDA.exe"
+EXE = next((p for p in (
+    Path(os.environ["VEDA_EXE"]) if os.environ.get("VEDA_EXE") else None,
+    PROJECT / "dist" / "VEDA" / "VEDA.exe",
+    Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "VEDA" / "VEDA" / "VEDA.exe",
+) if p is not None and p.is_file()), PROJECT / "dist" / "VEDA" / "VEDA.exe")
 
 pytestmark = [
     pytest.mark.skipif(sys.platform != "win32", reason="Windows EXE launch test"),
@@ -32,7 +37,8 @@ pytestmark = [
 
 def _launch_from_cwd(cwd: Path, timeout_s: int = 120) -> tuple[bool, str, Path]:
     """Launch the EXE with the given CWD; return (alive_when_healthy, startup log, home)."""
-    home = Path(tempfile.mkdtemp(prefix="veda-launch-home-"))
+    # inside the run's test folder (tests/conftest.py), which is deleted at the end
+    home = Path(tempfile.mkdtemp(prefix="veda-launch-home-", dir=os.environ.get("VEDA_HOME")))
     env = dict(os.environ, VEDA_HOME=str(home))
     log_path = home / "logs" / "startup.log"
     proc = subprocess.Popen(
@@ -85,7 +91,7 @@ def test_launch_from_home() -> None:
 
 
 def test_launch_from_temp() -> None:
-    tmpdir = Path(tempfile.mkdtemp())
+    tmpdir = Path(tempfile.mkdtemp(dir=os.environ.get("VEDA_HOME")))
     try:
         _assert_healthy(tmpdir)
     finally:

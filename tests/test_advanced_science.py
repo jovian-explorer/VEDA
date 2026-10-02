@@ -193,8 +193,8 @@ def test_non_positive_temperature_and_pressure_are_fill():
     import dataclasses
     from veda.archives.datasets import get_dataset
     from veda.archives.profiles import profile_from_label
-    import tempfile, pathlib
-    tmp = pathlib.Path(tempfile.mkdtemp())
+    import os, tempfile, pathlib
+    tmp = pathlib.Path(tempfile.mkdtemp(dir=os.environ.get("VEDA_HOME")))
     rows = [(3400000.0, 200.0, 300.0), (3410000.0, 180.0, 100.0), (3500000.0, -1.0, -1.0)]
     (tmp / "p.tab").write_text("".join(f"{r:12.1f} {t:8.2f} {p:8.2f}\r\n" for r, t, p in rows), newline="")
     cols = [("RADIAL_DISTANCE", 1, 12, "METER"), ("TEMP", 14, 8, "KELVIN"), ("PRESS", 23, 8, "PASCAL")]
