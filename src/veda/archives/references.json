@@ -5551,6 +5551,82 @@
     }
    ],
    "note": ""
+  },
+  {
+   "key": "withers2020a",
+   "authors": [
+    "Withers, P.",
+    "Hensley, K.",
+    "Vogt, M. F.",
+    "Hermann, J."
+   ],
+   "et_al": false,
+   "year": 2020,
+   "title": "Recovery and Validation of Venus Neutral Atmospheric Profiles from Pioneer Venus Orbiter Radio Occultation Observations",
+   "journal": "The Planetary Science Journal",
+   "volume": "1",
+   "issue": "3",
+   "pages": "79",
+   "doi": "10.3847/psj/abc476",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "pvo",
+     "payload": "ORO"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "withers2020b",
+   "authors": [
+    "Withers, P.",
+    "Hensley, K.",
+    "Vogt, M. F.",
+    "Hermann, J."
+   ],
+   "et_al": false,
+   "year": 2020,
+   "title": "Recovery and Validation of Venus Ionospheric Electron Density Profiles from Pioneer Venus Orbiter Radio Occultation Observations",
+   "journal": "The Planetary Science Journal",
+   "volume": "1",
+   "issue": "3",
+   "pages": "78",
+   "doi": "10.3847/psj/abcaf9",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "pvo",
+     "payload": "ORO"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "withers2020data",
+   "authors": [
+    "Withers, P.",
+    "Huber, L."
+   ],
+   "et_al": false,
+   "year": 2020,
+   "title": "Pioneer Venus Orbiter radio occultation bundle (urn:nasa:pds:pvoro)",
+   "journal": "NASA Planetary Data System",
+   "volume": "",
+   "issue": "",
+   "pages": "",
+   "doi": "10.17189/tm55-bj87",
+   "verified": true,
+   "type": "dataset",
+   "used_for": [
+    {
+     "mission": "pvo",
+     "payload": "ORO"
+    }
+   ],
+   "note": ""
   }
  ]
 }

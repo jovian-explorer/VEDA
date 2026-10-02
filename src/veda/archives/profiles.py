@@ -97,6 +97,15 @@ def load_profile(dataset_id: str, product_id: str, download: bool = True) -> Obs
     return profile_from_label(ds, prod, Path(label))
 
 
+def _meta_value(tbl, name) -> Optional[float]:
+    """A number from the label metadata (e.g. a PDS4 header table), by column-style name."""
+    for n in ([name] if isinstance(name, str) else list(name or ())):
+        v = tbl.metadata.get(n)
+        if isinstance(v, (int, float)) and np.isfinite(v):
+            return float(v)
+    return None
+
+
 def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfile:
     cols = ds.profile_columns
     body = get_body(ds.body_ids[0])
@@ -118,6 +127,13 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
                 mask &= np.isclose(tbl.columns[col], float(val))
         tbl.columns = {k: v[mask] for k, v in tbl.columns.items()}
         tbl.text_columns = {k: [x for x, m in zip(v, mask) if m] for k, v in tbl.text_columns.items()}
+
+    for col, fills in ds.fill_values.items():
+        k = _key(tbl, col)
+        if k is not None and k in tbl.columns:
+            a = tbl.columns[k] = np.array(tbl.columns[k], dtype=float)
+            for f in fills:
+                a[np.isclose(a, f, rtol=1e-9, atol=1e-9)] = np.nan
 
     z = _col(tbl, cols.get("altitude"))
     if z is not None:
@@ -174,11 +190,22 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
         sig_key = next((k for k in tbl.columns if k.upper().strip('"').startswith(("SIGMA ELECTRON", "NOISE LEVEL ELECTRON"))), None)
         unc["electron_density_cm3"] = _to_per_cm3(s, (tbl.units.get(sig_key, "") or ne_unit).upper())
 
+    for key, (ca, cb) in ds.sigma_from_bracket.items():
+        a, b = _col(tbl, ca), _col(tbl, cb)
+        if a is not None and b is not None and key not in unc:
+            half = np.abs(a - b) / 2.0          # same units as the variable (K; mbar = hPa)
+            unc[key] = half
+            if key == "temperature_k":
+                unc["temperature_c"] = half
+
     track: Dict[str, np.ndarray] = {}
+    header: Dict[str, float] = {}
     for key in ("latitude", "longitude", "sza", "lst"):
         a = _col(tbl, cols.get(key))
         if a is not None:
             track[key] = a
+        elif _meta_value(tbl, cols.get(key)) is not None:
+            header[key] = _meta_value(tbl, cols.get(key))      # one value per profile (header table)
     et = _col(tbl, cols.get("et"))
     if et is not None:
         track["et"] = et
@@ -192,8 +219,8 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
         body_id=body.id,
         instrument=ds.instrument,
         time_utc=prod.get("start_time") or "",
-        latitude=float(np.nanmedian(lat)) if lat is not None else None,
-        longitude=float(np.nanmedian(lon)) if lon is not None else None,
+        latitude=float(np.nanmedian(lat)) if lat is not None else header.get("latitude"),
+        longitude=float(np.nanmedian(lon)) if lon is not None else header.get("longitude"),
         altitude_km=z,
         pressure_hpa=p_hpa,
         temperature_k=t_k,

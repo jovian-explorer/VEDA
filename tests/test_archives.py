@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from veda.archives.catalog import _normalise_time, label_pointers
 from veda.archives.datasets import DATASETS, get_dataset
@@ -190,3 +191,40 @@ def test_comparison_warns_when_vertical_references_differ():
     assert _vertical_reference_warning([sphere, sphere2]) == ""
     assert _vertical_reference_warning([sphere, {"mission_id": "upload", "altitude_reference": ""}]) == ""
     assert "1-bar" in _vertical_reference_warning([sphere, onebar])
+
+
+def test_pds4_header_table_fill_values_and_bracketing_uncertainty(tmp_path):
+    """PVO radio occultation layout: a one-row header table (location), then the profile
+    with three retrievals (upper boundary 150/200/250 K); fills stated only in prose."""
+    import dataclasses
+    from veda.archives.profiles import profile_from_label
+    head = f"{-60.07:10.2f}{94.93:10.2f}\r\n"
+    rows = [(6146.0, 150.0, 200.0, 250.0, 0.156, 0.208, 0.260), (6110.0, 225.0, 226.0, 227.0, 40.0, 40.0, 40.1),
+            (1e9, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0)]
+    body = "".join("".join(f"{v:12.3f}" if v < 1e8 else f"{v:12.0e}" for v in r) + "\r\n" for r in rows)
+    (tmp_path / "p.tab").write_text(head + body, newline="")
+    def fields(names, units):
+        return "".join(f"<Field_Character><name>{n}</name><field_location unit='byte'>{1 + i * w}</field_location>"
+                       f"<data_type>ASCII_Real</data_type><field_length unit='byte'>{w}</field_length><unit>{u}</unit>"
+                       f"</Field_Character>" for i, (n, u, w) in enumerate(zip(names, units, [10 if len(names) == 2 else 12] * len(names))))
+    xml = f"""<?xml version="1.0"?><Product_Observational xmlns="http://pds.nasa.gov/pds4/pds/v1">
+<Identification_Area><logical_identifier>urn:nasa:pds:pvoro:data_derived:x</logical_identifier><title>t</title></Identification_Area>
+<Observation_Area><Time_Coordinates><start_date_time>1978-12-10T15:09:40Z</start_date_time></Time_Coordinates></Observation_Area>
+<File_Area_Observational><File><file_name>p.tab</file_name></File>
+<Table_Character><offset unit="byte">0</offset><records>1</records><record_delimiter>Carriage-Return Line-Feed</record_delimiter>
+<Record_Character>{fields(["LAT16_SPICE", "LON16_SPICE"], ["degree", "degree"])}</Record_Character></Table_Character>
+<Table_Character><offset unit="byte">{len(head)}</offset><records>3</records><record_delimiter>Carriage-Return Line-Feed</record_delimiter>
+<Record_Character>{fields(["R20016", "T15016", "T20016", "T25016", "P15016", "P20016", "P25016"],
+                          ["kilometer", "kelvin", "kelvin", "kelvin", "millibar", "millibar", "millibar"])}</Record_Character></Table_Character>
+</File_Area_Observational></Product_Observational>"""
+    (tmp_path / "p.xml").write_text(xml)
+    ds = get_dataset("pvoro-nssdc")
+    ds = dataclasses.replace(ds, fill_values={**ds.fill_values, "R20016": (1e9,)})
+    prof = profile_from_label(ds, {"product_id": "x", "start_time": "1978-12-10T15:09:40", "volume": "pvoro_bundle",
+                                   "url": "", "product_type": "profile"}, tmp_path / "p.xml")
+    assert prof.latitude == pytest.approx(-60.07) and prof.longitude == pytest.approx(94.93)
+    np.testing.assert_allclose(prof.altitude_km[:2], [6146.0 - 6051.8, 6110.0 - 6051.8])
+    assert np.isnan(prof.altitude_km[2]) and np.isnan(prof.temperature_k[2])
+    np.testing.assert_allclose(prof.temperature_k[:2], [200.0, 226.0])
+    np.testing.assert_allclose(prof.uncertainty["temperature_k"][:2], [50.0, 1.0])
+    np.testing.assert_allclose(prof.uncertainty["pressure_hpa"][1], 0.05, atol=1e-6)

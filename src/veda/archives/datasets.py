@@ -70,6 +70,11 @@ class Dataset:
     # (base URL, regex on the volume name, replacement), e.g. ESA PSA volume
     # MEX-M-MRS-5-OCC-9103-V1.0 is mexmrs_9103 at the PDS Geosciences Node.
     mirrors: Tuple[Tuple[str, str, str], ...] = ()
+    # Fill values that a label states only in prose: column -> values meaning "undefined"
+    fill_values: Dict[str, Tuple[float, ...]] = field(default_factory=dict)
+    # Uncertainty from two bracketing retrievals: variable -> (column A, column B);
+    # sigma = |A - B| / 2 (e.g. PVO temperatures with 150 K and 250 K upper boundaries)
+    sigma_from_bracket: Dict[str, Tuple[str, str]] = field(default_factory=dict)
     # PDS4 bundle: folder (inside the bundle) holding the product XML labels.
     pds4_product_dir: Optional[str] = None
     # Archive that only works through its own website with an account (no
@@ -451,6 +456,38 @@ DATASETS: List[Dataset] = [
         times_from_labels=True,
     ),
     Dataset(
+        id="pvoro-nssdc", mission_id="pvo", instrument="ORO (Radio Occultation)", level="Derived (PDS4)",
+        title="Pioneer Venus Orbiter radio occultations: temperature-pressure and electron density profiles "
+              "(1978-1992, recovered from NSSDC by Withers et al. 2020)",
+        body_ids=("venus",), archive="NASA PDS Atmospheres Node (PDS4)",
+        base_url="https://pds-atmospheres.nmsu.edu/PDS/data/PDS4/",
+        volume_pattern=r"^pvoro_bundle$",
+        pds4_product_dir="data_derived/",
+        rules=((r"nssdc_temp", "Temperature-pressure profile (200 K upper boundary)", "profile"),
+               (r"nssdc_eden", "Ionosphere electron density profile", "profile"),
+               (r"graph_temp_k82", "Temperature profile digitised from Kliore & Patel (1982)", "profile"),
+               (r"graph_temp_k80", "Temperature vs pressure digitised from Kliore & Patel (1980), no altitude", "other"),
+               (r"graph_eden", "Electron density digitised from published figures (observation time ambiguous)", "other"),
+               (r"nssdc_freq", "Frequency residuals (NSSDC)", "other")),
+        # Temperature products give three retrievals (upper boundary 150, 200, 250 K); the
+        # 200 K one is used, as in Withers et al. (2020a), and half the 150-250 K spread is
+        # its uncertainty.  Altitudes are R - 6051.8 km throughout.
+        profile_columns={"radius": ("R20016", "R15"), "altitude": "Z", "temperature": ("T20016", "TEMP"),
+                         "pressure": ("P20016", "PRESS"), "electron_density": "EDEN15",
+                         "latitude": ("LAT16_SPICE", "LAT15_SPICE", "LAT_SPICE"),
+                         "longitude": ("LON16_SPICE", "LON15_SPICE", "LON_SPICE"),
+                         "sza": ("SZA16_SPICE", "SZA15_SPICE", "SZA_SPICE"),
+                         "lst": ("LST16_SPICE", "LST15_SPICE", "LST_SPICE")},
+        sigma_from_bracket={"temperature_k": ("T15016", "T25016"), "pressure_hpa": ("P15016", "P25016")},
+        altitude_reference_km=6051.8,          # Z = R - 6051.8 km (user guide, Sections 2 and 5)
+        fill_values={"R15": (1e9,), "EDEN15": (1e9,), "Z15": (1e9,), "Z": (-9.0,), "TEMP": (0.0,), "PRESS": (-9.0,)},
+        citation=("Withers, P., Hensley, K., Vogt, M. F., & Hermann, J. (2020). Recovery and validation of Venus "
+                  "neutral atmospheric (and ionospheric electron density) profiles from Pioneer Venus Orbiter radio "
+                  "occultation observations. PSJ, 1, 79 and 78. Data: Withers & Huber (2020), doi:10.17189/tm55-bj87."),
+        doi="10.17189/tm55-bj87",
+        times_from_labels=True,
+    ),
+    Dataset(
         id="mro-m-rss-5-tps-v1.0", mission_id="mro", instrument="RSS (Radio Science)", level="L5 (derived)",
         title="Mars Reconnaissance Orbiter radio occultation: temperature-pressure profiles (2008-2012, D. Hinson)",
         body_ids=("mars",), archive="NASA PDS Atmospheres Node",
@@ -534,6 +571,7 @@ _REFS = {
     "phx-m-ase-5-edl-rdr-v1.0": ("withers2010",),
     "msl-edl-atmosphere": ("holsteinrathlou2016", "holsteinrathlou2015data"),
     "insight-edl-atmosphere": ("karatekin2020data",),
+    "pvoro-nssdc": ("withers2020a", "withers2020b", "withers2020data", "kliore1980", "colin1980"),
     "mex-m-mrs-5-occ": ("patzold2016", "patzold2004", "chicarro2004"),
     "vco-v-rs-5-occ-v1.0": ("imamura2017", "nakamura2016"),
     "vco-v-rs-3-occ-v1.0": ("imamura2017", "nakamura2016"),
