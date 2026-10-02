@@ -43,7 +43,21 @@ from .routes import router as veda_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     ensure_dirs()
+    # Import the heavy scientific modules in the background (scipy.signal alone takes
+    # several seconds), so the first profile opened is not slowed down by imports.
+    import threading
+    threading.Thread(target=_warm_imports, name="veda-warmup", daemon=True).start()
     yield
+
+
+def _warm_imports() -> None:
+    try:
+        import importlib
+        for mod in ("veda.analysis.wave_and_stability", "veda.analysis.thermo", "matplotlib.figure",
+                    "veda.readers.product", "veda.geometry.compute"):
+            importlib.import_module(mod)
+    except Exception:  # noqa: BLE001 - warm-up is only an optimisation
+        pass
 
 
 def create_app() -> FastAPI:

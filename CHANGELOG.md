@@ -1,8 +1,19 @@
 # Changelog
 
-All notable changes to VEDA. VEDA is pre-release software at version **0.0.1** until the repository is published; the public release will be **1.0.0**. The version number does not change before then. Work done during development is recorded below as milestones (the first two were briefly tagged v2.0.0 and v2.1.0; those tags are withdrawn).
+All notable changes to VEDA. Versions follow [semantic versioning](https://semver.org/): 0.x releases are public and in active development (feedback from users shapes them), 1.0.0 will mark a stable interface.
 
-## 0.0.1 (pre-release, in development)
+## 0.1.0 (2026-10-02): first public release
+
+The first public release. It contains all the work below, done while the repository was private (version 0.0.1; the first two milestones were briefly tagged v2.0.0 and v2.1.0, tags since withdrawn).
+
+### Release
+- Repository public; downloads for Windows, macOS and Linux on the Releases page (no longer pre-releases).
+- **Feedback** button in the toolbar and issue templates for problems and suggestions.
+- Author affiliation: student visitor at the Space Physics Laboratory (SPL), VSSC, ISRO. Copyright is held by the author; VEDA is not published by an institution.
+- Exports work in the desktop window (pywebview blocked downloads, so CSV, figure and BibTeX exports did nothing there).
+- Faster first use: opening a downloaded product no longer retries its missing optional description files (the first Mars comparison took 24 s, now 0.2 s); one TLS context for all archive connections (the CA bundle was loaded again for every new connection, 1.4 s each); heavy scientific modules are imported in the background at start-up.
+- `CITATION.cff` for GitHub's "Cite this repository".
+- **Composite mean** is shown only where at least two profiles and at least half of the compared profiles overlap: where only one profile reached a level, the "mean" jumped to that profile's values (seen at the bottom and top of Mars comparisons).
 
 ### Milestone 5 (2026-10-02): reconciliation and scientific corrections
 
@@ -48,7 +59,7 @@ All notable changes to VEDA. VEDA is pre-release software at version **0.0.1** u
 - **Large files ask first**: opening a product whose data file is larger than the new *Large-file limit* setting (default 250 MB) shows its size and an estimated download time, with a button to download it, instead of starting a download of possibly over an hour (Juno UVS photon lists are about 1.2 GB).
 
 #### Clean-up
-- Version is 0.0.1 until the public 1.0.0 release; the v2.0.0 and v2.1.0 tags and releases are withdrawn. Release builds of 0.x tags are marked as pre-releases.
+- Version reset to 0.0.1 for private development; the v2.0.0 and v2.1.0 tags and releases were withdrawn and 0.0.x builds marked as pre-releases.
 - Removed the unused COSMIC-2 (Earth) reader, adapter, samples and references (Earth is outside VEDA's scope), the COSMIC-era API client calls to endpoints VEDA never had, and unused client state.
 
 ### Milestone 4 (2026-10-01): every payload, geometry for all missions, citations

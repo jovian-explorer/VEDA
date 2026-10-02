@@ -134,7 +134,6 @@ function vedaBibtex() {
   author    = {Keshav Aggarwal},
   title     = {{VEDA: Visualization, Exploration, and Data Analysis - A Multi-Mission Planetary Science Data Laboratory}},
   year      = {${new Date().getFullYear()}},
-  publisher = {Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO},
   version   = {${appVersion()}},
   url       = {${REPO_URL}},
   address   = {Thiruvananthapuram, Kerala, India}
@@ -497,7 +496,7 @@ function aboutBody() {
     </div>
 
     <h3>Author</h3>
-    <p><strong>Keshav Aggarwal</strong>, Research Associate, Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO, Thiruvananthapuram, India. Formerly Prime Minister's Research Fellow, DAASE, IIT Indore. Research: planetary radio occultation, planetary atmospheres and ionospheres, solar wind and coronal plasma.</p>
+    <p><strong>Keshav Aggarwal</strong>, Student visitor at the Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO, Thiruvananthapuram, India. Formerly Prime Minister's Research Fellow, DAASE, IIT Indore. Research: planetary radio occultation, planetary atmospheres and ionospheres, solar wind and coronal plasma.</p>
 
     <h3>Connected archive data</h3>
     <p class="about-missions" id="about-datasets">Loading&hellip;</p>
@@ -624,7 +623,7 @@ function dataPolicyBody() {
     <p class="hint">Full texts: <a href="${REPO_URL}/blob/main/TERMS.md" target="_blank" rel="noopener">TERMS.md</a> &middot; <a href="${REPO_URL}/blob/main/DATA_POLICY.md" target="_blank" rel="noopener">DATA_POLICY.md</a> &middot; <a href="${REPO_URL}/blob/main/LICENSE" target="_blank" rel="noopener">LICENSE</a> &middot; <a href="${REPO_URL}/blob/main/THIRD_PARTY_LICENSES.md" target="_blank" rel="noopener">THIRD_PARTY_LICENSES.md</a></p>
 
     <h3>Software license</h3>
-    <p>VEDA: MIT License, Copyright (c) 2026 Keshav Aggarwal, Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO. Third-party components: Plotly.js, KaTeX, FastAPI, Pydantic, SpiceyPy (MIT); Uvicorn, NumPy, SciPy, Astropy, PyWebView (BSD-3-Clause); Requests (Apache-2.0); Matplotlib (PSF-based); Pillow (MIT-CMU); NAIF CSPICE (public).</p>
+    <p>VEDA: MIT License, Copyright (c) 2026 Keshav Aggarwal. Third-party components: Plotly.js, KaTeX, FastAPI, Pydantic, SpiceyPy (MIT); Uvicorn, NumPy, SciPy, Astropy, PyWebView (BSD-3-Clause); Requests (Apache-2.0); Matplotlib (PSF-based); Pillow (MIT-CMU); NAIF CSPICE (public).</p>
   `;
   fillDatasetTable(container.querySelector('#policy-datasets'));
   container.querySelector('#btn-copy-statement').addEventListener('click', async () => {

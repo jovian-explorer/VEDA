@@ -1654,3 +1654,9 @@ a.btn:hover { border-color: var(--focal); }
 #mission-filter-text { min-width: 200px; flex: 1 1 200px; max-width: 320px; }
 .pv-range { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .pv-range input { max-width: 13.5em; }
+/* Feedback link styled like the toolbar buttons */
+a.btn-feedback { display: inline-flex; align-items: center; text-decoration: none; color: inherit;
+  padding: 6px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); }
+a.btn-feedback:hover { border-color: var(--accent); }
+.arch-ds-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.arch-ds-head .badge { width: auto; }

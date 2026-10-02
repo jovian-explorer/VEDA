@@ -122,6 +122,11 @@ def _launch_webview(url: str) -> bool:
 
     shown_event = threading.Event()
 
+    # Every export (CSV, figures, BibTeX, text) is a browser download; pywebview blocks
+    # downloads unless this is set, so exports did nothing in the desktop window.
+    webview.settings["ALLOW_DOWNLOADS"] = True
+    webview.settings["OPEN_EXTERNAL_LINKS_IN_BROWSER"] = True
+
     window = webview.create_window(
         f"{APP_TITLE} {APP_VERSION}", url,
         width=1380, height=900, min_size=(1024, 680),

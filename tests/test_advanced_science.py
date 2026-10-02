@@ -161,6 +161,7 @@ def test_comparison_keeps_negative_altitudes_and_does_not_bridge_gaps():
     assert series[r["grid_km"].index(-4.0)] == pytest.approx(214.0)
     assert series[r["grid_km"].index(20.0)] is None                  # inside the gap
     assert r["composite_plus_1sigma"][0] is None                     # one profile: no spread
+    assert r["composite_mean"][0] is None                            # ... and no "mean" either
     assert r["profiles_per_level"][0] == 1
 
 

@@ -308,6 +308,7 @@ def compare_profiles_on_body(
     if log_like and len(interpolated_matrix) != len(profile_summaries):
         log_like = False
     n_per_level = np.sum(np.isfinite(mat), axis=0)
+    mean_min = max(2, int(np.ceil(0.5 * len(interpolated_matrix))))
     with np.errstate(invalid="ignore", divide="ignore"):
         import warnings
         with warnings.catch_warnings():
@@ -336,7 +337,10 @@ def compare_profiles_on_body(
         "body_name": body.name,
         "variable_name": variable_name,
         "grid_km": [round(float(z), 2) for z in z_grid],
-        "composite_mean": [sig(x) for x in mean_v],
+        # The mean of whichever profiles reach a level jumps where that number changes
+        # (one profile alone is just that profile), so it is given only where at least
+        # two profiles and at least half of them overlap; profiles_per_level says how many.
+        "composite_mean": [sig(x) if n >= mean_min else None for x, n in zip(mean_v, n_per_level)],
         "composite_std": [sig(x) for x in std_v],
         "composite_plus_1sigma": [sig(x) for x in hi_v],
         "composite_minus_1sigma": [sig(x) for x in lo_v],

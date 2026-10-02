@@ -3,7 +3,7 @@
 Validates:
 - Strict typography: ZERO em-dashes (\\u2014) and ZERO en-dashes (\\u2013) across all files
 - Core documentation & legal files exist: LICENSE, DATA_POLICY.md, USAGE.md, THIRD_PARTY_LICENSES.md, CONTRIBUTING.md
-- Affiliation accuracy: Research Associate at Space Physics Laboratory (SPL), VSSC, ISRO
+- Affiliation accuracy: student visitor at the Space Physics Laboratory (SPL), VSSC, ISRO; copyright held by the author
 - Authoritative planetary data archive coverage (NASA PDS, ESA PSA, JAXA DARTS)
 - Local KaTeX bundle completeness for 100% offline mathematical typesetting
 - Zero external CDN links in frontend HTML
@@ -69,13 +69,12 @@ def test_mandatory_docs_exist():
 
 
 def test_license_terms_and_affiliation():
-    """Verify LICENSE contains MIT terms and correct SPL/VSSC/ISRO affiliation."""
+    """LICENSE: MIT terms, copyright held by the author (not an institution)."""
     license_text = (ROOT_DIR / "LICENSE").read_text(encoding="utf-8")
     assert "MIT License" in license_text
     assert "Keshav Aggarwal" in license_text
-    assert "Space Physics Laboratory" in license_text
-    assert "Vikram Sarabhai Space Centre" in license_text
-    assert "ISRO" in license_text
+    assert "Copyright (c) 2026 Keshav Aggarwal" in license_text
+    assert "ISRO" not in license_text
 
 
 def test_data_policy_archives_and_bibtex():

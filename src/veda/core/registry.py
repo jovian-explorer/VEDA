@@ -1120,7 +1120,7 @@ FIELD_REGISTRY: Dict[str, dict] = {
 # ===========================================================================
 
 LEAD_RESEARCHER = (
-    "Keshav Aggarwal, Research Associate at Space Physics Laboratory (SPL), "
+    "Keshav Aggarwal, Student visitor at the Space Physics Laboratory (SPL), "
     "Vikram Sarabhai Space Centre (VSSC), Indian Space Research Organisation (ISRO), "
     "Thiruvananthapuram, Kerala, India (Former PMRF Scholar at DAASE, IIT Indore)"
 )
@@ -1246,7 +1246,7 @@ DATA_LICENSES = {
     "software": {
         "name": "MIT License",
         "type": "Open Source",
-        "copyright": "Copyright (c) 2026 Keshav Aggarwal, Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO",
+        "copyright": "Copyright (c) 2026 Keshav Aggarwal",
         "url": "https://github.com/jovian-explorer/VEDA/blob/main/LICENSE",
         "terms": "Free to use, copy, modify and distribute, provided the copyright notice is kept. "
                  "Provided as is, without warranty of any kind.",

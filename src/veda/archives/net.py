@@ -54,12 +54,30 @@ class TooLarge(ArchiveError):
         self.size_bytes = size_bytes
 
 
+class _SharedTLSAdapter(requests.adapters.HTTPAdapter):
+    """One TLS context for every connection: loading the CA bundle took about 1.4 s
+    for each new HTTPS connection, which made the first requests to an archive slow."""
+
+    _ctx = None
+
+    def init_poolmanager(self, *args, **kwargs):
+        if _SharedTLSAdapter._ctx is None:
+            import ssl
+            import certifi
+            _SharedTLSAdapter._ctx = ssl.create_default_context(cafile=certifi.where())
+        kwargs["ssl_context"] = _SharedTLSAdapter._ctx
+        return super().init_poolmanager(*args, **kwargs)
+
+
 def session() -> requests.Session:
     global _session
     with _lock:
         if _session is None:
             s = requests.Session()
             s.headers["User-Agent"] = USER_AGENT
+            # (16 connections per host: indexing lists archive folders 8 at a time)
+            s.mount("https://", _SharedTLSAdapter(pool_connections=16, pool_maxsize=16))
+            s.mount("http://", requests.adapters.HTTPAdapter(pool_connections=16, pool_maxsize=16))
             _session = s
         return _session
 

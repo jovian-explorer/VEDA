@@ -101,7 +101,7 @@ function renderDatasets() {
     <div class="arch-ds arch-portal">
       <span></span>
       <span class="arch-ds-main">
-        <strong>${esc(d.instrument)}</strong> <span class="badge badge-warn">account needed</span>
+        <span class="arch-ds-head"><strong>${esc(d.instrument)}</strong> <span class="badge badge-warn">account needed</span></span>
         <span class="arch-ds-title">${esc(d.title)}</span>
         <span class="arch-ds-meta">${esc(d.portal_help)}</span>
       </span>
@@ -113,7 +113,7 @@ function renderDatasets() {
     <label class="arch-ds" title="${esc(d.title)}">
       <input type="checkbox" data-ds="${esc(d.id)}" ${st.selectedDatasets.has(d.id) ? 'checked' : ''} />
       <span class="arch-ds-main">
-        <strong>${esc(d.instrument)}</strong> <span class="badge">${esc(d.level)}</span>${d.live ? ' <span class="badge badge-live" title="Products are found on the archive server for the dates you choose">live search</span>' : ''}
+        <span class="arch-ds-head"><strong>${esc(d.instrument)}</strong> <span class="badge">${esc(d.level)}</span>${d.live ? ' <span class="badge badge-live" title="Products are found on the archive server for the dates you choose">live search</span>' : ''}</span>
         <span class="arch-ds-title">${esc(d.title)}</span>
         <span class="arch-ds-meta">${esc(d.archive)} &middot; <code>${esc(d.id)}</code> &middot; <span data-cov="${esc(d.id)}">${esc(coverage(d))}</span>
           ${d.needs_login ? ' &middot; <span class="badge badge-warn">account needed</span>' : ''}</span>

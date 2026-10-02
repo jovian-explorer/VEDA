@@ -270,3 +270,29 @@ def test_product_falls_back_to_a_mirror_archive(monkeypatch):
     assert path.is_file()
     assert urls[-1] == "https://pds-geosciences.wustl.edu/mex/mex-m-mrs-5-occ-v1/mexmrs_9124/DATA/DOY_126/LEVEL04/P.TAB"
     assert any("esac.esa.int" in u for u in urls[:-1])          # the primary was tried first
+
+
+def test_fetch_skips_optional_docs_and_is_not_repeated(monkeypatch):
+    """Opening a downloaded product used to retry its missing description texts on every
+    open (MEX MaRS: ~20 s of requests to a slow server each time)."""
+    from veda.archives import catalog, net
+    ds = get_dataset("mex-m-mrs-5-occ")
+    monkeypatch.setattr(catalog, "get_product", lambda d, p: {"volume": "MEX-M-MRS-5-OCC-9124-V1.0",
+                                                              "path": "DATA/X/LEVEL04/T1.LBL"})
+    calls = []
+    label = 'PDS_VERSION_ID = PDS3\n^ATM_TABLE = "T1.TAB"\n^ATM_INFO = "T1.TXT"\n^INSTRUMENT_DESC = "MARS_DESC.TXT"\nEND\n'
+
+    def download(url, dest, **kw):
+        calls.append(url.rsplit("/", 1)[-1])
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(label if url.endswith(".LBL") else "1,2\n")
+        return dest
+    monkeypatch.setattr(net, "download", download)
+    catalog.fetch_product(ds.id, "t1")
+    assert calls == ["T1.LBL", "T1.TAB"]             # no description texts
+    catalog.fetch_product(ds.id, "t1")
+    assert calls == ["T1.LBL", "T1.TAB"]             # nothing asked for again
+    p = catalog.local_label_path(ds.id, "MEX-M-MRS-5-OCC-9124-V1.0", "DATA/X/LEVEL04/T1.LBL")
+    (p.parent / "T1.TAB").unlink()                   # part of the cache cleared
+    catalog.fetch_product(ds.id, "t1")
+    assert calls[-1] == "T1.TAB"

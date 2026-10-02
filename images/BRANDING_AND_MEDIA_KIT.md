@@ -55,7 +55,7 @@ This directory contains master high-resolution graphical assets for VEDA (Visual
 \begin{minipage}{0.85\textwidth}
   \textbf{\LARGE VEDA: Multi-Mission Planetary Science and Radio Occultation Analysis}\\
   \large Keshav Aggarwal\\
-  \small Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO, Thiruvananthapuram, India
+  \small Student visitor, Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO, Thiruvananthapuram, India
 \end{minipage}
 ```
 
@@ -66,14 +66,13 @@ This directory contains master high-resolution graphical assets for VEDA (Visual
 When utilizing these logos or scientific software outputs in publications or posters, please credit:
 
 * **Lead Researcher and Author**: Keshav Aggarwal
-* **Affiliation**: Research Associate, Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), Indian Space Research Organisation (ISRO), Thiruvananthapuram, Kerala, India (Former PMRF Scholar at DAASE, IIT Indore).
+* **Affiliation**: Student visitor, Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), Indian Space Research Organisation (ISRO), Thiruvananthapuram, Kerala, India (Former PMRF Scholar at DAASE, IIT Indore).
 
 ```bibtex
 @software{Aggarwal_VEDA_2026,
   author = {Aggarwal, Keshav},
   title = {{VEDA: Visualization, Exploration, and Data Analysis for Planetary Science and Comparative Atmospheric Profiling}},
   year = {2026},
-  institution = {Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO},
   address = {Thiruvananthapuram, Kerala, India},
   url = {https://github.com/jovian-explorer/VEDA}
 }

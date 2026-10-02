@@ -5,7 +5,7 @@ These terms describe how VEDA may be used and what it does on your computer. The
 ## 1. The software
 
 * VEDA is free and open-source software under the MIT License. You may use, copy, modify and redistribute it, including for commercial purposes, as long as the copyright and license notice are kept.
-* VEDA is provided **as is, without warranty of any kind**. The author and the Space Physics Laboratory, VSSC, ISRO accept no liability for any loss or damage arising from its use, including errors in data, derived values, figures or geometry.
+* VEDA is provided **as is, without warranty of any kind**. The author accepts no liability for any loss or damage arising from its use, including errors in data, derived values, figures or geometry.
 * VEDA is a personal research tool developed by Keshav Aggarwal. It is not an official product or service of ISRO, and it is not affiliated with, endorsed by or sponsored by NASA, ESA, JAXA or ISRO.
 
 ## 2. The data

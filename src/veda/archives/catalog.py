@@ -631,6 +631,17 @@ def fetch_product(dataset_id: str, product_id: str,
                     continue
             raise primary
     label_path = local_label_path(ds.id, prod["volume"], prod["path"])
+    done_marker = label_path.with_name(label_path.name + ".complete")
+    if done_marker.is_file() and label_path.is_file():
+        # Fetched before with every required file; optional description files that
+        # the archive does not have are not asked for again on every open (the files
+        # present then must still be there, e.g. after part of the cache was cleared).
+        try:
+            have = [n for n in done_marker.read_text(encoding="utf-8").splitlines() if n]
+        except OSError:
+            have = None
+        if have is not None and all((label_path.parent / n).is_file() for n in have):
+            return label_path
     if prod["path"].startswith(("http://", "https://")):
         # Live-search product: the label URL is known exactly; format files live in a
         # LABEL/ folder of the volume, at some level above the label.
@@ -670,6 +681,11 @@ def fetch_product(dataset_id: str, product_id: str,
         return label_path
 
     pending = label_pointers(label_path.read_text(encoding="latin-1", errors="replace"))
+    # Description texts (^..._DESC, notes) are optional. When the label also points at
+    # data, they are not fetched: each miss costs several requests to a slow archive and
+    # the data can be read without them. A product that is only text still gets them.
+    has_data = any(not _is_doc_pointer(p, n) and not (n.lower().endswith(".fmt") or p == "STRUCTURE")
+                   for p, n in pending)
     seen = set()
     while pending:
         pointer, name = pending.pop(0)
@@ -682,11 +698,9 @@ def fetch_product(dataset_id: str, product_id: str,
         if dest.is_file():
             continue
         is_format = name.lower().endswith(".fmt") or pointer == "STRUCTURE"
-        # (a PDS4 <file_name> is the product's own data, even when it is a .txt or .asc stream)
-        is_doc = "DESCRIPTION" in pointer or (pointer != "FILE" and name.lower().endswith(
-            (".txt", ".asc", ".cat", ".pdf", ".htm", ".html", ".doc", ".docx", ".ps", ".tex")))
-        if is_doc and ancestors:
-            continue      # live products: description texts are optional and every miss costs a request
+        is_doc = _is_doc_pointer(pointer, name)
+        if is_doc and (ancestors or has_data):
+            continue      # optional, see has_data above
         folders = list(product_dirs)
         if is_format:
             label_dirs = [b + d for b in [volume_url, *ancestors] for d in ("LABEL/", "label/")]
@@ -714,7 +728,20 @@ def fetch_product(dataset_id: str, product_id: str,
         if ok and is_format:
             # Format files can include further format files.
             pending += label_pointers(dest.read_text(encoding="latin-1", errors="replace"))
+    try:
+        names = sorted(p.name for p in label_path.parent.iterdir()
+                       if p.is_file() and not p.name.endswith((".complete", ".part")))
+        done_marker.write_text("\n".join(names), encoding="utf-8")
+    except OSError:
+        pass
     return label_path
+
+
+def _is_doc_pointer(pointer: str, name: str) -> bool:
+    """A description text, not data (a PDS4 <file_name> is the product's own data, even
+    when it is a .txt or .asc stream)."""
+    return "DESCRIPTION" in pointer or "_DESC" in pointer or (pointer != "FILE" and name.lower().endswith(
+        (".txt", ".asc", ".cat", ".pdf", ".htm", ".html", ".doc", ".docx", ".ps", ".tex")))
 
 
 def _has_attached_label(p: Path) -> bool:

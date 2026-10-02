@@ -8,6 +8,8 @@
 
 All data shown in VEDA come straight from the mission archives (NASA PDS, ESA PSA, JAXA DARTS, ISRO ISSDC, OPUS). Nothing is simulated. Nearly every payload of every mission in VEDA can be searched by date and plotted; the few that cannot (no searchable archive route yet) are listed in DATA_POLICY.md.
 
+> **VEDA 0.1.0 is the first public release.** It is ready for use and for testing; please report problems, wrong results and suggestions through **Feedback** in the app or on the [issue tracker](https://github.com/jovian-explorer/VEDA/issues/new/choose).
+
 ---
 
 ## Documentation
@@ -115,7 +117,7 @@ It gives BibTeX, plain text and a matching data availability statement, all read
 ## Installation
 
 ### Option A: download the app (no Python needed)
-Open the [Releases page](https://github.com/jovian-explorer/VEDA/releases) (builds are pre-releases until version 1.0.0) and download the archive for your OS:
+Open the [latest release](https://github.com/jovian-explorer/VEDA/releases/latest) and download the archive for your OS:
 
 | OS | Asset | Run |
 |---|---|---|
@@ -123,7 +125,6 @@ Open the [Releases page](https://github.com/jovian-explorer/VEDA/releases) (buil
 | macOS (Apple Silicon) | `VEDA-<version>-macos-arm64.zip` | unzip, right-click `VEDA.app` > Open the first time (the app is not notarized) |
 | Linux (x86_64) | `VEDA-<version>-linux-x86_64.zip` | unzip, `cd VEDA-*; chmod +x VEDA && ./VEDA` |
 
-While the repository is private you need to be signed in to GitHub with access to it.
 
 ### Option B: install with pip (any OS, Python 3.10+)
 ```bash
@@ -194,14 +195,12 @@ VEDA does not own or host any data. Each archive's terms apply to the data you d
   author       = {Keshav Aggarwal},
   title        = {{VEDA: Visualization, Exploration, and Data Analysis - A Multi-Mission Planetary Science Data Laboratory}},
   year         = {2026},
-  publisher    = {Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO},
-  version      = {0.0.1},
-  url          = {https://github.com/jovian-explorer/VEDA},
-  address      = {Thiruvananthapuram, Kerala, India}
+  version      = {0.1.0},
+  url          = {https://github.com/jovian-explorer/VEDA}
 }
 ```
 
-* **License**: [MIT](LICENSE). Copyright (c) 2026 Keshav Aggarwal, Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO.
+* **License**: [MIT](LICENSE). Copyright (c) 2026 Keshav Aggarwal.
 * **Terms of use**: [TERMS.md](TERMS.md). VEDA is provided without warranty, has no accounts, analytics or telemetry, and contacts only the archives you search.
 * **Third-party software**: [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) (Plotly.js, KaTeX, FastAPI, Pydantic, SpiceyPy/CSPICE, NumPy, SciPy, Astropy, Matplotlib, Pillow, Requests, Uvicorn, PyWebView).
 * VEDA is not affiliated with or endorsed by NASA, ESA, JAXA or ISRO.
@@ -233,7 +232,7 @@ CI runs the suite on Windows, macOS and Linux for every push to `main`. The Wind
 
 ## Author
 
-**Keshav Aggarwal**, Research Associate, Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), Indian Space Research Organisation (ISRO), Thiruvananthapuram, Kerala, India. Formerly Prime Minister's Research Fellow, Department of Astronomy, Astrophysics and Space Engineering (DAASE), IIT Indore.
+**Keshav Aggarwal**, Student visitor at the Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), Indian Space Research Organisation (ISRO), Thiruvananthapuram, Kerala, India. Formerly Prime Minister's Research Fellow, Department of Astronomy, Astrophysics and Space Engineering (DAASE), IIT Indore.
 
 Research: planetary radio occultation, planetary atmospheres and ionospheres, solar wind velocity and turbulence, and coronal electron density.
 

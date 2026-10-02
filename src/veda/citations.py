@@ -122,7 +122,6 @@ def veda_bibtex() -> str:
     return ("@software{Aggarwal_VEDA_2026,\n  author    = {Keshav Aggarwal},\n"
             "  title     = {{VEDA: Visualization, Exploration, and Data Analysis - A Multi-Mission Planetary Science Data Laboratory}},\n"
             f"  year      = {{2026}},\n  version   = {{{__version__}}},\n"
-            "  publisher = {Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO},\n"
             f"  url       = {{{REPO_URL}}}\n}}")
 
 
@@ -189,7 +188,7 @@ def build(dataset_ids: Iterable[str], features: Iterable[str],
     bib = [veda_bibtex()] + [ref_bibtex(r) for r in used_refs.values()]
     return {
         "veda": {"text": f"Aggarwal, K. (2026). VEDA: Visualization, Exploration, and Data Analysis (version "
-                         f"{__version__}). Space Physics Laboratory, VSSC, ISRO. {REPO_URL}",
+                         f"{__version__}). {REPO_URL}",
                  "bibtex": veda_bibtex()},
         "data": data_items, "acknowledgements": acks,
         "features": [{"title": t, "items": items} for t, items in feature_sections.items()],

@@ -12,6 +12,9 @@ import { prefetchMission, prefetchObservation } from './spice_auto.js';
 import { recordProduct, recordFeature } from './citations.js';
 import { style as plotStyle, styleTrace, styleLayout, sigmaBand, orient, paletteColor, plotStyleBody, exportFigure } from './plot_style.js';
 
+/** Surface gravity with three significant figures (comet 67P: 1.6e-4, not 0.00). */
+const fmtGravity = (g) => (g == null || !isFinite(g) ? 'N/A'
+  : Math.abs(g) >= 0.01 ? Number(g).toFixed(2) : Number(g).toExponential(1));
 const escHtml = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 let imageViewerListeners = null;   // AbortController for the open image's window listeners
@@ -260,7 +263,7 @@ export function renderPlanetaryBodyQuickCard(bodyId, bodyDetails) {
   const c = BODY_PHYSICAL_CONSTANTS[bKey] || {
     name: bodyDetails?.name || bodyId,
     category: (bodyDetails?.category || 'Celestial Body').replace('_', ' '),
-    gravity: bodyDetails?.surface_gravity ? `${bodyDetails.surface_gravity} m/s²` : 'N/A',
+    gravity: bodyDetails?.surface_gravity ? `${fmtGravity(bodyDetails.surface_gravity)} m/s²` : 'N/A',
     scale_height: 'N/A',
     pressure_bar: bodyDetails?.reference_pressure_hpa ? `${(bodyDetails.reference_pressure_hpa / 1000).toFixed(4)} bar` : 'N/A',
     composition: Object.entries(bodyDetails?.atmospheric_composition || {}).map(([g, pct]) => `${g}: ${pct}%`).join(', ') || 'Trace',
@@ -496,7 +499,7 @@ function renderCelestialBodiesGrid() {
       <div class="body-emoji">${emoji}</div>
       <div class="body-card-content">
         <div class="body-card-name">${b.name}</div>
-        <div class="body-card-sub">${(b.supported_missions || []).length} missions &bull; ${b.surface_gravity.toFixed(2)} m/s²</div>
+        <div class="body-card-sub">${(b.supported_missions || []).length} mission${(b.supported_missions || []).length === 1 ? '' : 's'} &bull; ${fmtGravity(b.surface_gravity)} m/s²</div>
       </div>
     `;
     card.addEventListener('click', async () => {
@@ -535,7 +538,7 @@ export async function loadAndRenderCelestialBody(bodyId) {
       <p class="body-desc" style="line-height:1.6; margin:8px 0 12px 0;">${bodyDetails.description}</p>
       <div class="physics-metrics-row">
         <div class="phys-badge"><strong>Radius:</strong> ${bodyDetails.radius_km.toLocaleString()} km</div>
-        <div class="phys-badge"><strong>Gravity g₀:</strong> ${bodyDetails.surface_gravity} m/s²</div>
+        <div class="phys-badge"><strong>Gravity g₀:</strong> ${fmtGravity(bodyDetails.surface_gravity)} m/s²</div>
         <div class="phys-badge"><strong>Gas Const R:</strong> ${bodyDetails.gas_constant_r} J/(kg K)</div>
         <div class="phys-badge"><strong>Ref Pressure:</strong> ${bodyDetails.reference_pressure_hpa >= 1 ? bodyDetails.reference_pressure_hpa.toLocaleString() + ' hPa' : bodyDetails.reference_pressure_hpa + ' hPa'}</div>
         <div class="phys-badge"><strong>Atmosphere:</strong> ${compStr}</div>
@@ -1642,7 +1645,7 @@ function exportLocalProfileCsv(prof) {
     `# Target Body: ${prof.body_id || 'Unknown'}`,
     `# Instrument: ${prof.instrument || 'Unknown'}`,
     `# Sounding Points: ${n}`,
-    '# Software: VEDA (Keshav Aggarwal, SPL, VSSC, ISRO 2026)',
+    '# Software: VEDA (Keshav Aggarwal, 2026), https://github.com/jovian-explorer/VEDA',
     'altitude_km,temperature_k,pressure_hpa,electron_density_cm3,potential_temp_k,lapse_rate_k_per_km,buoyancy_freq_sq'
   ];
   const t = prof.temperature_k || [];

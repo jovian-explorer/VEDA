@@ -1,0 +1,33 @@
+name: Problem or wrong result
+description: Something does not work, crashes, or gives a result you think is wrong
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thank you for testing VEDA. The more exact the steps, the faster it can be fixed.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Body or mission, data set, product id, dates, filters, buttons pressed.
+      placeholder: "1. Mars, 2008-06-01 to 2008-09-30\n2. ..."
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: VEDA version and how you run it
+      placeholder: "0.1.0, Windows app (or pip install, macOS, Linux)"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log
+      description: Settings > Data folders > Logs, attach startup.log (and startup-error.log if present).

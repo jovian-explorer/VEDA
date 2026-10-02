@@ -47,5 +47,5 @@ jobs:
         with:
           files: artifacts/*.zip
           generate_release_notes: true
-          # Until the public 1.0.0 release, every build is a pre-release (version 0.0.1)
-          prerelease: ${{ startsWith(github.ref_name, 'v0.') }}
+          # 0.0.x builds were private pre-releases; 0.1.0 onwards are public releases
+          prerelease: ${{ startsWith(github.ref_name, 'v0.0.') }}
