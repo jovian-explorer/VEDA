@@ -169,6 +169,10 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
     ne = _col(tbl, cols.get("electron_density"))
     ne_cm3 = _to_per_cm3(ne, ne_unit) if ne is not None else None
     n = _col(tbl, cols.get("number_density"))
+    if n is not None:
+        n_unit = _unit(tbl, cols.get("number_density"))
+        if n_unit:                                       # stored as m^-3; Cassini gives cm^-3
+            n = _to_per_cm3(n, n_unit) * 1e6
     # Absolute temperature, pressure and densities are positive: zero or negative
     # values are fill (MER and Phoenix entry profiles use -1 above their valid range
     # without declaring it).  Electron densities can be legitimately negative noise.
@@ -197,6 +201,25 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
             unc[key] = half
             if key == "temperature_k":
                 unc["temperature_c"] = half
+
+    for key, parts in ds.sigma_from_siblings.items():
+        sq = None
+        for pattern, colname in parts:
+            sib = next((t for f, t in getattr(tbl, "siblings", {}).items() if pattern.upper() in f.upper()), None)
+            if sib is None or colname not in sib.columns:
+                continue
+            s = np.asarray(sib.columns[colname], dtype=float)
+            u = (sib.units.get(colname) or "").upper()
+            if key == "pressure_hpa":
+                s = _to_hpa(s, u)
+            elif key == "density_measured" and ("GM" in u or "GRAM" in u) and "CM" in u:
+                s = s * 1000.0                       # g/cm^3 -> kg/m^3
+            if s.shape == tbl.columns[next(iter(tbl.columns))].shape:
+                sq = s ** 2 if sq is None else sq + s ** 2
+        if sq is not None:
+            unc[key] = np.sqrt(sq)
+            if key == "temperature_k":
+                unc["temperature_c"] = unc[key]
 
     track: Dict[str, np.ndarray] = {}
     header: Dict[str, float] = {}
@@ -242,12 +265,16 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
         prof.derived["number_density_m3"] = n
     for key, (col, sig) in ds.extra_variables.items():
         v = _col(tbl, col)
+        factor = 1.0
         if v is not None and key.startswith("density"):
             v = np.where(v > 0, v, np.nan)
+            u = _unit(tbl, col).replace(" ", "")
+            if ("GM" in u or "GRAM" in u) and "CM" in u:
+                factor = 1000.0                          # g/cm^3 -> kg/m^3 (Cassini RSS)
         if v is not None:
-            prof.derived[key] = v
+            prof.derived[key] = v * factor
             s = _col(tbl, sig) if sig else None
             if s is not None:
-                prof.uncertainty[key] = s
+                prof.uncertainty[key] = s * factor
     prof.derived.update(compute_atmospheric_diagnostics(prof, body))
     return prof

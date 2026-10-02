@@ -80,7 +80,25 @@ def read_pds4_table(xml_path: str) -> Pds3Table:
             continue
         meta.update({k: float(v[0]) for k, v in h.columns.items() if v.size and np.isfinite(v[0])})
         meta.update({k: v[0] for k, v in h.text_columns.items() if v and k not in meta})
-    return _read_table(p, *main, meta)
+    out = _read_table(p, *main, meta)
+    # Tables of other files with the same rows, also from supplemental file areas
+    # (Cassini Titan profiles: error bars from ephemeris and from thermal noise, row by
+    # row): kept as siblings, by file name.
+    out.siblings = {}
+    n_main = int(_text(main[1], "records", "0") or 0)
+    supplemental = []
+    for fao in root.findall("File_Area_Observational_Supplemental"):
+        fname = _text(fao, "File/file_name")
+        for table in list(fao):
+            if table.tag in ("Table_Character", "Table_Delimited") and fname:
+                supplemental.append((fname, table, "character" if table.tag == "Table_Character" else "delimited"))
+    for fname, table, kind in tables + supplemental:
+        if fname != main[0] and n_main > 1 and int(_text(table, "records", "0") or 0) == n_main:
+            try:
+                out.siblings[fname] = _read_table(p, fname, table, kind, {})
+            except (FileNotFoundError, ValueError, IndexError):
+                continue
+    return out
 
 
 def _read_table(p: Path, fname: str, table, kind: str, meta: Dict[str, object]) -> Pds3Table:

@@ -228,3 +228,37 @@ def test_pds4_header_table_fill_values_and_bracketing_uncertainty(tmp_path):
     np.testing.assert_allclose(prof.temperature_k[:2], [200.0, 226.0])
     np.testing.assert_allclose(prof.uncertainty["temperature_k"][:2], [50.0, 1.0])
     np.testing.assert_allclose(prof.uncertainty["pressure_hpa"][1], 0.05, atol=1e-6)
+
+
+def test_error_tables_in_supplemental_files_combine_in_quadrature(tmp_path):
+    """Cassini Titan profiles: the profile file plus ephemeris (CE) and thermal-noise (WE)
+    1-sigma error files with the same rows; number density in cm^-3, density in g/cm^3."""
+    from veda.archives.profiles import profile_from_label
+    def delimited(fname, names, units, rows, area="File_Area_Observational"):
+        (tmp_path / fname).write_text("".join(", ".join(str(v) for v in r) + "\r\n" for r in rows), newline="")
+        f = "".join(f"<Field_Delimited><name>{n}</name><field_number>{i + 1}</field_number><data_type>ASCII_Real</data_type>"
+                    f"<unit>{u}</unit></Field_Delimited>" for i, (n, u) in enumerate(zip(names, units)))
+        return (f"<{area}><File><file_name>{fname}</file_name></File><Table_Delimited><offset unit='byte'>0</offset>"
+                f"<records>{len(rows)}</records><record_delimiter>Carriage-Return Line-Feed</record_delimiter>"
+                f"<field_delimiter>Comma</field_delimiter><Record_Delimited>{f}</Record_Delimited></Table_Delimited></{area}>")
+    main = delimited("P.TAB", ["RADIUS", "TEMPERATURE", "PRESSURE", "NUMBER_DENSITY", "MASS_DENSITY"],
+                     ["KM", "KELVIN", "BAR", "1/CM**3", "GM/CM**3"],
+                     [(2575.2, 93.0, 1.45, 1.2e20, 5.4e-3), (2620.0, 70.0, 0.10, 1.1e19, 5.0e-4)])
+    err = ["TEMPERATURE ERROR BAR", "PRESSURE ERROR BAR", "DENSITY ERROR BAR"]
+    ce = delimited("RSS_T1_R1_CE_X_14_E_16K.TAB", err, ["K", "BAR", "GM/CM**3"], [(0.3, 3e-4, 4e-7), (0.6, 3e-4, 1e-7)],
+                   "File_Area_Observational_Supplemental")
+    we = delimited("RSS_T1_R1_WE_X_14_E_16K.TAB", err, ["K", "BAR", "GM/CM**3"], [(0.4, 4e-4, 3e-7), (0.8, 4e-4, 1e-7)],
+                   "File_Area_Observational_Supplemental")
+    (tmp_path / "x.xml").write_text(
+        '<?xml version="1.0"?><Product_Observational xmlns="http://pds.nasa.gov/pds4/pds/v1"><Identification_Area>'
+        "<logical_identifier>urn:nasa:pds:corsstpp:data:x</logical_identifier><title>t</title></Identification_Area>"
+        f"{main}{ce}{we}</Product_Observational>")
+    ds = get_dataset("corss-titan-neutral-profiles")
+    prof = profile_from_label(ds, {"product_id": "x", "start_time": "2008-11-03T17:43:36", "volume": "v", "url": "",
+                                   "product_type": "profile"}, tmp_path / "x.xml")
+    np.testing.assert_allclose(prof.uncertainty["temperature_k"], [0.5, 1.0])          # 3-4-5
+    np.testing.assert_allclose(prof.uncertainty["pressure_hpa"], [0.5, 0.5])            # bar -> hPa
+    np.testing.assert_allclose(prof.uncertainty["density_measured"], [5e-4, np.sqrt(2) * 1e-4])  # g/cm3 -> kg/m3
+    np.testing.assert_allclose(prof.derived["number_density_m3"], [1.2e26, 1.1e25])      # cm^-3 -> m^-3
+    np.testing.assert_allclose(prof.derived["density_measured"], [5.4, 0.5])
+    assert prof.altitude_km[0] == pytest.approx(2575.2 - 2574.7)

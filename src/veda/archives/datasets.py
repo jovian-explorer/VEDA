@@ -75,6 +75,9 @@ class Dataset:
     # Uncertainty from two bracketing retrievals: variable -> (column A, column B);
     # sigma = |A - B| / 2 (e.g. PVO temperatures with 150 K and 250 K upper boundaries)
     sigma_from_bracket: Dict[str, Tuple[str, str]] = field(default_factory=dict)
+    # Uncertainty from independent error tables of the same rows (PDS4 sibling files),
+    # added in quadrature: variable -> ((file-name pattern, column), ...)
+    sigma_from_siblings: Dict[str, Tuple[Tuple[str, str], ...]] = field(default_factory=dict)
     # PDS4 bundle: folder (inside the bundle) holding the product XML labels.
     pds4_product_dir: Optional[str] = None
     # Archive that only works through its own website with an account (no
@@ -488,6 +491,31 @@ DATASETS: List[Dataset] = [
         times_from_labels=True,
     ),
     Dataset(
+        id="corss-titan-neutral-profiles", mission_id="cassini", instrument="RSS (Radio Science)", level="Derived (PDS4)",
+        title="Cassini radio occultations of Titan: temperature, pressure and density profiles (2006-2016, Schinder et al.)",
+        body_ids=("titan",), archive="NASA PDS Atmospheres Node (PDS4)",
+        base_url="https://pds-atmospheres.nmsu.edu/PDS/data/PDS4/",
+        volume_pattern=r"^titan_profiles_bundle$",
+        pds4_product_dir="data/",
+        rules=((r"^data/corsstpp[st]\d+[ie]", "Neutral atmosphere profile (T, p, n) with error bars", "profile"),),
+        # RADIUS, not ALTITUDE_ABOVE_SURFACE (which is above 2575.0 km): the 2574.7 km Titan sphere
+        profile_columns={"radius": "RADIUS", "temperature": "TEMPERATURE", "pressure": "PRESSURE",
+                         "number_density": "NUMBER_DENSITY", "latitude": "LATITUDE", "longitude": "LONGITUDE",
+                         "refractivity": "REFRACTIVITY"},
+        extra_variables={"density_measured": ("MASS_DENSITY", None)},
+        # 1-sigma errors from the spacecraft ephemeris (CE file) and from thermal noise
+        # (WE file) are independent: total = sqrt(CE^2 + WE^2)
+        sigma_from_siblings={
+            "temperature_k": (("_CE_", "TEMPERATURE ERROR BAR"), ("_WE_", "TEMPERATURE ERROR BAR")),
+            "pressure_hpa": (("_CE_", "PRESSURE ERROR BAR"), ("_WE_", "PRESSURE ERROR BAR")),
+            "density_measured": (("_CE_", "DENSITY ERROR BAR"), ("_WE_", "DENSITY ERROR BAR")),
+        },
+        citation=("Schinder, P. J., et al. (2011, 2012). The structure of Titan's atmosphere from Cassini radio "
+                  "occultations. Icarus, 215, 460-474; 221, 1020-1031. Data: CO-S-RS-4/5-RSDR-V1.0, PDS Atmospheres Node."),
+        doi="10.1016/j.icarus.2011.07.030",
+        times_from_labels=True,
+    ),
+    Dataset(
         id="mro-m-rss-5-tps-v1.0", mission_id="mro", instrument="RSS (Radio Science)", level="L5 (derived)",
         title="Mars Reconnaissance Orbiter radio occultation: temperature-pressure profiles (2008-2012, D. Hinson)",
         body_ids=("mars",), archive="NASA PDS Atmospheres Node",
@@ -571,6 +599,7 @@ _REFS = {
     "phx-m-ase-5-edl-rdr-v1.0": ("withers2010",),
     "msl-edl-atmosphere": ("holsteinrathlou2016", "holsteinrathlou2015data"),
     "insight-edl-atmosphere": ("karatekin2020data",),
+    "corss-titan-neutral-profiles": ("schinder2011", "schinder2012", "schinder2015"),
     "pvoro-nssdc": ("withers2020a", "withers2020b", "withers2020data", "kliore1980", "colin1980"),
     "mex-m-mrs-5-occ": ("patzold2016", "patzold2004", "chicarro2004"),
     "vco-v-rs-5-occ-v1.0": ("imamura2017", "nakamura2016"),

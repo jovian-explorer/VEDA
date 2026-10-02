@@ -49,6 +49,7 @@ The authoritative list is VEDA's own catalogue (`src/veda/archives/datasets.py`,
 |---|---|---|---|---|---|
 | Mars Orbiter Mission (MOM / Mangalyaan) | MOM payloads (MCC, MENCA, LAP, TIS, MSM) | ISSDC | `issdc-mom` | ISRO ISSDC (PRADAN) | Arunan, S., & Satish, R. (2015) |
 | Chandrayaan-2 Orbiter (CH2O) | Chandrayaan-2 orbiter payloads (incl. DFRS, CHACE-2) | ISSDC | `issdc-ch2` | ISRO ISSDC (PRADAN) |  |
+| Cassini-Huygens | RSS (Radio Science) neutral atmosphere profiles of Titan | Derived (PDS4) | `corss-titan-neutral-profiles` | NASA PDS Atmospheres Node (PDS4) | Schinder et al. (2011, 2012, 2015) |
 | Cassini-Huygens | RSS (Radio Science) | Derived (PDS4) | `corss_occul_el_dens` | NASA PDS Atmospheres Node (PDS4) | Kliore et al. (2008); Kliore et al. (2004); Matson et al. (2002) |
 | Juno | MWR (Microwave Radiometer) | EDR + derived | `jno-x-mwr` | NASA PDS Atmospheres Node | Janssen et al. (2017); Bolton et al. (2017) |
 | Venus Express (VEX) | VeRa (Radio Science) | L1 + ancillary | `vex-v-rss-1-ent-v1.0` | NASA PDS Atmospheres Node | Häusler et al. (2006); Svedhem et al. (2007) |

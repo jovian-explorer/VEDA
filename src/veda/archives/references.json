@@ -5627,6 +5627,99 @@
     }
    ],
    "note": ""
+  },
+  {
+   "key": "schinder2011",
+   "authors": [
+    "Schinder, P. J.",
+    "Flasar, F. M.",
+    "Marouf, E. A.",
+    "French, R. G.",
+    "McGhee, C. A.",
+    "Kliore, A. J.",
+    "Rappaport, N. J.",
+    "Barbinis, E.",
+    "Fleischman, D.",
+    "Anabtawi, A."
+   ],
+   "et_al": false,
+   "year": 2011,
+   "title": "The structure of Titan's atmosphere from Cassini radio occultations",
+   "journal": "Icarus",
+   "volume": "215",
+   "issue": "2",
+   "pages": "460-474",
+   "doi": "10.1016/j.icarus.2011.07.030",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "cassini",
+     "payload": "RSS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "schinder2012",
+   "authors": [
+    "Schinder, P. J.",
+    "Flasar, F. M.",
+    "Marouf, E. A.",
+    "French, R. G.",
+    "McGhee, C. A.",
+    "Kliore, A. J.",
+    "Rappaport, N. J.",
+    "Barbinis, E.",
+    "Fleischman, D.",
+    "Anabtawi, A."
+   ],
+   "et_al": false,
+   "year": 2012,
+   "title": "The structure of Titan's atmosphere from Cassini radio occultations: Occultations from the Prime and Equinox missions",
+   "journal": "Icarus",
+   "volume": "221",
+   "issue": "2",
+   "pages": "1020-1031",
+   "doi": "10.1016/j.icarus.2012.10.021",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "cassini",
+     "payload": "RSS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "schinder2015",
+   "authors": [
+    "Schinder, P. J.",
+    "Flasar, F. M.",
+    "Marouf, E. A.",
+    "French, R. G.",
+    "Anabtawi, A.",
+    "Barbinis, E.",
+    "Kliore, A. J."
+   ],
+   "et_al": false,
+   "year": 2015,
+   "title": "A numerical technique for two-way radio occultations by oblate axisymmetric atmospheres with zonal winds",
+   "journal": "Radio Science",
+   "volume": "50",
+   "issue": "7",
+   "pages": "712-727",
+   "doi": "10.1002/2015rs005690",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "cassini",
+     "payload": "RSS"
+    }
+   ],
+   "note": ""
   }
  ]
 }
