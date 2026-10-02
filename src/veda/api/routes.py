@@ -228,6 +228,7 @@ class CompareFilter(BaseModel):
     sza_max: Optional[float] = Field(None, ge=0, le=180)
     per_mission: int = Field(10, ge=1, le=100)
     download: bool = True
+    include_uploads: bool = True
 
 
 class CrossCompareRequest(BaseModel):
@@ -598,6 +599,11 @@ class ParseFileRequest(BaseModel):
     body_id: str = "venus"
     mission_id: Optional[str] = None
     instrument: Optional[str] = None
+    # What the file is, as chosen when loading it: the mission it comes from (a VEDA
+    # mission id or free text), the observation time, and each column's role and unit.
+    source_mission: Optional[str] = Field(None, max_length=80)
+    time_utc: Optional[str] = Field(None, max_length=40)
+    roles: Optional[Dict[str, Dict[str, Optional[str]]]] = None
     # Profiles are thinned to this many levels for display (0 keeps all).
     decimate_max: int = Field(5000, ge=0, le=500000)
 
@@ -662,9 +668,14 @@ def parse_generic_file_endpoint(req: ParseFileRequest) -> dict:
             raise HTTPException(status_code=422, detail=f"{name} is empty")
         companions = {_safe_upload_name(c.filename): _decode_upload(c.filename, c.file_content)
                       for c in req.companion_files}
-        primary = save_upload(name, payload, companions, req.body_id)
+        from ..missions.uploads_adapter import describe
+        info = {"source_mission": req.source_mission or "", "instrument": req.instrument or "",
+                "time_utc": req.time_utc or "", "roles": req.roles}
+        primary = save_upload(name, payload, companions, req.body_id, info)
         try:
-            res = ingest_planetary_file(primary, **{**common, "mission_id": req.mission_id or UPLOADS})
+            res = ingest_planetary_file(primary, **{**common, "mission_id": req.mission_id or UPLOADS,
+                                                    "instrument": describe(info), "roles": req.roles,
+                                                    "time_utc": req.time_utc or None})
         except Exception as exc:  # noqa: BLE001
             from ..missions.uploads_adapter import delete_upload
             delete_upload(primary.stem)
@@ -688,6 +699,59 @@ def parse_generic_file_endpoint(req: ParseFileRequest) -> dict:
         raise HTTPException(status_code=422, detail=_friendly_ingest_error(p.name, exc))
     res.pop("local_path", None)
     return res
+
+
+@router.post("/upload/preview")
+def preview_upload(req: ParseFileRequest) -> dict:
+    """What a file contains before it is loaded: its columns (units, first values,
+    range), suggested roles, and what its label says about body, mission, instrument
+    and time.  Nothing is kept."""
+    import shutil
+    import tempfile
+    from ..core.registry import MISSIONS
+    from ..pipeline.ingest import IMAGE_SUFFIXES, ROLE_UNITS, suggest_roles
+    from ..readers.pds3_reader import read_any_table
+    if req.filename is None or req.file_content is None:
+        raise HTTPException(status_code=400, detail="Provide filename and file_content")
+    name = _safe_upload_name(req.filename)
+    if Path(name).suffix.lower() not in SUPPORTED_UPLOAD_SUFFIXES:
+        raise HTTPException(status_code=415, detail=f"Unsupported file type '{Path(name).suffix or name}'")
+    tmp = Path(tempfile.mkdtemp(prefix="veda-preview-"))
+    try:
+        (tmp / name).write_bytes(_decode_upload(name, req.file_content))
+        for c in req.companion_files:
+            (tmp / _safe_upload_name(c.filename)).write_bytes(_decode_upload(c.filename, c.file_content))
+        if Path(name).suffix.lower() in IMAGE_SUFFIXES:
+            return {"type": "image", "filename": name, "role_units": ROLE_UNITS}
+        try:
+            tbl = read_any_table(str(tmp / name))
+        except Exception as exc:  # noqa: BLE001
+            raise HTTPException(status_code=422, detail=_friendly_ingest_error(name, exc))
+        cols = []
+        for col, vals in tbl.columns.items():
+            a = np.asarray(vals, dtype=float)
+            fin = a[np.isfinite(a)]
+            cols.append({"name": col, "unit": tbl.units.get(col, ""),
+                         "description": str((tbl.descriptions or {}).get(col, ""))[:200],
+                         "first": [None if not np.isfinite(x) else float(f"{x:.6g}") for x in a[:5]],
+                         "min": float(fin.min()) if fin.size else None, "max": float(fin.max()) if fin.size else None,
+                         "n": int(a.size)})
+        keys = ("START_TIME", "STOP_TIME", "TARGET_NAME", "INSTRUMENT_NAME", "INSTRUMENT_ID",
+                "INSTRUMENT_HOST_NAME", "SPACECRAFT_NAME", "MISSION_NAME", "PRODUCT_ID", "DATA_SET_ID")
+        meta = {k: str(v).strip('"') for k, v in tbl.metadata.items() if isinstance(v, (str, int, float)) and k in keys}
+        host = " ".join(meta.get(k, "") for k in ("INSTRUMENT_HOST_NAME", "SPACECRAFT_NAME", "MISSION_NAME")).upper()
+        mission = next((m.id for m in MISSIONS.values()
+                        if host and (m.id.upper() in host.split() or m.name.upper().split(" (")[0] in host)), None)
+        target = (meta.get("TARGET_NAME") or "").lower()
+        body = next((b for b in ("venus", "mars", "jupiter", "saturn", "titan", "pluto", "mercury", "moon",
+                                 "ceres", "vesta") if b in target), None)
+        return {"type": "table", "filename": name, "columns": cols, "suggested_roles": suggest_roles(tbl),
+                "role_units": ROLE_UNITS, "label": meta,
+                "suggested": {"body_id": body, "mission_id": mission,
+                              "instrument": meta.get("INSTRUMENT_ID") or meta.get("INSTRUMENT_NAME") or "",
+                              "time_utc": meta.get("START_TIME") or ""}}
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
 
 
 @router.get("/uploads")

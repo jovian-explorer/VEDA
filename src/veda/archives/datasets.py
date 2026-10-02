@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 # (filename regex, product type shown to the user, kind)
 #   kind: "profile"    vertical profile VEDA can plot and compare
@@ -80,6 +80,9 @@ class Dataset:
     sigma_from_siblings: Dict[str, Tuple[Tuple[str, str], ...]] = field(default_factory=dict)
     # Factor turning the archive's error column into 1 sigma (0.5 for a full error-bar width)
     sigma_factor: Dict[str, float] = field(default_factory=dict)
+    # Profiles published in a research data repository (Zenodo, BIRA-IASB) without PDS
+    # labels: how to list and read them (see archives/repositories.py)
+    repository: Dict[str, Any] = field(default_factory=dict)
     # PDS4 bundle: folder (inside the bundle) holding the product XML labels; a tuple
     # gives several folders (Akatsuki LIR: calibrated levels, maps, geometry).
     pds4_product_dir: Optional[Union[str, Tuple[str, ...]]] = None
@@ -393,6 +396,76 @@ DATASETS: List[Dataset] = [
         citation=MGS_CITATION,
     ),
     Dataset(
+        id="vex-vera-gramigna2023", mission_id="vex", instrument="VeRa (Radio Science)", level="Derived (research data)",
+        title="Venus Express radio occultations of 2014 (NASA DSN): temperature, pressure and density profiles (Gramigna et al. 2023)",
+        body_ids=("venus",), archive="Zenodo (CC-BY-4.0)",
+        base_url="https://zenodo.org/records/20056665/",
+        volume_pattern=r"^repository$",
+        repository={"kind": "zenodo_zip", "record": "20056665", "zip": "RS_2014_VEX_singlefreq_X_Gramigna_et_al_2023.zip",
+                    "members": r"VEX_RO_2014_DOY\d{3}_(INGRESS|EGRESS)\.txt\.txt", "delimiter": "\t", "time_column": 1,
+                    "columns": [("SAMPLE_NUMBER", ""), ("UTC_TIME", "UTC"), ("EPHEMERIS_SECONDS", "s"), ("RADIUS", "km"),
+                                ("LATITUDE", "deg"), ("LONGITUDE", "deg"), ("BENDING_ANGLE", "deg"), ("PRESSURE", "Pa"),
+                                ("TEMPERATURE", "K"), ("NUMBER_DENSITY", "m-3"), ("SOLAR_ZENITH_ANGLE", "deg"),
+                                ("LOCAL_SOLAR_TIME", "hh:mm:ss")]},
+        rules=((r"^vex_ro_2014", "Neutral atmosphere profile (T, p, n), X-band single frequency", "profile"),),
+        profile_columns={"radius": "RADIUS", "temperature": "TEMPERATURE", "pressure": "PRESSURE",
+                         "number_density": "NUMBER_DENSITY", "latitude": "LATITUDE", "longitude": "LONGITUDE",
+                         "sza": "SOLAR_ZENITH_ANGLE", "lst": "LOCAL_SOLAR_TIME"},
+        column_units={"RADIUS": "KM", "PRESSURE": "PASCAL", "TEMPERATURE": "K", "NUMBER_DENSITY": "1/M**3"},
+        citation=("Gramigna, E., et al. (2023). Analysis of NASA's DSN Venus Express radio occultation data for year 2014. "
+                  "Advances in Space Research, 71(1), 1198-1215. Data: doi:10.5281/zenodo.20056665 (CC-BY-4.0)."),
+        doi="10.5281/zenodo.20056665",
+    ),
+    Dataset(
+        id="vex-vera-fsi-imamura", mission_id="vex", instrument="VeRa (Radio Science)", level="Derived (research data)",
+        title="Venus Express radio occultations 2006-2014: temperature profiles by Full Spectrum Inversion (Imamura et al. 2018)",
+        body_ids=("venus",), archive="Zenodo (CC-BY-4.0)",
+        base_url="https://zenodo.org/records/4621070/",
+        volume_pattern=r"^repository$",
+        # Columns (from the values: p = n k T exactly): radius km, altitude km, T K, p Pa, n m^-3.
+        # Below the lowest valid level the files hold n constant; those rows are masked.
+        repository={"kind": "zenodo_files", "record": "4621070",
+                    "files": r"temperature_fsi_(?P<date>\d{6})[a-z]?-?\d*(_lin)?\.dat",
+                    "columns": [("RADIUS", "km"), ("ALTITUDE", "km"), ("TEMPERATURE", "K"), ("PRESSURE", "Pa"),
+                                ("NUMBER_DENSITY", "m-3")],
+                    "mask_constant": ("NUMBER_DENSITY", ("TEMPERATURE", "PRESSURE")),
+                    "meta_xlsx": "FSI_VeRa_profiles.xlsx",
+                    "meta_columns": ["file", "year", "month", "day", "direction", "latitude", "local_time"]},
+        rules=((r"^temperature_fsi_\d{6}", "Neutral atmosphere profile (T, p, n) by Full Spectrum Inversion", "profile"),),
+        profile_columns={"radius": "RADIUS", "temperature": "TEMPERATURE", "pressure": "PRESSURE",
+                         "number_density": "NUMBER_DENSITY", "latitude": "LATITUDE", "lst": "LST"},
+        column_units={"RADIUS": "KM", "PRESSURE": "PASCAL", "TEMPERATURE": "K", "NUMBER_DENSITY": "1/M**3"},
+        citation=("Imamura, T., et al. (2018). Fine vertical structures at the cloud heights of Venus revealed by radio "
+                  "holographic analysis of Venus Express and Akatsuki radio occultation data. JGR Planets, 123, 2151-2161. "
+                  "Data: doi:10.5281/zenodo.4621070 (CC-BY-4.0)."),
+        doi="10.5281/zenodo.4621070",
+    ),
+    Dataset(
+        id="vex-soir-co2-temperature", mission_id="vex", instrument="SPICAV-SOIR", level="Derived (research data)",
+        title="Venus Express SOIR solar occultations 2006-2014: CO2 density, pressure and temperature at the terminator, 70-170 km (BIRA-IASB)",
+        body_ids=("venus",), archive="BIRA-IASB data repository (CC-BY-4.0)",
+        base_url="https://data.aeronomie.be/dataset/venus-atmospheric-profiles-from-spicav-soir-vexv23/",
+        volume_pattern=r"^repository$",
+        repository={"kind": "votable_split",
+                    "url": "https://data.aeronomie.be/dataset/bc9068b4-00c0-41fd-a1fa-54a3afaa14a4/resource/0d385c08-73bc-4106-89da-47e9282d2cad/download/co2_soir_w23.zip",
+                    "member": "SOIRProfiles_CO2_0.xml", "split": ("orbit", "case"),
+                    "product_id": "soir_co2_orbit{0:04.0f}_{1:.0f}", "time": "time_JDUTC_min",
+                    "geometry": {"LATITUDE": ("latitude_min", "latitude_max"), "LONGITUDE": ("longitude_min", "longitude_max"),
+                                 "LST": ("local_time_min", "local_time_max"), "LS": ("solar_longitude_min", "solar_longitude_max")},
+                    "keep": ("altitude", "pressure", "err_pressure", "temperature", "err_temperature",
+                             "total_density", "err_total_density")},
+        rules=((r"^soir_co2", "Mesosphere and thermosphere profile at the terminator (T, p, n)", "profile"),),
+        profile_columns={"altitude": "altitude", "temperature": "temperature", "temperature_sigma": "err_temperature",
+                         "pressure": "pressure", "pressure_sigma": "err_pressure", "number_density": "total_density",
+                         "latitude": "LATITUDE", "longitude": "LONGITUDE", "lst": "LST"},
+        column_units={"altitude": "KM", "pressure": "MBAR", "err_pressure": "MBAR", "temperature": "K",
+                      "err_temperature": "K", "total_density": "1/CM**3"},
+        altitude_reference="the Venus surface at the tangent point, as given by the SOIR team",
+        citation=("Mahieux, A., et al. (2015). Update of the Venus density and temperature profiles at high altitude measured "
+                  "by SOIR on board Venus Express. PSS, 113-114, 309-320. Data: BIRA-IASB, doi:10.18758/71021089 (CC-BY-4.0)."),
+        doi="10.18758/71021089",
+    ),
+    Dataset(
         id="vega1-vega2-v-2-3-venus-v1.0", mission_id="vega", instrument="VEGA 2 lander METEO; VEGA 1/2 balloons",
         level="L2-L3",
         title="VEGA 2 lander descent profile (63 km to the surface) and VEGA 1/2 balloon records at Venus (June 1985)",
@@ -649,6 +722,9 @@ _REFS = {
     "jno-x-mwr": ("janssen2017", "bolton2017"),
     "vex-v-rss-1-ent-v1.0": ("hausler2006", "svedhem2007"),
     "vex-v-vra-1-2-3": ("hausler2006", "svedhem2007"),
+    "vex-vera-gramigna2023": ("gramigna2023", "gramigna2026data", "hausler2006", "svedhem2007"),
+    "vex-vera-fsi-imamura": ("imamura2018", "imamura2021data", "hausler2006", "svedhem2007"),
+    "vex-soir-co2-temperature": ("mahieux2015", "bira2020soir", "svedhem2007"),
     "mgn-v-rss-5-occ-prof-rtpd-v1.0": ("jenkins1994", "steffes1994", "saunders1992"),
     "mgn-v-rss-5-occ-prof-abs-h2so4-v1.0": ("jenkins1994", "steffes1994", "saunders1992"),
     "mgn-v-rss-1-rocc-v2.0": ("jenkins1994", "saunders1992"),

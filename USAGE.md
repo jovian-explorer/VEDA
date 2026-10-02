@@ -210,11 +210,18 @@ FITS and PNG/JPEG images (for example the bundled Akatsuki UVI image) open in th
 
 Click **Load File** in the toolbar, drop files anywhere on the window, or use the drop zone in the Workflow Guide. You can select several files at once.
 
+For a table, VEDA first shows what the file contains and asks what it is:
+
+* **What it is**: the body, the mission (any VEDA mission, or *Other* with a name you type), the instrument, and the observation time in UTC. VEDA fills these from the label or header when it can (target, spacecraft, instrument, start time). The time places the profile in date searches and comparisons; leave it empty if you do not know it, nothing is invented.
+* **Columns**: each column with its unit in the file, its first values and its range. For each, choose what it is (altitude, radius from the centre, temperature, pressure, electron or number density, their 1σ uncertainties, latitude, longitude, local time, solar zenith angle) and its unit (km or m; K or °C; hPa, Pa, bar, mbar or kPa; cm⁻³ or m⁻³). Files without a header (columns COL_1, COL_2, ...) can be read this way. VEDA suggests roles and units from the names and label units; check them.
+
+The choices are saved with the file, so it reopens the same way, and kept for the next file you load. A loaded profile is labelled with the mission and instrument you gave ("VEX VeRa (your file)"), coloured like that mission in comparisons, and included in filtered comparisons of its body when its time and geometry match.
+
 | Format | Extensions | Notes |
 |---|---|---|
 | PDS3 table | `.lbl` + `.tab` | Select the label **and** its table together; the label defines the columns. |
 | PDS4 table | `.xml` + `.csv` or `.tab` | Select the XML label and its table together (character and delimited tables). |
-| Text table | `.csv`, `.txt`, `.dat`, `.asc` | Needs a header row with an altitude column (`ALTITUDE`, `ALT`, `HEIGHT`, `Z` or `RADIUS`). |
+| Text table | `.csv`, `.txt`, `.dat`, `.asc` | Comma, tab, semicolon or space separated, with or without a header row; units in the header as `name [unit]` or `name (unit)` are read. |
 | FITS image | `.fit`, `.fits`, `.fts` | Opens in the image viewer with stretch, colour map, histogram and transects. |
 | Picture | `.png`, `.jpg`, `.jpeg` | Opens in the image viewer. |
 

@@ -2,6 +2,25 @@
 
 All notable changes to VEDA. Versions follow [semantic versioning](https://semver.org/): 0.x releases are public and in active development (feedback from users shapes them), 1.0.0 will mark a stable interface.
 
+## Unreleased
+
+### Data
+- **Venus Express temperature profiles**, which PSA and PDS do not hold, from the teams' research data repositories (all CC-BY-4.0):
+  - VeRa radio occultations of 2014 (NASA DSN), 25 profiles with time, latitude, longitude, solar zenith angle and local time (Gramigna et al. 2023; Zenodo doi:10.5281/zenodo.20056665);
+  - VeRa radio occultations 2006-2009 retrieved by Full Spectrum Inversion, 32 profiles with date, latitude and local time (Imamura et al. 2018; Zenodo doi:10.5281/zenodo.4621070). Below the lowest valid level these files hold the number density constant, which made the derived temperatures wrong (800 K at 39 km); those rows are masked;
+  - SPICAV-SOIR solar occultations 2006-2014, 644 profiles of CO2 density, pressure and temperature from about 70 to 170 km at the terminator, with uncertainties (Mahieux et al. 2015; BIRA-IASB doi:10.18758/71021089).
+- A new kind of source, research data repositories (Zenodo and institutional archives): profiles without PDS labels are described by the data set (columns and units) and rewritten as small normalised CSV files.
+- Venus Express instruments SPICAV-SOIR, SPICAV, ASPERA-4 and MAG added to the mission.
+
+### Loading your own files
+- **Load dialog**: before a table is read, VEDA shows its columns (unit in the file, first values, range) and asks what each column is and in which unit, and what the file is (body, mission, instrument, observation time). Headerless files can be read. The choices are saved with the file and offered for the next one; loaded profiles carry the mission and instrument in legends and colours and are included in filtered comparisons.
+- **Fixes**: a pressure column in hPa was divided by 100 (the unit test for Pascal also matched "HPA"); loaded files were all given the time 2026-01-01T12:00, which then appeared as an observation time (now the label's time, the one you enter, or none); Celsius was guessed from the median value on some bodies only (now from the label unit, or values below zero).
+- Header units written as `name [unit]` or `name (unit)` and `# KEY=value` metadata lines are read from text tables.
+
+### Plots
+- **Log axes** (pressure, densities) showed minor ticks as bare digits ("5 6 7 8 9 0.1 2 3", where 5 meant 0.05) and SI prefixes ("100μ" for 1e-4), which read as wrong values after a unit change. Axes spanning less than about three decades now have 1-2-5 ticks with full values (0.05, 0.1, 0.2, 0.5 ...), wider ones one tick per decade as powers of ten; every axis uses powers of ten instead of SI prefixes.
+- **Axis limits** set in Plot style applied to whatever was plotted next: limits typed for temperature in K stayed on the axis after switching to °C or to pressure. They now belong to the axis they were set for (variable and unit) and stop applying when that changes.
+
 ## 0.1.0 (2026-10-02): first public release
 
 The first public release. It contains all the work below, done while the repository was private (version 0.0.1; the first two milestones were briefly tagged v2.0.0 and v2.1.0, tags since withdrawn).

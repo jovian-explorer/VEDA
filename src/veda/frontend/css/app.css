@@ -1660,3 +1660,9 @@ a.btn-feedback { display: inline-flex; align-items: center; text-decoration: non
 a.btn-feedback:hover { border-color: var(--accent); }
 .arch-ds-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .arch-ds-head .badge { width: auto; }
+/* Load dialog: column roles */
+.load-dialog .ld-cols { max-height: 46vh; overflow: auto; border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.load-dialog .ld-cols table { width: 100%; font-size: 0.86em; }
+.load-dialog .ld-cols td, .load-dialog .ld-cols th { padding: 4px 6px; vertical-align: top; }
+.load-dialog .ld-cols select { min-width: 8em; }
+.load-dialog .ld-msg { color: var(--warn); }

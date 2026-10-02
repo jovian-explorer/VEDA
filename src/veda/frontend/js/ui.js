@@ -264,6 +264,8 @@ function themeAxis(axis, c) {
   if (!axis) return;
   axis.gridcolor = c.grid;
   axis.zerolinecolor = c.zero;
+  // powers of ten, never SI prefixes ("2μ" for 2e-6 kg/m3 reads as a unit)
+  if (!axis.exponentformat) axis.exponentformat = 'power';
   axis.linecolor = c.zero;
   axis.tickfont = { ...(axis.tickfont || {}), color: c.inkSoft };
   if (axis.title && typeof axis.title === 'object') {
@@ -449,9 +451,47 @@ export function layoutBase(extra = {}) {
  * closed) keep a window resize handler and all their data until purged, so a
  * long session got slower and slower.  Purge every plot as it leaves the page.
  */
+/**
+ * Readable ticks on every log axis, applied after Plotly has chosen the range:
+ * Plotly's default labels minor ticks with bare digits ("5 6 7 8 9 0.1 2 3", where
+ * 5 means 0.05) and uses SI prefixes ("100μ" for 1e-4), which read as wrong values
+ * after a unit change.  Spans under ~3 decades get 1-2-5 ticks with full values,
+ * wider spans one tick per decade written as powers of ten.
+ */
+export function fixLogTicks(gd) {
+  const fl = gd && gd._fullLayout;
+  if (!fl || !window.Plotly) return;
+  const update = {};
+  for (const k of Object.keys(fl).filter(n => /^[xy]axis\d*$/.test(n))) {
+    const ax = fl[k];
+    if (!ax || ax.type !== 'log' || !Array.isArray(ax.range)) continue;
+    const span = Math.abs(ax.range[1] - ax.range[0]);
+    const want = span <= 2.6 ? { dtick: 'D2', tickformat: '~g' } : { dtick: 1, tickformat: '', exponentformat: 'power' };
+    const have = (gd.layout && gd.layout[k]) || {};
+    if (have.dtick !== want.dtick || (have.tickformat || '') !== want.tickformat) {
+      for (const [p, v] of Object.entries(want)) update[`${k}.${p}`] = v;
+    }
+  }
+  if (Object.keys(update).length) window.Plotly.relayout(gd, update);
+}
+
 export function installPlotJanitor() {
   if (installPlotJanitor.done || !window.Plotly) return;
   installPlotJanitor.done = true;
+  // Every plot drawn anywhere in the app gets the log-tick fix after it renders
+  // (and after zooming, which changes the span).
+  for (const name of ['newPlot', 'react']) {
+    const orig = window.Plotly[name].bind(window.Plotly);
+    window.Plotly[name] = (gd, ...rest) => orig(gd, ...rest).then((el) => {
+      const node = typeof gd === 'string' ? document.getElementById(gd) : gd;
+      if (node && !node._vedaTickFix) {
+        node._vedaTickFix = true;
+        node.on('plotly_afterplot', () => fixLogTicks(node));
+      }
+      fixLogTicks(node);
+      return el;
+    });
+  }
   const purge = (node) => { try { window.Plotly.purge(node); } catch (_) { /* already gone */ } };
   new MutationObserver((mutations) => {
     for (const m of mutations) {

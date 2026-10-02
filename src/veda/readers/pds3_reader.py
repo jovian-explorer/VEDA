@@ -457,7 +457,17 @@ def read_any_table(file_path: str) -> Pds3Table:
     if not all_lines:
         return Pds3Table(label_path="", table_path=str(p), metadata={}, columns={}, units={})
 
-    # Skip comments
+    # Comment lines; "# KEY=value" ones are metadata (VEDA's normalised repository CSVs)
+    import re as _re
+    file_meta: Dict[str, Any] = {}
+    for ln in all_lines:
+        m = _re.match(r"^#\s*([A-Za-z][A-Za-z0-9_ ]*?)\s*=\s*(.*)$", ln)
+        if m:
+            k, v = m.group(1).strip().upper().replace(" ", "_"), m.group(2).strip()
+            try:
+                file_meta[k] = float(v) if _re.fullmatch(r"[-+0-9.eE]+", v) else v
+            except ValueError:
+                file_meta[k] = v
     data_lines = [ln for ln in all_lines if not ln.startswith(("#", "%", ";", "/*"))]
     if not data_lines:
         return Pds3Table(label_path="", table_path=str(p), metadata={}, columns={}, units={})
@@ -486,8 +496,16 @@ def read_any_table(file_path: str) -> Pds3Table:
     except ValueError:
         has_header = True
 
+    header_units: Dict[str, str] = {}
     if has_header:
-        header_names = [name.upper() for name in first_row]
+        # "name [unit]" or "name (unit)": the unit goes to the units table
+        header_names = []
+        for name in first_row:
+            m = _re.fullmatch(r"(.*?)\s*[\[(]([^\])]*)[\])]\s*", name)
+            base = (m.group(1) if m and m.group(1) else name).upper()
+            header_names.append(base)
+            if m and m.group(1):
+                header_units[base] = m.group(2).strip()
         body_lines = data_lines[1:]
     else:
         header_names = [f"COL_{i+1}" for i in range(len(first_row))]
@@ -510,12 +528,12 @@ def read_any_table(file_path: str) -> Pds3Table:
                     pass
         if np.isfinite(arr).any():
             columns_data[name] = arr
-    units_dict: Dict[str, str] = {name: "" for name in columns_data}
+    units_dict: Dict[str, str] = {name: header_units.get(name, "") for name in columns_data}
 
     return Pds3Table(
         label_path="",
         table_path=str(p),
-        metadata={"AUTO_PARSED": True, "ROW_COUNT": n_rows},
+        metadata={"AUTO_PARSED": True, "ROW_COUNT": n_rows, **file_meta},
         columns=columns_data,
         units=units_dict,
     )

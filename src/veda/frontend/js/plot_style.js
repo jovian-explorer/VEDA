@@ -38,6 +38,9 @@ export const DEFAULTS = {
   swapAxes: false,
   xScale: 'auto',           // auto | linear | log
   xMin: '', xMax: '', yMin: '', yMax: '',
+  // the axis (variable and unit, e.g. "Temperature (K)") the limits were set for:
+  // they do not carry over to another variable or unit
+  xLimitsFor: '', yLimitsFor: '',
   grid: true,
   mirror: false,            // frame on all four sides
   ticks: 'outside',         // outside | inside
@@ -122,6 +125,9 @@ const num = (v) => (v === '' || v == null || Number.isNaN(Number(v)) ? null : Nu
  * Apply axes, fonts, grid and legend choices to a layout whose x axis holds the
  * variable and y axis the vertical coordinate (swapping is done here).
  */
+// Axis titles of the last styled plot: limits typed in the panel belong to these.
+const lastAxes = { x: '', y: '' };
+
 export function styleLayout(layout, { xLog = false, varTitle = '', coordTitle = '' } = {}) {
   const journal = style.template === 'journal';
   const c = plotColors();
@@ -139,8 +145,11 @@ export function styleLayout(layout, { xLog = false, varTitle = '', coordTitle = 
     type: coordIsPressure ? 'log' : 'linear',
     autorange: coordIsPressure ? 'reversed' : true,
   };
-  const xr = [num(style.xMin), num(style.xMax)];
-  const yr = [num(style.yMin), num(style.yMax)];
+  lastAxes.x = varAxis.title.text;
+  lastAxes.y = coordAxis.title.text;
+  const applies = (forTitle, title) => !forTitle || forTitle === title;
+  const xr = applies(style.xLimitsFor, varAxis.title.text) ? [num(style.xMin), num(style.xMax)] : [null, null];
+  const yr = applies(style.yLimitsFor, coordAxis.title.text) ? [num(style.yMin), num(style.yMax)] : [null, null];
   const range = (r, ax) => {
     if (r[0] == null || r[1] == null) return;
     ax.autorange = false;
@@ -264,7 +273,11 @@ function check(id, label, value, onChange) {
 /** Plot style panel; `onApply()` re-draws the open plots. `exportTarget()` returns {gd, name}. */
 export function plotStyleBody(onApply, exportTarget) {
   const set = (k) => (v) => { saveStyle({ [k]: v }); onApply(); };
-  const setNum = (k) => (v) => { saveStyle({ [k]: v === '' ? '' : Number(v) }); onApply(); };
+  const setNum = (k) => (v) => {
+    const extra = (k === 'xMin' || k === 'xMax') ? { xLimitsFor: lastAxes.x }
+      : (k === 'yMin' || k === 'yMax') ? { yLimitsFor: lastAxes.y } : {};
+    saveStyle({ [k]: v === '' ? '' : Number(v), ...extra }); onApply();
+  };
   const number = (k, min, max, step) => el('input', {
     type: 'number', value: style[k], min, max, step, onchange: (e) => setNum(k)(e.target.value),
   });
@@ -289,6 +302,9 @@ export function plotStyleBody(onApply, exportTarget) {
         row('Variable min', number('xMin', null, null, 'any')), row('Variable max', number('xMax', null, null, 'any'))),
       el('div', { class: 'ps-range' },
         row('Vertical min', number('yMin', null, null, 'any')), row('Vertical max', number('yMax', null, null, 'any'))),
+      el('div', { class: 'hint' }, `Limits are in the units shown on the axis and apply only to that axis${
+        style.xLimitsFor ? ` (variable limits: ${style.xLimitsFor})` : ''}${style.yLimitsFor ? `; vertical limits: ${style.yLimitsFor}` : ''}. `
+        + 'After a change of variable or unit the plot scales itself again.'),
       check('ps-grid', 'Grid lines', style.grid, set('grid')),
       check('ps-mirror', 'Frame on all sides', style.mirror, set('mirror')),
       row('Tick marks', select('ps-ticks', style.ticks, [['outside', 'Outside'], ['inside', 'Inside']], set('ticks')))),

@@ -33,7 +33,8 @@ def _entry_dirs() -> List[Path]:
     return [d for d in UPLOAD_DIR.iterdir() if d.is_dir() and (d / _META).is_file()]
 
 
-def save_upload(name: str, payload: bytes, companions: Dict[str, bytes], body_id: str) -> Path:
+def save_upload(name: str, payload: bytes, companions: Dict[str, bytes], body_id: str,
+                info: Optional[Dict[str, Any]] = None) -> Path:
     """Store an upload (and its companion files) and return the primary path.
 
     Re-uploading a file of the same name replaces the earlier upload entirely,
@@ -47,8 +48,10 @@ def save_upload(name: str, payload: bytes, companions: Dict[str, bytes], body_id
     primary.write_bytes(payload)
     for cname, data in companions.items():
         (entry / cname).write_bytes(data)
+    # info: what the user said the file is (source mission and instrument, time,
+    # column roles and units), so the profile is rebuilt the same way later
     meta = {"filename": name, "body_id": body_id, "companions": sorted(companions),
-            "uploaded_at": time.time()}
+            "uploaded_at": time.time(), **(info or {})}
     (entry / _META).write_text(json.dumps(meta), encoding="utf-8")
     _prune()
     return primary
@@ -77,6 +80,10 @@ def list_uploads() -> List[Dict[str, Any]]:
             "observation_id": p.stem,
             "filename": p.name,
             "mission_id": MISSION_ID,
+            "source_mission": meta.get("source_mission") or "",
+            "instrument": meta.get("instrument") or "",
+            "time_utc": meta.get("time_utc") or "",
+            "roles": meta.get("roles"),
             "body_id": meta.get("body_id", "venus"),
             "data_type": "image" if p.suffix.lower() in IMAGE_SUFFIXES else "profile",
             "size_bytes": p.stat().st_size,
@@ -108,6 +115,17 @@ def find_upload(observation_id: str) -> Optional[tuple]:
     return None
 
 
+def describe(item: Dict[str, Any]) -> str:
+    """'MEX MaRS (your file)' from what the user said the file is."""
+    from ..core.registry import get_mission
+    mid = item.get("source_mission") or ""
+    m = get_mission(mid) if mid else None
+    who = (m.id.upper() if m else mid) if mid else ""
+    inst = item.get("instrument") or ""
+    text = " ".join(x for x in (who, inst) if x).strip()
+    return f"{text} (your file)" if text else "Your file"
+
+
 class UploadsAdapter(BaseMissionAdapter):
     """Serves user uploads through the regular profile/image/export endpoints."""
 
@@ -133,9 +151,11 @@ class UploadsAdapter(BaseMissionAdapter):
         path, item = hit
         body = get_body(item["body_id"]) or get_body("venus")
         try:
-            prof, _ = build_profile(path, body)
+            prof, _ = build_profile(path, body, mission_id=MISSION_ID, instrument=describe(item),
+                                    roles=item.get("roles"), time_utc=item.get("time_utc") or None)
         except Exception:  # noqa: BLE001
             return None
+        prof.raw_attributes["SOURCE_MISSION"] = item.get("source_mission") or ""
         return prof
 
     def load_image(self, observation_id: str) -> Optional[ObservationImage]:

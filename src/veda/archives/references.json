@@ -5879,6 +5879,169 @@
     }
    ],
    "note": "Article number 53."
+  },
+  {
+   "key": "gramigna2023",
+   "authors": [
+    "Gramigna, E.",
+    "Parisi, M.",
+    "Buccino, D.",
+    "Casajus, L. G.",
+    "Zannoni, M.",
+    "Bourgoin, A.",
+    "Tortora, P.",
+    "Oudrhiri, K."
+   ],
+   "et_al": false,
+   "year": 2023,
+   "title": "Analysis of NASA's DSN Venus Express radio occultation data for year 2014",
+   "journal": "Advances in Space Research",
+   "volume": "71",
+   "issue": "1",
+   "pages": "1198-1215",
+   "doi": "10.1016/j.asr.2022.10.070",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "vex",
+     "payload": "VeRa"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "mahieux2015",
+   "authors": [
+    "Mahieux, A.",
+    "Vandaele, A. C.",
+    "Bougher, S. W.",
+    "Drummond, R.",
+    "Robert, S.",
+    "Wilquet, V.",
+    "Chamberlain, S.",
+    "Piccialli, A.",
+    "Montmessin, F.",
+    "Tellmann, S."
+   ],
+   "et_al": true,
+   "year": 2015,
+   "title": "Update of the Venus density and temperature profiles at high altitude measured by SOIR on board Venus Express",
+   "journal": "Planetary and Space Science",
+   "volume": "113-114",
+   "issue": "",
+   "pages": "309-320",
+   "doi": "10.1016/j.pss.2015.02.002",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "vex",
+     "payload": "SPICAV-SOIR"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "imamura2018",
+   "authors": [
+    "Imamura, T.",
+    "Miyamoto, M.",
+    "Ando, H.",
+    "Häusler, B.",
+    "Pätzold, M.",
+    "Tellmann, S.",
+    "Tsuda, T.",
+    "Aoyama, Y.",
+    "Murata, Y.",
+    "Takeuchi, H."
+   ],
+   "et_al": true,
+   "year": 2018,
+   "title": "Fine Vertical Structures at the Cloud Heights of Venus Revealed by Radio Holographic Analysis of Venus Express and Akatsuki Radio Occultation Data",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "123",
+   "issue": "8",
+   "pages": "2151-2161",
+   "doi": "10.1029/2018je005627",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "vex",
+     "payload": "VeRa"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "gramigna2026data",
+   "authors": [
+    "Gramigna, E."
+   ],
+   "et_al": false,
+   "year": 2026,
+   "title": "Venus Express 2014 Radio Occultation Atmospheric Profiles Dataset (Gramigna et al., 2023)",
+   "journal": "Zenodo",
+   "volume": "",
+   "issue": "",
+   "pages": "",
+   "doi": "10.5281/zenodo.20056665",
+   "verified": true,
+   "type": "dataset",
+   "used_for": [
+    {
+     "mission": "vex",
+     "payload": "VeRa"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "imamura2021data",
+   "authors": [
+    "Imamura, T."
+   ],
+   "et_al": false,
+   "year": 2021,
+   "title": "Vertical temperature profiles obtained from Venus Express and Akatsuki radio occultation data using FSI",
+   "journal": "Zenodo",
+   "volume": "",
+   "issue": "",
+   "pages": "",
+   "doi": "10.5281/zenodo.4621070",
+   "verified": true,
+   "type": "dataset",
+   "used_for": [
+    {
+     "mission": "vex",
+     "payload": "VeRa"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "bira2020soir",
+   "authors": [
+    "BIRA-IASB"
+   ],
+   "et_al": false,
+   "year": 2020,
+   "title": "Venus atmospheric profiles from SPICAV-SOIR on board Venus Express, version w23.00",
+   "journal": "BIRA-IASB data repository",
+   "volume": "",
+   "issue": "",
+   "pages": "",
+   "doi": "10.18758/71021089",
+   "verified": true,
+   "type": "dataset",
+   "used_for": [
+    {
+     "mission": "vex",
+     "payload": "SPICAV-SOIR"
+    }
+   ],
+   "note": ""
   }
  ]
 }

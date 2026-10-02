@@ -1,0 +1,82 @@
+"""Profiles from research data repositories (Zenodo, BIRA-IASB): Venus Express VeRa and SOIR."""
+from __future__ import annotations
+
+import io
+import zipfile
+
+import numpy as np
+import pytest
+
+from veda.archives import repositories as repo
+from veda.archives.datasets import get_dataset
+
+
+def test_normalised_csv_round_trip(tmp_path):
+    p = repo.write_normalised(tmp_path / "x.csv", {"START_TIME": "2014-02-17T03:47:57", "LATITUDE": 84.5},
+                              [("RADIUS", "km"), ("TEMPERATURE", "K")], [(6100.0, 250.0), (6110.0, float("nan"))])
+    t = repo.read_normalised(p)
+    assert t.metadata == {"START_TIME": "2014-02-17T03:47:57", "LATITUDE": 84.5}
+    assert t.units == {"RADIUS": "km", "TEMPERATURE": "K"}
+    np.testing.assert_allclose(t.columns["RADIUS"], [6100.0, 6110.0])
+    assert np.isnan(t.columns["TEMPERATURE"][1])
+
+
+def test_constant_number_density_padding_is_masked():
+    """FSI files hold n constant below the lowest valid level; T computed there is nonsense."""
+    n = np.array([2.4e25] * 6 + [2.1e25, 1.2e25, 6.4e24])
+    cols = {"NUMBER_DENSITY": n.copy(), "TEMPERATURE": np.array([797.0, 700, 600, 520, 450, 400, 349.5, 301.9, 251.0])}
+    repo._mask_constant_runs(cols, "NUMBER_DENSITY", ["TEMPERATURE"])
+    assert np.isnan(cols["TEMPERATURE"][:6]).all() and cols["TEMPERATURE"][6] == 349.5
+
+
+@pytest.mark.parametrize("text,iso", [
+    ("17-Feb-2014 03:47:57.625000 (UTC)", "2014-02-17T03:47:57.625"),
+    ("2453867.562916917", "2006-05-12T01:30:36.021"),
+    ("2010-12-14T02:01:11", "2010-12-14T02:01:11.000"),
+    ("not a time", ""),
+])
+def test_time_parsing(text, iso):
+    assert repo._parse_time(text) == iso
+
+
+def test_zip_of_profiles_with_header_lines(tmp_path, monkeypatch):
+    ds = get_dataset("vex-vera-gramigna2023")
+    rows = ["ID\tutc_table\tVar3\tVar4\tVar5\tVar6\tVar7\tVar8\tVar9\tVar10\tVar11\ttime_table",
+            "1\t17-Feb-2014 03:47:57.625000 (UTC)\t4.4588e+08\t6148.78\t84.47\t37.56\t4.6e-06\t6.9\t170.0\t2.94e+21\t95.59\t03:40:21",
+            "2\t17-Feb-2014 03:47:57.875000 (UTC)\t4.4588e+08\t6111.80\t84.40\t37.60\t1.0e-03\t22000.0\t250.0\t6.4e+24\t95.60\t03:40:19"]
+    zf = tmp_path / "g.zip"
+    with zipfile.ZipFile(zf, "w") as z:
+        z.writestr("d/VEX_RO_2014_DOY048_INGRESS.txt.txt", "\n".join(rows))
+        z.writestr("d/readme.lbl.txt", "not a profile")
+    monkeypatch.setattr(repo, "_zip_path", lambda ds, progress=None: zf)
+    monkeypatch.setattr(repo, "_cache_dir", lambda ds: tmp_path)
+    idx = repo.index_repository(ds)
+    assert [r["product_id"] for r in idx] == ["VEX_RO_2014_DOY048_INGRESS"]
+    assert idx[0]["start_time"].startswith("2014-02-17T03:47:57") and idx[0]["kind"] == "profile"
+    csv = repo.fetch_repository_product(ds, {**idx[0], "extra": {}})
+    t = repo.read_normalised(csv)
+    assert t.columns["TEMPERATURE"].tolist() == [170.0, 250.0]           # header line skipped
+    assert t.columns["LOCAL_SOLAR_TIME"][0] == pytest.approx(3 + 40 / 60 + 21 / 3600)
+
+
+def test_votable_split_into_profiles(tmp_path, monkeypatch):
+    ds = get_dataset("vex-soir-co2-temperature")
+    fields = ["orbit", "case", "longitude_min", "longitude_max", "latitude_min", "latitude_max", "solar_longitude_min",
+              "solar_longitude_max", "local_time_min", "local_time_max", "time_JDUTC_min", "time_JDUTC_max", "altitude",
+              "pressure", "err_pressure", "temperature", "err_temperature", "total_density", "err_total_density"]
+    def tr(orbit, case, alt, t):
+        vals = [orbit, case, 280, 300, 85, 87, 65, 65.1, 2.75, 3.96, 2453867.5629, 2453867.5684, alt, 0.1, 0.01, t, 5.0, 1e15, 1e14]
+        return "<TR>" + "".join(f"<TD>{v}</TD>" for v in vals) + "</TR>"
+    xml = ('<?xml version="1.0"?><VOTABLE xmlns="http://www.ivoa.net/xml/VOTable/v1.2"><RESOURCE><TABLE>'
+           + "".join(f'<FIELD name="{f}" datatype="double" unit="u"/>' for f in fields)
+           + "<DATA><TABLEDATA>" + tr(21, 1, 90, 170) + tr(21, 1, 100, 165) + tr(39, 2, 95, 180) + "</TABLEDATA></DATA></TABLE></RESOURCE></VOTABLE>")
+    zf = tmp_path / "co2.zip"
+    with zipfile.ZipFile(zf, "w") as z:
+        z.writestr("SOIRProfiles_CO2_0.xml", xml)
+    monkeypatch.setattr(repo, "_zip_path", lambda ds, progress=None: zf)
+    monkeypatch.setattr(repo, "_cache_dir", lambda ds: tmp_path)
+    idx = repo.index_repository(ds)
+    assert sorted(r["product_id"] for r in idx) == ["soir_co2_orbit0021_1", "soir_co2_orbit0039_2"]
+    t = repo.read_normalised(tmp_path / "soir_co2_orbit0021_1.csv")
+    assert t.columns["temperature"].tolist() == [170.0, 165.0]
+    assert t.metadata["LATITUDE"] == 86.0 and t.metadata["START_TIME"].startswith("2006-05-12T01:30")

@@ -118,6 +118,7 @@ export const api = {
     if (missions) q.push(`missions=${encodeURIComponent(missions)}`);
     return `/api/veda/figure/publication?${q.join('&')}`;
   },
+  vedaPreviewUpload: (req) => call('/api/veda/upload/preview', {method: 'POST', body: req}),
   vedaParseFile: (req) =>
       call('/api/veda/parse-file', {method: 'POST', body: req}),
   vedaVariables: () =>

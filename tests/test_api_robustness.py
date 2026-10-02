@@ -387,3 +387,58 @@ def test_table_x_range_selects_rows_before_decimation(client):
     rows = client.get(base, params={"x": "__row__", "y": ["TEMPERATURE (MEDIUM BOUNDARY CONDITION)"], "x_min": "11", "x_max": "20"}).json()
     assert rows["x"]["values"] == list(range(11, 21))
     assert client.get(base, params={"x": "__row__", "y": ["TEMPERATURE (MEDIUM BOUNDARY CONDITION)"], "x_min": "abc"}).status_code == 400
+
+
+# ---------------------------------------------------------------- loading files with column roles
+
+def test_pressure_label_units_hpa_is_not_pascal():
+    """"PA" in "HPA" used to divide hPa columns by 100."""
+    from veda.pipeline.ingest import unit_from_label
+    assert unit_from_label("pressure", "HPA") == "hPa"
+    assert unit_from_label("pressure", "MILLIBAR") == "mbar"
+    assert unit_from_label("pressure", "PASCAL") == "Pa"
+    assert unit_from_label("pressure", "BAR") == "bar"
+    assert unit_from_label("temperature", "DEGREE CELSIUS") == "C"
+    assert unit_from_label("altitude", "M") == "m"
+
+
+def test_headerless_file_loaded_with_chosen_roles_units_and_mission(client):
+    # radius in metres, temperature in C, pressure in Pa, no header
+    rows = "\n".join(f"{(6051.8 + z) * 1000:.1f} {t:.2f} {p:.3f}"
+                     for z, t, p in ((50, 76.8, 100000.0), (60, -18.0, 23000.0), (70, -45.0, 3500.0)))
+    pv = client.post("/api/veda/upload/preview", json={"filename": "venus_ro.txt", "file_content": rows}).json()
+    assert pv["type"] == "table" and len(pv["columns"]) == 3
+    cols = [c["name"] for c in pv["columns"]]
+    roles = {cols[0]: {"role": "radius", "unit": "m"}, cols[1]: {"role": "temperature", "unit": "C"},
+             cols[2]: {"role": "pressure", "unit": "Pa"}}
+    r = client.post("/api/veda/parse-file", json={"filename": "venus_ro.txt", "file_content": rows, "body_id": "venus",
+                                                  "source_mission": "vex", "instrument": "VeRa",
+                                                  "time_utc": "2014-02-17T03:47:57", "roles": roles})
+    assert r.status_code == 200, r.text
+    d = r.json()["data"]
+    assert d["altitude_km"][0] == pytest.approx(50.0, abs=1e-6)
+    assert d["temperature_k"][0] == pytest.approx(349.95)
+    assert d["pressure_hpa"][0] == pytest.approx(1000.0)
+    assert d["time_utc"] == "2014-02-17T03:47:57" and "VeRa" in d["instrument"]
+    items = client.get("/api/veda/uploads").json()
+    it = next(i for i in items if i["observation_id"] == "venus_ro")
+    assert it["source_mission"] == "vex" and it["roles"][cols[1]]["unit"] == "C"
+    again = client.get("/api/veda/profile/user_imported/venus_ro").json()        # rebuilt with the same roles
+    assert again["temperature_k"][0] == pytest.approx(349.95)
+    comp = client.post("/api/veda/compare/body/venus", json={"missions": [], "variable": "temperature_k",
+                                                             "filter": {"start": "2014-02-01", "end": "2014-03-01", "download": False}}).json()
+    assert any(p["observation_id"] == "venus_ro" and p["mission_label"] == "vex" for p in comp["profiles"])
+
+
+def test_load_rejects_bad_roles_and_does_not_invent_a_time(client):
+    rows = "10 200 5\n20 190 2\n30 180 1"
+    bad = client.post("/api/veda/parse-file", json={"filename": "x.txt", "file_content": rows, "body_id": "mars",
+                                                    "roles": {"COL_1": {"role": "temperature", "unit": "K"}}})
+    assert bad.status_code == 422 and "altitude or radius" in bad.json()["detail"]
+    wrong_unit = client.post("/api/veda/parse-file", json={"filename": "x.txt", "file_content": rows, "body_id": "mars",
+                                                           "roles": {"COL_1": {"role": "altitude", "unit": "furlong"}}})
+    assert wrong_unit.status_code == 422
+    ok = client.post("/api/veda/parse-file", json={"filename": "x.txt", "file_content": rows, "body_id": "mars",
+                                                   "roles": {"COL_1": {"role": "altitude", "unit": "km"},
+                                                             "COL_2": {"role": "temperature", "unit": "K"}}}).json()
+    assert ok["data"]["time_utc"] == ""                     # was a made-up 2026-01-01T12:00:00Z

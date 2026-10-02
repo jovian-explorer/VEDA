@@ -109,7 +109,10 @@ def _meta_value(tbl, name) -> Optional[float]:
 def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfile:
     cols = ds.profile_columns
     body = get_body(ds.body_ids[0])
-    if label.suffix.lower() == ".xml":
+    if ds.repository:
+        from .repositories import read_normalised
+        tbl = read_normalised(label)
+    elif label.suffix.lower() == ".xml":
         from ..readers.pds4_reader import read_pds4_table
         tbl = read_pds4_table(str(label))
     else:

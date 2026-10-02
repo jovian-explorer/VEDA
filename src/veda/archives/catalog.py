@@ -381,6 +381,19 @@ def refresh_dataset(ds: Dataset, force: bool = False,
         raise http.LoginRequired(ds.archive, ds.login_url or ds.base_url)
     if ds.service:
         raise http.ArchiveError(f"{ds.id} is searched live by date; it has no index to download")
+    if ds.repository:
+        from .repositories import index_repository
+        rows = index_repository(ds, progress)
+        with _db_lock, _connect() as conn:
+            conn.execute("DELETE FROM products WHERE dataset_id=?", (ds.id,))
+            conn.executemany(
+                "INSERT OR REPLACE INTO products VALUES (:dataset_id,:product_id,:volume,:path,"
+                ":start_time,:stop_time,:target,:product_type,:kind,:extra)", rows)
+            conn.execute("DELETE FROM volumes WHERE dataset_id=?", (ds.id,))
+            conn.execute("INSERT OR REPLACE INTO volumes VALUES (?,?,?,?)", (ds.id, "repository", time.time(), len(rows)))
+        if progress:
+            progress(1, 1, "done")
+        return len(rows)
     volumes = http.list_directory(ds.base_url, ds.volume_pattern, dirs_only=True, login_url=ds.login_url)
     if not volumes:
         raise http.ArchiveError(f"No volumes found at {ds.base_url}")
@@ -532,12 +545,19 @@ def product_dict(r: sqlite3.Row) -> Dict[str, Any]:
         "level": ds.level if ds else None,
         "path": r["path"], "start_time": r["start_time"], "stop_time": r["stop_time"],
         "target": r["target"], "product_type": r["product_type"], "kind": r["kind"],
-        "url": r["path"] if r["path"].startswith("http") else (f"{ds.base_url}{r['volume']}/{r['path']}" if ds else None),
+        "url": r["path"] if r["path"].startswith("http") else (ds.base_url if ds and ds.repository else
+                                                                (f"{ds.base_url}{r['volume']}/{r['path']}" if ds else None)),
         "live": bool(ds and ds.service),
-        "downloaded": local.is_file(),
+        "downloaded": (_repository_csv(ds, r["product_id"]).is_file() if ds and ds.repository else local.is_file()),
         "orbit": extra.get("ORBIT_NUMBER") or extra.get("REVOLUTION_NUMBER"),
         "split": extra.get("SPLIT"),
+        "extra": extra,
     }
+
+
+def _repository_csv(ds: Dataset, product_id: str) -> Path:
+    from ..config import CACHE_DIR
+    return CACHE_DIR / "archive" / ds.id / "repository" / f"{product_id}.csv"
 
 
 def get_product(dataset_id: str, product_id: str) -> Optional[Dict[str, Any]]:
@@ -615,6 +635,9 @@ def fetch_product(dataset_id: str, product_id: str,
     prod = get_product(dataset_id, product_id)
     if not ds or not prod:
         raise http.ArchiveError(f"Unknown product {dataset_id}/{product_id}; refresh the dataset index.")
+    if ds.repository:
+        from .repositories import fetch_repository_product
+        return fetch_repository_product(ds, prod)
     if ds.mirrors and _volume_url is None and not prod["path"].startswith(("http://", "https://")):
         try:
             return fetch_product(dataset_id, product_id, progress, max_bytes, f"{ds.base_url}{prod['volume']}/")

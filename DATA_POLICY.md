@@ -55,6 +55,9 @@ The authoritative list is VEDA's own catalogue (`src/veda/archives/datasets.py`,
 | Cassini-Huygens | RSS (Radio Science) | Derived (PDS4) | `corss_occul_el_dens` | NASA PDS Atmospheres Node (PDS4) | Kliore et al. (2008); Kliore et al. (2004); Matson et al. (2002) |
 | Juno | MWR (Microwave Radiometer) | EDR + derived | `jno-x-mwr` | NASA PDS Atmospheres Node | Janssen et al. (2017); Bolton et al. (2017) |
 | Venus Express (VEX) | VeRa (Radio Science) | L1 + ancillary | `vex-v-rss-1-ent-v1.0` | NASA PDS Atmospheres Node | Häusler et al. (2006); Svedhem et al. (2007) |
+| Venus Express (VEX) | VeRa radio occultation profiles 2014 (T, p, n) | Derived | `vex-vera-gramigna2023` | Zenodo, CC-BY-4.0 | Gramigna et al. (2023); data doi:10.5281/zenodo.20056665 |
+| Venus Express (VEX) | VeRa radio occultation profiles 2006-2009, Full Spectrum Inversion (T, p, n) | Derived | `vex-vera-fsi-imamura` | Zenodo, CC-BY-4.0 | Imamura et al. (2018); data doi:10.5281/zenodo.4621070 |
+| Venus Express (VEX) | SPICAV-SOIR solar occultation profiles 2006-2014 (CO2 density, p, T at 70-170 km) | Derived | `vex-soir-co2-temperature` | BIRA-IASB, CC-BY-4.0 | Mahieux et al. (2015); data doi:10.18758/71021089 |
 | Venus Express (VEX) | VeRa (Radio Science) | L1A-L2 | `vex-v-vra-1-2-3` | ESA PSA | Häusler et al. (2006); Svedhem et al. (2007) |
 | Magellan | RSS (Radio Science) | L5 | `mgn-v-rss-5-occ-prof-rtpd-v1.0` | NASA PDS Atmospheres Node | Jenkins et al. (1994); Steffes et al. (1994); Saunders et al. (1992) |
 | Magellan | RSS (Radio Science) | L5 | `mgn-v-rss-5-occ-prof-abs-h2so4-v1.0` | NASA PDS Atmospheres Node | Jenkins et al. (1994); Steffes et al. (1994); Saunders et al. (1992) |

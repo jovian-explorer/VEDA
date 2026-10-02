@@ -48,7 +48,7 @@ All 19 missions in VEDA are connected (141 data sets). Highlights:
 | Body | Mission | Payloads | Route |
 |---|---|---|---|
 | Venus | Akatsuki | RS (L2-L4), UVI, IR1, IR2 and LIR (raw, calibrated, geometry); UVI and LIR to the end of the mission (March 2024) with the 2023 LIR recalibration and L3d maps (PDS4) | JAXA DARTS, indexed |
-| Venus | Venus Express | VeRa (indexed), VMC, VIRTIS, SPICAV/SOIR, ASPERA-4, MAG | ESA PSA, live |
+| Venus | Venus Express | VeRa temperature profiles (2006-2009 and 2014, research data on Zenodo) and SPICAV-SOIR profiles (2006-2014, BIRA-IASB); VeRa raw data, VMC, VIRTIS, SPICAV/SOIR, ASPERA-4, MAG | ESA PSA, live; Zenodo; BIRA-IASB |
 | Venus | Magellan, Pioneer Venus, VEGA | Radio occultation profiles (Magellan; PVO 1978-1989 temperature-pressure and electron density, recovered by Withers et al. 2020), radar, gravity; the VEGA 2 lander descent (63 km to the surface) and VEGA balloon records; PVO OIMS, ONMS, probes | NASA PDS |
 | Mars | Mars Express | MaRS L4 profiles (indexed); SPICAM, PFS, OMEGA, ASPERA-3, MARSIS, HRSC, VMC | ESA PSA |
 | Mars | MRO | MCS DDR/EDR/RDR (indexed), CRISM, SHARAD; CTX and MARCI on request | NASA PDS |

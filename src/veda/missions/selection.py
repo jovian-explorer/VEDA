@@ -35,6 +35,7 @@ class ProfileFilter:
     sza_max: Optional[float] = None
     per_mission: int = 10                  # profiles kept per mission
     download: bool = True                  # fetch profiles not yet downloaded
+    include_uploads: bool = True           # files the user loaded for this body
 
     def geometry_limits(self) -> bool:
         return any(v is not None for v in (self.lat_min, self.lat_max, self.lst_min, self.lst_max,
@@ -167,4 +168,37 @@ def select_profiles(manager, body_id: str, mission_ids: List[str], variable: str
             kept.append(prof)
             n_kept += 1
         r["kept"] = n_kept
+    if f.include_uploads:
+        kept += _uploads(manager, body_id, f, report)
     return kept, report
+
+
+def _uploads(manager, body_id: str, f: ProfileFilter, report: Dict[str, Any]) -> List[ObservationProfile]:
+    """The user's loaded profiles of this body that match the dates and geometry."""
+    from .uploads_adapter import MISSION_ID, list_uploads
+    items = [i for i in list_uploads() if i["body_id"] == body_id and i["data_type"] == "profile"]
+    if not items:
+        return []
+    r = {"in_date_range": 0, "tried": 0, "kept": 0, "left_out": {}, "failed": 0}
+    out = []
+    for it in items:
+        t = (it.get("time_utc") or "")[:19]
+        if (f.start or f.end) and not t:
+            r["left_out"]["time unknown"] = r["left_out"].get("time unknown", 0) + 1
+            continue
+        if (f.start and t < f.start) or (f.end and t[:10] > f.end[:10]):
+            continue
+        r["in_date_range"] += 1
+        r["tried"] += 1
+        prof = manager.load_profile(MISSION_ID, it["observation_id"])
+        if prof is None:
+            r["failed"] += 1
+            continue
+        ok, why = passes(profile_geometry(prof), f)
+        if not ok:
+            r["left_out"][why] = r["left_out"].get(why, 0) + 1
+            continue
+        out.append(prof)
+    r["kept"] = len(out)
+    report[MISSION_ID] = r
+    return out

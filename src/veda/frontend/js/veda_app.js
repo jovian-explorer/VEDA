@@ -3,7 +3,7 @@
  * Dedicated Planetary Science Laboratory Workstation Controller
  */
 import { api, state } from './api.js';
-import { renderMath, toast, cleanPlotlyMath, themedLayout, plotColors, drawer } from './ui.js';
+import { renderMath, toast, cleanPlotlyMath, themedLayout, plotColors, drawer, closeDrawer } from './ui.js';
 import { setupArchiveBrowser, showMissionArchive } from './archive_browser.js';
 import { showGeometry } from './geometry.js';
 import { setupBodySearch, showBodySearch } from './body_search.js';
@@ -983,11 +983,12 @@ function renderComparisonPlot() {
       const v = numericKey(p);
       color = v == null || Number.isNaN(v) ? '#888888' : scaleColor(v);
     } else {
-      color = plotStyle.palette === 'veda' ? (MISSION_COLORS[p.mission_id.toLowerCase()] || paletteColor(i)) : paletteColor(i);
+      color = plotStyle.palette === 'veda' ? (MISSION_COLORS[(p.mission_label || p.mission_id).toLowerCase()] || paletteColor(i)) : paletteColor(i);
     }
+    const who = (p.mission_label || p.mission_id).toUpperCase() + (p.mission_id === 'user_imported' ? ' (your file)' : '');
     const t = { ...orient(p.interpolated_series, zGrid), type: 'scatter',
-      name: `${p.mission_id.toUpperCase()} ${when || p.observation_id}`,
-      hovertemplate: `<b>${p.mission_id.toUpperCase()}</b> ${when}<br>${p.observation_id}<br>Lat ${p.latitude != null ? p.latitude.toFixed(1) : '?'}°<br>%{x:.4g}, %{y:.4g}<extra></extra>` };
+      name: `${who} ${when || p.observation_id}`,
+      hovertemplate: `<b>${who}</b> ${when}<br>${p.observation_id}<br>Lat ${p.latitude != null ? p.latitude.toFixed(1) : '?'}°<br>%{x:.4g}, %{y:.4g}<extra></extra>` };
     traces.push(styleTrace(t, i, { color }));
   });
 
@@ -2157,16 +2158,148 @@ export async function handleUploadedFiles(fileList) {
           `Supported: ${UPLOAD_EXTENSIONS.map(e => '.' + e).join(', ')}`, 'bad');
   }
   const usable = files.filter(f => UPLOAD_EXTENSIONS.includes(fileExt(f)));
+  if (!usable.length) return;
   // A PDS3 (.lbl) or PDS4 (.xml) label is sent with its data table.
   const label = usable.find(f => fileExt(f) === 'lbl' || fileExt(f) === 'xml');
-  if (label) {
-    const companions = usable.filter(f => f !== label).slice(0, MAX_COMPANIONS);
-    await handleUploadedFile(label, companions);
+  if (label) return openLoadDialog(label, usable.filter(f => f !== label).slice(0, MAX_COMPANIONS));
+  const images = usable.filter(f => /\.(fits?|fts|png|jpe?g)$/i.test(f.name));
+  for (const f of images) await handleUploadedFile(f);
+  const tables = usable.filter(f => !images.includes(f));
+  if (tables.length) return openLoadDialog(tables[0], [], tables.slice(1));
+}
+
+// ------------------------------------------------------------------ load dialog
+
+const ROLE_LABELS = {
+  '': 'Not used', altitude: 'Altitude', radius: 'Radius (from the centre)', temperature: 'Temperature',
+  temperature_sigma: 'Temperature 1σ', pressure: 'Pressure', pressure_sigma: 'Pressure 1σ',
+  electron_density: 'Electron density', electron_density_sigma: 'Electron density 1σ',
+  number_density: 'Number density', latitude: 'Latitude', longitude: 'Longitude', lst: 'Local solar time', sza: 'Solar zenith angle',
+};
+
+/**
+ * Load a table: preview its columns, say what each one is (role and unit) and what
+ * the file is (body, mission, instrument, time), then read it.  ``queue`` holds more
+ * tables picked together, loaded one after another with the same choices offered.
+ */
+async function openLoadDialog(file, companions = [], queue = []) {
+  let content, comps, pv;
+  try {
+    content = await readUploadContent(file);
+    comps = await Promise.all(companions.map(async c => ({ filename: c.name, file_content: await readUploadContent(c) })));
+    pv = await api.vedaPreviewUpload({ filename: file.name, file_content: content, companion_files: comps });
+  } catch (err) {
+    toast(err.message, 'bad');
+    if (queue.length) return openLoadDialog(queue[0], [], queue.slice(1));
     return;
   }
-  for (const f of usable) {
-    await handleUploadedFile(f);
-  }
+  const sug = pv.suggested || {};
+  const prev = vedaState.lastLoadChoice || {};
+  const bodyId = sug.body_id || prev.body_id || vedaState.activeBodyId || 'venus';
+  const box = document.createElement('form');
+  box.className = 'stack settings-form load-dialog';
+  const bodyOpts = (vedaState.bodies || []).map(b => `<option value="${escHtml(b.id)}" ${b.id === bodyId ? 'selected' : ''}>${escHtml(b.name)}</option>`).join('');
+  const roleOpts = (sel) => Object.entries(ROLE_LABELS).filter(([k]) => k === '' || pv.role_units[k])
+    .map(([k, v]) => `<option value="${k}" ${k === sel ? 'selected' : ''}>${escHtml(v)}</option>`).join('');
+  const unitOpts = (role, sel) => (pv.role_units[role] || []).map(u => `<option ${u === sel ? 'selected' : ''}>${escHtml(u)}</option>`).join('');
+  const labelNote = Object.entries(pv.label || {}).map(([k, v]) => `${escHtml(k)} = ${escHtml(v)}`).join(' · ');
+  box.innerHTML = `
+    <p class="hint">${escHtml(file.name)}${companions.length ? ` with ${companions.map(c => escHtml(c.name)).join(', ')}` : ''}${queue.length ? ` (${queue.length} more file${queue.length > 1 ? 's' : ''} after this)` : ''}.
+      Say what the file is and what each column holds; choices are kept for the next file.</p>
+    ${labelNote ? `<p class="hint">From the label: ${labelNote}</p>` : ''}
+    <fieldset><legend>What it is</legend>
+      <label class="settings-field"><span class="settings-label">Body</span><select name="body">${bodyOpts}</select></label>
+      <label class="settings-field"><span class="settings-label">Mission</span><select name="mission"></select></label>
+      <label class="settings-field ld-other-mission" hidden><span class="settings-label">Mission name</span><input name="mission_other" placeholder="e.g. Venera 15" /></label>
+      <label class="settings-field"><span class="settings-label">Instrument</span><select name="instrument"></select></label>
+      <label class="settings-field ld-other-inst" hidden><span class="settings-label">Instrument name</span><input name="instrument_other" placeholder="e.g. radio occultation" /></label>
+      <label class="settings-field"><span class="settings-label">Observation time (UTC)</span><input name="time" type="datetime-local" step="1" />
+        <span class="hint">Used to place the profile in date searches and comparisons; leave empty if unknown.</span></label>
+    </fieldset>
+    <fieldset><legend>Columns</legend>
+      <div class="ld-cols"><table class="data-table"><thead><tr><th>Column</th><th>Unit in file</th><th>First values</th><th>Range</th><th>Is</th><th>Unit</th></tr></thead>
+      <tbody>${pv.columns.map((c, i) => {
+        const s = (pv.suggested_roles || {})[c.name] || (prev.roles || {})[c.name] || {};
+        return `<tr data-col="${i}"><td><code>${escHtml(c.name)}</code>${c.description ? `<br><span class="hint">${escHtml(c.description)}</span>` : ''}</td>
+          <td>${escHtml(c.unit || '')}</td><td class="hint">${c.first.map(v => (v == null ? '-' : v)).join(', ')}</td>
+          <td class="hint">${c.min == null ? '' : `${c.min} to ${c.max}`}</td>
+          <td><select class="ld-role">${roleOpts(s.role || '')}</select></td>
+          <td><select class="ld-unit">${unitOpts(s.role || '', s.unit)}</select></td></tr>`;
+      }).join('')}</tbody></table></div>
+      <p class="hint">Altitude is measured above the body's reference radius; a radius column is converted to that. Choose at least the vertical coordinate and one measured quantity.</p>
+    </fieldset>
+    <div class="settings-actions"><button type="submit" class="primary">Load</button>
+      ${queue.length ? '<button type="button" class="ghost ld-skip">Skip this file</button>' : ''}</div>
+    <div class="hint ld-msg" aria-live="polite"></div>`;
+  const q = (s) => box.querySelector(s);
+  const fillMissions = () => {
+    const b = q('[name=body]').value;
+    const ms = (vedaState.missions || []).filter(m => (m.primary_targets || []).includes(b) || Object.keys(m.target_encounters || {}).includes(b));
+    const want = sug.mission_id || prev.source_mission || '';
+    q('[name=mission]').innerHTML = '<option value="">Not specified</option>' +
+      ms.map(m => `<option value="${escHtml(m.id)}" ${m.id === want ? 'selected' : ''}>${escHtml(m.name)}</option>`).join('') +
+      '<option value="__other__">Other (not in VEDA)</option>';
+    fillInstruments();
+  };
+  const fillInstruments = () => {
+    const m = (vedaState.missions || []).find(x => x.id === q('[name=mission]').value);
+    const insts = (m && m.instruments) || [];
+    const want = (sug.instrument || prev.instrument || '').toUpperCase();
+    const pick = insts.find(i => i.id.toUpperCase() === want || i.name.toUpperCase().includes(want) && want);
+    q('[name=instrument]').innerHTML = '<option value="">Not specified</option>' +
+      insts.map(i => `<option value="${escHtml(i.id)}" ${pick && pick.id === i.id ? 'selected' : ''}>${escHtml(i.id)}: ${escHtml(i.name)}</option>`).join('') +
+      '<option value="__other__">Other</option>';
+    q('.ld-other-mission').hidden = q('[name=mission]').value !== '__other__';
+    q('.ld-other-inst').hidden = q('[name=instrument]').value !== '__other__';
+  };
+  q('[name=body]').addEventListener('change', fillMissions);
+  q('[name=mission]').addEventListener('change', fillInstruments);
+  q('[name=instrument]').addEventListener('change', () => { q('.ld-other-inst').hidden = q('[name=instrument]').value !== '__other__'; });
+  fillMissions();
+  const t = String(sug.time_utc || '').replace(' ', 'T').replace(/Z$/, '');
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(t)) q('[name=time]').value = t.slice(0, 19);
+  box.querySelectorAll('tr[data-col]').forEach(tr => {
+    tr.querySelector('.ld-role').addEventListener('change', (e) => {
+      const role = e.target.value;
+      tr.querySelector('.ld-unit').innerHTML = unitOpts(role, (pv.role_units[role] || [])[0]);
+    });
+  });
+  q('.ld-skip')?.addEventListener('click', () => openLoadDialog(queue[0], [], queue.slice(1)));
+  box.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const roles = {};
+    box.querySelectorAll('tr[data-col]').forEach(tr => {
+      const role = tr.querySelector('.ld-role').value;
+      if (role) roles[pv.columns[+tr.dataset.col].name] = { role, unit: tr.querySelector('.ld-unit').value || null };
+    });
+    const used = Object.values(roles).map(r => r.role);
+    const dup = used.find((r, i) => used.indexOf(r) !== i);
+    const msg = q('.ld-msg');
+    if (dup) { msg.textContent = `Two columns are marked as ${ROLE_LABELS[dup]}; choose one.`; return; }
+    if (!used.includes('altitude') && !used.includes('radius')) { msg.textContent = 'Mark the column that holds altitude or radius.'; return; }
+    const mission = q('[name=mission]').value === '__other__' ? q('[name=mission_other]').value.trim() : q('[name=mission]').value;
+    const instSel = q('[name=instrument]').value;
+    const instrument = instSel === '__other__' ? q('[name=instrument_other]').value.trim() : instSel;
+    const time = q('[name=time]').value;
+    vedaState.lastLoadChoice = { body_id: q('[name=body]').value, source_mission: mission, instrument, roles };
+    msg.textContent = 'Reading...';
+    try {
+      const res = await api.vedaParseFile({
+        filename: file.name, file_content: content, companion_files: comps, body_id: q('[name=body]').value,
+        source_mission: mission || null, instrument: instrument || null, time_utc: time ? `${time}${time.length === 16 ? ':00' : ''}` : null, roles,
+      });
+      const profData = res.data || res;
+      toast(`Loaded ${file.name} (${profData.n_points || 0} levels)`, 'good');
+      closeDrawer();
+      switchMode('mission');
+      await inspectProfileObservation(profData);
+      document.getElementById('veda-observation-viewer')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (queue.length) openLoadDialog(queue[0], [], queue.slice(1));
+    } catch (err) {
+      msg.textContent = err.message;
+    }
+  });
+  drawer(`Load ${file.name}`, box);
 }
 
 export async function handleUploadedFile(file, companions = []) {

@@ -298,6 +298,8 @@ def compare_profiles_on_body(
             "n_points": int(v_clean.size),
             "z_range_km": [round(float(np.min(z_clean)), 2), round(float(np.max(z_clean)), 2)],
             "altitude_reference": (p.raw_attributes or {}).get("ALTITUDE_REFERENCE", ""),
+            # the mission a loaded file comes from, as the user said (for legends and colours)
+            "mission_label": (p.raw_attributes or {}).get("SOURCE_MISSION") or p.mission_id,
             "interpolated_series": v_interp,
         })
 
