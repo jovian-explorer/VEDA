@@ -864,9 +864,13 @@ function setupBodyModeControls() {
     renderActiveSubtab();
   };
   SUBTABS.forEach(t => document.getElementById(`btn-subtab-${t}`)?.addEventListener('click', () => showSubtab(t)));
-  ['veda-cut-x', 'veda-cut-color'].forEach(id => document.getElementById(id)?.addEventListener('change', renderAltitudeCut));
+  ['veda-cut-x', 'veda-cut-color', 'veda-cut-y'].forEach(id => document.getElementById(id)?.addEventListener('change', renderAltitudeCut));
   document.getElementById('veda-cut-altitude')?.addEventListener('change', (e) => {
     vedaState.cutAltitude = e.target.value === '' ? null : Number(e.target.value);
+    renderAltitudeCut();
+  });
+  document.getElementById('veda-cut-top')?.addEventListener('change', (e) => {
+    vedaState.cutTop = e.target.value === '' ? null : Number(e.target.value);
     renderAltitudeCut();
   });
 
@@ -984,21 +988,88 @@ function renderAltitudeCut() {
     return;
   }
   const counts = data.profiles_per_level || grid.map((_, k) => profiles.filter(p => p.interpolated_series[k] != null).length);
+  const nearest = (z) => grid.reduce((best, g, i) => (Math.abs(g - z) < Math.abs(grid[best] - z) ? i : best), 0);
   let k;
   if (vedaState.cutAltitude == null || !isFinite(vedaState.cutAltitude)) {
     k = counts.indexOf(Math.max(...counts));
   } else {
-    k = grid.reduce((best, z, i) => (Math.abs(z - vedaState.cutAltitude) < Math.abs(grid[best] - vedaState.cutAltitude) ? i : best), 0);
+    k = nearest(vedaState.cutAltitude);
   }
+
+  // What each point is: the variable at one level, a statistic over a layer, or a
+  // quantity computed from the whole profile (tropopause, electron density peak ...).
+  const diagLabels = data.diagnostic_labels || {};
+  const ySel = document.getElementById('veda-cut-y');
+  const diagGroup = document.getElementById('veda-cut-diag-group');
+  const diagKeys = Object.keys(diagLabels).join(',');
+  if (diagGroup && diagGroup.dataset.keys !== diagKeys) {
+    diagGroup.innerHTML = '';
+    Object.entries(diagLabels).forEach(([key, [label, unit]]) =>
+      diagGroup.appendChild(new Option(unit ? `${label} (${unit})` : label, `diag:${key}`)));
+    diagGroup.dataset.keys = diagKeys;
+    diagGroup.label = diagKeys ? 'From each whole profile' : 'From each whole profile (none for these profiles)';
+  }
+  let yKey = (ySel && ySel.value) || 'value';
+  if (yKey.startsWith('diag:') && !diagLabels[yKey.slice(5)]) {
+    yKey = 'value';
+    if (ySel) ySel.value = 'value';
+  }
+  const isLayer = yKey.startsWith('layer_');
+  const isDiag = yKey.startsWith('diag:');
+  const isAlt = yKey.endsWith('_alt');
+  let kTop = k;
+  if (isLayer) {
+    kTop = (vedaState.cutTop == null || !isFinite(vedaState.cutTop)) ? nearest(grid[k] + 10) : nearest(vedaState.cutTop);
+    if (kTop === k) kTop = k + 1 < grid.length ? k + 1 : Math.max(0, k - 1);
+  }
+  const kLo = Math.min(k, kTop), kHi = Math.max(k, kTop);
   const altInput = document.getElementById('veda-cut-altitude');
   if (altInput && document.activeElement !== altInput) altInput.value = grid[k];
+  const topInput = document.getElementById('veda-cut-top');
+  if (topInput && document.activeElement !== topInput) topInput.value = grid[kTop];
+  const altLabel = document.getElementById('veda-cut-altitude-label');
+  if (altLabel) {
+    altLabel.style.display = isDiag ? 'none' : '';
+    altLabel.firstChild.textContent = isLayer ? 'From (km) ' : 'Altitude (km) ';
+  }
+  const topLabel = document.getElementById('veda-cut-top-label');
+  if (topLabel) topLabel.style.display = isLayer ? '' : 'none';
+  const logMean = /geometric/.test(data.averaging || '');
+  const yOf = (p) => {
+    if (isDiag) {
+      const v = (p.diagnostics || {})[yKey.slice(5)];
+      return v != null && isFinite(v) ? v : null;
+    }
+    const s = p.interpolated_series;
+    if (!isLayer) return s[k];
+    // only profiles covering the whole layer: otherwise their extreme may lie outside their data
+    let best = null, bestK = -1, sum = 0;
+    for (let i = kLo; i <= kHi; i++) {
+      const v = s[i];
+      if (v == null) return null;
+      sum += logMean ? Math.log(v) : v;
+      if (best == null || (yKey.startsWith('layer_max') ? v > best : v < best)) { best = v; bestK = i; }
+    }
+    if (yKey === 'layer_mean') return logMean ? Math.exp(sum / (kHi - kLo + 1)) : sum / (kHi - kLo + 1);
+    return isAlt ? grid[bestK] : best;
+  };
 
   const xKey = document.getElementById('veda-cut-x')?.value || 'time';
   const colorKey = document.getElementById('veda-cut-color')?.value || 'mission';
   const cfg = VARIABLE_CONFIGS[vedaState.selectedCompareVariable] || { axis: vedaState.selectedCompareVariable, units: '' };
   const pUnit = vedaState.selectedCompareVariable === 'pressure_hpa' ? vedaState.unitsPressure : 'hPa';
   const pScale = { bar: 1e-3, Pa: 100 }[pUnit] || 1;
-  const yTitle = pScale === 1 ? cleanPlotlyMath(cfg.axis) : `Pressure (${pUnit})`;
+  const varLabel = cleanPlotlyMath(cfg.label || cfg.axis);
+  const diag = isDiag ? diagLabels[yKey.slice(5)] : null;
+  const yScale = isDiag || isAlt ? 1 : pScale;
+  const yTitle = diag ? (diag[1] ? `${diag[0]} (${diag[1]})` : diag[0])
+    : isAlt ? 'Altitude (km)' : (pScale === 1 ? cleanPlotlyMath(cfg.axis) : `Pressure (${pUnit})`);
+  const layerText = `${grid[kLo]} to ${grid[kHi]} km`;
+  const what = diag ? diag[0]
+    : isLayer ? `${{ layer_min: 'Minimum', layer_max: 'Maximum', layer_mean: 'Mean',
+                     layer_min_alt: 'Altitude of the minimum', layer_max_alt: 'Altitude of the maximum' }[yKey]} of ${varLabel}, ${layerText}`
+    : `${varLabel} at ${grid[k]} km`;
+  const yUnitText = diag ? (diag[1] ? ` ${diag[1]}` : '') : isAlt ? ' km' : isLayer ? ` (${layerText})` : ` at ${grid[k]} km`;
   const dayOfYear = (t) => {
     const d = new Date(t.length <= 10 ? `${t}T00:00:00Z` : (/[zZ]|[+-]\d\d:?\d\d$/.test(t) ? t : `${t}Z`));
     return isNaN(d) ? null : (d - Date.UTC(d.getUTCFullYear(), 0, 1)) / 86400000 + 1;
@@ -1011,16 +1082,18 @@ function renderAltitudeCut() {
   const groupOf = {};
   (data.groups || []).filter(g => !g.ungrouped).forEach((g, gi) => g.observation_ids.forEach(id => { groupOf[id] = { gi, label: g.label }; }));
 
-  const pts = profiles.map(p => ({ p, x: xOf(p), y: p.interpolated_series[k] })).filter(o => o.x != null && o.y != null);
-  const missing = profiles.filter(p => p.interpolated_series[k] != null).length - pts.length;
+  const withY = profiles.map(p => ({ p, x: xOf(p), y: yOf(p) })).filter(o => o.y != null);
+  const pts = withY.filter(o => o.x != null);
+  const missing = withY.length - pts.length;
+  const atEdge = isAlt ? withY.filter(o => o.y === grid[kLo] || o.y === grid[kHi]).length : 0;
   const traces = [];
   const hover = o => `<b>${escHtml((o.p.mission_label || o.p.mission_id).toUpperCase())}</b> ${escHtml(o.p.observation_id)}<br>`
     + `${escHtml(o.p.time_utc || '')}<br>lat ${o.p.latitude != null ? o.p.latitude.toFixed(1) : '?'}°`
     + `, LST ${o.p.lst != null ? o.p.lst.toFixed(1) + ' h' : '?'}, SZA ${o.p.sza != null ? o.p.sza.toFixed(0) + '°' : '?'}`
     + (o.p.ls != null ? `, Ls ${o.p.ls.toFixed(1)}°` : '')
-    + `<br>${(o.y * pScale).toPrecision(5)} at ${grid[k]} km`;
+    + `<br>${(o.y * yScale).toPrecision(5)}${yUnitText}`;
   const addTrace = (name, list, marker) => traces.push({
-    type: 'scatter', mode: 'markers', name, x: list.map(o => o.x), y: list.map(o => o.y * pScale),
+    type: 'scatter', mode: 'markers', name, x: list.map(o => o.x), y: list.map(o => o.y * yScale),
     text: list.map(hover), hovertemplate: '%{text}<extra></extra>',
     marker: { size: 8, line: { width: 0.5, color: 'rgba(0,0,0,0.4)' }, ...marker } });
   if (colorKey === 'latitude' || colorKey === 'lst') {
@@ -1049,18 +1122,22 @@ function renderAltitudeCut() {
   const xTitles = { time: 'Time (UTC)', latitude: 'Latitude (°)', lst: 'Local solar time (h)', sza: 'Solar zenith angle (°)',
                     ls: 'Solar longitude Ls (°)', longitude: 'Longitude (°)', season: 'Day of year' };
   const layout = {
-    title: { text: `${cleanPlotlyMath(cfg.label || cfg.axis)} at ${grid[k]} km (${pts.length} profile${pts.length === 1 ? '' : 's'})` },
+    title: { text: `${what} (${pts.length} profile${pts.length === 1 ? '' : 's'})` },
     hovermode: 'closest',
     margin: { l: 75, r: 25, t: 56, b: 60 },
     xaxis: { title: { text: xTitles[xKey] }, type: xKey === 'time' ? 'date' : 'linear',
              ...(xKey === 'lst' ? { range: [0, 24], dtick: 3 } : {}), ...(xKey === 'latitude' ? { range: [-90, 90], dtick: 30 } : {}),
              ...(xKey === 'ls' ? { range: [0, 360], dtick: 30 } : {}) },
-    yaxis: { title: { text: yTitle }, type: cfg.logScale ? 'log' : 'linear' },
+    yaxis: { title: { text: yTitle },
+             type: (diag ? ['cm^-3', 'J/kg'].includes(diag[1]) : !isAlt && cfg.logScale) ? 'log' : 'linear' },
     legend: { orientation: 'h', y: -0.18 },
   };
   Plotly.newPlot(plotDiv, traces, themedLayout(layout), { responsive: true, displayModeBar: true });
   if (status) {
-    status.textContent = `${counts[k]} of ${profiles.length} profiles reach ${grid[k]} km`
+    status.textContent = (isDiag ? `${withY.length} of ${profiles.length} profiles have this quantity`
+      : isLayer ? `${withY.length} of ${profiles.length} profiles cover ${layerText}`
+        + (isAlt && atEdge ? ` (${atEdge} with the ${yKey.startsWith('layer_max') ? 'maximum' : 'minimum'} at an edge of the layer: none inside it)` : '')
+      : `${counts[k]} of ${profiles.length} profiles reach ${grid[k]} km`)
       + (missing > 0 ? `; ${missing} without ${xTitles[xKey].toLowerCase()} not shown` : '')
       + '. Click a point to open the profile.';
   }

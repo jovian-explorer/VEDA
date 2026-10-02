@@ -79,6 +79,10 @@ Choose the variable and units on the left, colour the curves by mission, date or
 
 **Altitude cut.** The *Altitude cut* tab plots the compared variable at one altitude, one point per profile, against time, latitude, local solar time, solar zenith angle, longitude or day of the year (all years together), coloured by mission, group, latitude or local time. It starts at the level reached by most profiles; type another altitude to move it. Hovering shows each profile's time and geometry, and clicking a point opens the profile. It uses the same profiles, grid and units as the comparison, so seasonal, latitudinal and local-time structure at a fixed height can be read directly.
 
+*Show* changes what each point is:
+- **Variable in a layer**: the minimum, maximum or mean of the compared variable between two altitudes (*From* and *to*), or the altitude of the minimum or maximum, for example the height of a temperature inversion or of the coldest level in any layer you choose. Only profiles covering the whole layer are used; means of pressure and densities are geometric. The status line counts the profiles whose extreme lies on an edge of the layer (they have none inside it).
+- **From each whole profile**: quantities computed from each profile at its own resolution: the cold-point tropopause (altitude, temperature, pressure), the electron density peak and the fitted Chapman layer (peak density, altitude, scale height, R²), the electron content of the profile, and the mean gravity-wave potential energy and dominant vertical wavelength. Only those the compared profiles have are listed. They are also in the comparison CSV, on each profile's header line.
+
 **Deviations.** *Show: Deviation from the mean* plots each profile minus its group's mean (or the composite mean when not grouped), and the group means minus the overall mean; for pressure and densities the deviation is in percent. This shows waves, tides and latitudinal structure that are invisible on a log axis spanning several decades.
 
 Profiles read once are kept in memory for the session (the 512 most recent), so changing the variable, grouping or units does not read the files again.
@@ -149,6 +153,12 @@ where $\overline{T}(z)$ is the background profile obtained through polynomial or
 For ionospheric occultation retrievals, VEDA integrates vertical electron density $N_e(z)$:
 $$\text{VTEC} = 10^{-7} \int_{z_{base}}^{z_{top}} N_e(z) dz \quad [\text{TECU}]$$
 where $1 \text{ TECU} = 10^{16} \text{ electrons}/\text{m}^2$.
+
+### Tropopause
+The cold-point tropopause is the coldest level of a profile inside a range where the body has one: 25 to 70 km on Titan (44 km and 70.4 K at the Huygens site, Fulchignoni et al. 2005) and 30 to 500 hPa on Jupiter and Saturn (near 100 hPa; Lindal et al. 1981, 1985), whose altitudes are relative to the 1 bar level. It counts only when the profile is warmer both below and above it in that range. Venus and Mars have no cold-point tropopause in VEDA: on Venus the tropopause near 60 km is a change in static stability while the temperature keeps falling into the mesosphere (use $N^2$ or a layer statistic of the lapse rate instead), and Mars has no persistent temperature minimum.
+
+### Chapman layer
+Electron density profiles are fitted with an alpha-Chapman layer, $N_e(z) = N_m \exp\left(\tfrac{1}{2}\left(1 - \zeta - e^{-\zeta}\right)\right)$ with $\zeta = (z - h_m)/H$, by nonlinear least squares; the peak density $N_m$, peak altitude $h_m$, neutral scale height $H$ and $R^2$ of the fit are given with the measured peak. These, and the electron content, are computed for every profile with electron density, with or without temperature (most ionospheric occultations have none).
 
 ---
 

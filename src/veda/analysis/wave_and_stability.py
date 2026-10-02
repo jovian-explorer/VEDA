@@ -82,6 +82,67 @@ def detect_tropopause(
     return res
 
 
+# Where to look for a cold-point tropopause on each body, as an altitude range (km above
+# the reference radius) or a pressure range (hPa) where altitudes are relative to a
+# pressure level.  Bodies not listed have no cold-point tropopause in their profiles:
+# Venus' tropopause near 60 km is a change in static stability with temperature still
+# falling into the mesosphere, and Mars has no persistent temperature minimum.
+TROPOPAUSE_SEARCH: Dict[str, Dict[str, Tuple[float, float]]] = {
+    "titan": {"altitude_km": (25.0, 70.0)},        # 44 km, 70.4 K (Huygens HASI, Fulchignoni et al. 2005)
+    "jupiter": {"pressure_hpa": (30.0, 500.0)},    # near 100 hPa (Lindal et al. 1981)
+    "saturn": {"pressure_hpa": (30.0, 500.0)},     # 60-100 hPa (Lindal et al. 1985)
+}
+
+
+def tropopause_for_body(
+    body_id: str,
+    z_km: np.ndarray,
+    t_k: np.ndarray,
+    p_hpa: Optional[np.ndarray] = None,
+) -> Dict[str, Optional[float]]:
+    """Cold-point tropopause of a profile, searched where the body has one.
+
+    The coldest level counts only when the profile has warmer levels both below
+    and above it inside the search range, so a profile that starts or ends in
+    the range does not report its first or last level as the tropopause.
+    Returns ``cpt_alt_km``, ``cpt_temp_k`` and ``cpt_pressure_hpa`` (None when
+    the body has no listed range or the profile shows no interior minimum).
+    """
+    res: Dict[str, Optional[float]] = {"cpt_alt_km": None, "cpt_temp_k": None, "cpt_pressure_hpa": None}
+    rule = TROPOPAUSE_SEARCH.get(body_id)
+    if rule is None or z_km is None or t_k is None:
+        return res
+    z = np.asarray(z_km, dtype=np.float64)
+    t = np.asarray(t_k, dtype=np.float64)
+    p = None if p_hpa is None else np.asarray(p_hpa, dtype=np.float64)
+    if p is not None and p.shape != z.shape:
+        p = None
+    if "pressure_hpa" in rule:
+        if p is None:
+            return res
+        lo, hi = rule["pressure_hpa"]
+        with np.errstate(invalid="ignore"):
+            inside = np.isfinite(p) & (p >= lo) & (p <= hi)
+    else:
+        lo, hi = rule["altitude_km"]
+        with np.errstate(invalid="ignore"):
+            inside = (z >= lo) & (z <= hi)
+    ok = inside & np.isfinite(z) & np.isfinite(t)
+    if ok.sum() < 5:
+        return res
+    order = np.argsort(z[ok])
+    zz, tt = z[ok][order], t[ok][order]
+    i = int(np.argmin(tt))
+    if i == 0 or i == tt.size - 1:
+        return res                                   # minimum at the edge: no interior cold point
+    res["cpt_alt_km"] = round(float(zz[i]), 2)
+    res["cpt_temp_k"] = round(float(tt[i]), 2)
+    if p is not None:
+        pp = p[ok][order][i]
+        res["cpt_pressure_hpa"] = float(f"{pp:.4g}") if np.isfinite(pp) else None
+    return res
+
+
 def extract_gravity_wave_activity(
     z_km: np.ndarray,
     t_k: np.ndarray,
@@ -189,9 +250,12 @@ def extract_gravity_wave_activity(
     out_t_prime = np.full(z.shape, np.nan)
     out_ep = np.full(z.shape, np.nan)
 
-    out_t_bar[ok] = t_bar
-    out_t_prime[ok] = t_prime
-    out_ep[ok] = ep
+    # the values are in altitude order; put each back at its own sample (profiles listed
+    # from the top down would otherwise get their perturbations upside down)
+    at = np.flatnonzero(ok)[sort_idx]
+    out_t_bar[at] = t_bar
+    out_t_prime[at] = t_prime
+    out_ep[at] = ep
 
     return {
         "t_background_k": [None if not np.isfinite(v) else round(float(v), 2) for v in out_t_bar],

@@ -82,8 +82,9 @@ An opened profile shows every quantity in the product with the archived 1-sigma 
 * Scale height $H = R_{spec} T / g$ and speed of sound
 * Potential temperature $\theta = T (P_0/P)^{R_{spec}/c_p}$ and mass density $\rho = P/(R_{spec} T)$
 * Brunt-Vaisala frequency $N^2 = \frac{g}{T}\left(\frac{dT}{dz} + \frac{g}{c_p}\right)$ and buoyancy period
-* Tropopause, gravity-wave temperature perturbations and potential energy
-* For ionospheres, the peak height and density and $\text{VTEC} = 10^{-7}\int N_e\,dz$ (TECU)
+* Cold-point tropopause (Titan, Jupiter, Saturn), gravity-wave temperature perturbations and potential energy
+* For ionospheres, the peak height and density, a fitted Chapman layer and $\text{VTEC} = 10^{-7}\int N_e\,dz$ (TECU)
+* Any of these, or the minimum, maximum or mean of a variable in a layer you choose, plotted for all compared profiles against time, latitude, local time, zenith angle or Ls
 
 ### Compare observations
 Selected profiles from any missions are interpolated onto a common altitude grid (no extrapolation, no bridging of data gaps) and drawn with their mean and 1-sigma spread: arithmetic mean and sample standard deviation for temperature-like quantities, geometric mean and a multiplicative spread for pressure, densities and electron density. Colour the curves by mission, date or latitude, switch the variable and units, and export the comparison table as CSV.

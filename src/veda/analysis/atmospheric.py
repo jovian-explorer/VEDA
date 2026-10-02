@@ -67,6 +67,7 @@ def compute_atmospheric_diagnostics(
     z = profile.altitude_km
     if z is None or z.size < 2:
         return derived
+    _ionosphere_diagnostics(profile, z)
 
     t_k = profile.temperature_k
     if t_k is None and profile.temperature_c is not None:
@@ -132,22 +133,10 @@ def compute_atmospheric_diagnostics(
         derived["dtheta_dz"] = _gradient_nan_safe(z, theta)
         derived["density"] = rho
 
-    # 6. Ionospheric VTEC & F2 peak diagnostics if electron density is present
-    if profile.electron_density_cm3 is not None and profile.electron_density_cm3.size >= 2:
-        try:
-            from .advanced_science import compute_vtec
-            vtec_res = compute_vtec(z, profile.electron_density_cm3)
-            profile.raw_attributes["vtec_tecu"] = vtec_res.get("vtec_tecu")
-            profile.raw_attributes["hmf2_km"] = vtec_res.get("peak_alt_km")
-            profile.raw_attributes["nmf2_cm3"] = vtec_res.get("peak_density_cm3")
-        except Exception:
-            pass
-
-    # 7. Tropopause, Gravity Waves, and Ionospheric Chapman Modeling
+    # 6. Cold-point tropopause (where the body has one) and gravity waves
     try:
-        from .wave_and_stability import detect_tropopause, extract_gravity_wave_activity, fit_chapman_ionosphere
-        tropo = detect_tropopause(z, t_k)
-        profile.raw_attributes.update(tropo)
+        from .wave_and_stability import extract_gravity_wave_activity, tropopause_for_body
+        profile.raw_attributes.update(tropopause_for_body(body.id, z, t_k, p_hpa))
 
         gw = extract_gravity_wave_activity(z, t_k, gz, derived.get("buoyancy_freq_sq"))
         if gw.get("t_prime_k"):
@@ -155,14 +144,79 @@ def compute_atmospheric_diagnostics(
             derived["wave_potential_energy"] = np.array([np.nan if x is None else x for x in gw["potential_energy_j_kg"]])
             profile.raw_attributes["gw_mean_ep_j_kg"] = gw.get("mean_potential_energy")
             profile.raw_attributes["gw_dominant_wavelength_km"] = gw.get("dominant_wavelength_km")
-
-        if profile.electron_density_cm3 is not None and profile.electron_density_cm3.size >= 8:
-            chap = fit_chapman_ionosphere(z, profile.electron_density_cm3)
-            profile.raw_attributes["chapman_fit"] = chap
     except Exception:
         pass
 
     return derived
+
+
+def _ionosphere_diagnostics(profile: ObservationProfile, z: np.ndarray) -> None:
+    """Total electron content, density peak and Chapman fit of an electron density profile.
+
+    Independent of temperature: most ionospheric occultations have none.
+    """
+    ne = profile.electron_density_cm3
+    if ne is None or ne.size != z.size or ne.size < 2:
+        return
+    try:
+        from .advanced_science import compute_vtec
+        vtec_res = compute_vtec(z, ne)
+        profile.raw_attributes["vtec_tecu"] = vtec_res.get("vtec_tecu")
+        profile.raw_attributes["hmf2_km"] = vtec_res.get("peak_alt_km")
+        profile.raw_attributes["nmf2_cm3"] = vtec_res.get("peak_density_cm3")
+        if ne.size >= 8:
+            from .wave_and_stability import fit_chapman_ionosphere
+            profile.raw_attributes["chapman_fit"] = fit_chapman_ionosphere(z, ne)
+    except Exception:
+        pass
+
+
+def _finite(x: Any) -> Optional[float]:
+    try:
+        x = float(x)
+    except (TypeError, ValueError):
+        return None
+    return float(f"{x:.6g}") if np.isfinite(x) else None
+
+
+# Per-profile scalar diagnostics offered in comparisons (altitude cut, CSV export):
+# key -> (label, unit)
+PROFILE_DIAGNOSTICS: Dict[str, Tuple[str, str]] = {
+    "cpt_alt_km": ("Cold-point tropopause altitude", "km"),
+    "cpt_temp_k": ("Cold-point tropopause temperature", "K"),
+    "cpt_pressure_hpa": ("Cold-point tropopause pressure", "hPa"),
+    "ne_peak_cm3": ("Peak electron density", "cm^-3"),
+    "ne_peak_alt_km": ("Altitude of the electron density peak", "km"),
+    "chapman_nm_cm3": ("Chapman fit peak density", "cm^-3"),
+    "chapman_hm_km": ("Chapman fit peak altitude", "km"),
+    "chapman_h_km": ("Chapman fit scale height", "km"),
+    "chapman_r2": ("Chapman fit R^2", ""),
+    "tec_tecu": ("Electron content of the profile", "TECU"),
+    "gw_mean_ep_j_kg": ("Mean gravity-wave potential energy", "J/kg"),
+    "gw_wavelength_km": ("Dominant vertical wavelength", "km"),
+}
+
+
+def profile_diagnostics(profile: ObservationProfile) -> Dict[str, Optional[float]]:
+    """The scalar diagnostics of one profile (see PROFILE_DIAGNOSTICS), None where absent."""
+    a = profile.raw_attributes or {}
+    chap = a.get("chapman_fit") if isinstance(a.get("chapman_fit"), dict) else {}
+    ep = _finite(a.get("gw_mean_ep_j_kg"))
+    out = {
+        "cpt_alt_km": _finite(a.get("cpt_alt_km")),
+        "cpt_temp_k": _finite(a.get("cpt_temp_k")),
+        "cpt_pressure_hpa": _finite(a.get("cpt_pressure_hpa")),
+        "ne_peak_cm3": _finite(a.get("nmf2_cm3")),
+        "ne_peak_alt_km": _finite(a.get("hmf2_km")),
+        "chapman_nm_cm3": _finite(chap.get("nmf2_cm3")),
+        "chapman_hm_km": _finite(chap.get("hmf2_km")),
+        "chapman_h_km": _finite(chap.get("scale_height_km")),
+        "chapman_r2": _finite(chap.get("r_squared")),
+        "tec_tecu": _finite(a.get("vtec_tecu")),
+        "gw_mean_ep_j_kg": ep if ep else None,          # 0.0 means "not computed"
+        "gw_wavelength_km": _finite(a.get("gw_dominant_wavelength_km")),
+    }
+    return out
 
 
 def _empty_comparison(body: BodyInfo, variable_name: str, grid_km: Optional[List[float]] = None) -> Dict[str, Any]:
@@ -369,6 +423,7 @@ def compare_profiles_on_body(
             # the mission a loaded file comes from, as the user said (for legends and colours)
             "mission_label": (p.raw_attributes or {}).get("SOURCE_MISSION") or p.mission_id,
             **{k: v for k, v in _geom(p).items() if k in ("lst", "sza", "ls")},
+            "diagnostics": {k: v for k, v in profile_diagnostics(p).items() if v is not None},
             "interpolated_series": v_interp,
         })
 
@@ -421,6 +476,9 @@ def compare_profiles_on_body(
         "composite_minus_1sigma": [sig(x) for x in lo_v],
         "profile_count": len(profile_summaries),
         "profiles": profile_summaries,
+        # label and unit of each per-profile diagnostic at least one profile has
+        "diagnostic_labels": {k: list(PROFILE_DIAGNOSTICS[k]) for k in PROFILE_DIAGNOSTICS
+                              if any(k in s["diagnostics"] for s in profile_summaries)},
     }
 
 
@@ -571,8 +629,10 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
         "# Altitude above the body's reference radius (km)."
         + (f" Note: {comparison['vertical_reference_warning']}" if comparison.get("vertical_reference_warning") else ""),
         f"# Processed with VEDA {__version__} (https://github.com/jovian-explorer/VEDA), MIT License",
-        "# column, mission, instrument, observation, time_utc, latitude_deg, longitude_deg, lst_h, sza_deg, ls_deg",
     ]
+    diag_keys = list(comparison.get("diagnostic_labels") or {})
+    lines.append("# column, mission, instrument, observation, time_utc, latitude_deg, longitude_deg, lst_h, sza_deg, ls_deg"
+                 + "".join(f", {k}" for k in diag_keys))
     cols = []
     for p in profiles:
         col = f"{p.get('mission_label') or p.get('mission_id')}_{p.get('observation_id')}"
@@ -580,7 +640,8 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
         lines.append("# " + ", ".join(_csv_field(x) for x in (
             col, p.get("mission_label") or p.get("mission_id"), p.get("instrument"), p.get("observation_id"),
             p.get("time_utc"), _csv_num(p.get("latitude")), _csv_num(p.get("longitude")),
-            _csv_num(p.get("lst")), _csv_num(p.get("sza")), _csv_num(p.get("ls")))))
+            _csv_num(p.get("lst")), _csv_num(p.get("sza")), _csv_num(p.get("ls")),
+            *(_csv_num((p.get("diagnostics") or {}).get(k)) for k in diag_keys))))
     for g in groups:
         lines.append(f"# group {_csv_field(g['label'])}: n={g['n']}, profiles={' '.join(g['observation_ids'])}")
 

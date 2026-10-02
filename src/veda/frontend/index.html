@@ -243,8 +243,24 @@
       <!-- Tab 1b: one altitude level of every compared profile against time or geometry -->
       <div id="veda-subtab-cut-panel" style="flex: 1; display: none; flex-direction: column;">
         <div class="row cut-controls">
-          <label>Altitude (km)
+          <label title="What each point is: the compared variable at one altitude, a statistic of it over a layer, or a quantity computed from the whole profile">Show
+            <select id="veda-cut-y">
+              <option value="value">Variable at one altitude</option>
+              <optgroup label="Variable in a layer">
+                <option value="layer_min">Minimum in the layer</option>
+                <option value="layer_max">Maximum in the layer</option>
+                <option value="layer_mean">Mean over the layer</option>
+                <option value="layer_min_alt">Altitude of the minimum</option>
+                <option value="layer_max_alt">Altitude of the maximum</option>
+              </optgroup>
+              <optgroup label="From each whole profile" id="veda-cut-diag-group"></optgroup>
+            </select>
+          </label>
+          <label id="veda-cut-altitude-label">Altitude (km)
             <input type="number" id="veda-cut-altitude" step="any" style="width: 7em;" />
+          </label>
+          <label id="veda-cut-top-label" style="display: none;">to (km)
+            <input type="number" id="veda-cut-top" step="any" style="width: 7em;" />
           </label>
           <label>Against
             <select id="veda-cut-x">

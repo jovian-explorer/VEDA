@@ -6,7 +6,16 @@ from veda.analysis.wave_and_stability import (
     detect_tropopause,
     extract_gravity_wave_activity,
     fit_chapman_ionosphere,
+    tropopause_for_body,
 )
+from veda.analysis.atmospheric import (
+    compare_profiles_on_body,
+    compute_atmospheric_diagnostics,
+    export_comparison_to_csv,
+    profile_diagnostics,
+)
+from veda.core.models import ObservationProfile
+from veda.core.registry import get_body
 
 
 def test_tropopause_detection_cpt_and_lrt():
@@ -64,3 +73,73 @@ def test_chapman_ionosphere_fit():
     assert abs(fit_res["nmf2_cm3"] - nm_true) / nm_true < 0.05
     assert abs(fit_res["hmf2_km"] - hm_true) < 2.0
     assert fit_res["r_squared"] is not None and fit_res["r_squared"] > 0.98
+
+
+def _titan_profile(obs="t1", descending=False):
+    # HASI-like: 94 K at the surface, 70.4 K cold point at 44 km, warming above
+    z = np.arange(0.0, 150.0, 0.5)
+    t = np.minimum(np.where(z < 44, 94 - (94 - 70.4) * z / 44, 70.4 + 0.9 * (z - 44)), 170.0)
+    p = 1467.0 * np.exp(-z / 20.0)
+    if descending:
+        z, t, p = z[::-1], t[::-1], p[::-1]
+    return ObservationProfile(obs, "cassini", "titan", "RSS", "2005-01-14T12:00:00",
+                              latitude=-10.0, altitude_km=z, temperature_k=t, pressure_hpa=p)
+
+
+def test_tropopause_searched_where_the_body_has_one():
+    prof = _titan_profile()
+    compute_atmospheric_diagnostics(prof)
+    d = profile_diagnostics(prof)
+    assert d["cpt_alt_km"] == 44.0 and d["cpt_temp_k"] == pytest.approx(70.4)
+    assert d["cpt_pressure_hpa"] == pytest.approx(1467.0 * np.exp(-44.0 / 20.0), rel=1e-3)
+
+    # Venus: temperature falls through the mesosphere, no cold point is reported
+    # (the old Earth window of 6-25 km returned the coldest level of the profile)
+    z = np.arange(40.0, 90.0, 0.5)
+    venus = ObservationProfile("v1", "vex", "venus", "VeRa", "2007-01-01", altitude_km=z, temperature_k=420 - 3.5 * (z - 40))
+    compute_atmospheric_diagnostics(venus)
+    assert profile_diagnostics(venus)["cpt_alt_km"] is None
+
+
+def test_tropopause_needs_an_interior_minimum_and_pressure_on_giants():
+    z = np.arange(30.0, 60.0, 0.5)                       # starts above Titan's cold point
+    assert tropopause_for_body("titan", z, 70.4 + 0.9 * (z - 30))["cpt_alt_km"] is None
+    zj = np.arange(-50.0, 200.0, 1.0)                    # Jupiter, altitude above 1 bar
+    pj = 1000.0 * np.exp(-zj / 27.0)
+    tj = np.where(pj > 100.0, 110 + 55 * np.log10(pj / 100.0), 110 + 20 * np.log10(100.0 / pj))
+    res = tropopause_for_body("jupiter", zj, tj, pj)
+    assert res["cpt_pressure_hpa"] == pytest.approx(100.0, rel=0.05)
+    assert tropopause_for_body("jupiter", zj, tj)["cpt_alt_km"] is None   # needs pressure
+
+
+def test_gravity_wave_output_follows_sample_order():
+    z = np.arange(0.0, 60.0, 0.2)
+    t = 250 - 2 * z + 3 * np.sin(2 * np.pi * z / 5)
+    g = np.full_like(z, 3.7)
+    up = np.array(extract_gravity_wave_activity(z, t, g)["t_prime_k"], dtype=float)
+    down = np.array(extract_gravity_wave_activity(z[::-1], t[::-1], g)["t_prime_k"], dtype=float)
+    np.testing.assert_allclose(down[::-1], up)
+
+
+def test_ionosphere_diagnostics_without_temperature():
+    z = np.arange(80.0, 300.0, 1.0)
+    zeta = (z - 135.0) / 12.0
+    ne = 1.5e5 * np.exp(0.5 * (1 - zeta - np.exp(-zeta)))
+    prof = ObservationProfile("i1", "mex", "mars", "MaRS", "2008-01-01", altitude_km=z, electron_density_cm3=ne)
+    compute_atmospheric_diagnostics(prof)
+    d = profile_diagnostics(prof)
+    assert d["ne_peak_alt_km"] == 135.0 and d["chapman_h_km"] == pytest.approx(12.0, abs=0.1)
+    assert d["tec_tecu"] == pytest.approx(1e-7 * np.trapezoid(ne, z), rel=1e-3)
+
+
+def test_comparison_carries_profile_diagnostics_to_csv():
+    profs = [_titan_profile("a"), _titan_profile("b", descending=True)]
+    for p in profs:
+        compute_atmospheric_diagnostics(p)
+    comp = compare_profiles_on_body(profs, get_body("titan"))
+    assert "cpt_alt_km" in comp["diagnostic_labels"]
+    assert all(s["diagnostics"]["cpt_alt_km"] == 44.0 for s in comp["profiles"])
+    header = [line for line in export_comparison_to_csv(comp).splitlines() if line.startswith("# column,")][0]
+    assert "cpt_alt_km" in header and "cpt_temp_k" in header
+    row = [line for line in export_comparison_to_csv(comp).splitlines() if line.startswith("# cassini_a")][0]
+    assert ", 44," in row
