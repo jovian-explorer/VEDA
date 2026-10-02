@@ -5720,6 +5720,109 @@
     }
    ],
    "note": ""
+  },
+  {
+   "key": "kliore2009",
+   "authors": [
+    "Kliore, A. J.",
+    "Nagy, A. F.",
+    "Marouf, E. A.",
+    "Anabtawi, A.",
+    "Barbinis, E.",
+    "Fleischman, D. U.",
+    "Kahan, D. S."
+   ],
+   "et_al": false,
+   "year": 2009,
+   "title": "Midlatitude and high-latitude electron density profiles in the ionosphere of Saturn obtained by Cassini radio occultation observations",
+   "journal": "Journal of Geophysical Research: Space Physics",
+   "volume": "114",
+   "issue": "A4",
+   "pages": "",
+   "doi": "10.1029/2008ja013900",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "cassini",
+     "payload": "RSS"
+    }
+   ],
+   "note": "JGR 114(A4); the article number is not in the Crossref record."
+  },
+  {
+   "key": "kliore2014data",
+   "authors": [
+    "Kliore, A. J."
+   ],
+   "et_al": false,
+   "year": 2014,
+   "title": "Cassini radio occultations of the Saturn ionosphere (PDS4 bundle corss_saturn_ionosphere)",
+   "journal": "NASA Planetary Data System",
+   "volume": "",
+   "issue": "",
+   "pages": "",
+   "doi": "10.17189/1518961",
+   "verified": true,
+   "type": "dataset",
+   "used_for": [
+    {
+     "mission": "cassini",
+     "payload": "RSS"
+    }
+   ],
+   "note": "Author list in the archive: Kliore, A. J., et al."
+  },
+  {
+   "key": "koskinen2015",
+   "authors": [
+    "Koskinen, T. T.",
+    "Sandel, B. R.",
+    "Yelle, R. V.",
+    "Strobel, D. F.",
+    "Müller-Wodarg, I. C. F.",
+    "Erwin, J. T."
+   ],
+   "et_al": false,
+   "year": 2015,
+   "title": "Saturn's variable thermosphere from Cassini/UVIS occultations",
+   "journal": "Icarus",
+   "volume": "260",
+   "issue": "",
+   "pages": "174-189",
+   "doi": "10.1016/j.icarus.2015.07.008",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "cassini",
+     "payload": "UVIS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "koskinen2018data",
+   "authors": [
+    "Koskinen, T. T."
+   ],
+   "et_al": false,
+   "year": 2018,
+   "title": "Saturn thermosphere H2 density and temperature from Cassini UVIS occultations (PDS4 bundle)",
+   "journal": "NASA Planetary Data System",
+   "volume": "",
+   "issue": "",
+   "pages": "",
+   "doi": "10.17189/518e-p721",
+   "verified": true,
+   "type": "dataset",
+   "used_for": [
+    {
+     "mission": "cassini",
+     "payload": "UVIS"
+    }
+   ],
+   "note": "Author list in the archive: Koskinen, T. T., et al."
   }
  ]
 }

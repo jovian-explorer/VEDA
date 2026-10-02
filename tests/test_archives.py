@@ -262,3 +262,24 @@ def test_error_tables_in_supplemental_files_combine_in_quadrature(tmp_path):
     np.testing.assert_allclose(prof.derived["number_density_m3"], [1.2e26, 1.1e25])      # cm^-3 -> m^-3
     np.testing.assert_allclose(prof.derived["density_measured"], [5.4, 0.5])
     assert prof.altitude_km[0] == pytest.approx(2575.2 - 2574.7)
+
+
+def test_saturn_error_bar_width_is_halved_and_zero_means_not_given(tmp_path):
+    from veda.archives.profiles import profile_from_label
+    rows = [(3000.0, 1.0e3, -8.0, 40.0), (2000.0, 2.0e3, -8.0, 0.0)]
+    (tmp_path / "S.TAB").write_text("".join(", ".join(str(v) for v in r) + "\r\n" for r in rows), newline="")
+    names = [("Altitude", "km"), ("Electron Density", "1/cm**3"), ("Latitude", "Degree"), ("Electron Density Error Bar", "1/cm**3")]
+    f = "".join(f"<Field_Delimited><name>{n}</name><field_number>{i + 1}</field_number><data_type>ASCII_Real</data_type>"
+                f"<unit>{u}</unit></Field_Delimited>" for i, (n, u) in enumerate(names))
+    (tmp_path / "s.xml").write_text(
+        '<?xml version="1.0"?><Product_Observational xmlns="http://pds.nasa.gov/pds4/pds/v1"><Identification_Area>'
+        "<logical_identifier>urn:nasa:pds:x:data:s</logical_identifier><title>t</title></Identification_Area>"
+        "<File_Area_Observational><File><file_name>S.TAB</file_name></File><Table_Delimited><offset unit='byte'>0</offset>"
+        "<records>2</records><record_delimiter>Carriage-Return Line-Feed</record_delimiter><field_delimiter>Comma</field_delimiter>"
+        f"<Record_Delimited>{f}</Record_Delimited></Table_Delimited></File_Area_Observational></Product_Observational>")
+    prof = profile_from_label(get_dataset("corss-saturn-ionosphere"),
+                              {"product_id": "s", "start_time": "2005-05-03T06:55:20", "volume": "saturn_iono", "url": "",
+                               "product_type": "profile"}, tmp_path / "s.xml")
+    s = prof.uncertainty["electron_density_cm3"]
+    assert s[0] == pytest.approx(20.0) and np.isnan(s[1])
+    assert prof.raw_attributes["ALTITUDE_REFERENCE"].startswith("the 1-bar NAIF reference ellipsoid")

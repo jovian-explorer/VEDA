@@ -129,7 +129,7 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
         tbl.text_columns = {k: [x for x, m in zip(v, mask) if m] for k, v in tbl.text_columns.items()}
 
     for col, fills in ds.fill_values.items():
-        k = _key(tbl, col)
+        k = col if col in tbl.columns else _key(tbl, col)      # (exact name first: error columns)
         if k is not None and k in tbl.columns:
             a = tbl.columns[k] = np.array(tbl.columns[k], dtype=float)
             for f in fills:
@@ -220,6 +220,10 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
             unc[key] = np.sqrt(sq)
             if key == "temperature_k":
                 unc["temperature_c"] = unc[key]
+
+    for key, f in ds.sigma_factor.items():
+        if key in unc:
+            unc[key] = unc[key] * f
 
     track: Dict[str, np.ndarray] = {}
     header: Dict[str, float] = {}

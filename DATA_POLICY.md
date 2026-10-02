@@ -49,6 +49,8 @@ The authoritative list is VEDA's own catalogue (`src/veda/archives/datasets.py`,
 |---|---|---|---|---|---|
 | Mars Orbiter Mission (MOM / Mangalyaan) | MOM payloads (MCC, MENCA, LAP, TIS, MSM) | ISSDC | `issdc-mom` | ISRO ISSDC (PRADAN) | Arunan, S., & Satish, R. (2015) |
 | Chandrayaan-2 Orbiter (CH2O) | Chandrayaan-2 orbiter payloads (incl. DFRS, CHACE-2) | ISSDC | `issdc-ch2` | ISRO ISSDC (PRADAN) |  |
+| Cassini-Huygens | RSS (Radio Science) ionosphere profiles of Saturn | Derived (PDS4) | `corss-saturn-ionosphere` | NASA PDS Atmospheres Node (PDS4) | Kliore et al. (2009); data doi:10.17189/1518961 |
+| Cassini-Huygens | UVIS occultations: Saturn thermosphere H2 density and temperature | Derived (PDS4) | `cassini-uvis-saturn-thermosphere` | NASA PDS Atmospheres Node (PDS4) | Koskinen et al. (2015); data doi:10.17189/518e-p721 |
 | Cassini-Huygens | RSS (Radio Science) neutral atmosphere profiles of Titan | Derived (PDS4) | `corss-titan-neutral-profiles` | NASA PDS Atmospheres Node (PDS4) | Schinder et al. (2011, 2012, 2015) |
 | Cassini-Huygens | RSS (Radio Science) | Derived (PDS4) | `corss_occul_el_dens` | NASA PDS Atmospheres Node (PDS4) | Kliore et al. (2008); Kliore et al. (2004); Matson et al. (2002) |
 | Juno | MWR (Microwave Radiometer) | EDR + derived | `jno-x-mwr` | NASA PDS Atmospheres Node | Janssen et al. (2017); Bolton et al. (2017) |

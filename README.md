@@ -52,7 +52,7 @@ All 19 missions in VEDA are connected (141 data sets). Highlights:
 | Mars | MRO | MCS DDR/EDR/RDR (indexed), CRISM, SHARAD; CTX and MARCI on request | NASA PDS |
 | Mars | MAVEN, MGS, MRO, MER, Phoenix, MSL, InSight | NGIMS, IUVS, ACC; MGS and MRO radio occultation profiles; entry profiles of Spirit, Opportunity, Phoenix, Curiosity and InSight; TES, MOLA | NASA PDS |
 | Jupiter | Juno, Galileo | MWR, JIRAM, UVS, JunoCam, MAG, gravity; Galileo SSI, NIMS, UVS, PPR, MAG, PLS, EPD, probe | NASA PDS, OPUS |
-| Saturn, Titan | Cassini-Huygens | ISS, VIMS, UVIS, CIRS (OPUS), INMS, RSS Titan ionosphere; Huygens HASI, DISR, GCMS, ACP, DWE, SSP | NASA PDS, OPUS, ESA PSA |
+| Saturn, Titan | Cassini-Huygens | ISS, VIMS, UVIS, CIRS (OPUS), INMS; RSS profiles of the Titan neutral atmosphere and ionosphere and of the Saturn ionosphere; UVIS Saturn thermosphere profiles; Huygens HASI, DISR, GCMS, ACP, DWE, SSP | NASA PDS, OPUS, ESA PSA |
 | Pluto | New Horizons | REX, Alice, LORRI, Ralph MVIC/LEISA, SWAP, PEPSSI, SDC | NASA PDS |
 | Mercury | MESSENGER, BepiColombo | MLA, GRS, NS, XRS, MAG, MASCS, RS; BepiColombo MPO-MAG, MCAM, SERENA, PHEBUS, MERTIS, MORE ... | NASA PDS, ESA PSA |
 | Moon | LRO | Diviner, LOLA, LEND, Mini-RF, radio science | NASA PDS |

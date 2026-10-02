@@ -78,6 +78,8 @@ class Dataset:
     # Uncertainty from independent error tables of the same rows (PDS4 sibling files),
     # added in quadrature: variable -> ((file-name pattern, column), ...)
     sigma_from_siblings: Dict[str, Tuple[Tuple[str, str], ...]] = field(default_factory=dict)
+    # Factor turning the archive's error column into 1 sigma (0.5 for a full error-bar width)
+    sigma_factor: Dict[str, float] = field(default_factory=dict)
     # PDS4 bundle: folder (inside the bundle) holding the product XML labels.
     pds4_product_dir: Optional[str] = None
     # Archive that only works through its own website with an account (no
@@ -516,6 +518,44 @@ DATASETS: List[Dataset] = [
         times_from_labels=True,
     ),
     Dataset(
+        id="corss-saturn-ionosphere", mission_id="cassini", instrument="RSS (Radio Science)", level="Derived (PDS4)",
+        title="Cassini radio occultations of Saturn: ionospheric electron density profiles (2005-2013, Kliore et al.)",
+        body_ids=("saturn",), archive="NASA PDS Atmospheres Node (PDS4)",
+        base_url="https://pds-atmospheres.nmsu.edu/PDS/data/PDS4/",
+        volume_pattern=r"^saturn_iono$",
+        pds4_product_dir="data/",
+        rules=((r"rss_s\d+_r\d+_ne_[ie]", "Ionosphere electron density profile", "profile"),),
+        profile_columns={"altitude": "Altitude", "electron_density": "Electron Density",
+                         "electron_density_sigma": "Electron Density Error Bar", "latitude": "Latitude"},
+        # "Width of the error bar which is centered on the value"; 0 where none is given
+        fill_values={"Electron Density Error Bar": (0.0,)},
+        sigma_factor={"electron_density_cm3": 0.5},
+        altitude_reference="the 1-bar NAIF reference ellipsoid of Saturn (60268 x 54364 km), at the profile latitude",
+        citation=("Kliore, A. J., et al. (2009). Midlatitude and high-latitude electron density profiles in the "
+                  "ionosphere of Saturn obtained by Cassini radio occultation observations. JGR, 114(A4). "
+                  "Data: doi:10.17189/1518961."),
+        doi="10.17189/1518961",
+        times_from_labels=True,
+    ),
+    Dataset(
+        id="cassini-uvis-saturn-thermosphere", mission_id="cassini", instrument="UVIS (EUV stellar occultations)",
+        level="Derived (PDS4)",
+        title="Cassini UVIS occultations of Saturn: thermospheric H2 density and temperature profiles (Koskinen et al.)",
+        body_ids=("saturn",), archive="NASA PDS Atmospheres Node (PDS4)",
+        base_url="https://pds-atmospheres.nmsu.edu/PDS/data/PDS4/",
+        volume_pattern=r"^saturn_thermosphere$",
+        pds4_product_dir="data/",
+        rules=((r"euv\d{4}_\d{3}_.*_results", "Thermosphere H2 density and temperature profile", "profile"),
+               (r"uvis_saturn_occfiles", "List of occultations", "other")),
+        profile_columns={"altitude": "Altitude", "temperature": "Temperature", "temperature_sigma": "Temperature error",
+                         "number_density": "Number density", "latitude": "Latitude", "longitude": "Longitude"},
+        altitude_reference="the 1-bar level of Saturn along the surface normal (Koskinen et al. 2015)",
+        citation=("Koskinen, T. T., et al. (2015). Saturn's variable thermosphere from Cassini/UVIS occultations. "
+                  "Icarus, 260, 174-189. Data: doi:10.17189/518e-p721."),
+        doi="10.1016/j.icarus.2015.07.008",
+        times_from_labels=True,
+    ),
+    Dataset(
         id="mro-m-rss-5-tps-v1.0", mission_id="mro", instrument="RSS (Radio Science)", level="L5 (derived)",
         title="Mars Reconnaissance Orbiter radio occultation: temperature-pressure profiles (2008-2012, D. Hinson)",
         body_ids=("mars",), archive="NASA PDS Atmospheres Node",
@@ -600,6 +640,8 @@ _REFS = {
     "msl-edl-atmosphere": ("holsteinrathlou2016", "holsteinrathlou2015data"),
     "insight-edl-atmosphere": ("karatekin2020data",),
     "corss-titan-neutral-profiles": ("schinder2011", "schinder2012", "schinder2015"),
+    "corss-saturn-ionosphere": ("kliore2009", "kliore2014data"),
+    "cassini-uvis-saturn-thermosphere": ("koskinen2015", "koskinen2018data"),
     "pvoro-nssdc": ("withers2020a", "withers2020b", "withers2020data", "kliore1980", "colin1980"),
     "mex-m-mrs-5-occ": ("patzold2016", "patzold2004", "chicarro2004"),
     "vco-v-rs-5-occ-v1.0": ("imamura2017", "nakamura2016"),
