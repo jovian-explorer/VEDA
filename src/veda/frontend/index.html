@@ -127,6 +127,30 @@
         <!-- Checkboxes with encounter classification badges -->
       </div>
 
+      <form class="compare-filter" id="veda-compare-filter" autocomplete="off">
+        <div class="compare-filter-head">
+          <strong>Which profiles</strong>
+          <span class="hint">Leave a field empty for no limit</span>
+        </div>
+        <div class="compare-filter-grid">
+          <label>From <input type="date" id="cf-start" /></label>
+          <label>To <input type="date" id="cf-end" /></label>
+          <label>Latitude from <input type="number" id="cf-lat-min" min="-90" max="90" step="any" placeholder="-90" /></label>
+          <label>to <input type="number" id="cf-lat-max" min="-90" max="90" step="any" placeholder="90" />&deg;</label>
+          <label title="Local solar time in hours; 22 to 2 wraps through midnight">Local time from <input type="number" id="cf-lst-min" min="0" max="24" step="any" placeholder="0" /></label>
+          <label>to <input type="number" id="cf-lst-max" min="0" max="24" step="any" placeholder="24" /> h</label>
+          <label>Solar zenith angle from <input type="number" id="cf-sza-min" min="0" max="180" step="any" placeholder="0" /></label>
+          <label>to <input type="number" id="cf-sza-max" min="0" max="180" step="any" placeholder="180" />&deg;</label>
+          <label>Profiles per mission <input type="number" id="cf-per-mission" min="1" max="100" value="10" /></label>
+        </div>
+        <label class="inline"><input type="checkbox" id="cf-download" checked /> Download profiles not yet downloaded</label>
+        <div class="compare-filter-buttons">
+          <button type="submit" class="primary small" id="cf-apply">Apply</button>
+          <button type="button" class="ghost small" id="cf-clear">Clear</button>
+        </div>
+        <div class="hint" id="cf-report" aria-live="polite"></div>
+      </form>
+
       <hr>
       <h2>3. Analysis Variable & Units</h2>
       <div class="row" style="margin-bottom: 10px;">
@@ -234,10 +258,12 @@
 <section id="veda-view-mission" class="veda-section" style="display: none;">
   <!-- Mission Filter Bar -->
   <div class="mission-filters-bar">
-    <button class="mission-filter-btn active" data-filter="all">All Missions (16)</button>
+    <button class="mission-filter-btn active" data-filter="all">All missions</button>
     <button class="mission-filter-btn" data-filter="orbiter">Orbiters</button>
-    <button class="mission-filter-btn" data-filter="flyby">Flybys & Encounters</button>
-    <button class="mission-filter-btn" data-filter="other">Constellations & Probes</button>
+    <button class="mission-filter-btn" data-filter="flyby">Flybys</button>
+    <button class="mission-filter-btn" data-filter="other">Landers, rovers &amp; probes</button>
+    <label class="mission-filter-target">Target <select id="mission-filter-target"><option value="">All bodies</option></select></label>
+    <input type="search" id="mission-filter-text" placeholder="Search missions or instruments" aria-label="Search missions or instruments" />
   </div>
 
   <!-- Spacecraft Cards Catalog -->

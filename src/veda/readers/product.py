@@ -506,9 +506,9 @@ def _binary_table_reader(buf_path: Path, offset: int, rows: int, row_stride: int
 def _ascii_table_reader(data_path: Path, offset: int, rows: int, row_bytes: int,
                         specs: List[Tuple[Field, Dict[str, Any]]], delimited: bool):
     def read(names: Optional[List[str]] = None, limit: Optional[int] = None) -> Dict[str, Any]:
+        # (not cut at ROWS x ROW_BYTES bytes: when ROW_BYTES leaves out the line end, as in
+        # Mars Express MaRS, that dropped the last rows; ROWS is applied to the lines below)
         raw = data_path.read_bytes()[offset:]
-        if rows and row_bytes and not delimited:
-            raw = raw[:rows * row_bytes + 4]
         text = raw.decode("latin-1", errors="replace")
         lines = [ln for ln in text.splitlines()]
         multiline = False

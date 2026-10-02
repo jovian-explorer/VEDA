@@ -299,22 +299,27 @@ async function loadProfileRows(obj, label) {
 function renderRowsOverTime(body, obj, groups) {
   const timeField = obj.fields.find(f => f.kind === 'time');
   const saved = st.table && st.table.object === obj.name && st.table.product === st.p.product_id ? st.table : null;
-  const x = saved ? saved.x : (timeField ? timeField.name : '');
-  const y = saved ? saved.y : guessY(obj, x);
+  const x = saved ? saved.x : (timeField ? timeField.name : ROW_AXIS);
+  const y = saved ? saved.y : guessY(obj, x === ROW_AXIS ? '' : x);
   st.table = { object: obj.name, product: st.p.product_id, x, y, panels: saved?.panels ?? 'shared', logy: saved?.logy ?? false,
-               logz: saved?.logz ?? true, data: null };
+               logz: saved?.logz ?? true, data: null, xmin: saved?.xmin ?? '', xmax: saved?.xmax ?? '' };
   const fieldLabel = (f) => `${f.name}${f.unit ? ` [${f.unit}]` : ''}${f.items > 1 ? ` (${f.items} values per row)` : ''}`;
   body.innerHTML = `
     <div class="pv-table">
       <div class="pv-controls">
         ${modeSwitch(groups)}
         <label>X axis <select class="pv-x">
-          <option value="">Row number</option>
+          <option value="${ROW_AXIS}" ${x === ROW_AXIS ? 'selected' : ''}>Row number</option>
           ${obj.fields.filter(f => f.items === 1 && f.kind !== 'text').map(f => `<option value="${esc(f.name)}" ${f.name === x ? 'selected' : ''}>${esc(fieldLabel(f))}${f.kind === 'time' ? ' (time)' : ''}</option>`).join('')}
         </select></label>
         <label>Panels <select class="pv-panels">
           <option value="shared">One plot</option><option value="separate">One panel per field</option>
         </select></label>
+        <span class="pv-range" title="Only rows in this range are read and drawn; zooming the plot does the same">
+          <label>From <input class="pv-xmin" /></label>
+          <label>to <input class="pv-xmax" /></label>
+          <button type="button" class="ghost small pv-full">Full range</button>
+        </span>
         <label class="inline"><input type="checkbox" class="pv-logy" /> Log y</label>
         <label class="inline"><input type="checkbox" class="pv-logz" checked /> Log colour (spectrograms)</label>
         <span class="hint pv-count"></span>
@@ -336,7 +341,24 @@ function renderRowsOverTime(body, obj, groups) {
   q('.pv-panels').value = st.table.panels;
   q('.pv-logy').checked = st.table.logy;
   q('.pv-logz').checked = st.table.logz;
-  q('.pv-x').addEventListener('change', (e) => { st.table.x = e.target.value; loadTable(); });
+  const setRangeInputs = () => {
+    const isTime = (obj.fields.find(f => f.name === st.table.x) || {}).kind === 'time';
+    for (const [cls, key] of [['.pv-xmin', 'xmin'], ['.pv-xmax', 'xmax']]) {
+      const el = q(cls);
+      el.type = isTime ? 'datetime-local' : 'number';
+      if (isTime) el.step = '0.001'; else el.removeAttribute('step');
+      el.value = isTime ? String(st.table[key] || '').replace(' ', 'T').slice(0, 23) : st.table[key];
+    }
+  };
+  setRangeInputs();
+  const readRange = () => { st.table.xmin = q('.pv-xmin').value; st.table.xmax = q('.pv-xmax').value; loadTable(); };
+  q('.pv-xmin').addEventListener('change', readRange);
+  q('.pv-xmax').addEventListener('change', readRange);
+  q('.pv-full').addEventListener('click', () => { st.table.xmin = st.table.xmax = ''; setRangeInputs(); loadTable(); });
+  q('.pv-x').addEventListener('change', (e) => {
+    st.table.x = e.target.value; st.table.xmin = st.table.xmax = ''; setRangeInputs(); loadTable();
+  });
+  st.table.syncRange = setRangeInputs;
   q('.pv-panels').addEventListener('change', (e) => { st.table.panels = e.target.value; drawTable(); });
   q('.pv-logy').addEventListener('change', (e) => { st.table.logy = e.target.checked; drawTable(); });
   q('.pv-logz').addEventListener('change', (e) => { st.table.logz = e.target.checked; drawTable(); });
@@ -362,11 +384,15 @@ function loadTable() {
     if (!t.y.length) { div.innerHTML = '<div class="empty-state">Tick one or more fields to plot.</div>'; return; }
     div.classList.add('loading');
     try {
-      const d = await api.productTable(st.p.dataset_id, st.p.product_id, { object: t.object, x: t.x, y: t.y });
+      const d = await api.productTable(st.p.dataset_id, st.p.product_id,
+        { object: t.object, x: t.x, y: t.y, x_min: t.xmin || undefined, x_max: t.xmax || undefined });
       if (token !== st.token || t !== st.table) return;
       t.data = d;
       const c = st.box.querySelector('.pv-count');
-      if (c) c.textContent = d.shown < d.rows ? `${d.rows.toLocaleString()} rows; ${d.shown.toLocaleString()} drawn (minima and maxima kept)` : `${d.rows.toLocaleString()} rows`;
+      const inRange = d.x_range ? ` in range (of ${d.rows_total.toLocaleString()})` : '';
+      if (c) c.textContent = d.shown < d.rows
+        ? `${d.rows.toLocaleString()} rows${inRange}; ${d.shown.toLocaleString()} drawn (minima and maxima kept): zoom in for every row`
+        : `${d.rows.toLocaleString()} rows${inRange}`;
       drawTable();
     } catch (err) {
       div.innerHTML = `<div class="empty-state">Could not read these fields: ${esc(err.message)}</div>`;
@@ -375,6 +401,8 @@ function loadTable() {
     }
   }, 120);
 }
+
+const ROW_AXIS = '__row__';    // x = row number (the server default would be the time field)
 
 function axisTitle(name, unit) { return unit ? `${name} [${unit}]` : name; }
 const shortTitle = (s, n = 34) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
@@ -432,6 +460,30 @@ function drawTable() {
   if (!traces.length) { div.innerHTML = '<div class="empty-state">The chosen fields contain no numbers.</div>'; return; }
   const finalLayout = themedLayout(styleGeneric(layout));
   window.Plotly.react(div, traces, finalLayout, { responsive: true, displaylogo: false });
+  // Zooming re-reads the zoomed range from the file when the plot shows a decimated
+  // selection, so fine structure is never hidden by the decimation.
+  if (!div._pvZoomBound) {
+    div._pvZoomBound = true;
+    let timer = 0;
+    div.on('plotly_relayout', (ev) => {
+      const tt = st.table;
+      if (!tt || !tt.data) return;
+      const lo = ev['xaxis.range[0]'], hi = ev['xaxis.range[1]'];
+      const reset = ev['xaxis.autorange'] === true;
+      if (!reset && (lo === undefined || hi === undefined)) return;
+      if (!reset && tt.data.shown >= tt.data.rows) return;              // every row already drawn
+      if (reset && !tt.xmin && !tt.xmax) return;
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        const isTime = tt.data.x.kind === 'time';
+        const fmt = (v) => (isTime ? String(v).replace(' ', 'T') : String(Math.round(Number(v) * 1e9) / 1e9));
+        tt.xmin = reset ? '' : fmt(lo);
+        tt.xmax = reset ? '' : fmt(hi);
+        tt.syncRange?.();
+        loadTable();
+      }, 350);
+    });
+  }
 }
 
 function transpose(rows) {

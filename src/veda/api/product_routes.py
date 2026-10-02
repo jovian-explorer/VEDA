@@ -124,21 +124,55 @@ def structure(dataset_id: str, product_id: str, confirm_large: bool = False) -> 
     return d
 
 
+ROW_AXIS = "__row__"      # x = row number, even when the table has a time field
+
+
+def _x_range_mask(xv, kind: str, lo: Optional[str], hi: Optional[str]) -> np.ndarray:
+    """Rows whose x is within [lo, hi]; times compare as ISO strings (a date alone means
+    the whole day for the upper bound)."""
+    if kind == "time" or isinstance(xv, list):
+        def iso(s):
+            return s.strip().replace(" ", "T") if s else s
+        lo, hi = iso(lo), iso(hi)
+        if hi and len(hi) == 10:
+            hi += "T23:59:59.999999"
+        vals = [str(v or "") for v in xv]
+        return np.array([bool(v) and (not lo or v >= lo) and (not hi or v <= hi) for v in vals], dtype=bool)
+    v = np.asarray(xv, dtype=float)
+    try:
+        a = float(lo) if lo not in (None, "") else -np.inf
+        b = float(hi) if hi not in (None, "") else np.inf
+    except ValueError:
+        raise HTTPException(400, "x_min and x_max must be numbers for this axis")
+    with np.errstate(invalid="ignore"):
+        return (v >= min(a, b)) & (v <= max(a, b))
+
+
 @router.get("/{dataset_id}/{product_id}/table")
 def table(dataset_id: str, product_id: str, object: Optional[str] = None,
           x: Optional[str] = None, y: Optional[List[str]] = Query(None),
           max_points: int = Query(4000, ge=100, le=50000),
-          max_channels: int = Query(256, ge=8, le=2048)) -> Dict[str, Any]:
-    """Columns of a table for plotting: x, one or more y series, vector columns as 2-D (rows x items)."""
+          max_channels: int = Query(256, ge=8, le=2048),
+          x_min: Optional[str] = Query(None, max_length=40), x_max: Optional[str] = Query(None, max_length=40)
+          ) -> Dict[str, Any]:
+    """Columns of a table for plotting: x, one or more y series, vector columns as 2-D (rows x items).
+
+    ``x_min``/``x_max`` keep the rows whose x lies in the range (ISO times for a time
+    axis, numbers otherwise, row numbers without x) before decimation, so a zoomed
+    view shows every row of the range up to ``max_points``.
+    """
     prod = _product(dataset_id, product_id)
     obj = _object(prod, object, ("table",))
     fields = {f.name: f for f in obj.fields}
+    by_row = x == ROW_AXIS
+    if by_row:
+        x = None
     if x and x not in fields:
         raise HTTPException(400, f"{obj.name} has no field {x!r}")
     for name in y or []:
         if name not in fields:
             raise HTTPException(400, f"{obj.name} has no field {name!r}")
-    if not x:   # default: the first time field, else the row number
+    if not x and not by_row:   # default: the first time field, else the row number
         x = next((f.name for f in obj.fields if f.kind == "time"), None)
     if not y:
         y = [default_y(obj, x)]
@@ -150,18 +184,30 @@ def table(dataset_id: str, product_id: str, object: Optional[str] = None,
     except (OSError, ValueError, IndexError) as exc:
         raise HTTPException(422, f"Could not read {obj.name}: {exc}")
     n = len(next(iter(data.values()))) if data else 0
+    rows_total = n
+    if (x_min or x_max) and n:
+        keep = _x_range_mask(data[x] if x else np.arange(1, n + 1, dtype=float),
+                             fields[x].kind if x else "number", x_min, x_max)
+        sel = np.flatnonzero(keep)
+        data = {k: ([v[i] for i in sel] if isinstance(v, list) else np.asarray(v)[sel]) for k, v in data.items()}
+        n = int(sel.size)
+        row_offset = sel
+    else:
+        row_offset = None
     # choose rows with the first scalar series (peaks kept), then apply to everything
     first = next((np.asarray(data[v]) for v in y or [] if isinstance(data.get(v), np.ndarray) and np.ndim(data[v]) == 1),
                  None)
     idx = minmax_indices(first, max_points) if first is not None else np.linspace(0, max(n - 1, 0),
                                                                                  min(n, max_points)).astype(int)
-    out: Dict[str, Any] = {"object": obj.name, "rows": n, "shown": int(idx.size), "series": [], "vectors": []}
+    out: Dict[str, Any] = {"object": obj.name, "rows": n, "rows_total": rows_total, "shown": int(idx.size),
+                           "x_range": [x_min, x_max] if (x_min or x_max) else None, "series": [], "vectors": []}
     if x:
         xv = data[x]
         out["x"] = {"name": x, "unit": fields[x].unit, "kind": fields[x].kind,
                     "values": [xv[i] for i in idx] if isinstance(xv, list) else _finite_list(np.asarray(xv)[idx], 12)}
     else:
-        out["x"] = {"name": "Row", "unit": "", "kind": "number", "values": [int(i) + 1 for i in idx]}
+        rows_1 = (row_offset[idx] if row_offset is not None else idx) + 1
+        out["x"] = {"name": "Row", "unit": "", "kind": "number", "values": [int(i) for i in rows_1]}
     for name in y or []:
         v = data[name]
         f = fields[name]
@@ -187,7 +233,7 @@ def table(dataset_id: str, product_id: str, object: Optional[str] = None,
                 "name": name, "unit": f.unit, "description": f.description, "channels": int(v.shape[1]),
                 "channel_step": ch_step, "z": [_finite_list(r, 5) for r in rows],
                 "x": ([xs[i] for i in row_idx] if isinstance(xs, list) else _finite_list(np.asarray(xs)[row_idx], 12))
-                if xs is not None else [int(i) + 1 for i in row_idx],
+                if xs is not None else [int(i) + 1 for i in (row_offset[row_idx] if row_offset is not None else row_idx)],
                 "mean": _finite_list(np.nanmean(v, axis=0) if np.isfinite(v).any() else np.full(v.shape[1], np.nan)),
             })
     return out

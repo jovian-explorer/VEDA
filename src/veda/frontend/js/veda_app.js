@@ -26,6 +26,7 @@ export const vedaState = {
   activeBody: null,
   selectedMissionIdsForBody: new Set(['akatsuki', 'vex']),
   selectedCompareVariable: 'temperature_k',
+  compareFilter: null,   // dates and geometry limits for the comparison (null: downloaded profiles)
   lastComparisonData: null,
   bodySubtab: 'soundings', // 'soundings' | 'map'
   planetaryMapProjection: '2d', // '2d' | '3d'
@@ -555,7 +556,9 @@ export async function loadAndRenderCelestialBody(bodyId) {
       const label = document.createElement('label');
       label.className = 'mission-checkbox-label';
       const isChecked = vedaState.selectedMissionIdsForBody.has(m.id);
-      const encBadge = m.encounter_type === 'flyby' ? '<span class="badge badge-flyby">Flyby</span>' : '<span class="badge badge-orbiter">Orbiter</span>';
+      const kind = m.encounter_type === 'flyby' ? 'Flyby'
+        : ['lander', 'rover', 'probe'].includes(m.mission_type) ? m.mission_type[0].toUpperCase() + m.mission_type.slice(1) : 'Orbiter';
+      const encBadge = `<span class="badge ${kind === 'Flyby' ? 'badge-flyby' : 'badge-orbiter'}">${kind}</span>`;
       label.innerHTML = `
         <input type="checkbox" value="${m.id}" ${isChecked ? 'checked' : ''}>
         <span class="checkbox-box"></span>
@@ -579,7 +582,75 @@ export async function loadAndRenderCelestialBody(bodyId) {
   await updateComparison();
 }
 
+// ------------------------------------------------------------------ which profiles to compare
+
+/** The comparison request behind the plot on screen (exports use the same). */
+function currentComparisonRequest() {
+  return {
+    observations: vedaState.comparisonProducts || undefined,
+    missions: Array.from(vedaState.selectedMissionIdsForBody),
+    variable: vedaState.selectedCompareVariable,
+    filter: vedaState.comparisonProducts ? undefined : (vedaState.compareFilter || undefined),
+  };
+}
+
+function readCompareFilter() {
+  const num = (id) => { const v = document.getElementById(id)?.value; return v === '' || v == null ? null : Number(v); };
+  const f = {
+    start: document.getElementById('cf-start')?.value || null,
+    end: document.getElementById('cf-end')?.value || null,
+    lat_min: num('cf-lat-min'), lat_max: num('cf-lat-max'),
+    lst_min: num('cf-lst-min'), lst_max: num('cf-lst-max'),
+    sza_min: num('cf-sza-min'), sza_max: num('cf-sza-max'),
+    per_mission: num('cf-per-mission') || 10,
+    download: !!document.getElementById('cf-download')?.checked,
+  };
+  if (f.start && f.end && f.start > f.end) throw new Error('The start date is after the end date');
+  for (const [a, b, what] of [['lat_min', 'lat_max', 'latitude'], ['sza_min', 'sza_max', 'solar zenith angle']]) {
+    if (f[a] != null && f[b] != null && f[a] > f[b]) throw new Error(`The ${what} range is reversed`);
+  }
+  return f;
+}
+
+function renderSelectionReport(sel) {
+  const el = document.getElementById('cf-report');
+  if (!el) return;
+  if (!sel || vedaState.comparisonProducts) { el.textContent = ''; return; }
+  const name = (mid) => (vedaState.missions.find(m => m.id === mid) || {}).name || mid.toUpperCase();
+  el.innerHTML = Object.entries(sel).map(([mid, r]) => {
+    const out = Object.entries(r.left_out || {}).map(([why, n]) => `${n} ${escHtml(why)}`);
+    if (r.failed) out.push(`${r.failed} unreadable`);
+    const parts = [`<strong>${escHtml(name(mid))}</strong>: ${r.kept} kept`,
+      r.note ? escHtml(r.note) : `${r.in_date_range} in the date range, ${r.tried} read`];
+    if (out.length) parts.push(`left out: ${out.join(', ')}`);
+    if (r.not_indexed?.length) parts.push(`not indexed yet: open the mission's archive data to index ${r.not_indexed.map(escHtml).join(', ')}`);
+    return `<div>${parts.join('; ')}</div>`;
+  }).join('') + (vedaState.compareFilter ? '' : '<div>Showing downloaded profiles only. Set dates or ranges and press Apply to search the whole archive.</div>');
+}
+
+function setupCompareFilter() {
+  const form = document.getElementById('veda-compare-filter');
+  if (!form) return;
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    try {
+      vedaState.compareFilter = readCompareFilter();
+    } catch (err) {
+      return toast(err.message, 'bad');
+    }
+    vedaState.comparisonProducts = null;          // a filter replaces a hand-picked selection
+    recordFeature('comparison');
+    updateComparison();
+  });
+  document.getElementById('cf-clear')?.addEventListener('click', () => {
+    form.querySelectorAll('input[type="date"], input[type="number"]').forEach(i => { i.value = i.id === 'cf-per-mission' ? '10' : ''; });
+    vedaState.compareFilter = null;
+    updateComparison();
+  });
+}
+
 function setupBodyModeControls() {
+  setupCompareFilter();
   const varSelect = document.getElementById('veda-compare-variable-select');
   if (varSelect) {
     varSelect.innerHTML = Object.entries(VARIABLE_CONFIGS).map(([key, cfg]) => `
@@ -652,15 +723,16 @@ function setupBodyModeControls() {
   if (btnExportCsv) {
     btnExportCsv.addEventListener('click', async () => {
       try {
-        const mids = Array.from(vedaState.selectedMissionIdsForBody);
         const res = await fetch(`/api/veda/export/compare/${vedaState.activeBodyId}/csv`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            missions: mids,
-            variable: vedaState.selectedCompareVariable,
-          }),
+          body: JSON.stringify(currentComparisonRequest()),
         });
+        if (!res.ok) {
+          let detail = `${res.status} ${res.statusText}`;
+          try { detail = (await res.json()).detail || detail; } catch (_) {}
+          throw new Error(detail);
+        }
         const blob = await res.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -668,7 +740,7 @@ function setupBodyModeControls() {
         a.download = `veda_comparison_${vedaState.activeBodyId}_${vedaState.selectedCompareVariable}.csv`;
         a.click();
       } catch (e) {
-        alert(`Export failed: ${e.message}`);
+        toast(`Export failed: ${e.message}`, 'bad');
       }
     });
   }
@@ -693,13 +765,15 @@ function setupBodyModeControls() {
   const btnPubFig = document.getElementById('veda-btn-download-publication-fig');
   if (btnPubFig) {
     btnPubFig.addEventListener('click', async () => {
-      const mids = Array.from(vedaState.selectedMissionIdsForBody).join(',');
       recordFeature('publication_figure');
-      const url = api.vedaPublicationFigureUrl(vedaState.activeBodyId, vedaState.selectedCompareVariable, mids, vedaState.plotDpi, 'png');
       btnPubFig.disabled = true;
       toast(`Rendering publication figure at ${vedaState.plotDpi} DPI...`);
       try {
-        const res = await fetch(url);
+        // The same profiles as the plot: hand-picked ones, or the same filter
+        const res = await fetch(`/api/veda/figure/publication?body_id=${encodeURIComponent(vedaState.activeBodyId)}`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...currentComparisonRequest(), dpi: vedaState.plotDpi, fmt: 'png' }),
+        });
         if (!res.ok) {
           let detail = `${res.status} ${res.statusText}`;
           try { detail = (await res.json()).detail || detail; } catch (_) {}
@@ -807,19 +881,18 @@ async function updateComparison() {
   renderComparisonSelectionNote();
   const mids = Array.from(vedaState.selectedMissionIdsForBody);
   const statusEl = document.getElementById('veda-comparison-status');
-  if (statusEl) statusEl.textContent = 'Computing multi-mission composite thermodynamics...';
+  if (statusEl) statusEl.textContent = vedaState.compareFilter && !vedaState.comparisonProducts
+    ? 'Finding, downloading and reading the matching profiles (the first time this can take a minute)...'
+    : 'Computing multi-mission composite thermodynamics...';
 
   try {
     const [compData, exploreData] = await Promise.all([
-      api.vedaCompareBody(vedaState.activeBodyId, {
-        observations: vedaState.comparisonProducts || undefined,
-        missions: mids,
-        variable: vedaState.selectedCompareVariable,
-      }),
+      api.vedaCompareBody(vedaState.activeBodyId, currentComparisonRequest()),
       api.vedaExploreBody(vedaState.activeBodyId, mids.join(',')),
     ]);
 
     vedaState.lastComparisonData = compData;
+    renderSelectionReport(compData.selection);
     vedaState.currentBodyObservations = exploreData.observations || [];
 
     if (vedaState.bodySubtab === 'map') {
@@ -1258,13 +1331,19 @@ function renderMissionsCatalog() {
   container.innerHTML = '';
 
   const filter = vedaState.missionFilter;
-  const filteredMissions = vedaState.missions.filter(m => {
-    if (filter === 'all') return true;
-    if (filter === 'orbiter') return m.mission_type === 'orbiter';
-    if (filter === 'flyby') return m.mission_type === 'flyby';
-    if (filter === 'other') return m.mission_type !== 'orbiter' && m.mission_type !== 'flyby';
-    return true;
+  const target = document.getElementById('mission-filter-target')?.value || '';
+  const text = (document.getElementById('mission-filter-text')?.value || '').trim().toLowerCase();
+  const inCategory = (m, f) => f === 'all' || (f === 'orbiter' ? m.mission_type === 'orbiter'
+    : f === 'flyby' ? m.mission_type === 'flyby' : m.mission_type !== 'orbiter' && m.mission_type !== 'flyby');
+  const matches = (m) => (!target || (m.primary_targets || []).includes(target) || Object.keys(m.target_encounters || {}).includes(target))
+    && (!text || `${m.name} ${m.id} ${m.agency} ${(m.instruments || []).map(i => i.name || i).join(' ')}`.toLowerCase().includes(text));
+  const filteredMissions = vedaState.missions.filter(m => inCategory(m, filter) && matches(m));
+  // live counts on the category buttons (for the chosen target and search)
+  document.querySelectorAll('.mission-filter-btn').forEach(b => {
+    const base = b.dataset.label || (b.dataset.label = b.textContent.replace(/\s*\(\d+\)$/, ''));
+    b.textContent = `${base} (${vedaState.missions.filter(m => inCategory(m, b.dataset.filter) && matches(m)).length})`;
   });
+  if (!filteredMissions.length) container.innerHTML = '<div class="empty-state">No mission matches these filters.</div>';
 
   filteredMissions.forEach(m => {
     const card = document.createElement('div');
@@ -2013,6 +2092,17 @@ function setupMissionModeControls() {
       vedaState.missionFilter = btn.dataset.filter;
       renderMissionsCatalog();
     });
+  });
+  const targetSel = document.getElementById('mission-filter-target');
+  if (targetSel) {
+    const targets = [...new Set(vedaState.missions.flatMap(m => [...(m.primary_targets || []), ...Object.keys(m.target_encounters || {})]))].sort();
+    targetSel.innerHTML = '<option value="">All bodies</option>' + targets.map(t => `<option value="${escHtml(t)}">${escHtml(t[0].toUpperCase() + t.slice(1))}</option>`).join('');
+    targetSel.addEventListener('change', renderMissionsCatalog);
+  }
+  let searchTimer = 0;
+  document.getElementById('mission-filter-text')?.addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(renderMissionsCatalog, 150);
   });
 
 }

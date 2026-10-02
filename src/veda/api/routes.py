@@ -216,10 +216,25 @@ def explore_by_body(
     return mgr.discover_by_body(body_id, mission_ids=mission_list, limit_per_mission=limit_per_mission)
 
 
+class CompareFilter(BaseModel):
+    """Which profiles to compare when none are hand-picked (see missions/selection.py)."""
+    start: Optional[str] = None
+    end: Optional[str] = None
+    lat_min: Optional[float] = Field(None, ge=-90, le=90)
+    lat_max: Optional[float] = Field(None, ge=-90, le=90)
+    lst_min: Optional[float] = Field(None, ge=0, le=24)
+    lst_max: Optional[float] = Field(None, ge=0, le=24)
+    sza_min: Optional[float] = Field(None, ge=0, le=180)
+    sza_max: Optional[float] = Field(None, ge=0, le=180)
+    per_mission: int = Field(10, ge=1, le=100)
+    download: bool = True
+
+
 class CrossCompareRequest(BaseModel):
     observations: Optional[List[Dict[str, str]]] = None  # list of {"mission_id": ..., "observation_id": ...}
     missions: Optional[List[str]] = None  # e.g. ["akatsuki", "vex"]
     variable: str = "temperature_k"  # "temperature_k", "temperature_c", "pressure_hpa", "lapse_rate", "buoyancy_freq_sq"
+    filter: Optional[CompareFilter] = None
 
 
 @router.post("/compare/body/{body_id}")
@@ -234,8 +249,12 @@ def compare_missions_on_body(
 def _compare_or_404(body_id: str, req: "CrossCompareRequest") -> dict:
     if not get_body(body_id):
         raise HTTPException(status_code=404, detail=f"Body '{body_id}' not found")
+    from ..missions.selection import ProfileFilter
+    sel = ProfileFilter(**req.filter.model_dump()) if req.filter else None
+    if sel and sel.start and sel.end and sel.start > sel.end:
+        raise HTTPException(status_code=422, detail="The start date is after the end date")
     comp = get_mission_manager().compare_on_body(
-        body_id, req.observations, mission_ids=req.missions, variable_name=req.variable)
+        body_id, req.observations, mission_ids=req.missions, variable_name=req.variable, selection=sel)
     if isinstance(comp, dict) and comp.get("error"):
         raise HTTPException(status_code=400, detail=comp["error"])
     return comp
@@ -445,14 +464,34 @@ def generate_publication_figure(
     if fmt not in ("png", "svg", "pdf"):
         raise HTTPException(status_code=400, detail="fmt must be png, svg or pdf")
 
+    mission_list = [m.strip() for m in missions.split(",")] if missions else None
+    comp = get_mission_manager().compare_on_body(body_id, None, mission_ids=mission_list, variable_name=variable)
+    return _publication_figure(b, comp, variable, dpi, fmt)
+
+
+class PublicationFigureRequest(CrossCompareRequest):
+    dpi: int = Field(300, ge=50, le=1200)
+    fmt: str = Field("png", pattern="^(png|svg|pdf)$")
+
+
+@router.post("/figure/publication")
+def publication_figure_of_comparison(body_id: str, req: PublicationFigureRequest) -> Response:
+    """The publication figure of exactly the comparison on screen: the same hand-picked
+    profiles, or the same dates and geometry limits."""
+    b = get_body(body_id)
+    if not b:
+        raise HTTPException(status_code=404, detail=f"Unknown body: {body_id}")
+    if req.variable not in PUBLICATION_VARIABLES:
+        raise HTTPException(status_code=400, detail=f"Unknown variable '{req.variable}'. Use one of: {', '.join(PUBLICATION_VARIABLES)}")
+    return _publication_figure(b, _compare_or_404(body_id, req), req.variable, req.dpi, req.fmt)
+
+
+def _publication_figure(b, comp: dict, variable: str, dpi: int, fmt: str) -> Response:
     # The object-oriented API, not pyplot: pyplot keeps global state and is not
     # safe in the server's worker threads (two figures at once could crash it).
     from matplotlib.figure import Figure
-
-    mgr = get_mission_manager()
-
-    mission_list = [m.strip() for m in missions.split(",")] if missions else None
-    comp = mgr.compare_on_body(body_id, None, mission_ids=mission_list, variable_name=variable)
+    from ..analysis.atmospheric import LOG_VARIABLES
+    body_id = b.id
 
     grid = comp.get("grid_km", [])
     if not grid or not comp.get("profile_count"):
@@ -487,21 +526,37 @@ def generate_publication_figure(
         m_sig = [np.nan if x is None else x for x in minus_sigma]
         ax.fill_betweenx(grid, m_sig, p_sig, color="#38bdf8", alpha=0.22, label=r"$\pm 1\sigma$ Multi-Mission Spread")
 
-    # 2. Individual mission profiles
+    # 2. Individual profiles, one colour and one legend entry per mission
     colors = ["#0284c7", "#f97316", "#10b981", "#8b5cf6", "#f43f5e", "#06b6d4", "#eab308", "#ec4899"]
-    for i, p in enumerate(comp.get("profiles", [])):
+    profiles = comp.get("profiles", [])
+    mission_order = list(dict.fromkeys(p.get("mission_id", "") for p in profiles))
+    counts = {m: sum(1 for p in profiles if p.get("mission_id") == m) for m in mission_order}
+    labelled = set()
+    for p in profiles:
+        mid = p.get("mission_id", "")
         series = [np.nan if x is None else x for x in p.get("interpolated_series", [])]
-        c = colors[i % len(colors)]
-        ax.plot(series, grid, label=f"{p.get('mission_id', '').upper()} ({p.get('instrument', '')})",
-                linestyle="-", linewidth=1.8, color=c)
+        label = None
+        if mid not in labelled:
+            labelled.add(mid)
+            label = f"{mid.upper()} {p.get('instrument', '')} (n = {counts[mid]})"
+        ax.plot(series, grid, label=label, linestyle="-", linewidth=1.2 if len(profiles) > 6 else 1.8,
+                alpha=0.75 if len(profiles) > 6 else 1.0, color=colors[mission_order.index(mid) % len(colors)])
 
     # 3. Composite mean
     mean_v = [np.nan if x is None else x for x in comp.get("composite_mean", [])]
     ax.plot(mean_v, grid, label=r"Composite Mean $\mu(z)$", color="#0f172a", linewidth=2.8)
 
-    ax.set_ylabel("Altitude Above Reference Surface $z$ (km)", fontsize=11, fontweight="bold")
+    finite_mean = [v for v in mean_v if np.isfinite(v)]
+    if variable in LOG_VARIABLES and finite_mean and min(finite_mean) > 0:
+        ax.set_xscale("log")              # pressure and densities span orders of magnitude
+    ax.set_ylabel("Altitude $z$ (km)", fontsize=11, fontweight="bold")
     ax.set_xlabel(xlabel, fontsize=11, fontweight="bold")
-    ax.set_title(f"{b.name} Atmospheric Soundings\nMulti-Mission Comparative Analysis", fontsize=12, pad=12)
+    times = sorted(p.get("time_utc", "")[:10] for p in profiles if p.get("time_utc"))
+    span = (times[0] if times[0] == times[-1] else f"{times[0]} to {times[-1]}") if times else ""
+    ax.set_title(f"{b.name}: {len(profiles)} profile{'s' if len(profiles) != 1 else ''}"
+                 + (f", {span}" if span else ""), fontsize=12, pad=12)
+    if comp.get("vertical_reference_warning"):
+        fig.text(0.01, 0.005, comp["vertical_reference_warning"], fontsize=6.5, wrap=True, va="bottom")
     ax.grid(True, linestyle="--", alpha=0.5)
     ax.legend(loc="upper right", framealpha=0.9, fontsize=9)
 

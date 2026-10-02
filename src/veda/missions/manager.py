@@ -111,13 +111,25 @@ class MissionManager:
         selected_observations: Optional[List[Dict[str, str]]] = None,
         mission_ids: Optional[List[str]] = None,
         variable_name: str = "temperature_k",
+        selection: Optional["ProfileFilter"] = None,
     ) -> Dict[str, Any]:
-        """Load multiple profiles across missions and compute cross-mission comparison."""
+        """Load multiple profiles across missions and compute cross-mission comparison.
+
+        Hand-picked observations are used as given.  Otherwise, with ``selection``,
+        profiles are chosen from the archive catalogue by date and geometry (see
+        missions/selection.py); without it, from the profiles already downloaded.
+        """
+        from .selection import ProfileFilter, select_profiles
         body = get_body(body_id)
         if not body:
             return {"error": f"Unknown planetary body: {body_id}"}
 
         loaded_profiles: List[ObservationProfile] = []
+        report: Optional[Dict[str, Any]] = None
+        if not (selected_observations and len(selected_observations) > 0):
+            sel = selection or ProfileFilter(per_mission=3, download=False)
+            loaded_profiles, report = select_profiles(self, body_id, list(mission_ids or body.supported_missions),
+                                                      variable_name, sel)
         if selected_observations and len(selected_observations) > 0:
             for item in selected_observations:
                 m_id = item.get("mission_id")
@@ -126,26 +138,17 @@ class MissionManager:
                     prof = self.load_profile(m_id, o_id)
                     if prof:
                         loaded_profiles.append(prof)
-        else:
-            # Auto-discover representative observations for requested or supported missions
-            target_mids = mission_ids or body.supported_missions
-            for mid in target_mids:
-                adapter = self.get_adapter(mid)
-                if adapter:
-                    obs = adapter.discover_observations(body_id=body_id, limit=2)
-                    for o in obs:
-                        prof = adapter.load_profile(o["observation_id"])
-                        if prof:
-                            loaded_profiles.append(prof)
-                            break  # take top profile per mission
 
         # Compute multi-mission composite
-        return compare_profiles_on_body(
+        out = compare_profiles_on_body(
             profiles=loaded_profiles,
             body=body,
             altitude_step_km=0.5 if body_id in ("mars", "pluto", "venus") else 2.0,
             variable_name=variable_name,
         )
+        if report is not None and isinstance(out, dict):
+            out["selection"] = report
+        return out
 
 
 # Global singleton instance

@@ -261,7 +261,9 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
             doi_or_citation=ds.citation or ds.doi,
             retrieval_method=prod["product_type"],
         ),
-        raw_attributes={**tbl.metadata, "DATASET_ID": ds.id, "VOLUME": prod["volume"], "ALTITUDE_REFERENCE": z_ref},
+        raw_attributes={**tbl.metadata, "DATASET_ID": ds.id, "VOLUME": prod["volume"], "ALTITUDE_REFERENCE": z_ref,
+                        **({"LST": header["lst"]} if "lst" in header else {}),
+                        **({"SZA": header["sza"]} if "sza" in header else {})},
         uncertainty=unc,
         track=track,
     )

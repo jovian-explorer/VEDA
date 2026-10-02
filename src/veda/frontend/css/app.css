@@ -1639,3 +1639,18 @@ a.btn:hover { border-color: var(--focal); }
 .pv-text mark { background: #f5c54266; color: inherit; }
 .pv-progress { margin: 10px auto 4px; display: flex; gap: 8px; align-items: center; justify-content: center; }
 .pv-progress progress { width: min(320px, 70%); accent-color: var(--accent); }
+
+/* Which profiles to compare: dates and observing geometry */
+.compare-filter { margin-top: 12px; padding: 10px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+  display: flex; flex-direction: column; gap: 8px; }
+.compare-filter-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.compare-filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+.compare-filter-grid label { display: flex; flex-direction: column; font-size: 0.9em; gap: 2px; min-width: 0; }
+.compare-filter-grid input { width: 100%; min-width: 0; }
+.compare-filter-buttons { display: flex; gap: 8px; }
+#cf-report div { margin-top: 3px; }
+
+.mission-filter-target { display: inline-flex; align-items: center; gap: 6px; margin-left: 8px; }
+#mission-filter-text { min-width: 200px; flex: 1 1 200px; max-width: 320px; }
+.pv-range { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.pv-range input { max-width: 13.5em; }

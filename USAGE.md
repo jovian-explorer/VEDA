@@ -62,6 +62,8 @@ All 19 missions are connected, with 141 data sets covering nearly all of their p
 Units are read from the label and converted to VEDA's display units: pressure from Pa, hPa, bar or mbar; temperature from K or degrees C; densities from m^-3 or cm^-3, including scaled units such as `10^6 PER CUBIC METER`; radius and altitude from metres. Times come from the archive index (start time), the label or the file name; product creation dates are never used as observation times.
 
 ### Comparing observations
+**Which profiles.** Tick the missions, then under *Which profiles* set any of: a date range, a latitude band, a local solar time range (22 to 2 h wraps through midnight), a solar zenith angle range, and the number of profiles per mission; press **Apply**. VEDA searches the whole archive catalogue of each mission's profile data sets on that body, takes candidates spread evenly over the dates, downloads and reads them (untick *Download* to use only what is already on disk), and keeps those inside the ranges. Latitude, local time and zenith angle are known only once a profile is read, so each mission tries up to four times as many profiles as it keeps. Under the form, a line per mission reports how many profiles were in the date range, how many were read and kept, and why the others were left out (for example "6 latitude outside the range", "local time unknown"). Without filters the comparison uses up to three downloaded profiles per mission. Profiles picked in an archive table (**Compare selected**) are used as they are. The CSV export and the publication figure always contain exactly the profiles on screen.
+
 Selected profiles, from one mission or many, are interpolated onto a common altitude grid (0.5 km by default; altitudes below the reference level, such as the Hellas basin below the Mars reference sphere, are kept). Interpolation never extrapolates beyond a profile and never bridges a data gap wider than five times the profile's typical spacing.
 
 * Temperature and other quantities that vary smoothly: arithmetic mean $\mu(z) = \frac{1}{M}\sum_m X_m(z)$ and the sample standard deviation (ddof = 1) as the $\pm 1\sigma$ spread.
@@ -81,7 +83,7 @@ Very large indexes (MRO CTX and MARCI, about 95 MB each) are read only when you 
 
 | Product | What you can do |
 |---|---|
-| Table or time series | Pick the X field (time, row, any number) and up to 8 Y fields; one plot or one panel per field; log Y. Millions of rows are drawn at a few thousand points, keeping each minimum and maximum. **CSV of shown fields** saves what is plotted. |
+| Table or time series | Pick the X field (time, row, any number) and up to 8 Y fields; one plot or one panel per field; log Y. **From / to** limits the rows to a time (or X) range; **Full range** resets it. Millions of rows are drawn at a few thousand points, keeping each minimum and maximum; zooming into the plot re-reads the zoomed range from the file, so every row is shown once the range is small enough. **CSV of shown fields** saves what is plotted. |
 | Vector fields (spectra, energy channels per row) | Spectrogram (log colour optional) with the mean spectrum underneath. |
 | Profiles per row (e.g. MRO MCS DDR) | **View: Profiles (one per row)**: plot one vector against another (temperature against pressure, dust against altitude ...), step through rows with the arrows, overlay up to 12. |
 | Image or map | Stretch, colour map, band slider, value read-out at a click, transects (two clicks) and the histogram. Maps keep their longitude and latitude axes. |

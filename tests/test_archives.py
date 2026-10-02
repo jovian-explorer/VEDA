@@ -283,3 +283,13 @@ def test_saturn_error_bar_width_is_halved_and_zero_means_not_given(tmp_path):
     s = prof.uncertainty["electron_density_cm3"]
     assert s[0] == pytest.approx(20.0) and np.isnan(s[1])
     assert prof.raw_attributes["ALTITUDE_REFERENCE"].startswith("the 1-bar NAIF reference ellipsoid")
+
+
+def test_every_dataset_mission_is_listed_on_its_bodies():
+    """A body's mission list drives discovery and comparison: a data set whose mission is
+    missing there can never be compared."""
+    from veda.core.registry import BODIES
+    for d in DATASETS:
+        for b in d.body_ids:
+            assert b in BODIES, (d.id, b)
+            assert d.mission_id in BODIES[b].supported_missions, (d.id, b, d.mission_id)

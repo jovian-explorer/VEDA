@@ -323,3 +323,67 @@ def test_bundled_cassini_titan_profile_is_real_pds4(client):
     ne = [v for v in prof["electron_density_cm3"] if v is not None]
     assert 800 < max(ne) < 5000                       # Titan ionospheric peak, cm^-3
     assert prof["uncertainty"]["electron_density_cm3"] and prof["track"]["sza"]
+
+
+# ---------------------------------------------------------------- choosing profiles to compare
+
+def test_selection_geometry_rules():
+    from veda.missions.selection import ProfileFilter, passes, spread_order
+    f = ProfileFilter(lat_min=50, lat_max=90, lst_min=22, lst_max=2)          # local time wraps midnight
+    assert passes({"latitude": 60.0, "lst": 23.5, "sza": None}, f) == (True, "")
+    assert passes({"latitude": 60.0, "lst": 1.0, "sza": None}, f) == (True, "")
+    assert passes({"latitude": 60.0, "lst": 12.0, "sza": None}, f)[1] == "local time outside the range"
+    assert passes({"latitude": 10.0, "lst": 23.0, "sza": None}, f)[1] == "latitude outside the range"
+    assert passes({"latitude": 60.0, "lst": None, "sza": None}, f)[1] == "local time unknown"
+    assert passes({"latitude": None, "lst": None, "sza": None}, ProfileFilter()) == (True, "")
+    for n in (1, 2, 7, 33):
+        order = spread_order(n)
+        assert sorted(order) == list(range(n))
+        if n > 2:
+            assert order[:2] == [0, n - 1]              # the first picks span the whole range
+
+
+def test_comparison_filters_by_date_and_latitude(client):
+    sample = "M32ICL2L04_AIX_040931105_60"
+    lat = client.get(f"/api/veda/archive/profile/mex-m-mrs-5-occ/{sample}").json()["latitude"]
+    base = {"missions": ["mex"], "variable": "temperature_k"}
+    inside = client.post("/api/veda/compare/body/mars", json={**base, "filter": {
+        "start": "2004-04-01", "end": "2004-04-03", "lat_min": lat - 1, "lat_max": lat + 1, "download": False}}).json()
+    assert sample in [p["observation_id"] for p in inside["profiles"]]
+    assert inside["selection"]["mex"]["kept"] >= 1
+    outside = client.post("/api/veda/compare/body/mars", json={**base, "filter": {
+        "start": "2004-04-01", "end": "2004-04-03", "lat_min": lat + 5, "lat_max": lat + 10, "download": False}}).json()
+    assert outside["profile_count"] == 0
+    assert outside["selection"]["mex"]["left_out"].get("latitude outside the range", 0) >= 1
+    later = client.post("/api/veda/compare/body/mars", json={**base, "filter": {"start": "2030-01-01", "download": False}}).json()
+    assert later["selection"]["mex"]["in_date_range"] == 0
+    bad = client.post("/api/veda/compare/body/mars", json={**base, "filter": {"start": "2005-01-01", "end": "2004-01-01"}})
+    assert bad.status_code == 422
+    assert client.post("/api/veda/compare/body/mars", json={**base, "filter": {"lat_min": 95}}).status_code == 422
+
+
+def test_publication_figure_uses_the_compared_profiles(client):
+    """The figure used to be redrawn from one default profile per mission, ignoring the
+    hand-picked profiles and filters behind the plot on screen."""
+    req = {"observations": [{"mission_id": "mex", "observation_id": "M32ICL2L04_AIX_040931105_60"}],
+           "variable": "pressure_hpa", "dpi": 72, "fmt": "svg"}
+    r = client.post("/api/veda/figure/publication?body_id=mars", json=req)
+    assert r.status_code == 200 and b"<svg" in r.content[:400]
+    assert b"1 profile" in r.content and b"2004-04-02" in r.content        # title: count and date
+    csv = client.post("/api/veda/export/compare/mars/csv", json={k: v for k, v in req.items() if k not in ("dpi", "fmt")})
+    assert csv.status_code == 200 and "M32ICL2L04_AIX_040931105_60" in csv.text
+
+
+def test_table_x_range_selects_rows_before_decimation(client):
+    base = "/api/veda/product/mex-m-mrs-5-occ/M32ICL2L04_AIX_040931105_60/table"
+    full = client.get(base, params={"x": "UTC TIME", "y": ["TEMPERATURE (MEDIUM BOUNDARY CONDITION)"]}).json()
+    times = full["x"]["values"]
+    assert full["rows"] == 354 and full["x_range"] is None          # all rows (the last two were once lost)
+    lo, hi = times[100], times[199]
+    part = client.get(base, params={"x": "UTC TIME", "y": ["TEMPERATURE (MEDIUM BOUNDARY CONDITION)"], "x_min": lo.replace("T", " "), "x_max": hi}).json()
+    assert part["rows"] == 100 and part["rows_total"] == 354
+    assert part["x"]["values"][0] == lo and part["x"]["values"][-1] == hi
+    assert part["series"][0]["values"] == full["series"][0]["values"][100:200]
+    rows = client.get(base, params={"x": "__row__", "y": ["TEMPERATURE (MEDIUM BOUNDARY CONDITION)"], "x_min": "11", "x_max": "20"}).json()
+    assert rows["x"]["values"] == list(range(11, 21))
+    assert client.get(base, params={"x": "__row__", "y": ["TEMPERATURE (MEDIUM BOUNDARY CONDITION)"], "x_min": "abc"}).status_code == 400

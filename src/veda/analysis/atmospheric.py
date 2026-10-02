@@ -229,13 +229,15 @@ def compare_profiles_on_body(
     if not z_mins or not z_maxs:
         return _empty_comparison(body, variable_name)
 
-    grid_lo = float(np.min(z_mins))          # negative altitudes (below the reference level) are kept
-    grid_hi = float(np.max(z_maxs))
+    # Grid levels on whole multiples of the step (20.0, 20.5 km ...), covering every
+    # profile; negative altitudes (below the reference level) are kept.
+    grid_lo = np.ceil(float(np.min(z_mins)) / altitude_step_km - 1e-9) * altitude_step_km
+    grid_hi = np.floor(float(np.max(z_maxs)) / altitude_step_km + 1e-9) * altitude_step_km
     if grid_hi <= grid_lo:
-        grid_hi = grid_lo + 10.0
+        grid_hi = grid_lo + altitude_step_km
 
     num_steps = int(round((grid_hi - grid_lo) / altitude_step_km)) + 1
-    z_grid = np.linspace(grid_lo, grid_hi, max(num_steps, 2))
+    z_grid = np.round(grid_lo + altitude_step_km * np.arange(max(num_steps, 2)), 6)
 
     interpolated_matrix = []
     profile_summaries = []

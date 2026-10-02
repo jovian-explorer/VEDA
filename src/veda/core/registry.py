@@ -27,7 +27,7 @@ BODIES: Dict[str, BodyInfo] = {
         reference_pressure_hpa=92000.0,  # ~92 bar surface pressure
         atmospheric_composition={"CO2": 96.5, "N2": 3.5, "SO2": 0.015},
         description="Terrestrial planet enveloped in an opaque, superrotating carbon dioxide atmosphere with dense global sulphuric acid cloud decks (48 to 70 km altitude), extreme surface pressure (~92 bar), and intense greenhouse heating (~737 K surface temperature). Venus exhibits complex atmospheric wave phenomena, including planetary-scale Kelvin and Rossby waves, and strong thermal tides.",
-        supported_missions=["akatsuki", "vex", "magellan", "pvo", "bepicolombo"],
+        supported_missions=["akatsuki", "vex", "magellan", "pvo", "vega", "bepicolombo", "messenger", "galileo"],
         mission_page_url="https://science.nasa.gov/venus/",
         data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Venus/venus.html",
     ),
@@ -43,7 +43,7 @@ BODIES: Dict[str, BodyInfo] = {
         reference_pressure_hpa=6.1,  # ~6.1 hPa (610 Pa) surface pressure
         atmospheric_composition={"CO2": 95.32, "N2": 2.6, "Ar": 1.9, "O2": 0.13},
         description="Terrestrial planet with a rarefied, highly dynamic carbon dioxide atmosphere (~6.1 hPa surface pressure) characterized by planetary dust storm cycles, polar CO2 and water-ice caps, diurnal thermal tides, and photochemical atmospheric loss driven by solar wind interaction with localized crustal remnant magnetic fields.",
-        supported_missions=["mex", "mgs", "maven", "mro", "mom"],
+        supported_missions=["mex", "mgs", "maven", "mro", "mer", "phoenix", "msl", "insight", "mom"],
         mission_page_url="https://science.nasa.gov/mars/",
         data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Mars/mars.html",
     ),
