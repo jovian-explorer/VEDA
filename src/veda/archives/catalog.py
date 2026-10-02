@@ -581,7 +581,7 @@ def _fetch_first(urls: List[str], dest: Path, login_url: Optional[str], progress
 
 def fetch_product(dataset_id: str, product_id: str,
                   progress: Optional[Callable[[int, int], None]] = None,
-                  max_bytes: Optional[int] = None) -> Path:
+                  max_bytes: Optional[int] = None, _volume_url: Optional[str] = None) -> Path:
     """Download a product's label and the files it points to; returns the label path.
 
     Pointer files are looked up the way PDS3 resolves them: next to the label
@@ -595,6 +595,21 @@ def fetch_product(dataset_id: str, product_id: str,
     prod = get_product(dataset_id, product_id)
     if not ds or not prod:
         raise http.ArchiveError(f"Unknown product {dataset_id}/{product_id}; refresh the dataset index.")
+    if ds.mirrors and _volume_url is None and not prod["path"].startswith(("http://", "https://")):
+        try:
+            return fetch_product(dataset_id, product_id, progress, max_bytes, f"{ds.base_url}{prod['volume']}/")
+        except (http.LoginRequired, http.TooLarge):
+            raise
+        except http.ArchiveError as primary:
+            for base, rx, repl in ds.mirrors:
+                vol = re.sub(rx, repl, prod["volume"])
+                try:
+                    return fetch_product(dataset_id, product_id, progress, max_bytes, f"{base}{vol}/")
+                except (http.LoginRequired, http.TooLarge):
+                    raise
+                except http.ArchiveError:
+                    continue
+            raise primary
     label_path = local_label_path(ds.id, prod["volume"], prod["path"])
     if prod["path"].startswith(("http://", "https://")):
         # Live-search product: the label URL is known exactly; format files live in a
@@ -606,7 +621,7 @@ def fetch_product(dataset_id: str, product_id: str,
         volume_url = "/".join(parts[:-1]) + "/"
         ancestors = ["/".join(parts[:-k]) + "/" for k in range(2, min(8, len(parts) - 3))]
     else:
-        volume_url = f"{ds.base_url}{prod['volume']}/"
+        volume_url = _volume_url or f"{ds.base_url}{prod['volume']}/"
         ancestors = []
         # Indexes often list upper-case paths for volumes served in lower case
         # (MGS mors_1xxx) or the reverse, so try the path as listed, then both cases.

@@ -17,6 +17,7 @@ All notable changes to VEDA. VEDA is pre-release software at version **0.0.1** u
 #### Data sources
 - **MRO radio occultation profiles** (`mrors_2001`, MRO-M-RSS-5-TPS-V1.0, D. Hinson): 186 temperature-pressure-density profiles with uncertainties, 2008 to 2012, from the PDS Atmospheres Node; they compare directly with MGS and MEX profiles (same radius-based vertical reference). Cited as Hinson et al. (2008), Icarus 193, 125-138.
 - **FTP fallback**: the PDS Atmospheres and Geosciences nodes and the ESA SPICE server also serve their trees over anonymous FTP; when HTTPS fails (server busy or down, not a missing file), VEDA retries the same path over FTP. The PDS Rings, PPI and NAIF nodes, ESA PSA and JAXA DARTS have no FTP that answers (checked 2026-10-02) and are read over HTTPS.
+- **Mirror archives**: a data set can name other archives holding the same volumes. Mars Express MaRS occultation profiles come from ESA PSA and, when PSA fails, from the identical copy at the PDS Geosciences Node (same index and paths, volumes named mexmrs_9xxx), which also serves FTP.
 - A 403 from a public archive (the PDS Rings Node sheds load this way) is retried with back-off instead of failing at once.
 
 #### Reading products

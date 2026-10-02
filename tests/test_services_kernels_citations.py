@@ -248,3 +248,25 @@ def test_busy_server_403_is_retried(monkeypatch):
     monkeypatch.setattr(net, "session", lambda: S())
     monkeypatch.setattr(net.time, "sleep", lambda s: None)
     assert net.get("https://pds-rings.seti.org/pds4/bundles/gll.rss/").status_code == 200
+
+
+def test_product_falls_back_to_a_mirror_archive(monkeypatch):
+    """MEX MaRS volumes are at ESA PSA and, renamed, at the PDS Geosciences Node."""
+    from veda.archives import catalog, net
+    ds = get_dataset("mex-m-mrs-5-occ")
+    monkeypatch.setattr(catalog, "get_product", lambda d, p: {
+        "volume": "MEX-M-MRS-5-OCC-9124-V1.0", "path": "DATA/DOY_126/LEVEL04/P.TAB"})
+    urls = []
+
+    def download(url, dest, **kw):
+        urls.append(url)
+        if "esac.esa.int" in url:
+            raise net.ArchiveError("archives.esac.esa.int refused the request (HTTP 503).")
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text("1,2\n")
+        return dest
+    monkeypatch.setattr(net, "download", download)
+    path = catalog.fetch_product(ds.id, "p")
+    assert path.is_file()
+    assert urls[-1] == "https://pds-geosciences.wustl.edu/mex/mex-m-mrs-5-occ-v1/mexmrs_9124/DATA/DOY_126/LEVEL04/P.TAB"
+    assert any("esac.esa.int" in u for u in urls[:-1])          # the primary was tried first

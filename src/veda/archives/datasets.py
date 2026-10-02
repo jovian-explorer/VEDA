@@ -66,6 +66,10 @@ class Dataset:
     # names a reference that is not a sphere (the 1-bar level of a giant planet).
     altitude_reference_km: Optional[float] = None
     altitude_reference: str = ""
+    # Other archives holding the same volumes, tried when the primary fails:
+    # (base URL, regex on the volume name, replacement), e.g. ESA PSA volume
+    # MEX-M-MRS-5-OCC-9103-V1.0 is mexmrs_9103 at the PDS Geosciences Node.
+    mirrors: Tuple[Tuple[str, str, str], ...] = ()
     # PDS4 bundle: folder (inside the bundle) holding the product XML labels.
     pds4_product_dir: Optional[str] = None
     # Archive that only works through its own website with an account (no
@@ -389,6 +393,8 @@ DATASETS: List[Dataset] = [
         # The V1.0 and V2.0 copies of 9101 overlap; the catalogue keys products by id, so
         # the later volume's rows replace the earlier ones.
         volume_pattern=r"^MEX-M-MRS-5-OCC-\d{4}-V\d\.\d$",
+        mirrors=(("https://pds-geosciences.wustl.edu/mex/mex-m-mrs-5-occ-v1/",
+                  r"^MEX-M-MRS-5-OCC-(\d{4})-V\d\.\d$", r"mexmrs_\1"),),
         rules=(
             (r"l04_a(\w{2})_", "L4 neutral atmosphere profile", "profile"),
             (r"l04_i(\w{2})_", "L4 ionosphere electron density profile", "profile"),
