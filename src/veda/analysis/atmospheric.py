@@ -475,44 +475,67 @@ def export_profile_to_csv(profile: ObservationProfile) -> str:
     return "\n".join(lines)
 
 
+def _csv_num(v: Any) -> str:
+    # six significant figures: fixed decimals wrote densities of 1e-7 kg/m3 as 0.0000
+    return f"{v:.6g}" if isinstance(v, (int, float)) and np.isfinite(v) else ""
+
+
+def _csv_field(s: Any) -> str:
+    s = "" if s is None else str(s)
+    return f'"{s.replace(chr(34), chr(34) * 2)}"' if any(c in s for c in ',"\n') else s
+
+
 def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
-    """Serialize multi-mission comparison data to CSV format."""
+    """The comparison as on screen: gridded composite, group composites and every
+    profile, with a header describing each profile (time, position, geometry)."""
+    from ..core.registry import get_variable_info
     body_name = comparison.get("body_name", "Body")
     var_name = comparison.get("variable_name", "variable")
+    units = (get_variable_info(var_name) or {}).get("units", "")
     grid = comparison.get("grid_km", [])
-    mean_v = comparison.get("composite_mean", [])
-    std_v = comparison.get("composite_std", [])
-    plus_sigma = comparison.get("composite_plus_1sigma", [])
-    minus_sigma = comparison.get("composite_minus_1sigma", [])
     profiles = comparison.get("profiles", [])
+    # group labels in plain ASCII ("Latitude 0 to 30 deg"): spreadsheets misread the degree sign
+    groups = [{**g, "label": g["label"].replace("°", " deg")}
+              for g in comparison.get("groups") or [] if not g.get("ungrouped") and g.get("mean")]
 
     lines = [
-        f"# VEDA Cross-Mission Comparative Analysis - Body: {body_name}, Variable: {var_name}",
-        f"# Total Profiles: {len(profiles)}",
-        "# Profiles from the official mission archives (see each product for its source); mean and spread computed by VEDA.",
+        f"# VEDA comparison: body={body_name}, variable={var_name}" + (f" [{units}]" if units else ""),
+        f"# profiles={len(profiles)}, averaging={comparison.get('averaging', '')}"
+        + (f", grouped by {comparison.get('group_by')}" if groups else ""),
+        "# Profiles from the official mission archives (see each product for its source); means and spreads computed by VEDA.",
+        "# Altitude above the body's reference radius (km)."
+        + (f" Note: {comparison['vertical_reference_warning']}" if comparison.get("vertical_reference_warning") else ""),
         f"# Processed with VEDA {__version__} (https://github.com/jovian-explorer/VEDA), MIT License",
+        "# column, mission, instrument, observation, time_utc, latitude_deg, longitude_deg, lst_h, sza_deg",
     ]
+    cols = []
     for p in profiles:
-        lines.append(f"# Mission: {p.get('mission_id')}, Obs: {p.get('observation_id')}, Lat: {p.get('latitude')}, Lon: {p.get('longitude')}")
+        col = f"{p.get('mission_label') or p.get('mission_id')}_{p.get('observation_id')}"
+        cols.append(col)
+        lines.append("# " + ", ".join(_csv_field(x) for x in (
+            col, p.get("mission_label") or p.get("mission_id"), p.get("instrument"), p.get("observation_id"),
+            p.get("time_utc"), _csv_num(p.get("latitude")), _csv_num(p.get("longitude")),
+            _csv_num(p.get("lst")), _csv_num(p.get("sza")))))
+    for g in groups:
+        lines.append(f"# group {_csv_field(g['label'])}: n={g['n']}, profiles={' '.join(g['observation_ids'])}")
 
-    header = ["altitude_km", f"composite_mean_{var_name}", "composite_std", "plus_1sigma", "minus_1sigma"]
-    for p in profiles:
-        header.append(f"{p.get('mission_id')}_{p.get('observation_id')}")
-    lines.append(",".join(header))
+    header = ["altitude_km", f"composite_mean_{var_name}", "composite_std", "plus_1sigma", "minus_1sigma", "profiles_at_level"]
+    for g in groups:
+        header += [f"{g['label']} mean", f"{g['label']} plus_1sigma", f"{g['label']} minus_1sigma"]
+    header += cols
+    lines.append(",".join(_csv_field(h) for h in header))
 
+    def at(seq, i):
+        return seq[i] if seq and i < len(seq) else None
+    n_level = comparison.get("profiles_per_level") or []
     for i, z in enumerate(grid):
-        row = [
-            f"{z:.2f}",
-            f"{mean_v[i]:.4f}" if i < len(mean_v) and mean_v[i] is not None else "",
-            f"{std_v[i]:.4f}" if i < len(std_v) and std_v[i] is not None else "",
-            f"{plus_sigma[i]:.4f}" if i < len(plus_sigma) and plus_sigma[i] is not None else "",
-            f"{minus_sigma[i]:.4f}" if i < len(minus_sigma) and minus_sigma[i] is not None else "",
-        ]
-        for p in profiles:
-            s = p.get("interpolated_series", [])
-            val = s[i] if i < len(s) and s[i] is not None else ""
-            row.append(f"{val:.4f}" if isinstance(val, (int, float)) else "")
+        row = [f"{z:.3f}"] + [_csv_num(at(comparison.get(k), i)) for k in
+                              ("composite_mean", "composite_std", "composite_plus_1sigma", "composite_minus_1sigma")]
+        row.append(str(at(n_level, i)) if at(n_level, i) is not None else "")
+        for g in groups:
+            row += [_csv_num(at(g["mean"], i)), _csv_num(at(g["plus_1sigma"], i)), _csv_num(at(g["minus_1sigma"], i))]
+        row += [_csv_num(at(p.get("interpolated_series"), i)) for p in profiles]
         lines.append(",".join(row))
 
-    return "\n".join(lines)
+    return "\n".join(lines) + "\n"
 

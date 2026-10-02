@@ -526,33 +526,50 @@ def _publication_figure(b, comp: dict, variable: str, dpi: int, fmt: str) -> Res
     }
     xlabel = var_labels.get(variable, variable)
 
-    # 1. Shaded +/- 1 sigma band
+    groups = [g for g in comp.get("groups") or [] if not g.get("ungrouped") and g.get("mean")]
+    nan = (lambda seq: [np.nan if x is None else x for x in seq])
+
+    # 1. Shaded +/- 1 sigma band (each group's own band when grouped)
     plus_sigma = comp.get("composite_plus_1sigma", [])
     minus_sigma = comp.get("composite_minus_1sigma", [])
-    if plus_sigma and minus_sigma:
+    if plus_sigma and minus_sigma and not groups:
         p_sig = [np.nan if x is None else x for x in plus_sigma]
         m_sig = [np.nan if x is None else x for x in minus_sigma]
         ax.fill_betweenx(grid, m_sig, p_sig, color="#38bdf8", alpha=0.22, label=r"$\pm 1\sigma$ Multi-Mission Spread")
 
-    # 2. Individual profiles, one colour and one legend entry per mission
+    # 2. Individual profiles: one colour and legend entry per mission, or, when grouped,
+    #    faded in their group's colour under the group composites
     colors = ["#0284c7", "#f97316", "#10b981", "#8b5cf6", "#f43f5e", "#06b6d4", "#eab308", "#ec4899"]
     profiles = comp.get("profiles", [])
-    mission_order = list(dict.fromkeys(p.get("mission_id", "") for p in profiles))
-    counts = {m: sum(1 for p in profiles if p.get("mission_id") == m) for m in mission_order}
+    mission_of = (lambda p: p.get("mission_label") or p.get("mission_id", ""))
+    mission_order = list(dict.fromkeys(mission_of(p) for p in profiles))
+    counts = {m: sum(1 for p in profiles if mission_of(p) == m) for m in mission_order}
+    group_of = {oid: gi for gi, g in enumerate(groups) for oid in g["observation_ids"]}
     labelled = set()
     for p in profiles:
-        mid = p.get("mission_id", "")
-        series = [np.nan if x is None else x for x in p.get("interpolated_series", [])]
+        mid = mission_of(p)
+        series = nan(p.get("interpolated_series", []))
+        if groups:
+            gi = group_of.get(p.get("observation_id"))
+            ax.plot(series, grid, linewidth=0.8, alpha=0.3,
+                    color=colors[gi % len(colors)] if gi is not None else "#94a3b8")
+            continue
         label = None
         if mid not in labelled:
             labelled.add(mid)
             label = f"{mid.upper()} {p.get('instrument', '')} (n = {counts[mid]})"
         ax.plot(series, grid, label=label, linestyle="-", linewidth=1.2 if len(profiles) > 6 else 1.8,
                 alpha=0.75 if len(profiles) > 6 else 1.0, color=colors[mission_order.index(mid) % len(colors)])
+    for gi, g in enumerate(groups):
+        c = colors[gi % len(colors)]
+        if any(x is not None for x in g["plus_1sigma"]):
+            ax.fill_betweenx(grid, nan(g["minus_1sigma"]), nan(g["plus_1sigma"]), color=c, alpha=0.15, linewidth=0)
+        ax.plot(nan(g["mean"]), grid, color=c, linewidth=2.6, label=f"{g['label']} (n = {g['n']})")
 
     # 3. Composite mean
-    mean_v = [np.nan if x is None else x for x in comp.get("composite_mean", [])]
-    ax.plot(mean_v, grid, label=r"Composite Mean $\mu(z)$", color="#0f172a", linewidth=2.8)
+    mean_v = nan(comp.get("composite_mean", []))
+    ax.plot(mean_v, grid, label=r"Composite Mean $\mu(z)$", color="#0f172a", linewidth=2.8 if not groups else 1.6,
+            linestyle="-" if not groups else "--")
 
     finite_mean = [v for v in mean_v if np.isfinite(v)]
     if variable in LOG_VARIABLES and finite_mean and min(finite_mean) > 0:

@@ -96,3 +96,31 @@ def test_unknown_grouping_is_rejected_by_the_api():
     assert "month_of_year" in GROUPINGS
     r = client.post("/api/veda/compare/body/venus", json={"variable": "temperature_k", "group_by": "zodiac"})
     assert r.status_code in (400, 422)
+
+
+def test_comparison_csv_keeps_small_values_and_groups():
+    from veda.analysis.atmospheric import export_comparison_to_csv
+    z = np.arange(0.0, 20.0, 1.0)
+    profs = []
+    for oid, lat, scale in (("a", 5.0, 1.0), ("b", 10.0, 1.2), ("c", 70.0, 2.0)):
+        p = _profile(oid, lat, 0.0)
+        p.altitude_km = z
+        p.temperature_k = None
+        p.derived["density"] = 1e-7 * scale * np.exp(-z / 10.0)      # kg/m3, as in the Mars thermosphere
+        profs.append(p)
+    comp = compare_profiles_on_body(profs, get_body("venus"), 1.0, "density", group_by="latitude", group_width=30.0)
+    text = export_comparison_to_csv(comp)
+    rows = [l for l in text.splitlines() if not l.startswith("#")]
+    header = rows[0].split(",")
+    assert "Latitude 0 to 30 deg mean" in header and "profiles_at_level" in header
+    first = dict(zip(header, rows[1].split(",")))
+    assert float(first["composite_mean_density"]) == pytest.approx(1e-7 * (1.0 * 1.2 * 2.0) ** (1 / 3), rel=1e-4)
+    assert float(first["Latitude 0 to 30 deg mean"]) == pytest.approx(1e-7 * 1.2 ** 0.5, rel=1e-4)
+    assert "# vex_a, vex, VeRa, a, 2010-03-05T00:00:00, 5," in text
+
+
+def test_grouped_publication_figure_renders():
+    client = TestClient(create_app())
+    r = client.post("/api/veda/figure/publication?body_id=venus",
+                    json={"variable": "temperature_k", "group_by": "latitude", "dpi": 72, "fmt": "png"})
+    assert r.status_code in (200, 400), r.text            # 400 only when no profiles are available offline

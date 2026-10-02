@@ -525,7 +525,7 @@ def search(q: SearchQuery) -> Dict[str, Any]:
             # Download state lives on disk, so filter in Python, then page.
             every = conn.execute(f"SELECT * FROM products WHERE {sql_where} ORDER BY start_time {order}",
                                  args).fetchall()
-            local = [r for r in every if local_label_path(r["dataset_id"], r["volume"], r["path"]).is_file()]
+            local = [r for r in every if is_downloaded(r)]
             total, rows = len(local), local[q.offset:q.offset + q.limit]
         else:
             total = conn.execute(f"SELECT COUNT(*) FROM products WHERE {sql_where}", args).fetchone()[0]
@@ -538,9 +538,17 @@ def search(q: SearchQuery) -> Dict[str, Any]:
             "product_types": {t["product_type"]: t["n"] for t in types}}
 
 
+def is_downloaded(r: sqlite3.Row, ds: Optional[Dataset] = None) -> bool:
+    """Whether a catalogue row's product is on disk: its label, or for repository
+    data sets the normalised CSV it was rewritten to."""
+    ds = ds or get_dataset(r["dataset_id"])
+    if ds and ds.repository:
+        return _repository_csv(ds, r["product_id"]).is_file()
+    return local_label_path(r["dataset_id"], r["volume"], r["path"]).is_file()
+
+
 def product_dict(r: sqlite3.Row) -> Dict[str, Any]:
     ds = get_dataset(r["dataset_id"])
-    local = local_label_path(r["dataset_id"], r["volume"], r["path"])
     extra = json.loads(r["extra"] or "{}")
     return {
         "dataset_id": r["dataset_id"], "product_id": r["product_id"], "volume": r["volume"],
@@ -551,7 +559,7 @@ def product_dict(r: sqlite3.Row) -> Dict[str, Any]:
         "url": r["path"] if r["path"].startswith("http") else (ds.base_url if ds and ds.repository else
                                                                 (f"{ds.base_url}{r['volume']}/{r['path']}" if ds else None)),
         "live": bool(ds and ds.service),
-        "downloaded": (_repository_csv(ds, r["product_id"]).is_file() if ds and ds.repository else local.is_file()),
+        "downloaded": is_downloaded(r, ds),
         "orbit": extra.get("ORBIT_NUMBER") or extra.get("REVOLUTION_NUMBER"),
         "split": extra.get("SPLIT"),
         "extra": extra,
@@ -792,6 +800,6 @@ def downloaded_products(dataset_ids: Optional[Iterable[str]] = None) -> List[Dic
         rows = conn.execute(f"SELECT * FROM products WHERE dataset_id IN ({','.join('?' * len(ids))}) "
                             "ORDER BY start_time", ids).fetchall()
     for r in rows:
-        if local_label_path(r["dataset_id"], r["volume"], r["path"]).is_file():
+        if is_downloaded(r):
             out.append(product_dict(r))
     return out
