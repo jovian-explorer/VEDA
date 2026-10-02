@@ -293,3 +293,49 @@ def test_every_dataset_mission_is_listed_on_its_bodies():
         for b in d.body_ids:
             assert b in BODIES, (d.id, b)
             assert d.mission_id in BODIES[b].supported_missions, (d.id, b, d.mission_id)
+
+
+@pytest.mark.parametrize("volume,path", [
+    ("MEX-M-MRS-5-OCC-V1.0", "DATA/LEVEL04/2004/ITEM.LBL"),
+    ("vol", "./a//b/c.lbl"),
+    ("", "x/y.xml"),
+    ("v", "https://pds.example.org/archive/bundle/data/p.xml"),
+    ("v" * 60, "d/" * 40 + "long.lbl"),
+])
+def test_local_key_matches_local_label_path(volume, path):
+    from veda.archives import catalog
+    ref = catalog.local_label_path("ds", volume, path).relative_to(catalog.PRODUCT_ROOT / "ds").as_posix()
+    assert catalog._local_key(volume, path) == ref
+
+
+def test_downloaded_only_finds_label_and_repository_products():
+    from veda.archives import catalog
+    ds_pds = next(d for d in DATASETS if not d.repository and not d.service and not d.portal_only)
+    ds_rep = next(d for d in DATASETS if d.repository)
+    rows = [
+        dict(dataset_id=ds_pds.id, product_id="on_disk", volume="VOL1", path="DATA/ON_DISK.LBL"),
+        dict(dataset_id=ds_pds.id, product_id="not_on_disk", volume="VOL1", path="DATA/MISSING.LBL"),
+        dict(dataset_id=ds_rep.id, product_id="rep_on_disk", volume="repository", path="rep_on_disk"),
+        dict(dataset_id=ds_rep.id, product_id="rep_missing", volume="repository", path="rep_missing"),
+    ]
+    with catalog._db_lock, catalog._connect() as conn:
+        conn.executemany(
+            "INSERT OR REPLACE INTO products VALUES (:dataset_id,:product_id,:volume,:path,"
+            "'2010-01-01T00:00:00','2010-01-01T00:00:00','VENUS','TEST','profile','{}')", rows)
+    label = catalog.local_label_path(ds_pds.id, "VOL1", "DATA/ON_DISK.LBL")
+    label.parent.mkdir(parents=True, exist_ok=True)
+    label.write_text("PDS_VERSION_ID = PDS3\nEND\n")
+    csv = catalog._repository_csv(ds_rep, "rep_on_disk")
+    csv.parent.mkdir(parents=True, exist_ok=True)
+    csv.write_text("altitude [km]\n1\n")
+    try:
+        got = {p["product_id"] for p in catalog.downloaded_products([ds_pds.id, ds_rep.id])}
+        assert got >= {"on_disk", "rep_on_disk"} and not got & {"not_on_disk", "rep_missing"}
+        r = catalog.search(catalog.SearchQuery(dataset_ids=[ds_pds.id, ds_rep.id], downloaded_only=True, limit=50))
+        ids = {p["product_id"] for p in r["products"]}
+        assert {"on_disk", "rep_on_disk"} <= ids and not ids & {"not_on_disk", "rep_missing"}
+        assert all(p["downloaded"] for p in r["products"])
+    finally:
+        with catalog._db_lock, catalog._connect() as conn:
+            conn.executemany("DELETE FROM products WHERE dataset_id=:dataset_id AND product_id=:product_id", rows)
+        label.unlink(); csv.unlink()

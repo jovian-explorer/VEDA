@@ -8,6 +8,7 @@ Products themselves are downloaded on request into ``<cache>/archive/``.
 from __future__ import annotations
 
 import json
+import os
 import re
 
 import numpy as np
@@ -40,6 +41,9 @@ CREATE TABLE IF NOT EXISTS products (
     product_type TEXT, kind TEXT, extra TEXT,
     PRIMARY KEY (dataset_id, product_id));
 CREATE INDEX IF NOT EXISTS idx_products_time ON products(dataset_id, start_time);
+-- "profiles only" and product-type filters and counts (5x faster on 200,000 rows)
+CREATE INDEX IF NOT EXISTS idx_products_kind ON products(dataset_id, kind, start_time);
+CREATE INDEX IF NOT EXISTS idx_products_type ON products(dataset_id, product_type);
 """
 
 
@@ -495,6 +499,61 @@ class SearchQuery:
     downloaded_only: bool = False
 
 
+def _files_on_disk(dataset_id: str) -> set:
+    """Every file under a data set's cache folder, as lower-case paths relative to it."""
+    root = PRODUCT_ROOT / dataset_id
+    out = set()
+    if not root.is_dir():
+        return out
+    base = len(str(root)) + 1
+    for folder, _dirs, files in os.walk(root):
+        rel = folder[base:].replace("\\", "/")
+        for f in files:
+            out.add(f"{rel}/{f}".lower() if rel else f.lower())
+    return out
+
+
+def _has_downloads(dataset_id: str) -> bool:
+    root = PRODUCT_ROOT / dataset_id
+    try:
+        return root.is_dir() and any(root.iterdir())
+    except OSError:
+        return False
+
+
+def _downloaded_rows(rows: Iterable[sqlite3.Row]) -> List[sqlite3.Row]:
+    """The rows whose product is on disk.  Lists each data set's cache folder once and
+    matches the rows against it, instead of a file-system check per row (30 s for a
+    catalogue of 200,000 products); data sets with nothing downloaded cost nothing."""
+    on_disk: Dict[str, set] = {}
+    out = []
+    for r in rows:
+        ds_id = r["dataset_id"]
+        if ds_id not in on_disk:
+            on_disk[ds_id] = _files_on_disk(ds_id)
+        files = on_disk[ds_id]
+        if not files:
+            continue
+        ds = get_dataset(ds_id)
+        key = f"repository/{r['product_id']}.csv" if ds and ds.repository else _local_key(r["volume"], r["path"])
+        if key and key.lower() in files:
+            out.append(r)
+    return out
+
+
+def _local_key(volume: str, path: str) -> str:
+    """local_label_path relative to the data set's folder, as a string (pathlib is ten
+    times slower, which matters for 100,000 rows); empty for an invalid path."""
+    if path.startswith(("http://", "https://")) or len(volume) + len(path) > 120:
+        import hashlib
+        folder, _, name = path.replace("\\", "/").rpartition("/")
+        if not name or name in (".", ".."):
+            return ""
+        return f"{hashlib.sha1(f'{volume}|{folder}'.encode('utf-8')).hexdigest()[:16]}/{name}"
+    parts = [s for s in path.split("/") if s and s != "."]
+    return "/".join([volume] + parts) if volume else "/".join(parts)
+
+
 def search(q: SearchQuery) -> Dict[str, Any]:
     ds_ids = [d.lower() for d in q.dataset_ids] if q.dataset_ids else \
         [d.id for d in DATASETS if not d.portal_only
@@ -502,6 +561,9 @@ def search(q: SearchQuery) -> Dict[str, Any]:
          and (not q.body_id or q.body_id.lower() in d.body_ids)]
     if not ds_ids:
         return {"total": 0, "products": []}
+    all_ds_ids = ds_ids
+    if q.downloaded_only:
+        ds_ids = [d for d in ds_ids if _has_downloads(d)] or ["-"]
     where = [f"dataset_id IN ({','.join('?' * len(ds_ids))})"]
     args: List[Any] = list(ds_ids)
     if q.target:
@@ -525,15 +587,15 @@ def search(q: SearchQuery) -> Dict[str, Any]:
             # Download state lives on disk, so filter in Python, then page.
             every = conn.execute(f"SELECT * FROM products WHERE {sql_where} ORDER BY start_time {order}",
                                  args).fetchall()
-            local = [r for r in every if is_downloaded(r)]
+            local = _downloaded_rows(every)
             total, rows = len(local), local[q.offset:q.offset + q.limit]
         else:
             total = conn.execute(f"SELECT COUNT(*) FROM products WHERE {sql_where}", args).fetchone()[0]
             rows = conn.execute(f"SELECT * FROM products WHERE {sql_where} ORDER BY start_time {order} "
                                 "LIMIT ? OFFSET ?", args + [q.limit, q.offset]).fetchall()
         types = conn.execute(f"SELECT product_type, COUNT(*) n FROM products WHERE "
-                             f"dataset_id IN ({','.join('?' * len(ds_ids))}) GROUP BY product_type",
-                             ds_ids).fetchall()
+                             f"dataset_id IN ({','.join('?' * len(all_ds_ids))}) GROUP BY product_type",
+                             all_ds_ids).fetchall()
     return {"total": total, "products": [product_dict(r) for r in rows],
             "product_types": {t["product_type"]: t["n"] for t in types}}
 
@@ -793,13 +855,13 @@ _FORMAT_DIRS: Dict[str, str] = {}
 def downloaded_products(dataset_ids: Optional[Iterable[str]] = None) -> List[Dict[str, Any]]:
     # None means every data set; an empty list (a mission with no data sets yet) means none.
     ids = [d.lower() for d in dataset_ids] if dataset_ids is not None else [d.id for d in DATASETS]
+    ids = [d for d in ids if _has_downloads(d)]
     if not ids:
         return []
     out = []
     with _db_lock, _connect() as conn:
         rows = conn.execute(f"SELECT * FROM products WHERE dataset_id IN ({','.join('?' * len(ids))}) "
                             "ORDER BY start_time", ids).fetchall()
-    for r in rows:
-        if is_downloaded(r):
-            out.append(product_dict(r))
+    for r in _downloaded_rows(rows):
+        out.append(product_dict(r))
     return out

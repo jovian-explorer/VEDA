@@ -13,6 +13,7 @@ From this version on, every tested change is published straight away as the late
 ### Performance
 - **Multiprocessing.** Profiles for comparisons are read and derived in parallel worker processes; the number is set in **Settings > Performance** (default: all CPU cores but one; 1 turns it off). The workers start in the background when VEDA opens and are reused, and work is sent in chunks; reading 240 Venus Express profiles took 1.0 s with 4 workers against 5.5 s before.
 - **Parallel downloads**: selected products, and the index pages of archive volumes, are fetched several at a time (Settings > Performance, default 4).
+- **Downloaded products are found from the cache folder listing** instead of one disk check per catalogue row: the default comparison and *Downloaded only* searches took 30 s on a catalogue of 220,000 products, now about 1 s. Catalogue indexes for profile and product-type filters make those searches up to 7 times faster.
 - Profiles already read are kept in memory for the session, so re-plotting a comparison with another variable, grouping or unit is immediate.
 
 ### Comparisons
