@@ -473,6 +473,9 @@ body.no-curious [data-curious] { display: none; }
   background: var(--warn-soft); border-bottom: 1px solid rgba(217, 119, 6, 0.3); color: var(--warn);
   padding: 9px 20px; font-size: calc(12.5px * var(--font-scale, 1.0)); font-weight: 500;
 }
+.cut-controls { gap: 12px; align-items: flex-end; flex-wrap: wrap; margin: 6px 0 4px; }
+.cut-controls label { display: flex; flex-direction: column; gap: 4px; margin: 0; }
+.cut-controls .hint { flex: 1 1 220px; }
 .banner.update { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .banner.update a { font-weight: 600; }
 .banner.bad { background: var(--accent-soft); border-color: rgba(225, 29, 72, 0.3); color: var(--accent); }

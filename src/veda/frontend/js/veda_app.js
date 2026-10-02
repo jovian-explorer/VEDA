@@ -360,7 +360,7 @@ export function applyUserPreferences(settings, { initial = false } = {}) {
     pub.textContent = `🏛️ Publication Figure (${vedaState.plotDpi} DPI)`;
     pub.title = `Download a publication-quality figure at ${vedaState.plotDpi} DPI (change in Settings)`;
   }
-  if (!initial && vedaState.mode === 'body') renderComparisonPlot();
+  if (!initial && vedaState.mode === 'body') renderActiveSubtab();
 }
 
 function syncUnitButtons() {
@@ -851,31 +851,23 @@ function setupBodyModeControls() {
     });
   }
 
-  // Subtab Switching (Soundings vs Planetary Map)
-  const btnSubtabSoundings = document.getElementById('btn-subtab-soundings');
-  const btnSubtabMap = document.getElementById('btn-subtab-map');
-  const soundingsPanel = document.getElementById('veda-subtab-soundings-panel');
-  const mapPanel = document.getElementById('veda-subtab-map-panel');
-
-  if (btnSubtabSoundings && btnSubtabMap) {
-    btnSubtabSoundings.addEventListener('click', () => {
-      vedaState.bodySubtab = 'soundings';
-      btnSubtabSoundings.classList.add('active');
-      btnSubtabMap.classList.remove('active');
-      if (soundingsPanel) soundingsPanel.style.display = 'flex';
-      if (mapPanel) mapPanel.style.display = 'none';
-      renderComparisonPlot();
+  // Subtabs: profiles, altitude cut, map
+  const SUBTABS = ['soundings', 'cut', 'map'];
+  const showSubtab = (name) => {
+    vedaState.bodySubtab = name;
+    SUBTABS.forEach(t => {
+      document.getElementById(`btn-subtab-${t}`)?.classList.toggle('active', t === name);
+      const panel = document.getElementById(`veda-subtab-${t}-panel`);
+      if (panel) panel.style.display = t === name ? 'flex' : 'none';
     });
-
-    btnSubtabMap.addEventListener('click', () => {
-      vedaState.bodySubtab = 'map';
-      btnSubtabMap.classList.add('active');
-      btnSubtabSoundings.classList.remove('active');
-      if (soundingsPanel) soundingsPanel.style.display = 'none';
-      if (mapPanel) mapPanel.style.display = 'flex';
-      renderPlanetaryMap(vedaState.planetaryMapProjection || '2d');
-    });
-  }
+    renderActiveSubtab();
+  };
+  SUBTABS.forEach(t => document.getElementById(`btn-subtab-${t}`)?.addEventListener('click', () => showSubtab(t)));
+  ['veda-cut-x', 'veda-cut-color'].forEach(id => document.getElementById(id)?.addEventListener('change', renderAltitudeCut));
+  document.getElementById('veda-cut-altitude')?.addEventListener('change', (e) => {
+    vedaState.cutAltitude = e.target.value === '' ? null : Number(e.target.value);
+    renderAltitudeCut();
+  });
 
   // Map Projection Toggles (2D Equirectangular vs 3D Globe)
   const btnMap2d = document.getElementById('btn-map-proj-2d');
@@ -952,11 +944,7 @@ async function updateComparison() {
     renderSelectionReport(compData.selection);
     vedaState.currentBodyObservations = exploreData.observations || [];
 
-    if (vedaState.bodySubtab === 'map') {
-      renderPlanetaryMap(vedaState.planetaryMapProjection || '2d');
-    } else {
-      renderComparisonPlot();
-    }
+    renderActiveSubtab();
     renderComparisonTable();
 
     if (statusEl) {
@@ -967,6 +955,119 @@ async function updateComparison() {
     console.error('Failed to compute comparison:', err);
     if (statusEl) statusEl.textContent = `Comparison error: ${err.message}`;
   }
+}
+
+function renderActiveSubtab() {
+  if (vedaState.bodySubtab === 'map') renderPlanetaryMap(vedaState.planetaryMapProjection || '2d');
+  else if (vedaState.bodySubtab === 'cut') renderAltitudeCut();
+  else renderComparisonPlot();
+}
+
+/**
+ * Altitude cut: the compared variable at one level of the common grid, one point per
+ * profile, against time, latitude, local time, zenith angle or longitude.  Shows
+ * seasonal and latitudinal structure at a fixed height.  The default level is the one
+ * covered by most profiles.
+ */
+function renderAltitudeCut() {
+  const plotDiv = document.getElementById('veda-cut-plot');
+  const status = document.getElementById('veda-cut-status');
+  if (!plotDiv || !window.Plotly) return;
+  const data = vedaState.lastComparisonData;
+  const grid = (data && data.grid_km) || [];
+  const profiles = (data && data.profiles) || [];
+  if (!grid.length || !profiles.length) {
+    if (plotDiv.data) Plotly.purge(plotDiv);
+    plotDiv.innerHTML = '<div class="empty-state">No profiles to cut. Compare some profiles first.</div>';
+    if (status) status.textContent = '';
+    return;
+  }
+  const counts = data.profiles_per_level || grid.map((_, k) => profiles.filter(p => p.interpolated_series[k] != null).length);
+  let k;
+  if (vedaState.cutAltitude == null || !isFinite(vedaState.cutAltitude)) {
+    k = counts.indexOf(Math.max(...counts));
+  } else {
+    k = grid.reduce((best, z, i) => (Math.abs(z - vedaState.cutAltitude) < Math.abs(grid[best] - vedaState.cutAltitude) ? i : best), 0);
+  }
+  const altInput = document.getElementById('veda-cut-altitude');
+  if (altInput && document.activeElement !== altInput) altInput.value = grid[k];
+
+  const xKey = document.getElementById('veda-cut-x')?.value || 'time';
+  const colorKey = document.getElementById('veda-cut-color')?.value || 'mission';
+  const cfg = VARIABLE_CONFIGS[vedaState.selectedCompareVariable] || { axis: vedaState.selectedCompareVariable, units: '' };
+  const pUnit = vedaState.selectedCompareVariable === 'pressure_hpa' ? vedaState.unitsPressure : 'hPa';
+  const pScale = { bar: 1e-3, Pa: 100 }[pUnit] || 1;
+  const yTitle = pScale === 1 ? cleanPlotlyMath(cfg.axis) : `Pressure (${pUnit})`;
+  const dayOfYear = (t) => {
+    const d = new Date(t.length <= 10 ? `${t}T00:00:00Z` : (/[zZ]|[+-]\d\d:?\d\d$/.test(t) ? t : `${t}Z`));
+    return isNaN(d) ? null : (d - Date.UTC(d.getUTCFullYear(), 0, 1)) / 86400000 + 1;
+  };
+  const xOf = (p) => {
+    if (xKey === 'time') return p.time_utc ? p.time_utc.replace(/Z$/, '') : null;
+    if (xKey === 'season') return p.time_utc ? dayOfYear(p.time_utc) : null;
+    return p[xKey] != null && isFinite(p[xKey]) ? p[xKey] : null;
+  };
+  const groupOf = {};
+  (data.groups || []).filter(g => !g.ungrouped).forEach((g, gi) => g.observation_ids.forEach(id => { groupOf[id] = { gi, label: g.label }; }));
+
+  const pts = profiles.map(p => ({ p, x: xOf(p), y: p.interpolated_series[k] })).filter(o => o.x != null && o.y != null);
+  const missing = profiles.filter(p => p.interpolated_series[k] != null).length - pts.length;
+  const traces = [];
+  const hover = o => `<b>${escHtml((o.p.mission_label || o.p.mission_id).toUpperCase())}</b> ${escHtml(o.p.observation_id)}<br>`
+    + `${escHtml(o.p.time_utc || '')}<br>lat ${o.p.latitude != null ? o.p.latitude.toFixed(1) : '?'}°`
+    + `, LST ${o.p.lst != null ? o.p.lst.toFixed(1) + ' h' : '?'}, SZA ${o.p.sza != null ? o.p.sza.toFixed(0) + '°' : '?'}`
+    + `<br>${(o.y * pScale).toPrecision(5)} at ${grid[k]} km`;
+  const addTrace = (name, list, marker) => traces.push({
+    type: 'scatter', mode: 'markers', name, x: list.map(o => o.x), y: list.map(o => o.y * pScale),
+    text: list.map(hover), hovertemplate: '%{text}<extra></extra>',
+    marker: { size: 8, line: { width: 0.5, color: 'rgba(0,0,0,0.4)' }, ...marker } });
+  if (colorKey === 'latitude' || colorKey === 'lst') {
+    const vals = pts.map(o => o.p[colorKey]);
+    addTrace(colorKey === 'lst' ? 'Local time' : 'Latitude', pts, {
+      color: vals.map(v => (v == null ? NaN : v)), colorscale: colorKey === 'lst' ? 'Portland' : 'RdBu', showscale: true,
+      colorbar: { title: { text: colorKey === 'lst' ? 'LST (h)' : 'Latitude (°)' }, thickness: 12, len: 0.7 } });
+  } else {
+    const keyOf = colorKey === 'group'
+      ? (o => (groupOf[o.p.observation_id] ? groupOf[o.p.observation_id].label : 'Not grouped'))
+      : (o => (o.p.mission_label || o.p.mission_id).toUpperCase());
+    const order = (key) => {
+      if (colorKey !== 'group') return 0;
+      const g = (data.groups || []).findIndex(x => x.label === key);
+      return g < 0 ? Infinity : g;                      // groups in their own order, ungrouped last
+    };
+    const keys = [...new Set(pts.map(keyOf))].sort((a, b) => order(a) - order(b));
+    keys.forEach((key, i) => {
+      const list = pts.filter(o => keyOf(o) === key);
+      const color = colorKey === 'group'
+        ? (groupOf[list[0].p.observation_id] ? paletteColor(groupOf[list[0].p.observation_id].gi + 1) : '#94a3b8')
+        : (MISSION_COLORS[key.toLowerCase()] || paletteColor(i));
+      addTrace(`${key} (n = ${list.length})`, list, { color });
+    });
+  }
+  const xTitles = { time: 'Time (UTC)', latitude: 'Latitude (°)', lst: 'Local solar time (h)', sza: 'Solar zenith angle (°)',
+                    longitude: 'Longitude (°)', season: 'Day of year' };
+  const layout = {
+    title: { text: `${cleanPlotlyMath(cfg.label || cfg.axis)} at ${grid[k]} km (${pts.length} profile${pts.length === 1 ? '' : 's'})` },
+    hovermode: 'closest',
+    margin: { l: 75, r: 25, t: 56, b: 60 },
+    xaxis: { title: { text: xTitles[xKey] }, type: xKey === 'time' ? 'date' : 'linear',
+             ...(xKey === 'lst' ? { range: [0, 24], dtick: 3 } : {}), ...(xKey === 'latitude' ? { range: [-90, 90], dtick: 30 } : {}) },
+    yaxis: { title: { text: yTitle }, type: cfg.logScale ? 'log' : 'linear' },
+    legend: { orientation: 'h', y: -0.18 },
+  };
+  Plotly.newPlot(plotDiv, traces, themedLayout(layout), { responsive: true, displayModeBar: true });
+  if (status) {
+    status.textContent = `${counts[k]} of ${profiles.length} profiles reach ${grid[k]} km`
+      + (missing > 0 ? `; ${missing} without ${xTitles[xKey].toLowerCase()} not shown` : '')
+      + '. Click a point to open the profile.';
+  }
+  plotDiv.removeAllListeners?.('plotly_click');
+  plotDiv.on?.('plotly_click', (ev) => {
+    const pt = ev.points && ev.points[0];
+    if (!pt) return;
+    const o = pts.find(q => hover(q) === pt.text);
+    if (o) document.querySelector(`#veda-comparison-table-body tr[data-obs-id="${CSS.escape(o.p.observation_id)}"] .btn-dive-deep`)?.click();
+  });
 }
 
 function renderComparisonPlot() {
@@ -1817,7 +1918,7 @@ function openPlotStyle() {
     const prof = vedaState.currentProfileData;
     const sel = document.getElementById('veda-profile-var-select');
     if (prof && document.getElementById('veda-single-profile-plot')) renderSingleProfilePlot(prof, sel ? sel.value : 'temperature_k');
-    if (vedaState.mode === 'body') renderComparisonPlot();
+    if (vedaState.mode === 'body') renderActiveSubtab();
     if (reopen === true) openPlotStyle();
   };
   const target = () => (vedaState.mode === 'body'

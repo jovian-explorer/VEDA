@@ -228,12 +228,42 @@
     <div class="card" style="min-height: 520px; display: flex; flex-direction: column;">
       <div class="view-subtabs">
         <button class="view-subtab-btn active" id="btn-subtab-soundings">📈 Soundings & Profiles</button>
+        <button class="view-subtab-btn" id="btn-subtab-cut" title="The compared variable at one altitude against time, latitude, local time, zenith angle or longitude">📍 Altitude cut</button>
         <button class="view-subtab-btn" id="btn-subtab-map">🌐 Planetary Spatial Map & Footprints</button>
       </div>
 
       <!-- Tab 1: Aligned Soundings & Composite Dispersion -->
       <div id="veda-subtab-soundings-panel" style="flex: 1; display: flex; flex-direction: column;">
         <div id="veda-comparison-plot" style="flex: 1; min-height: 480px;"></div>
+      </div>
+
+      <!-- Tab 1b: one altitude level of every compared profile against time or geometry -->
+      <div id="veda-subtab-cut-panel" style="flex: 1; display: none; flex-direction: column;">
+        <div class="row cut-controls">
+          <label>Altitude (km)
+            <input type="number" id="veda-cut-altitude" step="any" style="width: 7em;" />
+          </label>
+          <label>Against
+            <select id="veda-cut-x">
+              <option value="time">Time (UTC)</option>
+              <option value="latitude">Latitude</option>
+              <option value="lst">Local solar time</option>
+              <option value="sza">Solar zenith angle</option>
+              <option value="longitude">Longitude</option>
+              <option value="season">Day of year (all years)</option>
+            </select>
+          </label>
+          <label>Colour by
+            <select id="veda-cut-color">
+              <option value="mission">Mission</option>
+              <option value="group">Group (Group composites by)</option>
+              <option value="latitude">Latitude</option>
+              <option value="lst">Local solar time</option>
+            </select>
+          </label>
+          <span class="hint" id="veda-cut-status"></span>
+        </div>
+        <div id="veda-cut-plot" style="flex: 1; min-height: 440px; max-height: 760px;"></div>
       </div>
 
       <!-- Tab 2: Planetary Spatial Footprints Map -->

@@ -22,6 +22,7 @@ From this version on, every tested change is published straight away as the late
 - **Export profiles, all variables**: the compared profiles at their own levels with every archived and derived quantity, uncertainties and per-level geometry, one row per profile and level, for analysis in Python, R or a spreadsheet.
 - The publication figure follows the grouping: group means with their own spread over the faded profiles; loaded files are labelled with the mission they came from.
 - **Group composites (climatologies)** by latitude band, local solar time, solar zenith angle, year, month, month of the year or mission, each with its own mean and spread.
+- **Altitude cut**: the compared variable at one altitude against time, latitude, local time, zenith angle, longitude or day of year, one point per profile, coloured by mission, group, latitude or local time; click a point to open its profile.
 - **Deviation view**: each profile minus its group (or composite) mean, in percent for pressure and densities.
 
 ### Data
