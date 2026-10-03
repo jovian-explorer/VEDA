@@ -243,6 +243,9 @@ class CrossCompareRequest(BaseModel):
     group_width: float = Field(0.0, ge=0.0, le=360.0)
     # spacing of the common altitude grid; None: 0.5 km on Venus, Mars and Pluto, 2 km elsewhere
     altitude_step_km: Optional[float] = Field(None, ge=0.01, le=100.0)
+    # vertical coordinate of the common grid: altitude, or pressure (uniform in log p)
+    vertical: str = Field("altitude", pattern="^(altitude|pressure)$")
+    pressure_step_decades: float = Field(0.02, ge=0.001, le=1.0)
 
 
 @router.post("/compare/body/{body_id}")
@@ -266,7 +269,8 @@ def _compare_or_404(body_id: str, req: "CrossCompareRequest") -> dict:
         raise HTTPException(status_code=422, detail=f"group_by must be one of: {', '.join(GROUPINGS)}")
     comp = get_mission_manager().compare_on_body(
         body_id, req.observations, mission_ids=req.missions, variable_name=req.variable, selection=sel,
-        group_by=req.group_by or "", group_width=req.group_width, altitude_step_km=req.altitude_step_km)
+        group_by=req.group_by or "", group_width=req.group_width, altitude_step_km=req.altitude_step_km,
+        vertical=req.vertical, pressure_step_decades=req.pressure_step_decades)
     if isinstance(comp, dict) and comp.get("error"):
         raise HTTPException(status_code=400, detail=comp["error"])
     return comp
@@ -526,7 +530,8 @@ def _publication_figure(b, comp: dict, variable: str, dpi: int, fmt: str) -> Res
     from ..analysis.atmospheric import LOG_VARIABLES
     body_id = b.id
 
-    grid = comp.get("grid_km", [])
+    by_pressure = comp.get("vertical") == "pressure"
+    grid = comp.get("grid_hpa" if by_pressure else "grid_km", [])
     if not grid or not comp.get("profile_count"):
         # A grid alone is returned when profiles exist but none carry this
         # variable; plotting the empty composite against it used to crash (500).
@@ -599,7 +604,12 @@ def _publication_figure(b, comp: dict, variable: str, dpi: int, fmt: str) -> Res
     finite_mean = [v for v in mean_v if np.isfinite(v)]
     if variable in LOG_VARIABLES and finite_mean and min(finite_mean) > 0:
         ax.set_xscale("log")              # pressure and densities span orders of magnitude
-    ax.set_ylabel("Altitude $z$ (km)", fontsize=11, fontweight="bold")
+    if by_pressure:
+        ax.set_yscale("log")
+        ax.invert_yaxis()                 # high pressure (low altitude) at the bottom
+        ax.set_ylabel("Pressure $P$ (hPa)", fontsize=11, fontweight="bold")
+    else:
+        ax.set_ylabel("Altitude $z$ (km)", fontsize=11, fontweight="bold")
     ax.set_xlabel(xlabel, fontsize=11, fontweight="bold")
     times = sorted(p.get("time_utc", "")[:10] for p in profiles if p.get("time_utc"))
     span = (times[0] if times[0] == times[-1] else f"{times[0]} to {times[-1]}") if times else ""

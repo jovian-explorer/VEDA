@@ -209,6 +209,12 @@
           <label title="Spacing of the common altitude grid the profiles are interpolated to; empty: 0.5 km on Venus, Mars and Pluto, 2 km elsewhere">Grid step (km)
             <input type="number" id="veda-compare-altitude-step" min="0.01" max="100" step="any" placeholder="auto" />
           </label>
+          <label title="Compare on altitude levels, or on pressure levels (uniform in log pressure, 0.02 decades apart; profiles without pressure are left out). Pressure levels line up profiles whose altitudes have different references.">Vertical
+            <select id="veda-compare-vertical">
+              <option value="altitude">Altitude</option>
+              <option value="pressure">Pressure</option>
+            </select>
+          </label>
           <label>Show
             <select id="veda-compare-show-as">
               <option value="values">Values</option>

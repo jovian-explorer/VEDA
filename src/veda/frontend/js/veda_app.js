@@ -33,6 +33,7 @@ export const vedaState = {
   compareGroupBy: '',    // climatology bins: latitude | lst | sza | year | month | month_of_year | mission
   compareGroupWidth: '',
   compareAltitudeStep: '',
+  compareVertical: 'altitude',   // altitude | pressure (grid uniform in log p)
   compareShowAs: 'values',  // values | deviation
   lastComparisonData: null,
   bodySubtab: 'soundings', // 'soundings' | 'map'
@@ -601,6 +602,7 @@ function currentComparisonRequest() {
     group_by: vedaState.compareGroupBy || undefined,
     group_width: Number(vedaState.compareGroupWidth) || 0,
     altitude_step_km: Number(vedaState.compareAltitudeStep) || undefined,
+    vertical: vedaState.compareVertical === 'pressure' ? 'pressure' : undefined,
   };
 }
 
@@ -700,6 +702,8 @@ function setupBodyModeControls() {
   const showAs = document.getElementById('veda-compare-show-as');
   groupSel?.addEventListener('change', () => { vedaState.compareGroupBy = groupSel.value; updateComparison(); });
   groupWidth?.addEventListener('change', () => { vedaState.compareGroupWidth = groupWidth.value; if (vedaState.compareGroupBy) updateComparison(); });
+  const vertSel = document.getElementById('veda-compare-vertical');
+  vertSel?.addEventListener('change', () => { vedaState.compareVertical = vertSel.value; updateComparison(); });
   const altStep = document.getElementById('veda-compare-altitude-step');
   altStep?.addEventListener('change', () => {
     const v = altStep.value === '' ? '' : Number(altStep.value);
@@ -988,6 +992,12 @@ function renderAltitudeCut() {
   const status = document.getElementById('veda-cut-status');
   if (!plotDiv || !window.Plotly) return;
   const data = vedaState.lastComparisonData;
+  if (data && data.vertical === 'pressure') {
+    if (plotDiv.data) Plotly.purge(plotDiv);
+    plotDiv.innerHTML = '<div class="empty-state">The altitude cut works on altitude levels. Set Vertical to Altitude to use it.</div>';
+    if (status) status.textContent = '';
+    return;
+  }
   const grid = (data && data.grid_km) || [];
   const profiles = (data && data.profiles) || [];
   if (!grid.length || !profiles.length) {
@@ -1173,11 +1183,12 @@ function renderComparisonPlot() {
   const pUnit = vedaState.selectedCompareVariable === 'pressure_hpa' ? vedaState.unitsPressure : 'hPa';
   const pScale = { bar: 1e-3, Pa: 100 }[pUnit] || 1;
   const varCfg = pScale === 1 ? baseCfg : { ...baseCfg, units: pUnit, axis: `Pressure (${pUnit})` };
-  if (!raw || !raw.grid_km || raw.grid_km.length === 0 || !raw.profile_count) {
+  const rawGrid = raw ? (raw.vertical === 'pressure' ? raw.grid_hpa : raw.grid_km) || [] : [];
+  if (!raw || rawGrid.length === 0 || !raw.profile_count) {
     if (plotDiv.data) Plotly.purge(plotDiv);
     // varCfg.label is one of the app's own VARIABLE_CONFIGS labels (sub/sup markup).
     plotDiv.innerHTML = `<div class="empty-state">${
-      !raw || !(raw.grid_km || []).length
+      !raw || !rawGrid.length
         ? 'No profile observations are selected or available for this body. Pick missions above to compare.'
         : `None of the selected observations contain ${cleanPlotlyMath(varCfg.label)}. ` +
           'Choose another variable or add missions that measure it.'
@@ -1201,7 +1212,8 @@ function renderComparisonPlot() {
   view.groups.forEach((g, gi) => g.observation_ids.forEach(id => { groupIndex[id] = gi; }));
 
   const traces = [];
-  const zGrid = data.grid_km;
+  const byPressure = data.vertical === 'pressure';
+  const zGrid = byPressure ? data.grid_hpa : data.grid_km;
   const ink = plotColors().ink;
 
   // Colour each profile by mission (default), by observation date or by
@@ -1277,9 +1289,9 @@ function renderComparisonPlot() {
           ticktext: [fmt(lo), fmt((lo + hi) / 2), fmt(hi)], len: 0.6, thickness: 12 } } });
   }
 
-  // The comparison grid is in altitude, so it always uses altitude vertically.
+  // The vertical axis is the comparison grid's coordinate: altitude, or pressure (log, top at top).
   const savedVertical = plotStyle.vertical;
-  plotStyle.vertical = 'altitude';
+  plotStyle.vertical = byPressure ? 'pressure' : 'altitude';
   const layout = styleLayout({
     title: { text: cleanPlotlyMath(`${(data.body_name || data.body_id || '').toUpperCase()} • ${data.profile_count} profile${data.profile_count === 1 ? '' : 's'} (${varCfg.label})`) },
     hovermode: 'closest',
@@ -1288,7 +1300,7 @@ function renderComparisonPlot() {
        varTitle: view.deviation
          ? `Deviation from the ${view.groups.length ? 'group' : 'composite'} mean (${view.logVar ? '%' : cleanPlotlyMath(varCfg.units || '')})`
          : cleanPlotlyMath(varCfg.axis),
-       coordTitle: 'Altitude above reference radius (km)' });
+       coordTitle: byPressure ? 'Pressure (hPa)' : 'Altitude above reference radius (km)' });
   plotStyle.vertical = savedVertical;
 
   window.Plotly.newPlot(plotDiv, traces, themedLayout(layout), { responsive: true, displayModeBar: true });

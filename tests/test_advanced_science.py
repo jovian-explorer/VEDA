@@ -276,3 +276,43 @@ def test_saturn_scale_height_uses_latitude_gravity():
     np.testing.assert_allclose(d["scale_height"], sat.gas_constant_r * 140.0 / (g * 1000.0), rtol=1e-12)
     assert d["scale_height"][0] < 0.9 * sat.gas_constant_r * 140.0 / (sat.surface_gravity * 1000.0)
     assert p.raw_attributes["gravity_model"].startswith("effective gravity at 70.0")
+
+
+def test_comparison_on_pressure_levels_lines_up_offset_references():
+    """The same T(p) measured from two altitude references 50 km apart: on an altitude
+    grid the two disagree, on a log-pressure grid they coincide."""
+    from veda.analysis.atmospheric import compare_profiles_on_body, export_comparison_to_csv
+    sat = get_body("saturn")
+    z = np.linspace(0.0, 400.0, 401)
+    p_hpa = 1000.0 * np.exp(-z / 45.0)
+    t = 140.0 + 20.0 * np.sin(z / 60.0)
+    a = _profile("saturn", z, t, p_hpa)
+    b = _profile("saturn", z + 50.0, t, p_hpa)
+    alt = compare_profiles_on_body([a, b], sat, altitude_step_km=2.0)
+    assert np.nanmax([s or 0 for s in alt["composite_std"]]) > 5.0
+    prs = compare_profiles_on_body([a, b], sat, variable_name="temperature_k", vertical="pressure",
+                                   pressure_step_decades=0.05)
+    assert prs["vertical"] == "pressure" and prs["grid_km"] == [] and prs["profile_count"] == 2
+    assert prs["grid_hpa"][0] == pytest.approx(1000.0, rel=0.06)                 # bottom up, like altitude
+    assert prs["grid_hpa"][-1] == pytest.approx(1000.0 * np.exp(-400.0 / 45.0), rel=0.15)
+    assert np.diff(np.log10(prs["grid_hpa"])) == pytest.approx(-0.05, abs=1e-5)
+    std = [s for s in prs["composite_std"] if s is not None]
+    assert std and max(std) < 1e-6
+    i = int(np.argmin(np.abs(np.array(prs["grid_hpa"]) - 100.0)))
+    p_i = prs["grid_hpa"][i]
+    assert prs["composite_mean"][i] == pytest.approx(140.0 + 20.0 * np.sin(45.0 * np.log(1000.0 / p_i) / 60.0), abs=0.05)
+    csv = export_comparison_to_csv(prs)
+    assert "uniform in log pressure" in csv and "\npressure_hpa,composite_mean_temperature_k" in csv
+
+
+def test_pressure_comparison_skips_profiles_without_pressure_and_refuses_pressure_variable():
+    from veda.analysis.atmospheric import compare_profiles_on_body
+    mars = get_body("mars")
+    z = np.linspace(0.0, 40.0, 41)
+    with_p = _profile("mars", z, np.full_like(z, 200.0), 6.0 * np.exp(-z / 10.0))
+    without_p = _profile("mars", z, np.full_like(z, 210.0))
+    r = compare_profiles_on_body([with_p, without_p], mars, vertical="pressure")
+    assert r["profile_count"] == 1
+    assert "error" in compare_profiles_on_body([with_p], mars, variable_name="pressure_hpa", vertical="pressure")
+    with pytest.raises(ValueError):
+        compare_profiles_on_body([with_p], mars, vertical="theta")

@@ -371,6 +371,27 @@ def _compared_variable(p: ObservationProfile, variable_name: str) -> Optional[np
     return None if v is None else np.asarray(v, dtype=float)
 
 
+VERTICALS = ("altitude", "pressure")
+
+
+def _vertical_coordinate(p: ObservationProfile, vertical: str) -> Optional[np.ndarray]:
+    """Altitude (km), or -log10(pressure / hPa) in pressure mode (None without pressure)."""
+    if vertical == "pressure":
+        pr = p.pressure_hpa
+        if pr is None or p.altitude_km is None or np.shape(pr) != np.shape(p.altitude_km):
+            return None
+        pr = np.asarray(pr, dtype=float)
+        with np.errstate(invalid="ignore", divide="ignore"):
+            return np.where(pr > 0, -np.log10(pr), np.nan)
+    return None if p.altitude_km is None else np.asarray(p.altitude_km, dtype=float)
+
+
+def _altitude_range(p: ObservationProfile, ok: np.ndarray) -> List[float]:
+    z = np.asarray(p.altitude_km, dtype=float)
+    z = z[ok & np.isfinite(z)] if z.shape == ok.shape else z[np.isfinite(z)]
+    return [round(float(z.min()), 2), round(float(z.max()), 2)] if z.size else []
+
+
 def compare_profiles_on_body(
     profiles: List[ObservationProfile],
     body: BodyInfo,
@@ -378,21 +399,34 @@ def compare_profiles_on_body(
     variable_name: str = "temperature_k",
     group_by: str = "",
     group_width: float = 0.0,
+    vertical: str = "altitude",
+    pressure_step_decades: float = 0.02,
 ) -> Dict[str, Any]:
     """Cross-compare multi-mission profiles for a target planetary body.
 
     Interpolates all profiles onto a uniform vertical grid and calculates
     multi-spacecraft composite mean, dispersion (+/- 1 sigma), and individual curves.
+    ``vertical="pressure"`` uses a grid uniform in log10(pressure) instead of altitude
+    (``pressure_step_decades`` apart): profiles measured from different altitude
+    references (the 1-bar level, an ellipsoid, a landing site) then line up, and
+    profiles without a pressure column are left out.
     """
+    if vertical not in VERTICALS:
+        raise ValueError(f"vertical must be one of: {', '.join(VERTICALS)}")
+    by_pressure = vertical == "pressure"
     if not profiles:
         return _empty_comparison(body, variable_name)
+    if by_pressure and variable_name == "pressure_hpa":
+        return {**_empty_comparison(body, variable_name),
+                "error": "Pressure is the vertical coordinate here; compare another variable, or use altitude."}
+    step = pressure_step_decades if by_pressure else altitude_step_km
 
     # Determine altitude span covering the observations
     valid_profiles = [p for p in profiles if p is not None]
     if not valid_profiles:
         return _empty_comparison(body, variable_name)
 
-    all_z = [p.altitude_km for p in valid_profiles if p.altitude_km is not None and p.altitude_km.size > 0]
+    all_z = [c for c in (_vertical_coordinate(p, vertical) for p in valid_profiles) if c is not None and c.size > 0]
     if not all_z:
         return _empty_comparison(body, variable_name)
 
@@ -403,18 +437,20 @@ def compare_profiles_on_body(
 
     # Grid levels on whole multiples of the step (20.0, 20.5 km ...), covering every
     # profile; negative altitudes (below the reference level) are kept.
-    grid_lo = np.ceil(float(np.min(z_mins)) / altitude_step_km - 1e-9) * altitude_step_km
-    grid_hi = np.floor(float(np.max(z_maxs)) / altitude_step_km + 1e-9) * altitude_step_km
+    # (in pressure mode the coordinate is -log10(p / hPa), increasing upwards like altitude)
+    grid_lo = np.ceil(float(np.min(z_mins)) / step - 1e-9) * step
+    grid_hi = np.floor(float(np.max(z_maxs)) / step + 1e-9) * step
     if grid_hi <= grid_lo:
-        grid_hi = grid_lo + altitude_step_km
+        grid_hi = grid_lo + step
 
-    num_steps = int(round((grid_hi - grid_lo) / altitude_step_km)) + 1
+    num_steps = int(round((grid_hi - grid_lo) / step)) + 1
     if num_steps > MAX_GRID_LEVELS:
         need = (grid_hi - grid_lo) / (MAX_GRID_LEVELS - 1)
+        unit = "decades of pressure" if by_pressure else "km"
         return {**_empty_comparison(body, variable_name),
-                "error": (f"An altitude step of {altitude_step_km:g} km gives {num_steps} levels over "
-                          f"{grid_lo:g} to {grid_hi:g} km; choose a step of at least {need:.2g} km.")}
-    z_grid = np.round(grid_lo + altitude_step_km * np.arange(max(num_steps, 2)), 6)
+                "error": (f"A step of {step:g} {unit} gives {num_steps} levels; "
+                          f"choose a step of at least {need:.2g} {unit}.")}
+    z_grid = np.round(grid_lo + step * np.arange(max(num_steps, 2)), 6)
 
     interpolated_matrix = []
     profile_summaries = []
@@ -429,10 +465,10 @@ def compare_profiles_on_body(
     for p in valid_profiles:
         v = _compared_variable(p, variable_name)
 
-        if v is None or p.altitude_km is None or p.altitude_km.size < 2:
+        z_p = _vertical_coordinate(p, vertical)
+        if v is None or z_p is None or z_p.size < 2 or v.shape != z_p.shape:
             continue
 
-        z_p = p.altitude_km
         ok = np.isfinite(z_p) & np.isfinite(v)
         if ok.sum() < 2:
             continue
@@ -462,7 +498,7 @@ def compare_profiles_on_body(
             "latitude": p.latitude,
             "longitude": p.longitude,
             "n_points": int(v_clean.size),
-            "z_range_km": [round(float(np.min(z_clean)), 2), round(float(np.max(z_clean)), 2)],
+            "z_range_km": _altitude_range(p, ok),
             "altitude_reference": (p.raw_attributes or {}).get("ALTITUDE_REFERENCE", ""),
             # the mission a loaded file comes from, as the user said (for legends and colours)
             "mission_label": (p.raw_attributes or {}).get("SOURCE_MISSION") or p.mission_id,
@@ -472,7 +508,7 @@ def compare_profiles_on_body(
         })
 
     if not interpolated_matrix:
-        return _empty_comparison(body, variable_name, [round(float(z), 2) for z in z_grid])
+        return _empty_comparison(body, variable_name, [] if by_pressure else [round(float(z), 4) for z in z_grid])
 
     mat = np.array(interpolated_matrix)  # shape: (n_profiles, n_grid)
     n_per_level = np.sum(np.isfinite(mat), axis=0)
@@ -504,12 +540,16 @@ def compare_profiles_on_body(
         "groups": groups,
         "averaging": "geometric mean and 1-sigma factor (log space)" if log_like else "arithmetic mean and 1-sigma (sample)",
         "profiles_per_level": [int(n) for n in n_per_level],
-        "vertical_reference_warning": _vertical_reference_warning(profile_summaries),
+        # (levels of equal pressure need no common altitude reference)
+        "vertical_reference_warning": "" if by_pressure else _vertical_reference_warning(profile_summaries),
+        "vertical": vertical,
         "body_id": body.id,
         "body_name": body.name,
         "variable_name": variable_name,
-        "grid_km": [round(float(z), 4) for z in z_grid],
-        "altitude_step_km": altitude_step_km,
+        "grid_km": [] if by_pressure else [round(float(z), 4) for z in z_grid],
+        "altitude_step_km": None if by_pressure else altitude_step_km,
+        **({"grid_hpa": [float(f"{10.0 ** -z:.6g}") for z in z_grid],
+            "pressure_step_decades": pressure_step_decades} if by_pressure else {}),
         # The mean of whichever profiles reach a level jumps where that number changes
         # (one profile alone is just that profile), so it is given only where at least
         # two profiles and at least half of them overlap; profiles_per_level says how many.
@@ -658,7 +698,8 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
     body_name = comparison.get("body_name", "Body")
     var_name = comparison.get("variable_name", "variable")
     units = (get_variable_info(var_name) or {}).get("units", "")
-    grid = comparison.get("grid_km", [])
+    by_pressure = comparison.get("vertical") == "pressure"
+    grid = comparison.get("grid_hpa", []) if by_pressure else comparison.get("grid_km", [])
     profiles = comparison.get("profiles", [])
     # group labels in plain ASCII ("Latitude 0 to 30 deg"): spreadsheets misread the degree sign
     groups = [{**g, "label": g["label"].replace("°", " deg")}
@@ -669,8 +710,10 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
         f"# profiles={len(profiles)}, averaging={comparison.get('averaging', '')}"
         + (f", grouped by {comparison.get('group_by')}" if groups else ""),
         "# Profiles from the official mission archives (see each product for its source); means and spreads computed by VEDA.",
-        "# Altitude above the body's reference radius (km)"
-        + (f", common grid every {comparison['altitude_step_km']:g} km." if comparison.get("altitude_step_km") else ".")
+        (f"# Common grid uniform in log pressure, every {comparison.get('pressure_step_decades'):g} decades."
+         if by_pressure else
+         "# Altitude above the body's reference radius (km)"
+         + (f", common grid every {comparison['altitude_step_km']:g} km." if comparison.get("altitude_step_km") else "."))
         + (f" Note: {comparison['vertical_reference_warning']}" if comparison.get("vertical_reference_warning") else ""),
         f"# Processed with VEDA {__version__} (https://github.com/jovian-explorer/VEDA), MIT License",
     ]
@@ -689,7 +732,7 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
     for g in groups:
         lines.append(f"# group {_csv_field(g['label'])}: n={g['n']}, profiles={' '.join(g['observation_ids'])}")
 
-    header = ["altitude_km", f"composite_mean_{var_name}", "composite_std", "plus_1sigma", "minus_1sigma", "profiles_at_level"]
+    header = ["pressure_hpa" if by_pressure else "altitude_km", f"composite_mean_{var_name}", "composite_std", "plus_1sigma", "minus_1sigma", "profiles_at_level"]
     for g in groups:
         header += [f"{g['label']} mean", f"{g['label']} plus_1sigma", f"{g['label']} minus_1sigma"]
     header += cols
@@ -699,7 +742,7 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
         return seq[i] if seq and i < len(seq) else None
     n_level = comparison.get("profiles_per_level") or []
     for i, z in enumerate(grid):
-        row = [f"{z:.3f}"] + [_csv_num(at(comparison.get(k), i)) for k in
+        row = [f"{z:.6g}" if by_pressure else f"{z:.3f}"] + [_csv_num(at(comparison.get(k), i)) for k in
                               ("composite_mean", "composite_std", "composite_plus_1sigma", "composite_minus_1sigma")]
         row.append(str(at(n_level, i)) if at(n_level, i) is not None else "")
         for g in groups:

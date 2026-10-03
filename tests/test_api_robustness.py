@@ -469,3 +469,17 @@ def test_comparison_grid_size_is_bounded():
     assert "choose a step of at least" in r["error"] and r["profile_count"] == 0
     assert compare_profiles_on_body([p], get_body("saturn"), altitude_step_km=0.5).get("error") is None
     assert 5000.0 / 0.5 + 1 <= MAX_GRID_LEVELS
+
+
+def test_comparison_on_pressure_levels_through_the_api(client):
+    base = {"missions": ["mex"], "variable": "temperature_k", "vertical": "pressure",
+            "filter": {"start": "2004-04-01", "end": "2004-04-03", "download": False}}
+    r = client.post("/api/veda/compare/body/mars", json=base)
+    assert r.status_code == 200, r.text
+    d = r.json()
+    assert d["profile_count"] >= 1 and d["grid_hpa"] and d["grid_km"] == []
+    assert client.post("/api/veda/export/compare/mars/csv", json=base).text.count("\npressure_hpa,") == 1
+    fig = client.post("/api/veda/figure/publication?body_id=mars", json={**base, "dpi": 100, "fmt": "png"})
+    assert fig.status_code == 200 and fig.headers["content-type"] == "image/png"
+    assert client.post("/api/veda/compare/body/mars", json={**base, "variable": "pressure_hpa"}).status_code == 400
+    assert client.post("/api/veda/compare/body/mars", json={**base, "vertical": "theta"}).status_code == 422
