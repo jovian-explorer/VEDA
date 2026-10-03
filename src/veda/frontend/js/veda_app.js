@@ -564,7 +564,8 @@ export async function loadAndRenderCelestialBody(bodyId) {
       const label = document.createElement('label');
       label.className = 'mission-checkbox-label';
       const isChecked = vedaState.selectedMissionIdsForBody.has(m.id);
-      const kind = m.encounter_type === 'flyby' ? 'Flyby'
+      // 'flyby', 'gravity_assist_flyby' (Cassini and New Horizons at Jupiter), 'multiple_flybys' (Cassini at Titan)
+      const kind = /flyby/.test(m.encounter_type || '') ? 'Flyby'
         : ['lander', 'rover', 'probe'].includes(m.mission_type) ? m.mission_type[0].toUpperCase() + m.mission_type.slice(1) : 'Orbiter';
       const encBadge = `<span class="badge ${kind === 'Flyby' ? 'badge-flyby' : 'badge-orbiter'}">${kind}</span>`;
       label.innerHTML = `

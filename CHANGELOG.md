@@ -10,6 +10,7 @@ From this version on, every tested change is published straight away as the late
 - **Automatic builds**: each change to VEDA that passes the tests on Windows, macOS and Linux is built for all three and published as the latest release.
 - VEDA tells you when a newer build has been published (a notice with a download link; About > *Check for updates*). About shows the build number, date and commit. Turn it off in Settings > Network.
 - A build whose release was published no longer reports failure when removing an older build fails (a tag already deleted by a cancelled run).
+- **Fix: flybys shown as orbiters.** In a body's mission list, Cassini and New Horizons at Jupiter (gravity-assist flybys) and Cassini at Titan (repeated flybys) were labelled *Orbiter*; they are now *Flyby*.
 - The test suite passes when `VEDA_HOME` points at a data folder already in use: two download tests found the files an earlier run had cached and fetched nothing.
 
 ### Performance
