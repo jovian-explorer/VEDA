@@ -1030,19 +1030,29 @@ function renderComparisonSelectionNote() {
   }
 }
 
+// Each comparison request gets a number; an answer to an older request that arrives after
+// a newer one was started (a filtered search can take a minute) is dropped, or it would be
+// drawn with the newer variable's axis and units.
+let comparisonSeq = 0;
+
 async function updateComparison() {
+  const seq = ++comparisonSeq;
   renderComparisonSelectionNote();
   const mids = Array.from(vedaState.selectedMissionIdsForBody);
   const statusEl = document.getElementById('veda-comparison-status');
-  if (statusEl) statusEl.textContent = vedaState.compareFilter && !vedaState.comparisonProducts
+  const searching = vedaState.compareFilter && !vedaState.comparisonProducts;
+  if (statusEl) statusEl.textContent = searching
     ? 'Finding, downloading and reading the matching profiles (the first time this can take a minute)...'
     : 'Computing multi-mission composite thermodynamics...';
+  const reportEl = document.getElementById('cf-report');
+  if (reportEl && searching) reportEl.textContent = 'Searching...';
 
   try {
     const [compData, exploreData] = await Promise.all([
       api.vedaCompareBody(vedaState.activeBodyId, currentComparisonRequest()),
       api.vedaExploreBody(vedaState.activeBodyId, mids.join(',')),
     ]);
+    if (seq !== comparisonSeq) return;            // superseded by a newer comparison
 
     vedaState.lastComparisonData = compData;
     renderSelectionReport(compData.selection);
@@ -1056,8 +1066,10 @@ async function updateComparison() {
       statusEl.textContent = `Aggregated ${compData.profile_count} sounding${compData.profile_count === 1 ? "" : "s"} from ${nMissions} mission${nMissions === 1 ? "" : "s"}${compData.averaging ? `; ${compData.averaging}; the spread is shown where at least two profiles overlap` : ""}.${compData.vertical_reference_warning ? ` Note: ${compData.vertical_reference_warning}` : ""}`;
     }
   } catch (err) {
+    if (seq !== comparisonSeq) return;
     console.error('Failed to compute comparison:', err);
     if (statusEl) statusEl.textContent = `Comparison error: ${err.message}`;
+    if (reportEl && searching) reportEl.textContent = '';
   }
 }
 
