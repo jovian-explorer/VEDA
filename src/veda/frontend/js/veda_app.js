@@ -32,6 +32,7 @@ export const vedaState = {
   compareFilter: null,   // dates and geometry limits for the comparison (null: downloaded profiles)
   compareGroupBy: '',    // climatology bins: latitude | lst | sza | year | month | month_of_year | mission
   compareGroupWidth: '',
+  compareAltitudeStep: '',
   compareShowAs: 'values',  // values | deviation
   lastComparisonData: null,
   bodySubtab: 'soundings', // 'soundings' | 'map'
@@ -599,6 +600,7 @@ function currentComparisonRequest() {
     filter: vedaState.comparisonProducts ? undefined : (vedaState.compareFilter || undefined),
     group_by: vedaState.compareGroupBy || undefined,
     group_width: Number(vedaState.compareGroupWidth) || 0,
+    altitude_step_km: Number(vedaState.compareAltitudeStep) || undefined,
   };
 }
 
@@ -698,6 +700,13 @@ function setupBodyModeControls() {
   const showAs = document.getElementById('veda-compare-show-as');
   groupSel?.addEventListener('change', () => { vedaState.compareGroupBy = groupSel.value; updateComparison(); });
   groupWidth?.addEventListener('change', () => { vedaState.compareGroupWidth = groupWidth.value; if (vedaState.compareGroupBy) updateComparison(); });
+  const altStep = document.getElementById('veda-compare-altitude-step');
+  altStep?.addEventListener('change', () => {
+    const v = altStep.value === '' ? '' : Number(altStep.value);
+    if (v !== '' && !(v >= 0.01 && v <= 100)) { altStep.value = vedaState.compareAltitudeStep; return toast('Grid step must be between 0.01 and 100 km', 'bad'); }
+    vedaState.compareAltitudeStep = v;
+    updateComparison();
+  });
   showAs?.addEventListener('change', () => { vedaState.compareShowAs = showAs.value; renderComparisonPlot(); });
   const varSelect = document.getElementById('veda-compare-variable-select');
   if (varSelect) {

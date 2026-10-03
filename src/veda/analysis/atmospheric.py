@@ -317,6 +317,10 @@ def _group_composites(mat: np.ndarray, summaries: List[Dict[str, Any]], log_like
     return out
 
 
+# Most levels a comparison grid may have (a 0.01 km step over a 5000 km thermosphere
+# profile would otherwise send hundreds of MB to the window)
+MAX_GRID_LEVELS = 20000
+
 # Variables compared in log space (they change by orders of magnitude with height)
 LOG_VARIABLES = {"pressure_hpa", "density", "density_measured", "number_density_m3", "electron_density_cm3"}
 
@@ -368,6 +372,11 @@ def compare_profiles_on_body(
         grid_hi = grid_lo + altitude_step_km
 
     num_steps = int(round((grid_hi - grid_lo) / altitude_step_km)) + 1
+    if num_steps > MAX_GRID_LEVELS:
+        need = (grid_hi - grid_lo) / (MAX_GRID_LEVELS - 1)
+        return {**_empty_comparison(body, variable_name),
+                "error": (f"An altitude step of {altitude_step_km:g} km gives {num_steps} levels over "
+                          f"{grid_lo:g} to {grid_hi:g} km; choose a step of at least {need:.2g} km.")}
     z_grid = np.round(grid_lo + altitude_step_km * np.arange(max(num_steps, 2)), 6)
 
     interpolated_matrix = []
@@ -462,7 +471,8 @@ def compare_profiles_on_body(
         "body_id": body.id,
         "body_name": body.name,
         "variable_name": variable_name,
-        "grid_km": [round(float(z), 2) for z in z_grid],
+        "grid_km": [round(float(z), 4) for z in z_grid],
+        "altitude_step_km": altitude_step_km,
         # The mean of whichever profiles reach a level jumps where that number changes
         # (one profile alone is just that profile), so it is given only where at least
         # two profiles and at least half of them overlap; profiles_per_level says how many.
@@ -622,7 +632,8 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
         f"# profiles={len(profiles)}, averaging={comparison.get('averaging', '')}"
         + (f", grouped by {comparison.get('group_by')}" if groups else ""),
         "# Profiles from the official mission archives (see each product for its source); means and spreads computed by VEDA.",
-        "# Altitude above the body's reference radius (km)."
+        "# Altitude above the body's reference radius (km)"
+        + (f", common grid every {comparison['altitude_step_km']:g} km." if comparison.get("altitude_step_km") else ".")
         + (f" Note: {comparison['vertical_reference_warning']}" if comparison.get("vertical_reference_warning") else ""),
         f"# Processed with VEDA {__version__} (https://github.com/jovian-explorer/VEDA), MIT License",
     ]

@@ -206,6 +206,9 @@
           <label title="Width of the latitude, local time, zenith angle or Ls bins; empty: 30°, 3 h, 30°, 30°">Bin width
             <input type="number" id="veda-compare-group-width" min="0" max="360" step="any" placeholder="auto" />
           </label>
+          <label title="Spacing of the common altitude grid the profiles are interpolated to; empty: 0.5 km on Venus, Mars and Pluto, 2 km elsewhere">Grid step (km)
+            <input type="number" id="veda-compare-altitude-step" min="0.01" max="100" step="any" placeholder="auto" />
+          </label>
           <label>Show
             <select id="veda-compare-show-as">
               <option value="values">Values</option>

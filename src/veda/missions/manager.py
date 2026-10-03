@@ -156,12 +156,14 @@ class MissionManager:
         selection: Optional["ProfileFilter"] = None,
         group_by: str = "",
         group_width: float = 0.0,
+        altitude_step_km: Optional[float] = None,
     ) -> Dict[str, Any]:
         """Load multiple profiles across missions and compute cross-mission comparison.
 
         Hand-picked observations are used as given.  Otherwise, with ``selection``,
         profiles are chosen from the archive catalogue by date and geometry (see
         missions/selection.py); without it, from the profiles already downloaded.
+        ``altitude_step_km`` is the common grid spacing (default by body).
         """
         body = get_body(body_id)
         if not body:
@@ -173,7 +175,7 @@ class MissionManager:
         out = compare_profiles_on_body(
             profiles=loaded_profiles,
             body=body,
-            altitude_step_km=0.5 if body_id in ("mars", "pluto", "venus") else 2.0,
+            altitude_step_km=altitude_step_km or default_altitude_step_km(body_id),
             variable_name=variable_name,
             group_by=group_by,
             group_width=group_width,
@@ -181,6 +183,11 @@ class MissionManager:
         if report is not None and isinstance(out, dict):
             out["selection"] = report
         return out
+
+
+def default_altitude_step_km(body_id: str) -> float:
+    """Common-grid spacing of a comparison when none is chosen."""
+    return 0.5 if body_id in ("mars", "pluto", "venus") else 2.0
 
 
 # Global singleton instance

@@ -442,3 +442,30 @@ def test_load_rejects_bad_roles_and_does_not_invent_a_time(client):
                                                    "roles": {"COL_1": {"role": "altitude", "unit": "km"},
                                                              "COL_2": {"role": "temperature", "unit": "K"}}}).json()
     assert ok["data"]["time_utc"] == ""                     # was a made-up 2026-01-01T12:00:00Z
+
+
+def test_comparison_altitude_step_is_chosen_by_the_user(client):
+    base = {"missions": ["mex"], "variable": "temperature_k",
+            "filter": {"start": "2004-04-01", "end": "2004-04-03", "download": False}}
+    default = client.post("/api/veda/compare/body/mars", json=base).json()
+    assert default["profile_count"] >= 1 and default["altitude_step_km"] == 0.5
+    fine = client.post("/api/veda/compare/body/mars", json={**base, "altitude_step_km": 0.1}).json()
+    assert fine["altitude_step_km"] == 0.1
+    assert np.allclose(np.diff(fine["grid_km"]), 0.1)
+    assert len(fine["grid_km"]) > 4 * len(default["grid_km"])
+    csv = client.post("/api/veda/export/compare/mars/csv", json={**base, "altitude_step_km": 0.1}).text
+    assert "common grid every 0.1 km" in csv
+    too_fine = client.post("/api/veda/compare/body/mars", json={**base, "altitude_step_km": 0.001})
+    assert too_fine.status_code == 422                       # below the 0.01 km minimum
+
+
+def test_comparison_grid_size_is_bounded():
+    from veda.analysis.atmospheric import MAX_GRID_LEVELS, compare_profiles_on_body
+    from veda.core.models import ObservationProfile
+    from veda.core.registry import get_body
+    z = np.linspace(0.0, 5000.0, 50)
+    p = ObservationProfile("s", "cassini", "saturn", "UVIS", "2010-01-01", altitude_km=z, temperature_k=np.full(50, 400.0))
+    r = compare_profiles_on_body([p], get_body("saturn"), altitude_step_km=0.01)
+    assert "choose a step of at least" in r["error"] and r["profile_count"] == 0
+    assert compare_profiles_on_body([p], get_body("saturn"), altitude_step_km=0.5).get("error") is None
+    assert 5000.0 / 0.5 + 1 <= MAX_GRID_LEVELS

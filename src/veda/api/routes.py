@@ -241,6 +241,8 @@ class CrossCompareRequest(BaseModel):
     # climatology bins: latitude | lst | sza | year | month | month_of_year | mission
     group_by: Optional[str] = Field(None, max_length=20)
     group_width: float = Field(0.0, ge=0.0, le=360.0)
+    # spacing of the common altitude grid; None: 0.5 km on Venus, Mars and Pluto, 2 km elsewhere
+    altitude_step_km: Optional[float] = Field(None, ge=0.01, le=100.0)
 
 
 @router.post("/compare/body/{body_id}")
@@ -264,7 +266,7 @@ def _compare_or_404(body_id: str, req: "CrossCompareRequest") -> dict:
         raise HTTPException(status_code=422, detail=f"group_by must be one of: {', '.join(GROUPINGS)}")
     comp = get_mission_manager().compare_on_body(
         body_id, req.observations, mission_ids=req.missions, variable_name=req.variable, selection=sel,
-        group_by=req.group_by or "", group_width=req.group_width)
+        group_by=req.group_by or "", group_width=req.group_width, altitude_step_km=req.altitude_step_km)
     if isinstance(comp, dict) and comp.get("error"):
         raise HTTPException(status_code=400, detail=comp["error"])
     return comp
