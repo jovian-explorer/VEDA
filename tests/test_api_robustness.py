@@ -351,6 +351,9 @@ def test_comparison_filters_by_date_and_latitude(client):
         "start": "2004-04-01", "end": "2004-04-03", "lat_min": lat - 1, "lat_max": lat + 1, "download": False}}).json()
     assert sample in [p["observation_id"] for p in inside["profiles"]]
     assert inside["selection"]["mex"]["kept"] >= 1
+    # only the bundled samples are catalogued: the archive itself is not indexed, and the
+    # report says so (it counted the samples as an index)
+    assert inside["selection"]["mex"]["not_indexed"] == ["mex-m-mrs-5-occ"]
     outside = client.post("/api/veda/compare/body/mars", json={**base, "filter": {
         "start": "2004-04-01", "end": "2004-04-03", "lat_min": lat + 5, "lat_max": lat + 10, "download": False}}).json()
     assert outside["profile_count"] == 0

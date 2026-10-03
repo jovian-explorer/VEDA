@@ -152,7 +152,9 @@ def select_profiles(manager, body_id: str, mission_ids: List[str], variable: str
         if not ds_ids:
             r["note"] = "no profile data sets for this body"
             continue
-        not_indexed = [d for d in ds_ids if not catalog.dataset_status(get_dataset(d))["indexed_products"]]
+        # No archive volume indexed yet: the catalogue may still hold the bundled samples,
+        # which are not the archive (a date-range search found only them, unannounced).
+        not_indexed = [d for d in ds_ids if not catalog.dataset_status(get_dataset(d))["indexed_volumes"]]
         if not_indexed:
             r["not_indexed"] = not_indexed
         r["in_date_range"], cands = _candidates(ds_ids, f, variable, budget)
