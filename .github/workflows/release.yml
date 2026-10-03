@@ -97,4 +97,6 @@ jobs:
         run: |
           gh release list --limit 200 --json tagName,createdAt \
             --jq '[.[] | select(.tagName | test("-build\\."))] | sort_by(.createdAt) | reverse | .[5:] | .[].tagName' |
-          while read -r tag; do gh release delete "$tag" --yes --cleanup-tag; done
+          # (a run cancelled by a newer push can leave a release whose tag is already gone:
+          # failing on it marked a release that had been published as failed)
+          while read -r tag; do gh release delete "$tag" --yes --cleanup-tag || echo "::warning::could not delete $tag"; done
