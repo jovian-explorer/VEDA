@@ -108,11 +108,17 @@ BODIES: Dict[str, BodyInfo] = {
         category="moon",
         radius_km=2574.7,
         surface_gravity=1.352,
-        mean_molecular_weight=28.6,  # 95% N2, 5% CH4
-        gas_constant_r=290.7,
-        isobaric_heat_capacity_cp=1040.0,
+        # Huygens GCMS (Niemann et al. 2010, JGR 115, E12006): CH4 mole fraction 1.48 %
+        # in the stratosphere (75-140 km; constant above about 45 km), H2 0.101 %, N2 the
+        # rest.  Near the surface CH4 rises to 5.65 % (below 7 km), which lowers mu by 1.7 %.
+        # mu = 0.98419 x 28.0134 + 0.0148 x 16.0425 + 0.00101 x 2.01588 = 27.810 g/mol,
+        # R = 8314.4626 / mu; reference cp from the JANAF N2 and CH4 tables at 100-200 K
+        # (cp(T) itself is computed in analysis.thermo).
+        mean_molecular_weight=27.810,
+        gas_constant_r=299.0,
+        isobaric_heat_capacity_cp=1049.0,
         reference_pressure_hpa=1467.0,  # 1.47 bar surface pressure
-        atmospheric_composition={"N2": 95.0, "CH4": 4.9, "H2": 0.1},
+        atmospheric_composition={"N2": 98.419, "CH4": 1.48, "H2": 0.101},
         description="Largest moon of Saturn, the only natural satellite with a dense atmosphere (surface pressure ~1.47 bar). Dominated by nitrogen and methane, Titan features multi-layered organic photochemical tholin hazes, active methane-ethane meteorological precipitation, and liquid hydrocarbon lakes and seas across polar regions.",
         supported_missions=["cassini"],
         mission_page_url="https://science.nasa.gov/saturn/moons/titan/",

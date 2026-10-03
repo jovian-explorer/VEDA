@@ -187,7 +187,7 @@ export const BODY_PHYSICAL_CONSTANTS = {
     gravity: '1.352 m/s²',
     scale_height: '20.0 km (near surface), ~40 km aloft',
     pressure_bar: '1.467 bar (1467 hPa)',
-    composition: '95.0% N2, 4.9% CH4, 0.1% H2',
+    composition: '98.4% N2, 1.48% CH4 (5.65% near the surface), 0.1% H2',
     mean_temp_k: '94 K (-179 °C)',
     solar_dist_au: '9.582 AU (Saturn orbit, 1.433 billion km)',
     notes: 'Dense nitrogen atmosphere with photochemical tholin haze and liquid methane hydrologic cycle'

@@ -33,7 +33,7 @@ def _g(body, z):
     ("mars", 200.0, 739.5, 3.0),     # CO2/N2/Ar mixture at 200 K
     ("venus", 300.0, 850.0, 5.0),    # matches the classical 850 J/(kg K) near 300 K
     ("venus", 735.0, 1140.0, 15.0),  # deep atmosphere: cp rises with T
-    ("titan", 94.0, 1025.0, 5.0),    # N2 + CH4, nearly constant
+    ("titan", 94.0, 1049.0, 5.0),    # N2 + 1.48 % CH4 (pure N2 1039), nearly constant
 ])
 def test_cp_of_temperature(body_id, t, expected, tol):
     assert heat_capacity(get_body(body_id), np.array([t]))[0] == pytest.approx(expected, abs=tol)
@@ -312,6 +312,23 @@ def test_jupiter_composition_is_galileo_probe_and_constants_follow_from_it():
     r = 8.314462618
     cp_molar = comp["H2"] / 100 * 3.5 * r + comp["He"] / 100 * 2.5 * r + comp["CH4"] / 100 * 33.258
     assert jup.isobaric_heat_capacity_cp == pytest.approx(cp_molar / (mu / 1000.0), abs=1.0)
+
+
+def test_titan_composition_is_huygens_gcms_and_constants_follow_from_it():
+    """Titan's mu was 28.6 g/mol, heavier than pure N2 and impossible for an N2-CH4 mix
+    (27.4 from the old composition); it now follows the Huygens GCMS stratospheric
+    composition (Niemann et al. 2010), and cp(T) is divided by that mu."""
+    tit = get_body("titan")
+    comp = tit.atmospheric_composition
+    assert sum(comp.values()) == pytest.approx(100.0) and comp["CH4"] == 1.48
+    molar = {"N2": 28.0134, "CH4": 16.0425, "H2": 2.01588}
+    mu = sum(comp[g] / 100.0 * molar[g] for g in comp)
+    assert tit.mean_molecular_weight == pytest.approx(mu, abs=1e-3)
+    assert tit.gas_constant_r == pytest.approx(8314.462618 / mu, abs=0.1)
+    from veda.analysis.thermo import heat_capacity
+    cp = heat_capacity(tit, np.array([100.0, 200.0]))
+    assert cp == pytest.approx([tit.isobaric_heat_capacity_cp] * 2, abs=1.0)
+    assert tit.gas_constant_r / tit.isobaric_heat_capacity_cp == pytest.approx(2 / 7, abs=0.002)
 
 
 def test_comparison_on_pressure_levels_lines_up_offset_references():
