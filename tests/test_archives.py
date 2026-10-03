@@ -385,3 +385,64 @@ def test_changed_rules_reclassify_catalogued_rows():
                             (row["dataset_id"], row["product_id"])).fetchone()[0]
         conn.execute("DELETE FROM products WHERE dataset_id=? AND product_id=?", (row["dataset_id"], row["product_id"]))
     assert kind == "other"
+
+
+def test_aerobraking_pass_is_two_profiles_with_corrected_density_unit(tmp_path):
+    """Mars Odyssey accelerometer files hold a whole pass through periapsis.  Each is listed
+    as an inbound and an outbound profile (different places, they would zigzag as one),
+    both at the periapsis time, and the densities, labelled kg/m^3, are kg/km^3."""
+    import json
+    from veda.archives import catalog
+    from veda.archives.profiles import profile_from_label
+    ds = get_dataset("ody-m-accel-5-derived-v1.0")
+    row = {"dataset_id": ds.id, "product_id": "ACCPROFP100", "volume": "odya_1001",
+           "path": "DATA/PROF/ACCPROFP100.LBL", "start_time": "2001-12-12T15:11:59.702", "stop_time": "",
+           "target": "MARS", "product_type": ds.classify("DATA/PROF/ACCPROFP100.LBL")[0], "kind": "profile",
+           "extra": "{}"}
+    legs = catalog._pass_legs(ds, row)
+    assert [r["product_id"] for r in legs] == ["ACCPROFP100_IN", "ACCPROFP100_OUT"]
+    assert [json.loads(r["extra"])["LEG"] for r in legs] == ["inbound", "outbound"]
+    assert catalog._pass_legs(ds, {**row, "kind": "other"}) == [{**row, "kind": "other"}]
+    # rows as in the archive: time after periapsis, radial distance (km), latitude, density
+    t = [-502.0, -100.0, -50.0, 0.0, 50.0, 100.0]
+    r = [3800.0, 3510.0, 3490.0, 3480.0, 3492.0, 3515.0]
+    lat = [80.0, 78.0, 77.0, 76.0, 74.0, 72.0]
+    rho = [0.0, 8.0, 30.0, 60.0, 25.0, 7.0]          # kg/km^3; 0 = null
+    names = ["TIME_AFTER_PERI", "RADIAL_DIST", "LATITUDE", "RHO7", "SRHO7"]
+    units = ["SECOND", "KILOMETER", "DEGREES NORTH", "KILOGRAM PER CUBIC METER", "KILOGRAM PER CUBIC METER"]
+    lines = "".join("".join(f"{v:14.5f}" for v in vals) + "\r\n"
+                    for vals in zip(t, r, lat, rho, [1.0] * 6))
+    (tmp_path / "ACCPROFP100.TAB").write_text(lines, newline="")
+    cols = "".join(f"""  OBJECT = COLUMN
+    NAME = {n}
+    DATA_TYPE = ASCII_REAL
+    START_BYTE = {1 + 14 * i}
+    BYTES = 14
+    UNIT = "{u}"
+  END_OBJECT = COLUMN
+""" for i, (n, u) in enumerate(zip(names, units)))
+    (tmp_path / "ACCPROFP100.LBL").write_text(f"""PDS_VERSION_ID = PDS3
+RECORD_TYPE = FIXED_LENGTH
+RECORD_BYTES = 72
+^TABLE = "ACCPROFP100.TAB"
+OBJECT = TABLE
+  INTERCHANGE_FORMAT = ASCII
+  ROWS = 6
+  COLUMNS = 5
+  ROW_BYTES = 72
+{cols}END_OBJECT = TABLE
+END
+""")
+    profs = {}
+    for leg in ("inbound", "outbound"):
+        prod = {"product_id": "ACCPROFP100_" + leg, "start_time": row["start_time"], "leg": leg,
+                "volume": "odya_1001", "url": "", "product_type": "profile"}
+        profs[leg] = profile_from_label(ds, prod, tmp_path / "ACCPROFP100.LBL")
+    inb, out = profs["inbound"], profs["outbound"]
+    np.testing.assert_allclose(inb.altitude_km, np.array([3800.0, 3510.0, 3490.0]) - 3389.5)
+    np.testing.assert_allclose(out.altitude_km, np.array([3480.0, 3492.0, 3515.0]) - 3389.5)
+    np.testing.assert_allclose(inb.derived["density_measured"], [np.nan, 8e-9, 3e-8])
+    np.testing.assert_allclose(out.derived["density_measured"], [6e-8, 2.5e-8, 7e-9])
+    np.testing.assert_allclose(out.uncertainty["density_measured"], [1e-9] * 3)
+    assert inb.time_utc == out.time_utc == "2001-12-12T15:20:21.702"     # start + 502 s
+    assert inb.latitude == 78.0 and out.latitude == 74.0

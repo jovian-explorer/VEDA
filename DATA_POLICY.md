@@ -71,6 +71,7 @@ The authoritative list is VEDA's own catalogue (`src/veda/archives/datasets.py`,
 | Phoenix | ASE (entry profile) | L5 (RDR) | `phx-m-ase-5-edl-rdr-v1.0` | NASA PDS Atmospheres Node | Withers & Catling (2010) |
 | Mars Science Laboratory (Curiosity) | EDL atmospheric reconstruction | Derived (PDS4) | `msl-edl-atmosphere` | NASA PDS Atmospheres Node | Holstein-Rathlou et al. (2016); data doi:10.17189/1518944 |
 | InSight | EDL atmospheric reconstruction | Derived (PDS4) | `insight-edl-atmosphere` | NASA PDS Atmospheres Node | Karatekin, Banfield & Ashley (2020), data doi:10.17189/1518935 |
+| 2001 Mars Odyssey | ACC (aerobraking density profiles, 2001-2002) | L5 (derived) | `ody-m-accel-5-derived-v1.0` | NASA PDS Atmospheres Node | Tolson et al. (2005); data: Withers & Murphy (2009) |
 | Mars Express (MEX) | MaRS (Radio Science) | L4 | `mex-m-mrs-5-occ` | ESA PSA (mirror: NASA PDS Geosciences Node) | Pätzold et al. (2016); Pätzold et al. (2004); Chicarro et al. (2004) |
 | Akatsuki (VCO) | RS (Radio Science) | L3/L4 | `vco-v-rs-5-occ-v1.0` | JAXA DARTS | Imamura et al. (2017); Nakamura et al. (2016) |
 | Akatsuki (VCO) | RS (Radio Science) | L2 | `vco-v-rs-3-occ-v1.0` | JAXA DARTS | Imamura et al. (2017); Nakamura et al. (2016) |

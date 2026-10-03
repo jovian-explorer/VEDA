@@ -210,6 +210,21 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
         tbl.columns = {k: v[mask] for k, v in tbl.columns.items()}
         tbl.text_columns = {k: [x for x, m in zip(v, mask) if m] for k, v in tbl.text_columns.items()}
 
+    time_utc = prod.get("start_time") or ""
+    leg = prod.get("leg")
+    if ds.pass_legs and leg and ds.pass_legs in tbl.columns:
+        # One leg of an aerobraking pass: before periapsis (inbound) or from it on.  Both
+        # legs take the periapsis time (the index time is the start of the file).
+        t = np.asarray(tbl.columns[ds.pass_legs], dtype=float)
+        from ..analysis.solar_geometry import parse_utc
+        start = parse_utc(time_utc)
+        if start is not None and t.size and np.isfinite(t[0]):
+            import datetime as _dt
+            time_utc = (start - _dt.timedelta(seconds=float(t[0]))).isoformat(timespec="milliseconds")
+        mask = (t < 0) if leg == "inbound" else (t >= 0)
+        tbl.columns = {k: v[mask] for k, v in tbl.columns.items()}
+        tbl.text_columns = {k: [x for x, m in zip(v, mask) if m] for k, v in tbl.text_columns.items()}
+
     for col, fills in ds.fill_values.items():
         k = col if col in tbl.columns else _key(tbl, col)      # (exact name first: error columns)
         if k is not None and k in tbl.columns:
@@ -327,7 +342,7 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
         mission_id=ds.mission_id,
         body_id=body.id,
         instrument=ds.instrument,
-        time_utc=prod.get("start_time") or "",
+        time_utc=time_utc,
         latitude=float(np.nanmedian(lat)) if lat is not None else header.get("latitude"),
         longitude=circular_median(lon, 360.0) if lon is not None else header.get("longitude"),
         altitude_km=z,
@@ -358,6 +373,7 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
             v = np.where(v > 0, v, np.nan)
             if _grams_per_cm3(_unit(tbl, col)):
                 factor = 1000.0                          # g/cm^3 -> kg/m^3 (Cassini RSS)
+        factor *= ds.value_factor.get(key, 1.0)
         if v is not None:
             prof.derived[key] = v * factor
             s = _col(tbl, sig) if sig else None

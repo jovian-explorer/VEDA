@@ -80,6 +80,13 @@ class Dataset:
     sigma_from_siblings: Dict[str, Tuple[Tuple[str, str], ...]] = field(default_factory=dict)
     # Factor turning the archive's error column into 1 sigma (0.5 for a full error-bar width)
     sigma_factor: Dict[str, float] = field(default_factory=dict)
+    # Factor for an extra variable (and its uncertainty) whose label unit is wrong: the
+    # Odyssey accelerometer densities are labelled kg/m^3 but are in kg/km^3 (1e-9)
+    value_factor: Dict[str, float] = field(default_factory=dict)
+    # Aerobraking passes: column of the time from periapsis (s).  Each pass is listed as
+    # two profiles, the inbound leg (before periapsis) and the outbound leg, which are at
+    # different places and local times and would zigzag if compared as one profile.
+    pass_legs: Optional[str] = None
     # The per-sample times ("et" column) are when the signal reached the ground station,
     # not when it crossed the atmosphere (Mars Express MaRS: EPHEMERIS_SECONDS is the
     # ground received time); VEDA subtracts the one-way light time for the geometry.
@@ -559,6 +566,36 @@ DATASETS: List[Dataset] = [
         times_from_labels=True,
     ),
     Dataset(
+        id="ody-m-accel-5-derived-v1.0", mission_id="ody", instrument="ACC (aerobraking accelerometer)",
+        level="L5 (derived)",
+        title="Mars Odyssey aerobraking: thermospheric density profiles from the accelerometer (Oct 2001 - Jan 2002)",
+        body_ids=("mars",), archive="NASA PDS Atmospheres Node",
+        base_url="https://pds-atmospheres.nmsu.edu/PDS/data/",
+        volume_pattern=r"^odya_1001$",
+        rules=((r"data/prof/accprof", "Density profile along the aerobraking pass", "profile"),
+               (r"data/calt/", "Densities and scale heights at constant altitude", "other"),
+               (r"data/anc/", "Pass ancillary data (periapsis)", "other"),
+               (r"data/raw/", "Raw accelerations", "timeseries")),
+        label_from_data=True,
+        # RADIAL_DIST (km from the centre of Mars), not ALTITUDE (above the MOLA areoid),
+        # so the profiles share VEDA's 3389.5 km sphere with the other Mars data sets.
+        profile_columns={"radius": "RADIAL_DIST", "latitude": "LATITUDE", "longitude": "LONGITUDE",
+                         "lst": "LOCAL_SOLAR_TIME", "sza": "SOLAR_ZENITH_ANGLE"},
+        # 7-s running mean (RHO7): the unaveraged density is noisy, the 39-s mean spans
+        # tens of km in altitude on the legs.  "Null values are 0" (data set catalogue).
+        extra_variables={"density_measured": ("RHO7", "SRHO7")},
+        fill_values={"RADIAL_DIST": (0.0,), "LATITUDE": (0.0,), "LONGITUDE": (0.0,)},
+        # Labelled KILOGRAM PER CUBIC METER, but the values are kg/km^3 (66 at 85 km; the drag
+        # equation with the file's own acceleration, speed and drag coefficient gives
+        # Odyssey's mass-to-area ratio of 41 kg/m^2 only in kg/km^3)
+        value_factor={"density_measured": 1e-9},
+        pass_legs="TIME_AFTER_PERI",
+        citation=("Withers, P., & Murphy, J. R. (2009). ODY-M-ACCEL-5-DERIVED-V1.0, NASA Planetary Data System; "
+                  "Tolson, R. H., et al. (2005). Application of accelerometer data to Mars Odyssey aerobraking "
+                  "and atmospheric modeling. J. Spacecraft Rockets, 42(3), 435-443."),
+        doi="10.2514/1.15173",
+    ),
+    Dataset(
         id="pvoro-nssdc", mission_id="pvo", instrument="ORO (Radio Occultation)", level="Derived (PDS4)",
         title="Pioneer Venus Orbiter radio occultations: temperature-pressure and electron density profiles "
               "(1978-1992, recovered from NSSDC by Withers et al. 2020)",
@@ -745,6 +782,7 @@ _REFS = {
     "phx-m-ase-5-edl-rdr-v1.0": ("withers2010",),
     "msl-edl-atmosphere": ("holsteinrathlou2016", "holsteinrathlou2015data"),
     "insight-edl-atmosphere": ("karatekin2020data",),
+    "ody-m-accel-5-derived-v1.0": ("tolson2005",),
     "corss-titan-neutral-profiles": ("schinder2011", "schinder2012", "schinder2015"),
     "corss-saturn-ionosphere": ("kliore2009", "kliore2014data"),
     "cassini-uvis-saturn-thermosphere": ("koskinen2015", "koskinen2018data"),

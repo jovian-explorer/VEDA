@@ -274,7 +274,21 @@ def index_volume(ds: Dataset, volume: str) -> List[Dict[str, Any]]:
             continue
     label = _with_structure(label, tab_url.rsplit("/", 1)[0] + "/", ds.login_url)
     table = http.get_text(tab_url, login_url=ds.login_url)
-    return [r for r in (_index_row(ds, volume, vol_url, row) for row in parse_index(label, table)) if r]
+    rows = [r for r in (_index_row(ds, volume, vol_url, row) for row in parse_index(label, table)) if r]
+    return [leg for r in rows for leg in _pass_legs(ds, r)]
+
+
+def _pass_legs(ds: Dataset, row: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """An aerobraking pass as its inbound and outbound profiles (see Dataset.pass_legs);
+    any other row unchanged.  Both point at the same file."""
+    if not ds.pass_legs or row["kind"] != "profile":
+        return [row]
+    out = []
+    for leg, suffix in (("inbound", "_IN"), ("outbound", "_OUT")):
+        extra = {**json.loads(row["extra"] or "{}"), "LEG": leg}
+        out.append({**row, "product_id": row["product_id"] + suffix,
+                    "product_type": f"{row['product_type']}, {leg} leg", "extra": json.dumps(extra)})
+    return out
 
 
 def _index_row(ds: Dataset, volume: str, vol_url: str, row: Dict[str, str]) -> Optional[Dict[str, Any]]:
@@ -658,6 +672,7 @@ def product_dict(r: sqlite3.Row) -> Dict[str, Any]:
         "downloaded": is_downloaded(r, ds),
         "orbit": extra.get("ORBIT_NUMBER") or extra.get("REVOLUTION_NUMBER"),
         "split": extra.get("SPLIT"),
+        "leg": extra.get("LEG"),
         "extra": extra,
     }
 

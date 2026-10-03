@@ -5479,6 +5479,35 @@
    "note": "GRL 37(24); the article number is not in the Crossref record."
   },
   {
+   "key": "tolson2005",
+   "authors": [
+    "Tolson, R. H.",
+    "Dwyer, A. M.",
+    "Hanna, J. L.",
+    "Keating, G. M.",
+    "George, B. E.",
+    "Escalera, P. E.",
+    "Werner, M. R."
+   ],
+   "et_al": true,
+   "year": 2005,
+   "title": "Application of Accelerometer Data to Mars Odyssey Aerobraking and Atmospheric Modeling",
+   "journal": "Journal of Spacecraft and Rockets",
+   "volume": "42",
+   "issue": "3",
+   "pages": "435-443",
+   "doi": "10.2514/1.15173",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "ody",
+     "payload": "ACC"
+    }
+   ],
+   "note": "Data: ODY-M-ACCEL-5-DERIVED-V1.0 (Withers and Murphy, PDS Atmospheres Node)."
+  },
+  {
    "key": "holsteinrathlou2016",
    "authors": [
     "Holstein-Rathlou, C.",
