@@ -278,6 +278,24 @@ def test_saturn_scale_height_uses_latitude_gravity():
     assert p.raw_attributes["gravity_model"].startswith("effective gravity at 70.0")
 
 
+def test_saturn_composition_is_cassini_helium_and_constants_follow_from_it():
+    """Saturn's He is 11 % by volume (Koskinen & Guerlet 2018), not Voyager's 3.25 %; the
+    molar mass, gas constant and cp are computed from the composition (they were 2.07
+    g/mol and 4016 J/(kg K), not even consistent with the old composition, 2.14 g/mol)."""
+    sat = get_body("saturn")
+    comp = sat.atmospheric_composition
+    assert comp == {"H2": 88.55, "He": 11.0, "CH4": 0.45} and sum(comp.values()) == pytest.approx(100.0)
+    molar = {"H2": 2.01588, "He": 4.002602, "CH4": 16.0425}
+    mu = sum(comp[g] / 100.0 * molar[g] for g in comp)
+    assert sat.mean_molecular_weight == pytest.approx(mu, abs=1e-4)
+    assert sat.gas_constant_r == pytest.approx(8314.462618 / mu, abs=0.1)
+    r = 8.314462618
+    cp_molar = comp["H2"] / 100 * 3.5 * r + comp["He"] / 100 * 2.5 * r + comp["CH4"] / 100 * 33.258
+    assert sat.isobaric_heat_capacity_cp == pytest.approx(cp_molar / (mu / 1000.0), abs=1.0)
+    from veda.analysis.thermo import heat_capacity
+    assert heat_capacity(sat, np.array([120.0]))[0] == sat.isobaric_heat_capacity_cp     # constant cp
+
+
 def test_comparison_on_pressure_levels_lines_up_offset_references():
     """The same T(p) measured from two altitude references 50 km apart: on an altitude
     grid the two disagree, on a log-pressure grid they coincide."""

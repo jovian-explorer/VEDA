@@ -73,11 +73,19 @@ BODIES: Dict[str, BodyInfo] = {
         category="gas_giant",
         radius_km=58232.0,
         surface_gravity=10.44,
-        mean_molecular_weight=2.07,  # 96% H2, 3% He
-        gas_constant_r=4016.0,
-        isobaric_heat_capacity_cp=14000.0,
+        # Helium 11 +- 2 % by volume below the homopause, from Cassini UVIS occultations and
+        # CIRS limb scans (Koskinen & Guerlet 2018, Icarus 307, 161-171), replacing the
+        # Voyager value of 3.25 % (Conrath et al. 1984), which Conrath & Gautier (2000)
+        # already revised upwards.  (Achterberg & Flasar 2020, PSJ 1, 30, find a lower
+        # He/H2 of 0.04-0.075 from CIRS alone; the abundance is not settled.)  CH4 0.45 %.
+        # mu = 0.8855 x 2.01588 + 0.11 x 4.002602 + 0.0045 x 16.0425 = 2.2975 g/mol,
+        # R = 8314.4626 / mu; cp from 7/2 R for H2 (normal hydrogen, rotation excited),
+        # 5/2 R for He and 33.26 J/(mol K) for CH4, per kg of the mixture.
+        mean_molecular_weight=2.2975,
+        gas_constant_r=3618.9,
+        isobaric_heat_capacity_cp=12276.0,
         reference_pressure_hpa=1000.0,  # 1 bar reference level
-        atmospheric_composition={"H2": 96.3, "He": 3.25, "CH4": 0.45},
+        atmospheric_composition={"H2": 88.55, "He": 11.0, "CH4": 0.45},
         description="Ringed gas giant with a hydrogen-dominated atmosphere exhibiting powerful equatorial jet streams exceeding 400 m/s, an enduring hexagonal polar jet stream pattern at the north pole, seasonal great storms, and intricate electrodynamic interactions with its massive ring system.",
         supported_missions=["cassini"],
         mission_page_url="https://science.nasa.gov/saturn/",

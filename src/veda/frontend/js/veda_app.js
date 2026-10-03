@@ -174,9 +174,9 @@ export const BODY_PHYSICAL_CONSTANTS = {
     name: 'Saturn',
     category: 'Gas Giant',
     gravity: '10.44 m/s²',
-    scale_height: '59.5 km',
+    scale_height: '46.4 km (1 bar, 134 K)',
     pressure_bar: '1.000 bar (1 bar ref level)',
-    composition: '96.3% H2, 3.25% He, 0.45% CH4',
+    composition: '88.55% H2, 11% He, 0.45% CH4',
     mean_temp_k: '134 K (-139 °C at 1 bar)',
     solar_dist_au: '9.582 AU (1.433 billion km)',
     notes: 'Hydrogen-helium atmosphere with equatorial jets and northern polar hexagon'
