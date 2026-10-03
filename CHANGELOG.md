@@ -16,6 +16,7 @@ From this version on, every tested change is published straight away as the late
 - **Downloaded products are found from the cache folder listing** instead of one disk check per catalogue row: the default comparison and *Downloaded only* searches took 30 s on a catalogue of 220,000 products, now about 1 s. Catalogue indexes for profile and product-type filters make those searches up to 7 times faster.
 - **Faster start, no leftover temporary folders.** The app gave Matplotlib a new temporary folder on every start, so it rebuilt its font list each time and every closed or crashed process (including each worker) left a folder in the temp directory (8 per launch). It now keeps one in VEDA's cache.
 - Profiles already read are kept in memory for the session, so re-plotting a comparison with another variable, grouping or unit is immediate.
+- **Hand-picked comparisons** read their archive profiles in the worker processes too (they were read one at a time), and a product that cannot be downloaded or read is left out instead of failing the whole comparison.
 
 ### Comparisons
 - **Local time, solar zenith angle and Mars season for every profile.** Where the archive does not give them (Mars Express, Venus Express SOIR zenith angles), VEDA computes them from the time and position with the JPL planetary elements and IAU rotation models; they agree with the archives that publish them to 0.01 h and 0.05 deg. Mars Express profiles were left out of every local-time or zenith-angle filter and group before ("local time unknown").

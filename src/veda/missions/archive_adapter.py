@@ -8,7 +8,7 @@ generated.
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from ..archives import catalog
 from ..archives.datasets import datasets_for
@@ -87,6 +87,11 @@ class ArchiveMissionAdapter(BaseMissionAdapter):
         if not p or p["kind"] != "profile":
             return None
         return load_profile_cached(p["dataset_id"], p["product_id"])
+
+    def profile_key(self, observation_id: str) -> Optional[Tuple[str, str]]:
+        """(dataset id, product id) of a profile product, or None."""
+        p = self._find(observation_id)
+        return (p["dataset_id"], p["product_id"]) if p and p["kind"] == "profile" else None
 
     def load_image(self, observation_id: str) -> Optional[ObservationImage]:
         return self._images.load_image(observation_id) if self._images else None

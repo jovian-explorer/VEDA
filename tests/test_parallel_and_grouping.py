@@ -144,3 +144,26 @@ def test_long_profile_export_has_every_level_and_variable():
     assert float(first_a["sigma_temperature_k"]) == 1.5 and float(first_a["level_sza_deg"]) == 80.0
     first_b = dict(zip(header, data[a.altitude_km.size]))
     assert first_b["pressure_hpa"] == "" and float(first_b["scale_height"]) == 15.0
+
+
+def test_hand_picked_comparison_reads_archive_products_together(monkeypatch):
+    """Hand-picked archive profiles go through load_profiles (the worker pool) in one
+    batch, keep their order, and an unreadable one is left out instead of failing."""
+    import veda.archives.profiles as profiles_mod
+    from veda.core.models import ObservationProfile
+    from veda.missions.archive_adapter import ArchiveMissionAdapter
+    from veda.missions.manager import MissionManager
+
+    keys = {"A": ("ds", "A"), "B": ("ds", "B"), "C": ("ds", "C")}
+    monkeypatch.setattr(ArchiveMissionAdapter, "profile_key", lambda self, oid: keys.get(oid))
+    calls = []
+
+    def fake_load_profiles(pairs):
+        calls.append(list(pairs))
+        return [RuntimeError("unreadable") if pid == "B" else
+                ObservationProfile(pid, "mex", "mars", "MaRS", "2004-01-01") for _, pid in pairs]
+    monkeypatch.setattr(profiles_mod, "load_profiles", fake_load_profiles)
+    mgr = MissionManager()
+    got = mgr._load_hand_picked([{"mission_id": "mex", "observation_id": o} for o in ("C", "B", "A", "nope")])
+    assert calls == [[("ds", "C"), ("ds", "B"), ("ds", "A")]]          # one batch
+    assert [p.observation_id for p in got] == ["C", "A"]

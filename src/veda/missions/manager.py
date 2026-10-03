@@ -117,16 +117,35 @@ class MissionManager:
         from .selection import ProfileFilter, select_profiles
         body = get_body(body_id)
         if selected_observations:
-            out = []
-            for item in selected_observations:
-                m_id, o_id = item.get("mission_id"), item.get("observation_id")
-                if m_id and o_id:
-                    prof = self.load_profile(m_id, o_id)
-                    if prof:
-                        out.append(prof)
-            return out, None
+            return self._load_hand_picked(selected_observations), None
         sel = selection or ProfileFilter(per_mission=3, download=False)
         return select_profiles(self, body_id, list(mission_ids or body.supported_missions), variable_name, sel)
+
+    def _load_hand_picked(self, items: List[Dict[str, str]]) -> List[ObservationProfile]:
+        """Hand-picked observations in their order.  Archive products are read together in
+        the worker processes (Settings > Performance), like filtered comparisons; loaded
+        files one by one.  A product that cannot be read is left out instead of failing
+        the whole comparison."""
+        from ..archives.profiles import load_profiles
+        slots: List[Any] = [None] * len(items)
+        archive: List[Tuple[int, Tuple[str, str]]] = []
+        for i, item in enumerate(items):
+            m_id, o_id = item.get("mission_id"), item.get("observation_id")
+            if not (m_id and o_id):
+                continue
+            adapter = self.get_adapter(m_id)
+            if isinstance(adapter, ArchiveMissionAdapter):
+                key = adapter.profile_key(o_id)
+                if key:
+                    archive.append((i, key))
+                continue
+            try:
+                slots[i] = self.load_profile(m_id, o_id)
+            except Exception:  # noqa: BLE001 - one unreadable file must not stop the comparison
+                slots[i] = None
+        for (i, _), res in zip(archive, load_profiles([pair for _, pair in archive])):
+            slots[i] = res if isinstance(res, ObservationProfile) else None
+        return [p for p in slots if p is not None]
 
     def compare_on_body(
         self,
