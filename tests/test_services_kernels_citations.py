@@ -250,9 +250,10 @@ def test_busy_server_403_is_retried(monkeypatch):
     assert net.get("https://pds-rings.seti.org/pds4/bundles/gll.rss/").status_code == 200
 
 
-def test_product_falls_back_to_a_mirror_archive(monkeypatch):
+def test_product_falls_back_to_a_mirror_archive(monkeypatch, tmp_path):
     """MEX MaRS volumes are at ESA PSA and, renamed, at the PDS Geosciences Node."""
     from veda.archives import catalog, net
+    monkeypatch.setattr(catalog, "PRODUCT_ROOT", tmp_path)   # files from earlier runs are not reused
     ds = get_dataset("mex-m-mrs-5-occ")
     monkeypatch.setattr(catalog, "get_product", lambda d, p: {
         "volume": "MEX-M-MRS-5-OCC-9124-V1.0", "path": "DATA/DOY_126/LEVEL04/P.TAB"})
@@ -272,10 +273,11 @@ def test_product_falls_back_to_a_mirror_archive(monkeypatch):
     assert any("esac.esa.int" in u for u in urls[:-1])          # the primary was tried first
 
 
-def test_fetch_skips_optional_docs_and_is_not_repeated(monkeypatch):
+def test_fetch_skips_optional_docs_and_is_not_repeated(monkeypatch, tmp_path):
     """Opening a downloaded product used to retry its missing description texts on every
     open (MEX MaRS: ~20 s of requests to a slow server each time)."""
     from veda.archives import catalog, net
+    monkeypatch.setattr(catalog, "PRODUCT_ROOT", tmp_path)
     ds = get_dataset("mex-m-mrs-5-occ")
     monkeypatch.setattr(catalog, "get_product", lambda d, p: {"volume": "MEX-M-MRS-5-OCC-9124-V1.0",
                                                               "path": "DATA/X/LEVEL04/T1.LBL"})

@@ -9,6 +9,7 @@ From this version on, every tested change is published straight away as the late
 ### Updates
 - **Automatic builds**: each change to VEDA that passes the tests on Windows, macOS and Linux is built for all three and published as the latest release.
 - VEDA tells you when a newer build has been published (a notice with a download link; About > *Check for updates*). About shows the build number, date and commit. Turn it off in Settings > Network.
+- The test suite passes when `VEDA_HOME` points at a data folder already in use: two download tests found the files an earlier run had cached and fetched nothing.
 
 ### Performance
 - **Multiprocessing.** Profiles for comparisons are read and derived in parallel worker processes; the number is set in **Settings > Performance** (default: all CPU cores but one; 1 turns it off). The workers start in the background when VEDA opens and are reused, and work is sent in chunks; reading 240 Venus Express profiles took 1.0 s with 4 workers against 5.5 s before.
