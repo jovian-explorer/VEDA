@@ -219,3 +219,22 @@ def test_gradient_with_altitude_jitter_after_touchdown():
     g = _gradient_nan_safe(z, t)
     assert np.all(np.abs(g) < 12.0)                     # was ~1e4 K/km at the jitter
     assert np.median(g[:10]) == pytest.approx(-8.0, abs=0.01)
+
+
+@pytest.mark.parametrize("order", [(0, 1), (1, 0)])
+def test_log_composite_falls_back_to_linear_for_every_profile(order):
+    """One noisy (negative) electron density must switch the whole comparison to
+    linear averaging, whatever the order of the profiles."""
+    from veda.analysis.atmospheric import compare_profiles_on_body
+    venus = get_body("venus")
+    z = np.arange(100.0, 300.0, 1.0)
+    clean = _profile("venus", z, None, ne=np.full(z.size, 1e4))
+    noisy_ne = np.full(z.size, 1e4)
+    noisy_ne[0] = -50.0
+    noisy = _profile("venus", z, None, ne=noisy_ne)
+    profs = [(clean, noisy)[i] for i in order]
+    r = compare_profiles_on_body(profs, venus, altitude_step_km=1.0, variable_name="electron_density_cm3")
+    assert r["averaging"].startswith("arithmetic")
+    i = r["grid_km"].index(150.0)
+    assert r["composite_mean"][i] == pytest.approx(1e4)
+    assert all(p["interpolated_series"][i] == pytest.approx(1e4) for p in r["profiles"])

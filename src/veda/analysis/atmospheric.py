@@ -321,6 +321,15 @@ def _group_composites(mat: np.ndarray, summaries: List[Dict[str, Any]], log_like
 LOG_VARIABLES = {"pressure_hpa", "density", "density_measured", "number_density_m3", "electron_density_cm3"}
 
 
+def _compared_variable(p: ObservationProfile, variable_name: str) -> Optional[np.ndarray]:
+    """The values of ``variable_name`` in profile ``p`` (archived or derived), or None."""
+    if variable_name in ("temperature_k", "temperature_c", "pressure_hpa", "refractivity", "electron_density_cm3"):
+        v = getattr(p, variable_name)
+    else:
+        v = p.derived.get(variable_name)
+    return None if v is None else np.asarray(v, dtype=float)
+
+
 def compare_profiles_on_body(
     profiles: List[ObservationProfile],
     body: BodyInfo,
@@ -364,24 +373,15 @@ def compare_profiles_on_body(
     interpolated_matrix = []
     profile_summaries = []
     # Quantities that vary exponentially with height are interpolated and averaged in
-    # log space (geometric mean, spread as a factor), when every value is positive.
-    log_like = variable_name in LOG_VARIABLES
+    # log space (geometric mean, spread as a factor) when every value of every profile
+    # is positive.  This is decided before any profile is interpolated: deciding it
+    # profile by profile mixed log and linear values in one composite.
+    log_like = variable_name in LOG_VARIABLES and not any(
+        np.any(v[np.isfinite(v)] <= 0)
+        for v in (_compared_variable(p, variable_name) for p in valid_profiles) if v is not None)
 
     for p in valid_profiles:
-        # Extract target variable
-        v = None
-        if variable_name == "temperature_k":
-            v = p.temperature_k
-        elif variable_name == "temperature_c":
-            v = p.temperature_c
-        elif variable_name == "pressure_hpa":
-            v = p.pressure_hpa
-        elif variable_name == "refractivity":
-            v = p.refractivity
-        elif variable_name == "electron_density_cm3":
-            v = p.electron_density_cm3
-        elif variable_name in p.derived:
-            v = p.derived[variable_name]
+        v = _compared_variable(p, variable_name)
 
         if v is None or p.altitude_km is None or p.altitude_km.size < 2:
             continue
@@ -395,8 +395,6 @@ def compare_profiles_on_body(
         v_clean = v[ok]
         sort_idx = np.argsort(z_clean)
         z_clean, v_clean = z_clean[sort_idx], v_clean[sort_idx]
-        if log_like and np.any(v_clean <= 0):
-            log_like = False                  # e.g. noisy electron densities: fall back to linear
 
         # Interpolate onto the common grid, never extrapolating beyond the profile and
         # never bridging data gaps wider than five times the profile's typical spacing.
@@ -431,8 +429,6 @@ def compare_profiles_on_body(
         return _empty_comparison(body, variable_name, [round(float(z), 2) for z in z_grid])
 
     mat = np.array(interpolated_matrix)  # shape: (n_profiles, n_grid)
-    if log_like and len(interpolated_matrix) != len(profile_summaries):
-        log_like = False
     n_per_level = np.sum(np.isfinite(mat), axis=0)
     mean_min = max(2, int(np.ceil(0.5 * len(interpolated_matrix))))
     with np.errstate(invalid="ignore", divide="ignore"):
