@@ -198,7 +198,7 @@ export const BODY_PHYSICAL_CONSTANTS = {
     gravity: '0.62 m/s²',
     scale_height: '50.0 km',
     pressure_bar: '1.15e-5 bar (1.15 Pa / 0.0115 hPa)',
-    composition: '99.0% N2, 0.5% CH4, 0.1% CO',
+    composition: '99.65% N2, 0.30% CH4, 0.05% CO (near the surface)',
     mean_temp_k: '37 K (-236 °C)',
     solar_dist_au: '39.48 AU (5.906 billion km)',
     notes: 'Tenuous nitrogen atmosphere with steep temperature inversion and blue haze'

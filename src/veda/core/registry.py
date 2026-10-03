@@ -134,11 +134,16 @@ BODIES: Dict[str, BodyInfo] = {
         category="dwarf_planet",
         radius_km=1188.3,
         surface_gravity=0.62,
-        mean_molecular_weight=28.01,  # >99% N2
-        gas_constant_r=296.8,
-        isobaric_heat_capacity_cp=1039.0,
+        # Near the surface: CH4 0.28-0.35 % from the New Horizons Alice solar occultation
+        # (Young et al. 2018, Icarus 300, 174; 0.30 % taken; CH4 rises with altitude above the
+        # homopause, within 12 km of the surface), CO 515 ppm from ALMA (Lellouch et al. 2017,
+        # Icarus 286, 289), N2 the rest: mu = 27.977 g/mol, R = 8314.4626 / mu, reference cp
+        # from the JANAF tables (cp(T) itself is computed in analysis.thermo).
+        mean_molecular_weight=27.977,
+        gas_constant_r=297.2,
+        isobaric_heat_capacity_cp=1041.0,
         reference_pressure_hpa=0.0115,  # ~1.15 Pa (11.5 microbar) surface pressure
-        atmospheric_composition={"N2": 99.0, "CH4": 0.5, "CO": 0.1},
+        atmospheric_composition={"N2": 99.6485, "CH4": 0.30, "CO": 0.0515},
         description="Kuiper Belt dwarf planet possessing a tenuous nitrogen atmosphere with methane and carbon monoxide, organized blue photochemical haze layers, active convective nitrogen-ice glaciers (Sputnik Planitia), and significant seasonal atmospheric sublimation and condensation cycles.",
         supported_missions=["new_horizons"],
         mission_page_url="https://science.nasa.gov/dwarf-planets/pluto/",

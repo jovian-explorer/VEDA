@@ -342,6 +342,20 @@ def test_mars_molar_mass_and_gas_constant_follow_from_its_composition():
     assert mars.gas_constant_r == pytest.approx(8314.462618 / mu, abs=0.1)
 
 
+def test_pluto_molar_mass_and_gas_constant_follow_from_its_composition():
+    """Pluto's listed composition added up to 99.6 % and gave 27.95 g/mol against 28.01;
+    it is now New Horizons CH4 and ALMA CO with N2 the rest, and mu, R and cp follow."""
+    plu = get_body("pluto")
+    comp = plu.atmospheric_composition
+    assert sum(comp.values()) == pytest.approx(100.0)
+    molar = {"N2": 28.0134, "CH4": 16.0425, "CO": 28.0101}
+    mu = sum(comp[g] / 100.0 * molar[g] for g in comp)
+    assert plu.mean_molecular_weight == pytest.approx(mu, abs=1e-3)
+    assert plu.gas_constant_r == pytest.approx(8314.462618 / mu, abs=0.1)
+    from veda.analysis.thermo import heat_capacity
+    assert heat_capacity(plu, np.array([40.0]))[0] == pytest.approx(plu.isobaric_heat_capacity_cp, abs=1.0)
+
+
 def test_comparison_on_pressure_levels_lines_up_offset_references():
     """The same T(p) measured from two altitude references 50 km apart: on an altitude
     grid the two disagree, on a log-pressure grid they coincide."""
