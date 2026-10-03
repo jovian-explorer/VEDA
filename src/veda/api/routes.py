@@ -28,6 +28,7 @@ from ..readers.fits_reader import (
     render_to_png,
 )
 from ..readers.pds3_reader import read_any_table, read_pds3_table
+from ..analysis.thermo import cp_model
 from ..config import APP_VERSION, CACHE_DIR, sampledata_dir
 
 router = APIRouter(prefix="/api/veda", tags=["VEDA Multi-Mission"])
@@ -158,6 +159,8 @@ def get_body_details(body_id: str) -> dict:
         "surface_gravity": b.surface_gravity,
         "mean_molecular_weight": b.mean_molecular_weight,
         "gas_constant_r": b.gas_constant_r,
+        "isobaric_heat_capacity_cp": b.isobaric_heat_capacity_cp,
+        "cp_model": cp_model(b),
         "reference_pressure_hpa": b.reference_pressure_hpa,
         "atmospheric_composition": b.atmospheric_composition,
         "description": b.description,

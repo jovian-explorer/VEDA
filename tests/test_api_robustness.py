@@ -514,3 +514,12 @@ def test_comparison_csv_carries_a_recipe_that_redoes_it(client):
     again = client.post(f"/api/veda/compare/body/{recipe['body_id']}", json=recipe).json()   # the recipe is a request
     assert [p["observation_id"] for p in again["profiles"]] == [p["observation_id"] for p in first["profiles"]]
     assert again["composite_mean"] == first["composite_mean"] and again["grid_km"] == first["grid_km"]
+
+
+def test_body_details_carry_molar_mass_and_heat_capacity(client):
+    """The body banner shows mu and cp (USAGE says so); cp is marked as a reference
+    value where derived quantities use cp(T)."""
+    mars = client.get("/api/veda/bodies/mars").json()
+    assert mars["mean_molecular_weight"] == pytest.approx(43.487)
+    assert mars["isobaric_heat_capacity_cp"] == 830.0 and mars["cp_model"].startswith("temperature-dependent")
+    assert client.get("/api/veda/bodies/saturn").json()["cp_model"] == "constant"

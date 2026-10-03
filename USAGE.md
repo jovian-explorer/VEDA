@@ -35,7 +35,7 @@ Everything VEDA shows comes from the official mission archives. Nothing is simul
 The top-left switch has three modes: **By Celestial Body**, **By Planetary Mission** and the **Guide**.
 
 ### Search a body by date (all missions)
-1. Choose a planet or moon in **By Celestial Body**. The banner shows its radius, gravity, mean molecular weight, gas constant and composition, which VEDA uses for derived quantities.
+1. Choose a planet or moon in **By Celestial Body**. The banner shows its radius, gravity, molar mass, gas constant, heat capacity $c_p$ and composition, which VEDA uses for derived quantities (for Venus, Mars, Titan and Pluto the $c_p$ shown is the reference value; derived quantities use $c_p(T)$).
 2. In **Find observations of ...**, set **From** and **To**. Leave both empty to list only the indexed data sets; live data sets need dates. **Show** narrows the list to everything, atmosphere/ionosphere profiles, images or time series.
 3. Press **Search all missions**. The first time, VEDA reads the index of every indexed data set for that body (progress is shown), then asks the live archive services for your dates; afterwards the same searches use the local catalogue and work offline.
 4. The table lists mission, UTC time, product id, product type, payload and level, and whether the product is downloaded. Press **Open** (profiles) or **View** (anything else) to download and plot it, tick rows and press **Compare selected** to overlay them, or **Download selected** to cache them.
