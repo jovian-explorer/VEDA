@@ -674,9 +674,54 @@ function renderSelectionReport(sel) {
   }).join('') + (vedaState.compareFilter ? '' : '<div>Showing downloaded profiles only. Set dates or ranges and press Apply to search the whole archive.</div>');
 }
 
+// The comparison choices (which profiles, grouping, grid, vertical, view) are kept on this
+// computer and filled in again the next time VEDA opens.  A remembered filter only fills
+// the fields: nothing is searched or downloaded until Apply is pressed.
+const COMPARE_FORM_KEY = 'veda.compare.form';
+const COMPARE_OPTIONS = [
+  ['veda-compare-group-by', 'compareGroupBy'], ['veda-compare-group-width', 'compareGroupWidth'],
+  ['veda-compare-altitude-step', 'compareAltitudeStep'], ['veda-compare-vertical', 'compareVertical'],
+  ['veda-compare-show-as', 'compareShowAs'],
+];
+
+function saveCompareForm() {
+  const saved = {};
+  document.querySelectorAll('#veda-compare-filter input').forEach(i => {
+    if (i.id) saved[i.id] = i.type === 'checkbox' ? i.checked : i.value;
+  });
+  COMPARE_OPTIONS.forEach(([id]) => { const el = document.getElementById(id); if (el) saved[id] = el.value; });
+  try { localStorage.setItem(COMPARE_FORM_KEY, JSON.stringify(saved)); } catch (_) { /* storage blocked */ }
+}
+
+function restoreCompareForm() {
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(COMPARE_FORM_KEY) || 'null'); } catch (_) { saved = null; }
+  if (!saved || typeof saved !== 'object') return;
+  document.querySelectorAll('#veda-compare-filter input').forEach(i => {
+    if (!(i.id in saved)) return;
+    if (i.type === 'checkbox') i.checked = !!saved[i.id];
+    else i.value = String(saved[i.id] ?? '');
+  });
+  COMPARE_OPTIONS.forEach(([id, key]) => {
+    const el = document.getElementById(id);
+    if (!el || !(id in saved)) return;
+    el.value = String(saved[id] ?? '');
+    if (el.tagName === 'SELECT' && el.value !== String(saved[id] ?? '')) return;   // option no longer offered
+    if (id === 'veda-compare-altitude-step') {
+      const v = el.value === '' ? '' : Number(el.value);
+      if (v !== '' && !(v >= 0.01 && v <= 100)) { el.value = ''; return; }
+      vedaState[key] = v;
+    } else {
+      vedaState[key] = el.value;
+    }
+  });
+}
+
 function setupCompareFilter() {
   const form = document.getElementById('veda-compare-filter');
   if (!form) return;
+  restoreCompareForm();
+  form.addEventListener('change', saveCompareForm);
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     try {
@@ -690,6 +735,7 @@ function setupCompareFilter() {
   });
   document.getElementById('cf-clear')?.addEventListener('click', () => {
     form.querySelectorAll('input[type="date"], input[type="number"]').forEach(i => { i.value = i.id === 'cf-per-mission' ? '10' : ''; });
+    saveCompareForm();
     vedaState.compareFilter = null;
     updateComparison();
   });
@@ -712,6 +758,7 @@ function setupBodyModeControls() {
     updateComparison();
   });
   showAs?.addEventListener('change', () => { vedaState.compareShowAs = showAs.value; renderComparisonPlot(); });
+  COMPARE_OPTIONS.forEach(([id]) => document.getElementById(id)?.addEventListener('change', saveCompareForm));
   const varSelect = document.getElementById('veda-compare-variable-select');
   if (varSelect) {
     varSelect.innerHTML = Object.entries(VARIABLE_CONFIGS).map(([key, cfg]) => `
