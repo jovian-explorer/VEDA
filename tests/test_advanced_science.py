@@ -30,7 +30,7 @@ def _g(body, z):
 # ---------------------------------------------------------------- heat capacity
 
 @pytest.mark.parametrize("body_id,t,expected,tol", [
-    ("mars", 200.0, 739.5, 3.0),     # CO2/N2/Ar mixture at 200 K
+    ("mars", 200.0, 736.8, 1.0),     # CO2/N2/Ar/O2/CO mixture at 200 K
     ("venus", 300.0, 850.0, 5.0),    # matches the classical 850 J/(kg K) near 300 K
     ("venus", 735.0, 1140.0, 15.0),  # deep atmosphere: cp rises with T
     ("titan", 94.0, 1049.0, 5.0),    # N2 + 1.48 % CH4 (pure N2 1039), nearly constant
@@ -329,6 +329,17 @@ def test_titan_composition_is_huygens_gcms_and_constants_follow_from_it():
     cp = heat_capacity(tit, np.array([100.0, 200.0]))
     assert cp == pytest.approx([tit.isobaric_heat_capacity_cp] * 2, abs=1.0)
     assert tit.gas_constant_r / tit.isobaric_heat_capacity_cp == pytest.approx(2 / 7, abs=0.002)
+
+
+def test_mars_molar_mass_and_gas_constant_follow_from_its_composition():
+    """Mars had 43.34 g/mol against 43.50 from its listed composition; the composition is
+    now Curiosity SAM's (Trainer et al. 2019) and mu and R are computed from it."""
+    mars = get_body("mars")
+    comp = mars.atmospheric_composition
+    molar = {"CO2": 44.0095, "N2": 28.0134, "Ar": 39.948, "O2": 31.9988, "CO": 28.0101}
+    mu = sum(comp[g] * molar[g] for g in comp) / sum(comp.values())
+    assert mars.mean_molecular_weight == pytest.approx(mu, abs=1e-3)
+    assert mars.gas_constant_r == pytest.approx(8314.462618 / mu, abs=0.1)
 
 
 def test_comparison_on_pressure_levels_lines_up_offset_references():

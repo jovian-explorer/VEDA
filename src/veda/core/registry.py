@@ -37,11 +37,15 @@ BODIES: Dict[str, BodyInfo] = {
         category="terrestrial_planet",
         radius_km=3389.5,
         surface_gravity=3.72,
-        mean_molecular_weight=43.34,  # 95% CO2, 2.6% N2, 1.9% Ar
-        gas_constant_r=191.8,
+        # Annual mean volume mixing ratios in Gale Crater from Curiosity SAM over three Mars
+        # years (Trainer et al. 2019, JGR Planets 124, 3000): CO2 0.951, N2 0.0259, Ar 0.0194,
+        # O2 1.61e-3, CO 5.8e-4 (they add up to 0.9985, within their uncertainties, so mu
+        # is taken over their sum): mu = 43.487 g/mol, R = 8314.4626 / mu.
+        mean_molecular_weight=43.487,
+        gas_constant_r=191.2,
         isobaric_heat_capacity_cp=830.0,
         reference_pressure_hpa=6.1,  # ~6.1 hPa (610 Pa) surface pressure
-        atmospheric_composition={"CO2": 95.32, "N2": 2.6, "Ar": 1.9, "O2": 0.13},
+        atmospheric_composition={"CO2": 95.1, "N2": 2.59, "Ar": 1.94, "O2": 0.161, "CO": 0.058},
         description="Terrestrial planet with a rarefied, highly dynamic carbon dioxide atmosphere (~6.1 hPa surface pressure) characterized by planetary dust storm cycles, polar CO2 and water-ice caps, diurnal thermal tides, and photochemical atmospheric loss driven by solar wind interaction with localized crustal remnant magnetic fields.",
         supported_missions=["mex", "mgs", "maven", "mro", "ody", "mer", "phoenix", "msl", "insight", "mom"],
         mission_page_url="https://science.nasa.gov/mars/",

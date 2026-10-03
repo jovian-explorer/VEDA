@@ -143,7 +143,7 @@ export const BODY_PHYSICAL_CONSTANTS = {
     gravity: '3.72 m/s²',
     scale_height: '11.1 km',
     pressure_bar: '0.0061 bar (6.1 hPa)',
-    composition: '95.3% CO2, 2.6% N2, 1.9% Ar',
+    composition: '95.1% CO2, 2.59% N2, 1.94% Ar, 0.16% O2',
     mean_temp_k: '214 K (-59 °C)',
     solar_dist_au: '1.524 AU (227.9 million km)',
     notes: 'Rarefied CO2 atmosphere with seasonal polar caps and dust storms'
