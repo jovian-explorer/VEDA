@@ -54,6 +54,45 @@ def _gradient_nan_safe(z_km: np.ndarray, v: np.ndarray) -> np.ndarray:
     return out
 
 
+def gravity_profile(body: BodyInfo, z_km: np.ndarray, latitude_deg: Optional[float] = None,
+                    altitude_reference: str = "") -> Tuple[np.ndarray, str]:
+    """Gravity (m/s^2) at the altitudes of a profile, and a description of the model.
+
+    Spherical bodies: g0 (R / (R + z))^2.  Rotating oblate planets with a gravity field
+    in the registry (Jupiter, Saturn), at a known latitude: the magnitude of the
+    effective gravity (gravitation with J2, minus the centrifugal acceleration),
+        g_r = GM/r^2 [1 - 3 J2 (a/r)^2 P2(sin phi)] - w^2 r cos^2 phi
+        g_t = 3 GM J2 a^2 / r^4 sin phi cos phi + w^2 r sin phi cos phi
+    with r the 1-bar ellipsoid radius at planetocentric latitude phi plus the altitude
+    (or the reference sphere plus the altitude, for altitudes taken from a radius).
+    That is 23.1 m/s^2 at Jupiter's equator and 26.9 at its poles (one constant 24.79
+    before), 9.0 and 12.1 on Saturn (10.44).
+    """
+    z = np.asarray(z_km, dtype=np.float64)
+    lat = None if latitude_deg is None else float(latitude_deg)
+    if body.gm_km3_s2 and body.rotation_period_h and body.equatorial_radius_km and lat is not None \
+            and np.isfinite(lat):
+        phi = np.radians(lat)
+        s, c = np.sin(phi), np.cos(phi)
+        a, b = body.equatorial_radius_km, body.polar_radius_km or body.equatorial_radius_km
+        from_radius = (altitude_reference or "").startswith("a sphere of radius")
+        r0 = body.radius_km if from_radius else a * b / np.hypot(b * c, a * s)
+        r = np.maximum(r0 + z, 0.5 * b) * 1e3                       # m
+        gm = body.gm_km3_s2 * 1e9                                     # m^3/s^2
+        aj = (body.j2_reference_radius_km or a) * 1e3
+        w2 = (2.0 * np.pi / (body.rotation_period_h * 3600.0)) ** 2
+        p2 = 1.5 * s * s - 0.5
+        g_r = gm / r ** 2 * (1.0 - 3.0 * body.j2 * (aj / r) ** 2 * p2) - w2 * r * c * c
+        g_t = 3.0 * gm * body.j2 * aj ** 2 / r ** 4 * s * c + w2 * r * s * c
+        return np.hypot(g_r, g_t), (f"effective gravity at {lat:.1f} deg latitude "
+                                    f"(J2 {body.j2:.6g}, rotation {body.rotation_period_h:g} h)")
+    r_body = body.radius_km
+    # (altitudes below the reference level, e.g. the Hellas basin below the Mars reference sphere or the
+    # Galileo probe below 1 bar, are valid: gravity is slightly larger there)
+    g = body.surface_gravity * (r_body / np.maximum(r_body + z, 1e-3 * r_body)) ** 2
+    return g, f"g0 (R/(R+z))^2, g0 = {body.surface_gravity:g} m/s^2, R = {r_body:g} km"
+
+
 def compute_atmospheric_diagnostics(
     profile: ObservationProfile,
     body: Optional[BodyInfo] = None,
@@ -84,12 +123,10 @@ def compute_atmospheric_diagnostics(
     lapse_rate = -dtdz
     derived["lapse_rate"] = lapse_rate
 
-    # 2. Local gravitational acceleration with altitude g(z) = g0 * (R / (R + z))^2
-    r_body = body.radius_km
-    g0 = body.surface_gravity
-    # (altitudes below the reference level, e.g. the Hellas basin below the Mars reference sphere or the
-    # Galileo probe below 1 bar, are valid: gravity is slightly larger there)
-    gz = g0 * (r_body / np.maximum(r_body + z, 1e-3 * r_body)) ** 2
+    # 2. Local gravitational acceleration: g(z) = g0 (R / (R + z))^2, or on Jupiter and
+    # Saturn the effective gravity at the profile's latitude (J2 and rotation)
+    gz, profile.raw_attributes["gravity_model"] = gravity_profile(
+        body, z, profile.latitude, (profile.raw_attributes or {}).get("ALTITUDE_REFERENCE", ""))
 
     # 3. Scale height H = R_spec T / g(z) (km) and speed of sound with cp(T)
     from .thermo import cp_model, heat_capacity

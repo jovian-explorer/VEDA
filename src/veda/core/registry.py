@@ -62,6 +62,10 @@ BODIES: Dict[str, BodyInfo] = {
         supported_missions=["juno", "galileo", "cassini", "new_horizons"],
         mission_page_url="https://science.nasa.gov/jupiter/",
         data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Jupiter/jupiter.html",
+        # Juno gravity field (Iess et al. 2018, Nature 555, 220), System III rotation,
+        # 1-bar radii (Archinal et al. 2018)
+        gm_km3_s2=126686534.0, j2=14696.5735e-6, j2_reference_radius_km=71492.0,
+        rotation_period_h=9.9249, equatorial_radius_km=71492.0, polar_radius_km=66854.0,
     ),
     "saturn": BodyInfo(
         id="saturn",
@@ -78,6 +82,10 @@ BODIES: Dict[str, BodyInfo] = {
         supported_missions=["cassini"],
         mission_page_url="https://science.nasa.gov/saturn/",
         data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Saturn/saturn.html",
+        # Cassini Grand Finale gravity field (Iess et al. 2019, Science 364, eaat2965),
+        # rotation 10 h 33 min 38 s (Mankovich et al. 2019), 1-bar radii (Archinal et al. 2018)
+        gm_km3_s2=37931207.7, j2=16290.573e-6, j2_reference_radius_km=60330.0,
+        rotation_period_h=10.5606, equatorial_radius_km=60268.0, polar_radius_km=54364.0,
     ),
     "titan": BodyInfo(
         id="titan",

@@ -238,3 +238,41 @@ def test_log_composite_falls_back_to_linear_for_every_profile(order):
     i = r["grid_km"].index(150.0)
     assert r["composite_mean"][i] == pytest.approx(1e4)
     assert all(p["interpolated_series"][i] == pytest.approx(1e4) for p in r["profiles"])
+
+
+@pytest.mark.parametrize("body_id,lat,expected,tol", [
+    ("jupiter", 0.0, 23.12, 0.05),     # NASA fact sheet: 23.12 m/s^2 at the 1-bar equator
+    ("jupiter", 90.0, 27.0, 0.15),
+    ("saturn", 0.0, 9.0, 0.1),
+    ("saturn", 90.0, 12.1, 0.1),
+])
+def test_giant_planet_gravity_depends_on_latitude(body_id, lat, expected, tol):
+    from veda.analysis.atmospheric import gravity_profile
+    g, model = gravity_profile(get_body(body_id), np.array([0.0]), lat, "the 1-bar pressure level")
+    assert g[0] == pytest.approx(expected, abs=tol)
+    assert "effective gravity" in model
+
+
+def test_gravity_falls_back_to_the_sphere():
+    from veda.analysis.atmospheric import gravity_profile
+    jup = get_body("jupiter")
+    z = np.array([0.0, 500.0])
+    np.testing.assert_allclose(gravity_profile(jup, z, None)[0], _g(jup, z))           # latitude unknown
+    venus = get_body("venus")
+    np.testing.assert_allclose(gravity_profile(venus, z, 45.0)[0], _g(venus, z))       # spherical body
+
+
+def test_saturn_scale_height_uses_latitude_gravity():
+    """An isothermal 140 K Saturn profile at 70 deg: H = R T / g with the local
+    effective gravity, about 13 % less than with the global 10.44 m/s^2."""
+    from veda.analysis.atmospheric import gravity_profile
+    sat = get_body("saturn")
+    z = np.linspace(0.0, 300.0, 61)
+    p = _profile("saturn", z, np.full_like(z, 140.0))
+    p.latitude = 70.0
+    p.raw_attributes["ALTITUDE_REFERENCE"] = "the 1-bar level of Saturn along the surface normal"
+    d = compute_atmospheric_diagnostics(p)
+    g = gravity_profile(sat, z, 70.0, p.raw_attributes["ALTITUDE_REFERENCE"])[0]
+    np.testing.assert_allclose(d["scale_height"], sat.gas_constant_r * 140.0 / (g * 1000.0), rtol=1e-12)
+    assert d["scale_height"][0] < 0.9 * sat.gas_constant_r * 140.0 / (sat.surface_gravity * 1000.0)
+    assert p.raw_attributes["gravity_model"].startswith("effective gravity at 70.0")

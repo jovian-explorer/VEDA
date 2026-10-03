@@ -27,6 +27,15 @@ class BodyInfo:
     supported_missions: List[str] = field(default_factory=list)
     mission_page_url: str = ""
     data_page_url: str = ""
+    # Rotating oblate planets (Jupiter, Saturn): gravity then depends on latitude by up to
+    # +-15 %.  GM (km^3/s^2), J2 at its reference radius, rotation period and the 1-bar
+    # equatorial and polar radii (km); None for bodies where a sphere is good enough.
+    gm_km3_s2: Optional[float] = None
+    j2: float = 0.0
+    j2_reference_radius_km: Optional[float] = None
+    rotation_period_h: Optional[float] = None
+    equatorial_radius_km: Optional[float] = None
+    polar_radius_km: Optional[float] = None
 
 
 @dataclass

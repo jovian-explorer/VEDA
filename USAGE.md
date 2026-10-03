@@ -125,6 +125,10 @@ where altitude-dependent gravity is:
 $$g(z) = g_0 \left(\frac{R_p}{R_p + z}\right)^2$$
 and specific gas constant is $R_{spec} = R_{univ} / \mu$.
 
+On Jupiter and Saturn, which are flattened by rotation, gravity at the 1-bar level ranges from 23.1 m s$^{-2}$ at the equator to 26.9 at the poles (Jupiter) and from 9.0 to 12.1 (Saturn), so one value would put scale heights, $\Gamma_d$, $N^2$ and wave energies off by up to 15 %. For profiles with a latitude VEDA uses the effective gravity there: gravitation with the $J_2$ term of the Juno and Cassini gravity fields, minus the centrifugal acceleration, at $r$ = the 1-bar ellipsoid radius at the (planetocentric) latitude $\phi$ plus the altitude:
+$$g_r = \frac{GM}{r^2}\left[1 - 3J_2\left(\frac{a}{r}\right)^2 P_2(\sin\phi)\right] - \omega^2 r\cos^2\phi, \quad g_\phi = \frac{3GMJ_2a^2}{r^4}\sin\phi\cos\phi + \omega^2 r \sin\phi\cos\phi, \quad g = \sqrt{g_r^2 + g_\phi^2}$$
+Profiles without a latitude, and all other bodies, use the formula above; each profile states the gravity model used.
+
 ### Poisson Potential Temperature
 To diagnose vertical stability and potential energy across varying pressure levels, VEDA calculates potential temperature referenced to $P_0$:
 $$\theta(z) = T(z) \left(\frac{P_0}{P(z)}\right)^{\frac{R_{spec}}{C_p}}$$
