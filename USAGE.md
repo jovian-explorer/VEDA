@@ -146,8 +146,8 @@ For Venus, Mars, Titan and Pluto, $c_p$ depends on temperature: it is the mole-f
 
 ### Gravity Wave Potential Energy
 Atmospheric gravity wave activity is quantified from temperature fluctuations $T'(z) = T(z) - \overline{T}(z)$:
-$$E_p(z) = \frac{1}{2}\left(\frac{g(z)}{N(z)}\right)^2 \overline{\left(\frac{T'(z)}{\overline{T}(z)}\right)^2}$$
-where $\overline{T}(z)$ is the background profile obtained through polynomial or low-pass vertical filtering.
+$$E_p(z) = \frac{1}{2}\left(\frac{g(z)}{\overline{N}(z)}\right)^2 \left(\frac{T'(z)}{\overline{T}(z)}\right)^2, \qquad \overline{N}^2 = \frac{g}{\overline{T}}\left(\frac{d\overline{T}}{dz} + \frac{g}{c_p(\overline{T})}\right)$$
+The background $\overline{T}(z)$ is a zero-phase (forward and backward) 4th-order Butterworth low-pass of the profile on a 100 m grid, with a cutoff wavelength of 8 km: $T'$ keeps at least 98 % of the amplitude of waves shorter than 5 km, 91 % at 6 km, half of an 8 km wave and at most 4 % of waves longer than 12 km. A cubic fit is removed before filtering, so a smoothly curved profile leaves no false perturbation at its top and bottom; sharp kinks (a tropopause, an inversion) still leave a small ringing of either sign around them. $\overline{N}$ is the stability of the background, not of the measured profile, whose $N^2$ contains the wave itself; where $\overline{N}^2 \le 0$, $E_p$ is not given. The dominant vertical wavelength is the peak of the $T'$ spectrum between 0.5 and 7 km; a peak closer to the 8 km cutoff is the edge of a longer wave that the filter removed, and none is reported.
 
 ### Ionospheric Vertical Total Electron Content (VTEC)
 For ionospheric occultation retrievals, VEDA integrates vertical electron density $N_e(z)$:

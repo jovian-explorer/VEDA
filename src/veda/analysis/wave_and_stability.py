@@ -3,9 +3,9 @@
 Provides:
 1. Cold Point Tropopause (CPT) and Lapse Rate Tropopause (LRT) Detection.
 2. Gravity Wave Perturbation Analysis:
-   - Background temperature extraction via adaptive polynomial / Savitzky-Golay filtering.
+   - Background temperature by a zero-phase Butterworth low-pass with a stated cutoff wavelength.
    - Temperature perturbation T'(z) = T(z) - T_bar(z).
-   - Gravity wave specific potential energy E_p(z) = 0.5 * (g/N)^2 * (T'/T_bar)^2 [J/kg].
+   - Gravity wave specific potential energy E_p(z) = 0.5 * (g/N_bar)^2 * (T'/T_bar)^2 [J/kg], N_bar from T_bar.
    - Dominant vertical wavelength extraction via FFT / periodogram.
 3. Chapman Layer Modeling for Ionospheric Occultations:
    - Non-linear least squares fit of peak density (NmF2), peak altitude (hmF2), and neutral scale height (H).
@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
-from scipy.signal import savgol_filter
+from scipy.signal import butter, sosfiltfilt
 from scipy.optimize import curve_fit
 
 
@@ -148,16 +148,24 @@ def extract_gravity_wave_activity(
     t_k: np.ndarray,
     gz_ms2: np.ndarray,
     buoyancy_n2: Optional[np.ndarray] = None,
-    filter_order: int = 3,
+    filter_order: int = 4,
     cutoff_wavelength_km: float = 8.0,
+    cp_j_kg_k: Optional[np.ndarray] = None,
 ) -> Dict[str, Any]:
     """Extract atmospheric gravity wave temperature perturbations and potential energy.
 
     Computes:
-    - Background temperature T_bar(z)
+    - Background temperature T_bar(z): a zero-phase Butterworth low-pass of T(z) on a
+      100 m grid.  ``cutoff_wavelength_km`` is where the filter splits a wave in half:
+      T' keeps the full amplitude of shorter waves (>= 98 % below 0.6 x cutoff) and
+      almost none of longer ones (<= 4 % above 1.5 x cutoff).
     - Wave perturbation T'(z) = T(z) - T_bar(z)
-    - Specific potential energy E_p(z) = 0.5 * (g / N)^2 * (T' / T_bar)^2 [J/kg]
-    - Dominant vertical wavelength lambda_z [km]
+    - Specific potential energy E_p(z) = 0.5 * (g / N_bar)^2 * (T' / T_bar)^2 [J/kg],
+      N_bar^2 = (g / T_bar) (dT_bar/dz + g / cp) being the stability of the background
+      (``cp_j_kg_k`` per sample).  The local N^2 contains the wave itself and goes to
+      zero or below inside large waves; E_p is undefined (NaN) where N_bar^2 <= 0.
+      Without cp, ``buoyancy_n2`` (masked where <= 0) or N = 0.02 rad/s is used.
+    - Dominant vertical wavelength lambda_z [km], among the waves T' keeps
     """
     z = np.asarray(z_km, dtype=np.float64)
     t = np.asarray(t_k, dtype=np.float64)
@@ -195,19 +203,18 @@ def extract_gravity_wave_activity(
     t_uni = np.interp(z_uni, z_clean, t_clean)
     g_uni = np.interp(z_uni, z_clean, g_clean)
 
-    # 1. Background state extraction using Savitzky-Golay filter
-    # Window length corresponds roughly to cutoff_wavelength_km
-    pts_in_window = int(round(cutoff_wavelength_km / dz))
-    if pts_in_window % 2 == 0:
-        pts_in_window += 1
-    pts_in_window = max(5, min(pts_in_window, len(z_uni) - 2 if len(z_uni) % 2 != 0 else len(z_uni) - 3))
-
+    # 1. Background: zero-phase (forward-backward) Butterworth low-pass.  The 8 km
+    # Savitzky-Golay window used before put most of a 6-8 km wave into the background
+    # (T' kept 58 % of a 6 km and 24 % of an 8 km wave) and overshot 4 km waves (120 %).
+    # A cubic fit is removed first, so the padding at the ends adds no step and a smoothly
+    # curved profile leaves no residual at the top and bottom.
+    zc = (z_uni - z_uni.mean()) / max(np.ptp(z_uni), dz)        # centred and scaled: a well-conditioned fit
+    trend = np.polyval(np.polyfit(zc, t_uni, 3), zc)
     try:
-        t_bar_uni = savgol_filter(t_uni, window_length=pts_in_window, polyorder=min(filter_order, pts_in_window - 1))
-    except Exception:
-        # Fallback to low-order polynomial fit
-        poly = np.polyfit(z_uni, t_uni, deg=3)
-        t_bar_uni = np.polyval(poly, z_uni)
+        sos = butter(filter_order, (1.0 / cutoff_wavelength_km) / (0.5 / dz), btype="low", output="sos")
+        t_bar_uni = trend + sosfiltfilt(sos, t_uni - trend)
+    except ValueError:
+        t_bar_uni = trend          # profile too short for the filter's padding: cubic background
 
     # Wave perturbation
     t_prime_uni = t_uni - t_bar_uni
@@ -216,18 +223,22 @@ def extract_gravity_wave_activity(
     t_bar = np.interp(z_clean, z_uni, t_bar_uni)
     t_prime = np.interp(z_clean, z_uni, t_prime_uni)
 
-    # 2. Gravity wave potential energy E_p = 0.5 * (g / N)^2 * (T' / T_bar)^2
-    # If N^2 not provided, approximate N ~ 0.02 rad/s (typical planetary value)
-    if buoyancy_n2 is not None:
-        n2_raw = np.asarray(buoyancy_n2, dtype=np.float64)
-        n2_clean = n2_raw[ok][sort_idx]
-        n_val = np.sqrt(np.clip(n2_clean, 1e-6, None))
+    # 2. Gravity wave potential energy E_p = 0.5 * (g / N_bar)^2 * (T' / T_bar)^2
+    if cp_j_kg_k is not None and np.shape(cp_j_kg_k) == z.shape:
+        cp_clean = np.asarray(cp_j_kg_k, dtype=np.float64)[ok][sort_idx]
+        cp_uni = np.interp(z_uni, z_clean, cp_clean)
+        with np.errstate(invalid="ignore", divide="ignore"):
+            n2_uni = (g_uni / t_bar_uni) * (np.gradient(t_bar_uni, dz * 1000.0) + g_uni / cp_uni)
+        n2_clean = np.interp(z_clean, z_uni, n2_uni)
+    elif buoyancy_n2 is not None:
+        n2_clean = np.asarray(buoyancy_n2, dtype=np.float64)[ok][sort_idx]
     else:
-        n_val = np.full(z_clean.shape, 0.02)
+        n2_clean = np.full(z_clean.shape, 0.02 ** 2)       # typical planetary value
+    n2_clean = np.where(n2_clean > 0, n2_clean, np.nan)    # no E_p where unstable
 
     with np.errstate(invalid="ignore", divide="ignore"):
-        ep = 0.5 * (g_clean / n_val) ** 2 * (t_prime / t_bar) ** 2
-        ep = np.nan_to_num(ep, nan=0.0, posinf=0.0, neginf=0.0)
+        ep = 0.5 * g_clean ** 2 / n2_clean * (t_prime / t_bar) ** 2
+    ep[~np.isfinite(ep)] = np.nan
 
     # 3. Dominant vertical wavelength from FFT of T'
     # Zero-mean detrending and Hanning window
@@ -236,13 +247,14 @@ def extract_gravity_wave_activity(
     fft_freqs = np.fft.rfftfreq(len(t_prime_uni), d=dz)  # cycles per km
 
     power = np.abs(fft_vals) ** 2
-    # Ignore zero frequency and unphysically long/short wavelengths
-    valid_freq_mask = (fft_freqs > (1.0 / 25.0)) & (fft_freqs < (1.0 / 0.5))
+    # Only waves the background filter leaves in T' (shorter than the cutoff), down to 0.5 km
+    valid_freq_mask = (fft_freqs > (1.0 / cutoff_wavelength_km)) & (fft_freqs < (1.0 / 0.5))
     dominant_lambda = None
     if valid_freq_mask.any():
         peak_idx = np.argmax(power[valid_freq_mask])
         peak_freq = fft_freqs[valid_freq_mask][peak_idx]
-        if peak_freq > 0:
+        # a peak just short of the cutoff is the edge of a longer wave the filter removed
+        if peak_freq >= 1.15 / cutoff_wavelength_km:
             dominant_lambda = round(float(1.0 / peak_freq), 2)
 
     # Output back aligned to original points
@@ -261,7 +273,7 @@ def extract_gravity_wave_activity(
         "t_background_k": [None if not np.isfinite(v) else round(float(v), 2) for v in out_t_bar],
         "t_prime_k": [None if not np.isfinite(v) else round(float(v), 3) for v in out_t_prime],
         "potential_energy_j_kg": [None if not np.isfinite(v) else round(float(v), 3) for v in out_ep],
-        "mean_potential_energy": round(float(np.mean(ep[ep > 0])), 3) if (ep > 0).any() else 0.0,
+        "mean_potential_energy": round(float(np.nanmean(ep[ep > 0])), 3) if (ep > 0).any() else 0.0,
         "dominant_wavelength_km": dominant_lambda,
     }
 

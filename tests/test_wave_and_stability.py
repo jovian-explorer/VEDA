@@ -143,3 +143,46 @@ def test_comparison_carries_profile_diagnostics_to_csv():
     assert "cpt_alt_km" in header and "cpt_temp_k" in header
     row = [line for line in export_comparison_to_csv(comp).splitlines() if line.startswith("# cassini_a")][0]
     assert ", 44," in row
+
+
+def _t_prime_amplitude(lam_km, cutoff_km=8.0):
+    z = np.arange(40.0, 100.0, 0.2)
+    t = 200.0 - (z - 40.0) + 2.0 * np.sin(2 * np.pi * z / lam_km)
+    gw = extract_gravity_wave_activity(z, t, np.full_like(z, 8.87), cutoff_wavelength_km=cutoff_km)
+    tp = np.array(gw["t_prime_k"], dtype=float)
+    mid = (z > 55) & (z < 85)                       # away from the ends
+    return np.sqrt(2.0) * np.nanstd(tp[mid]) / 2.0, gw
+
+
+@pytest.mark.parametrize("lam,lo,hi", [(3.0, 0.98, 1.02), (5.0, 0.95, 1.02), (8.0, 0.4, 0.6), (12.0, 0.0, 0.05)])
+def test_gravity_wave_cutoff_is_where_stated(lam, lo, hi):
+    """Waves shorter than the cutoff stay in T' at full amplitude (no overshoot),
+    longer ones go to the background, the cutoff wave is split about in half."""
+    amp, _ = _t_prime_amplitude(lam)
+    assert lo <= amp <= hi
+
+
+def test_gravity_wave_smooth_background_leaves_no_perturbation():
+    z = np.arange(40.0, 100.0, 0.2)
+    t = 200.0 - (z - 40.0) + 0.01 * (z - 70.0) ** 2
+    gw = extract_gravity_wave_activity(z, t, np.full_like(z, 8.87))
+    assert np.nanmax(np.abs(np.array(gw["t_prime_k"], dtype=float))) < 0.01
+    assert gw["dominant_wavelength_km"] is None
+
+
+def test_wave_energy_uses_background_stability():
+    """A 2 K, 3 km wave in a near-adiabatic Venus cloud layer makes the local N^2
+    negative at some levels; E_p must stay near (g/N_bar)^2 (T'/T)^2 / 2 instead of
+    exploding where the local N^2 was clipped to a tiny value."""
+    from veda.analysis.atmospheric import compute_atmospheric_diagnostics
+    from veda.core.models import ObservationProfile
+    z = np.arange(50.0, 90.0, 0.2)
+    t = np.where(z < 65, 260 - 8 * (z - 50), 140 - 3 * (z - 65)) + 2.0 * np.sin(2 * np.pi * z / 3.0)
+    p = ObservationProfile("x", "vex", "venus", "VeRa", "2008-01-01", altitude_km=z, temperature_k=t)
+    d = compute_atmospheric_diagnostics(p)
+    assert np.nanmin(d["buoyancy_freq_sq"]) < 0                    # the case being tested
+    ep = d["wave_potential_energy"]
+    upper = (z > 70) & (z < 85)                                     # stable layer, away from the kink
+    # N_bar^2 there: (g/T)(dT/dz + g/cp) with dT/dz = -3 K/km; E_p peaks at (g/N_bar)^2 (2 K / T)^2 / 2
+    assert np.nanmax(ep[upper]) < 40.0
+    assert np.nanmax(ep) < 200.0                                    # was 1860 J/kg

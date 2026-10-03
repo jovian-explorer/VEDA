@@ -138,7 +138,7 @@ def compute_atmospheric_diagnostics(
         from .wave_and_stability import extract_gravity_wave_activity, tropopause_for_body
         profile.raw_attributes.update(tropopause_for_body(body.id, z, t_k, p_hpa))
 
-        gw = extract_gravity_wave_activity(z, t_k, gz, derived.get("buoyancy_freq_sq"))
+        gw = extract_gravity_wave_activity(z, t_k, gz, derived.get("buoyancy_freq_sq"), cp_j_kg_k=cp_t)
         if gw.get("t_prime_k"):
             derived["t_prime"] = np.array([np.nan if x is None else x for x in gw["t_prime_k"]])
             derived["wave_potential_energy"] = np.array([np.nan if x is None else x for x in gw["potential_energy_j_kg"]])
