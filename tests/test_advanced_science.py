@@ -296,6 +296,24 @@ def test_saturn_composition_is_cassini_helium_and_constants_follow_from_it():
     assert heat_capacity(sat, np.array([120.0]))[0] == sat.isobaric_heat_capacity_cp     # constant cp
 
 
+def test_jupiter_composition_is_galileo_probe_and_constants_follow_from_it():
+    """Jupiter's He is the Galileo probe's 0.1359 of the H2-He mixture (von Zahn et al.
+    1998) with CH4/H2 = 2.38e-3 (Wong et al. 2004); mu, R and cp are computed from it
+    (they were 2.22 g/mol and 3745 J/(kg K), against 2.26 from the old composition)."""
+    jup = get_body("jupiter")
+    comp = jup.atmospheric_composition
+    assert sum(comp.values()) == pytest.approx(100.0)
+    assert comp["He"] / (comp["He"] + comp["H2"]) == pytest.approx(0.1359, abs=1e-4)
+    assert comp["CH4"] / comp["H2"] == pytest.approx(2.38e-3, abs=2e-5)
+    molar = {"H2": 2.01588, "He": 4.002602, "CH4": 16.0425}
+    mu = sum(comp[g] / 100.0 * molar[g] for g in comp)
+    assert jup.mean_molecular_weight == pytest.approx(mu, abs=1e-4)
+    assert jup.gas_constant_r == pytest.approx(8314.462618 / mu, abs=0.1)
+    r = 8.314462618
+    cp_molar = comp["H2"] / 100 * 3.5 * r + comp["He"] / 100 * 2.5 * r + comp["CH4"] / 100 * 33.258
+    assert jup.isobaric_heat_capacity_cp == pytest.approx(cp_molar / (mu / 1000.0), abs=1.0)
+
+
 def test_comparison_on_pressure_levels_lines_up_offset_references():
     """The same T(p) measured from two altitude references 50 km apart: on an altitude
     grid the two disagree, on a log-pressure grid they coincide."""

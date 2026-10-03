@@ -163,9 +163,9 @@ export const BODY_PHYSICAL_CONSTANTS = {
     name: 'Jupiter',
     category: 'Gas Giant',
     gravity: '24.79 m/s²',
-    scale_height: '27.0 km',
+    scale_height: '23.9 km (1 bar, 165 K)',
     pressure_bar: '1.000 bar (1 bar ref level)',
-    composition: '89.8% H2, 10.2% He, 0.3% CH4',
+    composition: '86.2% H2, 13.6% He, 0.2% CH4',
     mean_temp_k: '165 K (-108 °C at 1 bar)',
     solar_dist_au: '5.204 AU (778.5 million km)',
     notes: 'Massive hydrogen-helium envelope with ammonia ice clouds and Great Red Spot'

@@ -53,11 +53,18 @@ BODIES: Dict[str, BodyInfo] = {
         category="gas_giant",
         radius_km=69911.0,
         surface_gravity=24.79,
-        mean_molecular_weight=2.22,  # 89% H2, 10% He
-        gas_constant_r=3745.0,
-        isobaric_heat_capacity_cp=12360.0,
+        # Galileo probe: helium mole fraction 0.1359 +- 0.0027 in the H2-He mixture, from the
+        # Helium Interferometer (von Zahn et al. 1998, JGR 103, 22815), i.e. He/H2 = 0.1573;
+        # CH4 from the probe mass spectrometer, C/H = 1.19e-3 (Wong et al. 2004, Icarus 171,
+        # 153), CH4/H2 = 2.38e-3.  Mole fractions H2 0.86233, He 0.13562, CH4 0.00205.
+        # mu = 0.86233 x 2.01588 + 0.13562 x 4.002602 + 0.00205 x 16.0425 = 2.3141 g/mol,
+        # R = 8314.4626 / mu; cp from 7/2 R for H2, 5/2 R for He and 33.26 J/(mol K) for
+        # CH4, per kg of the mixture (as for Saturn).
+        mean_molecular_weight=2.3141,
+        gas_constant_r=3593.0,
+        isobaric_heat_capacity_cp=12092.0,
         reference_pressure_hpa=1000.0,  # 1 bar reference level
-        atmospheric_composition={"H2": 89.8, "He": 10.2, "CH4": 0.3},
+        atmospheric_composition={"H2": 86.233, "He": 13.562, "CH4": 0.205},
         description="Largest gas giant in the Solar System, possessing a deep hydrogen-helium atmosphere with ammonia ice clouds, energetic lightning discharges, alternating counter-rotating zonal jet streams, persistent anticyclonic storms including the Great Red Spot, and an intense planetary magnetosphere.",
         supported_missions=["juno", "galileo", "cassini", "new_horizons"],
         mission_page_url="https://science.nasa.gov/jupiter/",
