@@ -131,3 +131,38 @@ def test_mro_header_geometry_and_spacecraft_time(tmp_path):
     assert prof.time_utc == "2008-08-01T19:33:11.169" and prof.raw_attributes["LABEL_TIME"] == "2008-08-01T19:45:03"
     g = profile_geometry(prof)
     assert g["lst"] == 4.76 and g["sza"] == 112.29 and g["ls"] == 106.8      # the archive's values, not recomputed
+
+
+def test_circular_median_across_midnight_and_meridian():
+    from veda.analysis.solar_geometry import circular_median
+    assert circular_median([23.90, 23.94, 23.98, 0.02, 0.06, 0.10], 24.0) == pytest.approx(0.0, abs=1e-9)
+    assert circular_median([22.0, 22.5, 23.0], 24.0) == pytest.approx(22.5)        # no wrap: plain median
+    assert circular_median([358.0, 359.0, 1.0, 2.0, np.nan], 360.0) == pytest.approx(0.0, abs=1e-9)
+    assert circular_median([179.0, 179.5, -179.5, -179.0], 360.0) == pytest.approx(-180.0, abs=1e-9)
+    assert circular_median([np.nan], 24.0) is None and circular_median(None, 24.0) is None
+
+
+def test_profile_crossing_midnight_is_grouped_at_midnight():
+    from veda.analysis.atmospheric import compare_profiles_on_body
+    from veda.core.models import ObservationProfile
+    from veda.core.registry import get_body
+    from veda.missions.selection import ProfileFilter, passes, profile_geometry
+    z = np.linspace(40.0, 90.0, 6)
+    p = ObservationProfile("n", "vex", "venus", "VeRa", "2008-01-01T00:00:00", altitude_km=z,
+                           temperature_k=np.full(6, 200.0),
+                           track={"lst": np.array([23.90, 23.94, 23.98, 0.02, 0.06, 0.10])})
+    assert profile_geometry(p)["lst"] == pytest.approx(0.0, abs=1e-9)
+    assert passes(profile_geometry(p), ProfileFilter(lst_min=22.0, lst_max=2.0))[0]
+    r = compare_profiles_on_body([p], get_body("venus"), 1.0, "temperature_k", group_by="lst")
+    assert [g["label"] for g in r["groups"]] == ["Local time 0 to 3 h"]
+
+
+def test_loaded_file_track_crossing_the_meridian(tmp_path):
+    from veda.core.registry import get_body
+    from veda.pipeline.ingest import build_profile
+    f = tmp_path / "track.csv"
+    f.write_text("alt,temp,lon\n40,300,358\n50,290,359\n60,280,1\n70,270,2\n", encoding="utf-8")
+    roles = {"ALT": {"role": "altitude", "unit": "km"}, "TEMP": {"role": "temperature", "unit": "K"},
+             "LON": {"role": "longitude", "unit": "deg"}}
+    prof, _ = build_profile(f, get_body("venus"), roles=roles)
+    assert prof.longitude == pytest.approx(0.0, abs=1e-9)                # plain median: 180

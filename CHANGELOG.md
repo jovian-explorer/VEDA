@@ -34,6 +34,7 @@ From this version on, every tested change is published straight away as the late
 - **Fix: gravity-wave perturbations upside down for profiles listed from the top.** T' and the wave potential energy were computed in altitude order but written back in the file's order, so occultation profiles stored top-down had them reversed in altitude.
 - **Fix: no ionosphere diagnostics without temperature.** Electron content, peak and Chapman fit were skipped for electron density profiles without a temperature column, which is most ionospheric occultations.
 - **Fix: log-space composites mixed logarithms and values.** If a later profile in a pressure, density or electron density comparison had a zero or negative value (noisy electron densities often do), the earlier profiles had already been interpolated as logarithms and the rest as values: two profiles of 10^4 cm^-3 averaged to 5005, the first was drawn at 9.2 (its logarithm), and the result depended on the order of the profiles. Log or linear averaging is now decided once for all profiles.
+- **Fix: profiles crossing midnight or the 0/360 meridian.** A profile's local time and longitude were the plain median along the ray path, so a profile from 23.9 h to 0.1 h was placed at 12 h (in local-time filters, groups and the altitude cut) and one crossing longitude 0 at 180 (also in loaded files). They are now medians taken around the circle.
 
 ### Data
 - **Venus Express temperature profiles**, which PSA and PDS do not hold, from the teams' research data repositories (all CC-BY-4.0):

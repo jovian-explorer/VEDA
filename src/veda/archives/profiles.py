@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 
 from ..analysis.atmospheric import compute_atmospheric_diagnostics
+from ..analysis.solar_geometry import circular_median
 from ..core.models import ObservationProfile, ProvenanceRecord
 from ..core.registry import get_body
 from ..readers.pds3_reader import match_column, read_pds3_table
@@ -317,7 +318,7 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
         instrument=ds.instrument,
         time_utc=prod.get("start_time") or "",
         latitude=float(np.nanmedian(lat)) if lat is not None else header.get("latitude"),
-        longitude=float(np.nanmedian(lon)) if lon is not None else header.get("longitude"),
+        longitude=circular_median(lon, 360.0) if lon is not None else header.get("longitude"),
         altitude_km=z,
         pressure_hpa=p_hpa,
         temperature_k=t_k,

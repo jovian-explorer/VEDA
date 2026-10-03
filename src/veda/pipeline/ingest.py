@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 
 from ..analysis.atmospheric import compute_atmospheric_diagnostics
+from ..analysis.solar_geometry import circular_median
 from ..core.models import ObservationProfile, ProvenanceRecord
 from ..core.registry import get_body
 from ..readers.fits_reader import load_fits_image
@@ -55,7 +56,7 @@ def _profile_from_roles(file_path: Path, b, tbl: Pds3Table, roles: Dict[str, Dic
     prof = ObservationProfile(
         observation_id=file_path.stem, mission_id=mission_id or "user_imported", body_id=b.id,
         instrument=instrument or "Loaded file", time_utc=time_utc or _file_time(tbl) or "",
-        latitude=med(track.get("latitude")), longitude=med(track.get("longitude")),
+        latitude=med(track.get("latitude")), longitude=circular_median(track.get("longitude"), 360.0),
         altitude_km=z, pressure_hpa=p, temperature_k=t_k,
         temperature_c=t_k - 273.15 if t_k is not None else None,
         electron_density_cm3=by_role.get("electron_density"),

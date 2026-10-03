@@ -15,6 +15,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
+from ..analysis.solar_geometry import circular_median
 from ..archives import catalog
 from ..archives.datasets import datasets_for, get_dataset
 from ..archives.profiles import load_profiles
@@ -58,7 +59,7 @@ def profile_geometry(p: ObservationProfile) -> Dict[str, Optional[float]]:
     along the ray path where the archive gives them per level, else its header values."""
     track = p.track or {}
     attrs = p.raw_attributes or {}
-    lst = _median(track.get("lst"))
+    lst = circular_median(track.get("lst"), 24.0)        # a ray path can cross midnight
     sza = _median(track.get("sza"))
     if lst is None and isinstance(attrs.get("LST"), (int, float)):
         lst = float(attrs["LST"])

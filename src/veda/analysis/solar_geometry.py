@@ -63,6 +63,27 @@ def supported(body_id: str) -> bool:
     return body_id in _ROTATION
 
 
+def circular_median(values, period: float) -> Optional[float]:
+    """Median of angles or clock times that wrap at ``period`` (360 deg, 24 h).
+
+    A plain median of 23.9 h and 0.1 h is 12 h; here the values are first taken
+    relative to one of them, so a ray path that crosses midnight or the 0/360 (or
+    +-180) meridian gives its true middle.  Valid when the values span less than
+    half a period, as along one profile.  The result keeps the input convention:
+    [0, period), or [-period/2, period/2) when any value is negative.
+    """
+    if values is None:
+        return None
+    a = np.asarray(values, dtype=float).ravel()
+    a = a[np.isfinite(a)]
+    if a.size == 0:
+        return None
+    ref = a[0]
+    m = ref + float(np.median((a - ref + period / 2.0) % period - period / 2.0))
+    lo = -period / 2.0 if np.min(a) < 0 else 0.0
+    return float((m - lo) % period + lo)
+
+
 def _days_tdb(time_utc: str) -> Optional[float]:
     t = parse_utc(time_utc)
     if t is None:
