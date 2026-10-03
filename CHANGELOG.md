@@ -11,6 +11,7 @@ From this version on, every tested change is published straight away as the late
 - VEDA tells you when a newer build has been published (a notice with a download link; About > *Check for updates*). About shows the build number, date and commit. Turn it off in Settings > Network.
 - A build whose release was published no longer reports failure when removing an older build fails (a tag already deleted by a cancelled run).
 - **Fix: flybys shown as orbiters.** In a body's mission list, Cassini and New Horizons at Jupiter (gravity-assist flybys) and Cassini at Titan (repeated flybys) were labelled *Orbiter*; they are now *Flyby*.
+- The scale heights on the body quick-cards follow from each body's gas constant, gravity and the temperature now stated beside them: Pluto showed 50 km, the value in its warm upper atmosphere, against 17.7 km at its 37 K surface (both now shown); Titan 20.8 km (was 20.0), Mars 11.0 km (was 11.1).
 - The test suite passes when `VEDA_HOME` points at a data folder already in use: two download tests found the files an earlier run had cached and fetched nothing.
 
 ### Performance
