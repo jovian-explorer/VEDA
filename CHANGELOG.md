@@ -50,6 +50,7 @@ From this version on, every tested change is published straight away as the late
   - SPICAV-SOIR solar occultations 2006-2014, 644 profiles of CO2 density, pressure and temperature from about 70 to 170 km at the terminator, with uncertainties (Mahieux et al. 2015; BIRA-IASB doi:10.18758/71021089).
 - A new kind of source, research data repositories (Zenodo and institutional archives): profiles without PDS labels are described by the data set (columns and units) and rewritten as small normalised CSV files.
 - Venus Express instruments SPICAV-SOIR, SPICAV, ASPERA-4 and MAG added to the mission.
+- **Fix: one file downloaded twice at the same time.** Products in one archive folder share format files, and selected products are downloaded several at a time (profiles in several worker processes): both downloads wrote the same temporary file, so one failed with a permission error (the product was left out) and the saved file could be cut short. Each download now writes its own temporary file, and a file left half-written by a full disk or a cancelled download is removed.
 
 ### Loading your own files
 - **Load dialog**: before a table is read, VEDA shows its columns (unit in the file, first values, range) and asks what each column is and in which unit, and what the file is (body, mission, instrument, observation time). Headerless files can be read. The choices are saved with the file and offered for the next one; loaded profiles carry the mission and instrument in legends and colours and are included in filtered comparisons.

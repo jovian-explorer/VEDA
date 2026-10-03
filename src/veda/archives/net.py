@@ -8,6 +8,7 @@ apply everywhere.
 from __future__ import annotations
 
 import ftplib
+import os
 import re
 import threading
 import time
@@ -153,9 +154,28 @@ def _ftp_url(url: str) -> Optional[str]:
     return f"ftp://{u.netloc}{u.path}" if u.scheme == "https" and u.netloc in FTP_MIRRORS else None
 
 
+def _part_path(dest: Path) -> Path:
+    """A temporary name of this thread and process only: two downloads of the same file
+    at once (selected products sharing a format file, worker processes reading
+    profiles from one folder) wrote into one .part file, so one failed with a
+    permission error and the file could be saved cut short."""
+    return dest.with_name(f"{dest.name}.{os.getpid()}-{threading.get_ident()}.part")
+
+
+def _install(tmp: Path, dest: Path) -> None:
+    try:
+        tmp.replace(dest)
+    except PermissionError:
+        # (Windows) another download of the same file finished first and the file is
+        # open; that copy is complete, so it is kept
+        tmp.unlink(missing_ok=True)
+        if not dest.is_file():
+            raise
+
+
 def _ftp_download(url: str, dest: Path, progress=None, max_bytes: Optional[int] = None) -> Path:
     u = urlparse(url)
-    tmp = dest.with_name(dest.name + ".part")
+    tmp = _part_path(dest)
     try:
         with ftplib.FTP(u.netloc, timeout=SETTINGS.network_timeout_s) as ftp:
             ftp.login()
@@ -175,7 +195,7 @@ def _ftp_download(url: str, dest: Path, progress=None, max_bytes: Optional[int] 
                     if progress:
                         progress(done, total)
                 ftp.retrbinary(f"RETR {u.path}", write, blocksize=256 * 1024)
-        tmp.replace(dest)
+        _install(tmp, dest)
         return dest
     except ftplib.error_perm as exc:
         tmp.unlink(missing_ok=True)
@@ -211,7 +231,7 @@ def download(url: str, dest: Path, progress: Optional[Callable[[int, int], None]
 
 def _https_download(url: str, dest: Path, progress=None, max_bytes: Optional[int] = None, **kw) -> Path:
     dest.parent.mkdir(parents=True, exist_ok=True)
-    tmp = dest.with_name(dest.name + ".part")
+    tmp = _part_path(dest)
     r = get(url, stream=True, **kw)
     total = int(r.headers.get("Content-Length") or 0)
     if max_bytes is not None and total > max_bytes:
@@ -227,10 +247,13 @@ def _https_download(url: str, dest: Path, progress=None, max_bytes: Optional[int
                 done += len(chunk)
                 if progress:
                     progress(done, total)
-        tmp.replace(dest)
+        _install(tmp, dest)
     except requests.RequestException as exc:
         tmp.unlink(missing_ok=True)
         raise _describe(exc, url) from exc
+    except BaseException:
+        tmp.unlink(missing_ok=True)          # disk full, cancelled: no half file left behind
+        raise
     finally:
         r.close()
     return dest

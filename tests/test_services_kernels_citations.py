@@ -138,10 +138,46 @@ def test_download_refuses_files_over_the_limit_before_writing(tmp_path, monkeypa
     with pytest.raises(net.TooLarge) as exc:
         net.download("https://example.org/UVS.FIT", tmp_path / "UVS.FIT", max_bytes=250_000_000)
     assert exc.value.size_bytes == 1_200_000_000 and resp.closed
-    assert not (tmp_path / "UVS.FIT").exists() and not (tmp_path / "UVS.FIT.part").exists()
+    assert not (tmp_path / "UVS.FIT").exists() and not list(tmp_path.glob("*.part"))
     small = _FakeResponse(b"abc", 3)
     monkeypatch.setattr(net, "get", lambda url, **kw: small)
     assert net.download("https://example.org/a.dat", tmp_path / "a.dat", max_bytes=250).read_bytes() == b"abc"
+
+
+def test_simultaneous_downloads_of_one_file_do_not_collide(tmp_path, monkeypatch):
+    """Two products in one folder share a format file; downloading both at once wrote one
+    .part file from two threads and one of them failed with a PermissionError."""
+    import threading
+    import time
+    from veda.archives import net
+
+    class Slow:
+        headers = {"Content-Length": "40"}
+
+        def iter_content(self, chunk_size):
+            for _ in range(4):
+                time.sleep(0.03)
+                yield b"x" * 10
+
+        def close(self):
+            pass
+    monkeypatch.setattr(net, "get", lambda url, **kw: Slow())
+    dest = tmp_path / "MORS.FMT"
+    errors = []
+
+    def fetch(delay):
+        time.sleep(delay)
+        try:
+            net.download("https://example.org/MORS.FMT", dest)
+        except Exception as exc:          # noqa: BLE001 - any failure is the bug
+            errors.append(exc)
+    threads = [threading.Thread(target=fetch, args=(d,)) for d in (0, 0.01, 0.05)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert errors == []
+    assert dest.read_bytes() == b"x" * 40 and not list(tmp_path.glob("*.part"))
 
 
 def test_structure_answers_413_with_the_size_until_confirmed(monkeypatch):
