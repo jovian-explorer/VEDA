@@ -562,6 +562,14 @@ def _files_on_disk(dataset_id: str) -> set:
 
 
 def _has_downloads(dataset_id: str) -> bool:
+    if not _seeded:
+        # The bundled samples are copied in on the first catalogue connection; without
+        # this, a search before any other catalogue use (first start) missed them.
+        with _db_lock:
+            conn = _connect()
+            with conn:        # (commits the sample rows)
+                pass
+            conn.close()
     root = PRODUCT_ROOT / dataset_id
     try:
         return root.is_dir() and any(root.iterdir())
