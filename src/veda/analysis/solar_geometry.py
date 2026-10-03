@@ -21,6 +21,7 @@ planetocentric.
 from __future__ import annotations
 
 import datetime as _dt
+import functools
 import math
 from typing import Dict, Optional
 
@@ -148,7 +149,14 @@ def _to_body_frame(v: np.ndarray, ra: float, dec: float, w: float) -> np.ndarray
 def subsolar_point(body_id: str, time_utc: str) -> Optional[Dict[str, float]]:
     """Planetocentric latitude and east longitude (deg) of the subsolar point, and for
     Mars the solar longitude Ls (deg)."""
-    body = body_id.lower()
+    out = _subsolar_point(body_id.lower(), time_utc)
+    return dict(out) if out is not None else None
+
+
+@functools.lru_cache(maxsize=4096)
+def _subsolar_point(body: str, time_utc: str) -> Optional[Dict[str, float]]:
+    # (cached: the local time and zenith angle of every level of a profile are computed
+    # for the same time, which made this a quarter of the time of reading Mars profiles)
     days = _days_tdb(time_utc)
     if body not in _ROTATION or days is None:
         return None

@@ -83,30 +83,19 @@ def match_column(names, query: str) -> Optional[str]:
     return min(ranked)[-1] if ranked else None
 
 
+# A quoted string (to its closing quote or the end) or a /* comment */ (to its end or
+# the end of the text), whichever starts first: quotes inside comments and comment
+# marks inside quotes are text.  Regular expressions instead of a loop over every
+# character, which took half the time of reading a comparison's profiles (labels of
+# 30-45 kB, read twice each).
+_QUOTE_OR_COMMENT = re.compile(r'"[^"]*(?:"|\Z)|/\*.*?(?:\*/|\Z)', re.S)
+_QUOTED = re.compile(r'"[^"]*(?:"|\Z)')
+
+
 def _strip_comments(text: str) -> str:
-    out = []
-    i, n = 0, len(text)
-    in_quote = in_comment = False
-    while i < n:
-        ch = text[i]
-        if in_comment:
-            if text.startswith("*/", i):
-                in_comment = False
-                i += 2
-                continue
-            if ch == "\n":
-                out.append(ch)
-            i += 1
-            continue
-        if ch == '"':
-            in_quote = not in_quote
-        elif not in_quote and text.startswith("/*", i):
-            in_comment = True
-            i += 2
-            continue
-        out.append(ch)
-        i += 1
-    return "".join(out)
+    """The text without comments; a comment keeps its line ends."""
+    return _QUOTE_OR_COMMENT.sub(lambda m: m.group(0) if m.group(0)[0] == '"' else "\n" * m.group(0).count("\n"),
+                                 text)
 
 
 
@@ -129,20 +118,10 @@ def _label_lines(label_text: str) -> List[str]:
     next line ("DESCRIPTION =" then the text) is joined to that value.
     """
     text = _strip_comments(label_text)
-    stmts, buf, in_quote = [], [], False
-    for ch in text:
-        if ch == '"':
-            in_quote = not in_quote
-        if ch in "\r\n" and not in_quote:
-            line = " ".join("".join(buf).split())
-            if line:
-                stmts.append(line)
-            buf = []
-            continue
-        buf.append(" " if ch in "\r\n" else ch)
-    tail = " ".join("".join(buf).split())
-    if tail:
-        stmts.append(tail + ('"' if in_quote else ""))
+    text = _QUOTED.sub(lambda m: m.group(0).replace("\r", " ").replace("\n", " "), text)
+    stmts = [line for line in (" ".join(raw.split()) for raw in re.split(r"[\r\n]", text)) if line]
+    if stmts and text.count('"') % 2:
+        stmts[-1] += '"'                         # close a quote left open at the end
     out: List[str] = []
     for s in stmts:
         if out and out[-1].endswith("=") and "=" not in s.split('"', 1)[0]:

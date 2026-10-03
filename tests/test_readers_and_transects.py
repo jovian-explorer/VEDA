@@ -207,3 +207,14 @@ END
     assert abs(parsed.series("ALTITUDE")[0] - 10.5) < 1e-3
     assert abs(parsed.series("TEMPERATURE")[0] - 245.2) < 1e-3
 
+
+
+def test_label_statements_with_comments_and_quotes():
+    """The label tokeniser (regular expressions since it was made faster) keeps comment
+    marks inside quotes, ignores quotes inside comments and joins wrapped values."""
+    from veda.readers.pds3_reader import _label_lines
+    text = ('A = 1 /* a "quoted" comment */\r\n'
+            'B = "x /* not a comment */\r\n  y"\n'
+            '/* multi\nline */ C =\n  2\n'
+            'D = "left open')
+    assert _label_lines(text) == ['A = 1', 'B = "x /* not a comment */ y"', 'C = 2', 'D = "left open"']

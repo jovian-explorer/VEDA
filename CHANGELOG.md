@@ -17,6 +17,7 @@ From this version on, every tested change is published straight away as the late
 - **Downloaded products are found from the cache folder listing** instead of one disk check per catalogue row: the default comparison and *Downloaded only* searches took 30 s on a catalogue of 220,000 products, now about 1 s. Catalogue indexes for profile and product-type filters make those searches up to 7 times faster.
 - **Faster start, no leftover temporary folders.** The app gave Matplotlib a new temporary folder on every start, so it rebuilt its font list each time and every closed or crashed process (including each worker) left a folder in the temp directory (8 per launch). It now keeps one in VEDA's cache.
 - Profiles already read are kept in memory for the session, so re-plotting a comparison with another variable, grouping or unit is immediate.
+- **Reading profiles about twice as fast.** PDS3 labels were parsed one character at a time (Mars radio science labels are 30 to 45 kB, each read twice), and the subsolar point was recomputed for every level of a profile although all levels share one time; together these were 60 % of the time to read a profile. A Mars comparison of 120 downloaded MEX, MGS and MRO profiles took 4.2 s in one process, now 2.2 s.
 - **Hand-picked comparisons** read their archive profiles in the worker processes too (they were read one at a time), and a product that cannot be downloaded or read is left out instead of failing the whole comparison.
 
 ### Comparisons
