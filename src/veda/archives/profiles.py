@@ -74,6 +74,17 @@ def _to_kelvin(values: np.ndarray, unit: str) -> np.ndarray:
     return values + 273.15 if "CELSIUS" in unit or unit in ("C", "DEGC") else values
 
 
+def _grams_per_cm3(unit: str) -> bool:
+    """A mass density unit in g/cm^3 (GM/CM**3, GRAM PER CUBIC CENTIMETER), tested word by
+    word: with the spaces squeezed out, KILOGRAM PER CUBIC METER contained both "GRAM"
+    and "CM", and such densities were multiplied by 1000."""
+    import re as _re
+    u = unit.upper()
+    gram = _re.search(r"(?<![A-Z])(G|GM|GRAMS?)(?![A-Z])", u)
+    cm = "CENTIMET" in u or _re.search(r"(?<![A-Z])CM(?![A-Z])", u)
+    return bool(gram and cm)
+
+
 def _sigma(tbl, name) -> Optional[np.ndarray]:
     """Uncertainty columns are skipped by match_column, so look them up directly."""
     if not name:
@@ -283,7 +294,7 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
             u = (sib.units.get(colname) or "").upper()
             if key == "pressure_hpa":
                 s = _to_hpa(s, u)
-            elif key == "density_measured" and ("GM" in u or "GRAM" in u) and "CM" in u:
+            elif key == "density_measured" and _grams_per_cm3(u):
                 s = s * 1000.0                       # g/cm^3 -> kg/m^3
             if s.shape == tbl.columns[next(iter(tbl.columns))].shape:
                 sq = s ** 2 if sq is None else sq + s ** 2
@@ -345,8 +356,7 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
         factor = 1.0
         if v is not None and key.startswith("density"):
             v = np.where(v > 0, v, np.nan)
-            u = _unit(tbl, col).replace(" ", "")
-            if ("GM" in u or "GRAM" in u) and "CM" in u:
+            if _grams_per_cm3(_unit(tbl, col)):
                 factor = 1000.0                          # g/cm^3 -> kg/m^3 (Cassini RSS)
         if v is not None:
             prof.derived[key] = v * factor

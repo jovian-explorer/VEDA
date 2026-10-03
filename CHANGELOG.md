@@ -51,6 +51,7 @@ From this version on, every tested change is published straight away as the late
   - SPICAV-SOIR solar occultations 2006-2014, 644 profiles of CO2 density, pressure and temperature from about 70 to 170 km at the terminator, with uncertainties (Mahieux et al. 2015; BIRA-IASB doi:10.18758/71021089).
 - A new kind of source, research data repositories (Zenodo and institutional archives): profiles without PDS labels are described by the data set (columns and units) and rewritten as small normalised CSV files.
 - Venus Express instruments SPICAV-SOIR, SPICAV, ASPERA-4 and MAG added to the mission.
+- **Fix: densities labelled KILOGRAM PER CUBIC METER multiplied by 1000.** The test for g/cm^3 (Cassini) looked for "GRAM" and "CM" in the unit with its spaces removed, which "KILOGRAM PER CUBIC METER" also passes. Units are now read word by word; data sets whose labels write KG/M**3 or g/cm^3 were not affected.
 - **Fix: one file downloaded twice at the same time.** Products in one archive folder share format files, and selected products are downloaded several at a time (profiles in several worker processes): both downloads wrote the same temporary file, so one failed with a permission error (the product was left out) and the saved file could be cut short. Each download now writes its own temporary file, and a file left half-written by a full disk or a cancelled download is removed.
 
 ### Loading your own files

@@ -183,6 +183,26 @@ def test_magellan_altitudes_move_onto_the_venus_reference_radius(tmp_path):
     assert prof.to_dict()["altitude_reference"].startswith("a sphere of radius")
 
 
+def test_kilogram_per_cubic_metre_is_not_grams_per_cubic_centimetre(tmp_path):
+    """With the spaces removed, KILOGRAM PER CUBIC METER contains "GRAM" and "CM", so
+    densities labelled in kg/m^3 were multiplied by 1000 as if in g/cm^3."""
+    import dataclasses
+    from veda.archives.profiles import _grams_per_cm3, profile_from_label
+    assert _grams_per_cm3("GM/CM**3") and _grams_per_cm3("GRAM PER CUBIC CENTIMETER")
+    assert not _grams_per_cm3("KILOGRAM PER CUBIC METER") and not _grams_per_cm3("KG/M**3")
+    lbl = _ascii_profile(tmp_path, [40.0, 50.0, 60.0], [420.0, 350.0, 260.0], [3.5, 1.0, 0.2])
+    text = lbl.read_text().replace("NAME = PRESSURE", "NAME = DENSITY")
+    for unit, factor in (("KILOGRAM PER CUBIC METER", 1.0), ("GM/CM**3", 1000.0)):
+        lbl.write_text(text.replace("UNIT = BAR", f'UNIT = "{unit}"'))
+        ds = dataclasses.replace(get_dataset("mgn-v-rss-5-occ-prof-rtpd-v1.0"), split_by=(), column_units={},
+                                 extra_variables={"density_measured": ("DENSITY", None)},
+                                 profile_columns={"altitude": "ALTITUDE", "temperature": "TEMPERATURE"})
+        prod = {"product_id": "x", "start_time": "1991-10-05T00:00:00", "volume": "mg_2401", "url": "",
+                "product_type": "profile"}
+        prof = profile_from_label(ds, prod, lbl)
+        np.testing.assert_allclose(prof.derived["density_measured"], np.array([3.5, 1.0, 0.2]) * factor)
+
+
 def test_comparison_warns_when_vertical_references_differ():
     from veda.analysis.atmospheric import _vertical_reference_warning
     sphere = {"mission_id": "vex", "altitude_reference": "a sphere of radius 6051.8 km (from the radius column)"}
