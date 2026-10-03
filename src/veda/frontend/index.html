@@ -230,6 +230,8 @@
         </div>
         <button class="primary" id="veda-btn-export-comparison-csv" style="width: 100%;" title="The variable on the common altitude grid: composite, groups and every profile">📥 Export Comparison CSV</button>
         <button class="ghost" id="veda-btn-export-profiles-csv" style="width: 100%;" title="The same profiles at their own levels, with every archived and derived quantity, uncertainties and ray-path geometry; one row per profile and level (for pandas, R or a spreadsheet)">📑 Export profiles, all variables (CSV)</button>
+        <button class="ghost" id="veda-btn-open-comparison" style="width: 100%;" title="Redo a comparison from a Comparison CSV exported by VEDA: the same profiles, variable, grid and grouping">📂 Open comparison (from its CSV)</button>
+        <input type="file" id="veda-open-comparison-file" accept=".csv,text/csv" style="display: none;" />
         <button class="ghost" id="veda-btn-download-comparison-png" style="width: 100%;">📷 Snapshot Plot (PNG)</button>
         <button class="ghost" id="veda-btn-download-publication-fig" style="width: 100%;" title="Download publication-quality high-resolution figure (DPI 300)">🏛️ Publication Figure (DPI 300)</button>
       </div>

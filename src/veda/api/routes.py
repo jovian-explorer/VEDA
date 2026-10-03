@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import io
+import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 import numpy as np
@@ -437,11 +438,28 @@ def export_profile_json(mission_id: str, observation_id: str):
     )
 
 
+def comparison_recipe(body_id: str, req: "CrossCompareRequest", comp: dict) -> dict:
+    """Everything needed to redo a comparison: its settings and the profiles it used,
+    as hand-picked observations (the archive's own product ids)."""
+    from .. import __version__
+    return {"veda_recipe": 1, "veda_version": __version__, "body_id": body_id, "variable": req.variable,
+            "group_by": req.group_by or None, "group_width": req.group_width,
+            "altitude_step_km": req.altitude_step_km, "vertical": req.vertical,
+            "pressure_step_decades": req.pressure_step_decades,
+            "observations": [{"mission_id": p["mission_id"], "observation_id": p["observation_id"]}
+                             for p in comp.get("profiles", [])]}
+
+
 @router.post("/export/compare/{body_id}/csv")
 def export_compare_csv(body_id: str, req: CrossCompareRequest):
     """Download cross-mission comparative analysis data as CSV."""
     comp = _compare_or_404(body_id, req)
     csv_text = export_comparison_to_csv(comp)
+    # The comparison as a request with the exact profiles it used: posting this JSON
+    # to /compare/body/{body_id} (or opening the CSV with "Open comparison") redoes it.
+    recipe = comparison_recipe(body_id, req, comp)
+    first, rest = csv_text.split("\n", 1)
+    csv_text = f"{first}\n# recipe: {json.dumps(recipe, separators=(',', ':'))}\n{rest}"
     filename = f"veda_comparison_{body_id}_{req.variable}.csv"
     return Response(
         content=csv_text,

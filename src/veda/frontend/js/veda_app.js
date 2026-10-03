@@ -816,6 +816,15 @@ function setupBodyModeControls() {
   btnExportProfiles?.addEventListener('click', () => exportComparison(btnExportProfiles, 'profiles',
     `veda_profiles_${vedaState.activeBodyId}.csv`));
 
+  const btnOpen = document.getElementById('veda-btn-open-comparison');
+  const openFile = document.getElementById('veda-open-comparison-file');
+  btnOpen?.addEventListener('click', () => openFile?.click());
+  openFile?.addEventListener('change', async () => {
+    const f = openFile.files && openFile.files[0];
+    openFile.value = '';
+    if (f) await openComparisonRecipe(await f.text());
+  });
+
   const btnDownloadPng = document.getElementById('veda-btn-download-comparison-png');
   if (btnDownloadPng) {
     btnDownloadPng.addEventListener('click', () => {
@@ -925,6 +934,33 @@ async function compareSelectedProducts(products) {
   switchMode('body');
   await loadAndRenderCelestialBody(body);
   toast(`Comparing ${products.length} selected profile${products.length > 1 ? 's' : ''} on ${body}`, 'good');
+}
+
+/** Redo a comparison from the "# recipe:" line of a Comparison CSV exported by VEDA. */
+async function openComparisonRecipe(csvText) {
+  const line = (csvText || '').split(/\r?\n/, 40).find(l => l.startsWith('# recipe: '));
+  let r = null;
+  try { r = line ? JSON.parse(line.slice(10)) : null; } catch (_) { r = null; }
+  if (!r || r.veda_recipe !== 1 || !r.body_id || !Array.isArray(r.observations) || !r.observations.length) {
+    return toast('This file is not a Comparison CSV exported by VEDA (no recipe line)', 'bad');
+  }
+  vedaState.comparisonProducts = r.observations.map(o => ({ mission_id: String(o.mission_id), observation_id: String(o.observation_id) }));
+  vedaState.selectedCompareVariable = r.variable || 'temperature_k';
+  vedaState.compareGroupBy = r.group_by || '';
+  vedaState.compareGroupWidth = r.group_width ? String(r.group_width) : '';
+  vedaState.compareAltitudeStep = r.altitude_step_km || '';
+  vedaState.compareVertical = r.vertical === 'pressure' ? 'pressure' : 'altitude';
+  const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+  setVal('veda-compare-variable-select', vedaState.selectedCompareVariable);
+  setVal('veda-compare-group-by', vedaState.compareGroupBy);
+  setVal('veda-compare-group-width', vedaState.compareGroupWidth);
+  setVal('veda-compare-altitude-step', vedaState.compareAltitudeStep);
+  setVal('veda-compare-vertical', vedaState.compareVertical);
+  syncUnitButtons();
+  switchMode('body');
+  await loadAndRenderCelestialBody(r.body_id);
+  toast(`Comparison of ${r.observations.length} profiles reopened`
+        + (r.veda_version ? ` (exported by VEDA ${String(r.veda_version)})` : ''), 'good');
 }
 
 function renderComparisonSelectionNote() {

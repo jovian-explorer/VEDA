@@ -483,3 +483,17 @@ def test_comparison_on_pressure_levels_through_the_api(client):
     assert fig.status_code == 200 and fig.headers["content-type"] == "image/png"
     assert client.post("/api/veda/compare/body/mars", json={**base, "variable": "pressure_hpa"}).status_code == 400
     assert client.post("/api/veda/compare/body/mars", json={**base, "vertical": "theta"}).status_code == 422
+
+
+def test_comparison_csv_carries_a_recipe_that_redoes_it(client):
+    req = {"missions": ["mex"], "variable": "temperature_k", "altitude_step_km": 1.0, "group_by": "latitude",
+           "filter": {"start": "2004-04-01", "end": "2004-04-03", "download": False}}
+    first = client.post("/api/veda/compare/body/mars", json=req).json()
+    csv = client.post("/api/veda/export/compare/mars/csv", json=req).text
+    line = next(l for l in csv.splitlines() if l.startswith("# recipe: "))
+    recipe = json.loads(line[len("# recipe: "):])
+    assert recipe["veda_recipe"] == 1 and recipe["body_id"] == "mars" and recipe["altitude_step_km"] == 1.0
+    assert [o["observation_id"] for o in recipe["observations"]] == [p["observation_id"] for p in first["profiles"]]
+    again = client.post(f"/api/veda/compare/body/{recipe['body_id']}", json=recipe).json()   # the recipe is a request
+    assert [p["observation_id"] for p in again["profiles"]] == [p["observation_id"] for p in first["profiles"]]
+    assert again["composite_mean"] == first["composite_mean"] and again["grid_km"] == first["grid_km"]
