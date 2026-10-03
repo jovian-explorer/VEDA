@@ -315,6 +315,11 @@ def build_profile(file_path: Path, b, mission_id: Optional[str] = None,
                 unit = "Pa" if np.nanmean(p_raw) > 20000.0 else "hPa"      # no unit given: guess
             p_hpa = to_standard("pressure", p_raw, unit, b)
 
+    for a in (t_k, p_hpa):
+        if a is not None:
+            a[a <= 0] = np.nan                       # absolute T and p are positive (fill)
+    if t_c is not None:
+        t_c = t_k - 273.15
     ne_cm3 = tbl.series(edens_col) if edens_col else None
     ref_arr = tbl.series(ref_col) if ref_col else None
 

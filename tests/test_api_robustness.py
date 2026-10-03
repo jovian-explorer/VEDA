@@ -402,6 +402,23 @@ def test_pressure_label_units_hpa_is_not_pascal():
     assert unit_from_label("altitude", "M") == "m"
 
 
+def test_fill_values_in_text_tables_are_missing_not_celsius(tmp_path):
+    """-999 in a Kelvin temperature column made the load dialog (and the guessed load)
+    take the column for degrees Celsius, adding 273 K to every level."""
+    from veda.core.registry import get_body
+    from veda.pipeline.ingest import build_profile, suggest_roles
+    from veda.readers.pds3_reader import read_any_table
+    f = tmp_path / "fill.csv"
+    f.write_text("altitude_km,temperature,pressure\n40,350,1000\n50,300,-999\n60,250,100\n"
+                 "70,-9999,30\n80,200,1e36\n")
+    roles = suggest_roles(read_any_table(str(f)))
+    assert roles["TEMPERATURE"]["unit"] == "K"
+    for r in (roles, None):
+        prof, _ = build_profile(f, get_body("venus"), roles=r)
+        assert prof.temperature_k[0] == pytest.approx(350.0) and np.isnan(prof.temperature_k[3])
+        assert np.isnan(prof.pressure_hpa[1]) and np.isnan(prof.pressure_hpa[4])
+
+
 def test_headerless_file_loaded_with_chosen_roles_units_and_mission(client):
     # radius in metres, temperature in C, pressure in Pa, no header
     rows = "\n".join(f"{(6051.8 + z) * 1000:.1f} {t:.2f} {p:.3f}"

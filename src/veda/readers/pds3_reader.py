@@ -432,6 +432,9 @@ def read_pds3_table(table_or_label_path: str) -> Pds3Table:
     )
 
 
+_TEXT_FILLS = np.array([-999.0, -9999.0, -99999.0])
+
+
 def read_any_table(file_path: str) -> Pds3Table:
     """Read any tabular data file (PDS3 table, CSV, TSV, or whitespace-delimited ASCII).
 
@@ -534,6 +537,9 @@ def read_any_table(file_path: str) -> Pds3Table:
                     arr[r_i] = float(cell)
                 except ValueError:
                     pass
+        # Common fill values (a text table has no label to declare them): -999 in a
+        # temperature column in K made VEDA read the column as degrees Celsius.
+        arr[np.isin(arr, _TEXT_FILLS) | (np.abs(arr) >= 1e30)] = np.nan
         if np.isfinite(arr).any():
             columns_data[name] = arr
     units_dict: Dict[str, str] = {name: header_units.get(name, "") for name in columns_data}
