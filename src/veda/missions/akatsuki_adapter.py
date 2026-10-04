@@ -106,15 +106,18 @@ class AkatsukiAdapter(BaseMissionAdapter):
             # Extract Latitude / Longitude
             lat_arr = tbl.series("LATITUDE")
             lon_arr = tbl.series("LONGITUDE")
-            lat_val = float(np.nanmean(lat_arr)) if lat_arr is not None and np.isfinite(lat_arr).any() else None
-            lon_val = float(np.nanmean(lon_arr)) if lon_arr is not None and np.isfinite(lon_arr).any() else None
+            # median along the ray path, longitude around the circle (a plain mean puts a
+            # path crossing 0/360 deg at 180), as for the other archive profiles
+            from ..analysis.solar_geometry import circular_median
+            lat_val = float(np.nanmedian(lat_arr)) if lat_arr is not None and np.isfinite(lat_arr).any() else None
+            lon_val = circular_median(lon_arr, 360.0) if lon_arr is not None and np.isfinite(lon_arr).any() else None
 
             prof = ObservationProfile(
                 observation_id=observation_id,
                 mission_id="akatsuki",
                 body_id="venus",
                 instrument="RS",
-                time_utc=meta.get("OBSERVATION_TIME") or meta.get("START_TIME") or "2016-03-03T23:20:05Z",
+                time_utc=meta.get("OBSERVATION_TIME") or meta.get("START_TIME") or "",
                 latitude=lat_val,
                 longitude=lon_val,
                 altitude_km=z_km,
