@@ -1879,13 +1879,17 @@ async function inspectProfileObservation(obs) {
 
     let bestVar = candidateVars.find(k => hasValidData(k)) || 'temperature_k';
 
-    const optionsHtml = candidateVars.map(k => {
+    // with units: temperature in K and in degrees C both have the label "Temperature"
+    const optionsHtml = candidateVars.filter(k => {
+      const cfg = VARIABLE_CONFIGS[k];
+      return !cfg || !cfg.bodies || !prof.body_id || cfg.bodies.includes(prof.body_id) || hasValidData(k);
+    }).map(k => {
       const available = hasValidData(k);
       const cfg = VARIABLE_CONFIGS[k] || { label: k, units: '' };
       const selected = (k === bestVar) ? ' selected' : '';
       const disabled = !available ? ' disabled' : '';
       const statusText = available ? '' : ' (not in profile)';
-      return `<option value="${k}"${selected}${disabled}>${cfg.label}${statusText}</option>`;
+      return `<option value="${k}"${selected}${disabled}>${cfg.label}${cfg.units ? ` (${cfg.units})` : ''}${statusText}</option>`;
     }).join('');
 
     const missionTag = (prof.mission_id || 'LOCAL').toUpperCase();

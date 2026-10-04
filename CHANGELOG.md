@@ -82,6 +82,7 @@ From this version on, every tested change is published straight away as the late
 - **Fix: small values rounded away in the profile view.** Profiles were sent to the page with five decimals, so the buoyancy frequency N^2 (around 1e-4 s^-2) was drawn with one significant digit (5e-05) and thermospheric densities (Odyssey, 1e-8 kg/m^3) and high-altitude pressures as zero. They now keep seven significant figures. The comparison and the CSV exports were not affected.
 - **Log axes** (pressure, densities) showed minor ticks as bare digits ("5 6 7 8 9 0.1 2 3", where 5 meant 0.05) and SI prefixes ("100μ" for 1e-4), which read as wrong values after a unit change. Axes spanning less than about three decades now have 1-2-5 ticks with full values (0.05, 0.1, 0.2, 0.5 ...), wider ones one tick per decade as powers of ten; every axis uses powers of ten instead of SI prefixes.
 - The footprint map titles showed a literal "&bull;" ("MARS &bull; Spatial Distribution of Observations"), and image titles in the product viewer "&middot; band 2"; the characters are shown now.
+- The profile view's *Plot variable* list shows units, so the two "Temperature" entries (K and °C) can be told apart, and leaves out the Venus-only Magellan quantities on other bodies.
 - **Axis limits** set in Plot style applied to whatever was plotted next: limits typed for temperature in K stayed on the axis after switching to °C or to pressure. They now belong to the axis they were set for (variable and unit) and stop applying when that changes.
 
 ## 0.1.0 (2026-10-02): first public release
