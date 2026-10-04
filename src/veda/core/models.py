@@ -116,7 +116,9 @@ class ObservationProfile:
             if decimate_max > 0 and flat.size > decimate_max:
                 idx = np.linspace(0, flat.size - 1, decimate_max).round().astype(int)
                 flat = flat[idx]
-            return [None if not np.isfinite(x) else round(float(x), 5) for x in flat]
+            # seven significant figures: a fixed number of decimals wrote N^2 (1e-5 s^-2),
+            # upper-atmosphere densities and pressures with one digit or as 0
+            return [None if not np.isfinite(x) else float(f"{x:.7g}") for x in flat]
 
         prov_dict = None
         if self.provenance:

@@ -394,3 +394,18 @@ def test_pressure_comparison_skips_profiles_without_pressure_and_refuses_pressur
     assert "error" in compare_profiles_on_body([with_p], mars, variable_name="pressure_hpa", vertical="pressure")
     with pytest.raises(ValueError):
         compare_profiles_on_body([with_p], mars, vertical="theta")
+
+
+def test_profile_json_keeps_small_values():
+    """Profiles sent to the page kept five decimals: N^2 of 5.3e-5 s^-2 became 5e-05 and a
+    thermospheric density of 2e-8 kg/m^3 became 0.  They now keep seven significant figures."""
+    z = np.array([100.0, 110.0, 120.0])
+    p = ObservationProfile(observation_id="x", mission_id="ody", body_id="mars", instrument="ACC",
+                           time_utc="", latitude=None, longitude=None, altitude_km=z,
+                           pressure_hpa=np.array([3.21e-4, 8.7e-5, 2.2e-5]))
+    p.derived["density_measured"] = np.array([2.0e-8, 6.1234567e-9, 2.0e-9])
+    p.derived["buoyancy_freq_sq"] = np.array([5.3e-5, 1.27e-4, -2.4e-5])
+    d = p.to_dict()
+    assert d["derived"]["density_measured"] == [2.0e-8, 6.123457e-9, 2.0e-9]
+    assert d["derived"]["buoyancy_freq_sq"] == [5.3e-5, 1.27e-4, -2.4e-5]
+    assert d["pressure_hpa"][2] == 2.2e-5 and d["altitude_km"] == [100.0, 110.0, 120.0]
