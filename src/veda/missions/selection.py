@@ -138,6 +138,22 @@ def spread_order(n: int) -> List[int]:
     return order
 
 
+# Profile columns from which the usual variables (temperature and what is derived from
+# it, pressure, densities, electron density, refractivity) come
+_CORE_COLUMNS = ("temperature", "pressure", "electron_density", "number_density", "refractivity")
+
+
+def provides(ds, variable: str) -> bool:
+    """Whether profiles of data set ``ds`` can hold ``variable``: a quantity only some data
+    sets publish (H2SO4, absorptivity, measured mass density, aerosol) only from those, and
+    the usual variables not from data sets holding nothing else (Magellan H2SO4, Odyssey
+    densities), whose profiles used up the budget of a temperature comparison."""
+    from ..archives.datasets import DATASETS
+    if any(variable in d.extra_variables for d in DATASETS):
+        return variable in ds.extra_variables
+    return any(c in ds.profile_columns for c in _CORE_COLUMNS) or not ds.extra_variables
+
+
 def select_profiles(manager, body_id: str, mission_ids: List[str], variable: str,
                     f: ProfileFilter) -> Tuple[List[ObservationProfile], Dict[str, Any]]:
     """Profiles of ``mission_ids`` on ``body_id`` matching ``f``, with a per-mission report."""
@@ -146,11 +162,11 @@ def select_profiles(manager, body_id: str, mission_ids: List[str], variable: str
     budget = f.per_mission * (4 if f.geometry_limits() else 1)
     for mid in mission_ids:
         ds_ids = [d.id for d in datasets_for(mid, body_id) if not d.portal_only and not d.service
-                  and any(kind == "profile" for _, _, kind in d.rules)]
+                  and any(kind == "profile" for _, _, kind in d.rules) and provides(d, variable)]
         r = {"in_date_range": 0, "tried": 0, "kept": 0, "left_out": {}, "failed": 0}
         report[mid] = r
         if not ds_ids:
-            r["note"] = "no profile data sets for this body"
+            r["note"] = "no profile data sets with this variable for this body"
             continue
         # No archive volume indexed yet: the catalogue may still hold the bundled samples,
         # which are not the archive (a date-range search found only them, unannounced).

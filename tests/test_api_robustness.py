@@ -579,3 +579,16 @@ def test_akatsuki_image_metadata_comes_from_the_file(client):
     assert d["target_distance_km"] == pytest.approx(128304.0)
     assert d["solar_phase_angle_deg"] == pytest.approx(23.2337)
     assert d["time_utc"] == "2018-11-05T08:01:12.369" and d["filter_name"] == "283 nm"
+
+
+def test_comparison_candidates_come_from_data_sets_holding_the_variable():
+    """Magellan's H2SO4/absorptivity profiles and Odyssey's densities hold no temperature,
+    but were drawn as candidates for a temperature comparison, using up its budget."""
+    from veda.archives.datasets import get_dataset
+    from veda.missions.selection import provides
+    h2so4 = get_dataset("mgn-v-rss-5-occ-prof-abs-h2so4-v1.0")
+    ody = get_dataset("ody-m-accel-5-derived-v1.0")
+    mex = get_dataset("mex-m-mrs-5-occ")
+    assert not provides(h2so4, "temperature_k") and provides(h2so4, "h2so4_ppm")
+    assert not provides(ody, "temperature_k") and not provides(ody, "density") and provides(ody, "density_measured")
+    assert provides(mex, "temperature_k") and provides(mex, "density") and not provides(mex, "h2so4_ppm")
