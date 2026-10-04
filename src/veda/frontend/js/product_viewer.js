@@ -597,7 +597,7 @@ async function drawImage() {
                sizex: xr[1] - xr[0], sizey: isMap ? sizey : lines, sizing: 'stretch', layer: 'below',
                yanchor: isMap ? 'top' : 'top' }],
     showlegend: false, dragmode: 'pan', hovermode: false,
-    title: { text: `${esc(obj.name)}${obj.unit ? ` [${esc(obj.unit)}]` : ''}${(obj.shape[0] || 1) > 1 ? ` &middot; band ${im.band + 1}` : ''}`, font: { size: 13 } },
+    title: { text: `${esc(obj.name)}${obj.unit ? ` [${esc(obj.unit)}]` : ''}${(obj.shape[0] || 1) > 1 ? ` · band ${im.band + 1}` : ''}`, font: { size: 13 } },
   };
   if (!isMap) layout.images[0].y = -0.5;
   const marks = { type: 'scatter', mode: 'lines+markers', x: [], y: [], line: { color: '#ffeb3b', width: 2 },

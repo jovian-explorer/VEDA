@@ -1565,7 +1565,7 @@ export function renderPlanetaryMap(projection = '2d') {
 
     const layout = {
       title: {
-        text: `${(body.name || '').toUpperCase()} &bull; Spatial Distribution of Observations`,
+        text: `${(body.name || '').toUpperCase()} • Spatial Distribution of Observations`,
         font: { color: '#e0e0e0', size: 14 },
       },
       paper_bgcolor: 'transparent',
@@ -1684,7 +1684,7 @@ export function renderPlanetaryMap(projection = '2d') {
 
     const layout = {
       title: {
-        text: `${(body.name || '').toUpperCase()} &bull; 3D Planetary Coordinates Globe`,
+        text: `${(body.name || '').toUpperCase()} • 3D Planetary Coordinates Globe`,
         font: { color: '#e0e0e0', size: 14 },
       },
       paper_bgcolor: 'transparent',
