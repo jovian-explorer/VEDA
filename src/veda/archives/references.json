@@ -5508,6 +5508,105 @@
    "note": "Data: ODY-M-ACCEL-5-DERIVED-V1.0 (Withers and Murphy, PDS Atmospheres Node)."
   },
   {
+   "key": "smith2013",
+   "authors": [
+    "Smith, M. D.",
+    "Wolff, M. J.",
+    "Clancy, R. T.",
+    "Kleinböhl, A.",
+    "Murchie, S. L."
+   ],
+   "et_al": false,
+   "year": 2013,
+   "title": "Vertical distribution of dust and water ice aerosols from CRISM limb-geometry observations",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "118",
+   "issue": "2",
+   "pages": "321-334",
+   "doi": "10.1002/jgre.20047",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mro",
+     "payload": "CRISM"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "guzewich2014",
+   "authors": [
+    "Guzewich, S. D.",
+    "Smith, M. D.",
+    "Wolff, M. J."
+   ],
+   "et_al": false,
+   "year": 2014,
+   "title": "The vertical distribution of Martian aerosol particle size",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "119",
+   "issue": "12",
+   "pages": "2694-2708",
+   "doi": "10.1002/2014JE004704",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mro",
+     "payload": "CRISM"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "guzewich2019",
+   "authors": [
+    "Guzewich, S. D.",
+    "Smith, M. D."
+   ],
+   "et_al": false,
+   "year": 2019,
+   "title": "Seasonal Variation in Martian Water Ice Cloud Particle Size",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "124",
+   "issue": "2",
+   "pages": "636-643",
+   "doi": "10.1029/2018JE005843",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mro",
+     "payload": "CRISM"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "khayat2024data",
+   "authors": [
+    "Khayat, A. S. J."
+   ],
+   "et_al": false,
+   "year": 2024,
+   "title": "Atmospheric Retrievals for Mars Integrated from MRO-CRISM Bundle (urn:nasa:pds:mro-crism_atmos-db)",
+   "journal": "NASA Planetary Data System",
+   "volume": "",
+   "issue": "",
+   "pages": "",
+   "doi": "10.17189/76ha-be75",
+   "verified": true,
+   "type": "dataset",
+   "used_for": [
+    {
+     "mission": "mro",
+     "payload": "CRISM"
+    }
+   ],
+   "note": "DOI registered with DataCite."
+  },
+  {
    "key": "holsteinrathlou2016",
    "authors": [
     "Holstein-Rathlou, C.",

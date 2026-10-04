@@ -20,7 +20,12 @@ which both the product viewer and the profile loader read like any other table.
 * ``zenodo_zip``: profiles are the members of a zip file in a Zenodo record
   (``record``, ``zip``, ``members`` regex, ``columns``, ``delimiter``);
 * ``votable_split``: one VOTable (inside a zip at ``url``, member ``member``) holding
-  every profile, split into products by ``split`` columns.
+  every profile, split into products by ``split`` columns;
+* ``csv_split``: one delimited text table at ``url`` holding every profile (``columns``:
+  [(name, unit), ...] in file order, ``header``: whether the first line names them),
+  split into products by ``split`` columns.  ``mars_year``/``ls`` name the columns
+  that date a profile when the table has no time, ``west_longitude`` a longitude
+  given positive west, ``fill`` the value meaning missing.
 """
 from __future__ import annotations
 
@@ -201,7 +206,7 @@ def _row(ds: Dataset, pid: str, path: str, t0: str, extra: Optional[Dict] = None
 def index_repository(ds: Dataset, progress=None) -> List[Dict[str, Any]]:
     kind = ds.repository["kind"]
     return {"zenodo_files": _index_zenodo_files, "zenodo_zip": _index_zenodo_zip,
-            "votable_split": _index_votable_split}[kind](ds, progress)
+            "votable_split": _index_votable_split, "csv_split": _index_csv_split}[kind](ds, progress)
 
 
 def fetch_repository_product(ds: Dataset, prod: Dict[str, Any]) -> Path:
@@ -214,9 +219,13 @@ def fetch_repository_product(ds: Dataset, prod: Dict[str, Any]) -> Path:
         return _fetch_zenodo_file(ds, prod, out)
     if kind == "zenodo_zip":
         return _fetch_zip_member(ds, prod, out)
-    _index_votable_split(ds, None)            # writes every product of the table
+    if kind == "csv_split":
+        _index_csv_split(ds, None)            # writes every product of the table
+    else:
+        _index_votable_split(ds, None)
     if not out.is_file():
-        raise http.ArchiveError(f"{prod['product_id']} is no longer in {ds.repository['member']}")
+        raise http.ArchiveError(f"{prod['product_id']} is no longer in "
+                                f"{ds.repository.get('member') or ds.repository['url'].rsplit('/', 1)[-1]}")
     return out
 
 
@@ -399,3 +408,59 @@ def fields_index(fields: List[Tuple[str, str]], name: str) -> int:
         if n == name:
             return i
     raise KeyError(name)
+
+
+def _index_csv_split(ds: Dataset, progress=None) -> List[Dict[str, Any]]:
+    """Read the whole table once, write every product's CSV, return the rows."""
+    from ..analysis.solar_geometry import mars_time_from_ls
+    r = ds.repository
+    src = _download(r["url"], _cache_dir(ds) / r["url"].rsplit("/", 1)[-1], progress=None)
+    names = [n for n, _ in r["columns"]]
+    lines = src.read_text(encoding="utf-8-sig", errors="replace").splitlines()
+    rows = list(csv.reader(lines[1:] if r.get("header") else lines))
+    groups: Dict[Tuple, List[List[str]]] = {}
+    for cells in rows:
+        cells = [c.strip() for c in cells]
+        if len(cells) < len(names):
+            continue
+        key = tuple(cells[names.index(c)] for c in r["split"])
+        groups.setdefault(key, []).append(cells)
+    fill = r.get("fill")
+    numeric = [i for i, (n, u) in enumerate(r["columns"]) if u != "text"]
+
+    def value(c: str) -> float:
+        try:
+            v = float(c)
+        except ValueError:
+            return np.nan
+        return np.nan if (fill is not None and v == fill) or not np.isfinite(v) else v
+
+    out_rows = []
+    for key, cells in groups.items():
+        first = cells[0]
+        get = lambda n: first[names.index(n)]  # noqa: E731
+        meta: Dict[str, Any] = {}
+        t0 = ""
+        if r.get("mars_year") and r.get("ls"):
+            ls = float(get(r["ls"]))
+            t = mars_time_from_ls(int(float(get(r["mars_year"]))), ls)
+            # the date only: the table gives the season, not the time of day, and a made-up
+            # clock time would give a made-up local time
+            t0 = t[:10] if t else ""
+            meta.update({"START_TIME": t0, "MARS_YEAR": int(float(get(r["mars_year"]))), "LS": ls})
+        for col, name in (("latitude", "LATITUDE"), ("longitude", "LONGITUDE")):
+            if r.get(col):
+                v = value(get(r[col]))
+                if col == "longitude" and r.get("west_longitude"):
+                    v = (360.0 - v) % 360.0           # positive west -> positive east
+                meta[name] = round(v, 4)
+        for n in r.get("text_meta", ()):
+            meta[n] = get(n)
+        pid = r["product_id"].format(**{k: v for k, v in meta.items()},
+                                     key="_".join(k.replace(".", "p").replace("-", "m") for k in key))
+        keep = [i for i in numeric if names[i] in r["keep"]]
+        write_normalised(_cache_dir(ds) / f"{pid}.csv", meta, [r["columns"][i] for i in keep],
+                         ([value(c[i]) for i in keep] for c in cells))
+        out_rows.append(_row(ds, pid, f"{r['url'].rsplit('/', 1)[-1]}#{pid}", t0,
+                             {k: v for k, v in meta.items() if k != "START_TIME"}))
+    return out_rows

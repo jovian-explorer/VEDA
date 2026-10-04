@@ -72,6 +72,8 @@ The authoritative list is VEDA's own catalogue (`src/veda/archives/datasets.py`,
 | Mars Science Laboratory (Curiosity) | EDL atmospheric reconstruction | Derived (PDS4) | `msl-edl-atmosphere` | NASA PDS Atmospheres Node | Holstein-Rathlou et al. (2016); data doi:10.17189/1518944 |
 | InSight | EDL atmospheric reconstruction | Derived (PDS4) | `insight-edl-atmosphere` | NASA PDS Atmospheres Node | Karatekin, Banfield & Ashley (2020), data doi:10.17189/1518935 |
 | 2001 Mars Odyssey | ACC (aerobraking density profiles, 2001-2002) | L5 (derived) | `ody-m-accel-5-derived-v1.0` | NASA PDS Atmospheres Node | Tolson et al. (2005); data: Withers & Murphy (2009) |
+| Mars Reconnaissance Orbiter (MRO) | CRISM limb dust and water-ice aerosol profiles, 2009-2012 | Derived (PDS4) | `mro-crism-smith2013-aerosol` | NASA PDS Atmospheres Node | Smith et al. (2013); data: Khayat (2024), doi:10.17189/76ha-be75 |
+| Mars Reconnaissance Orbiter (MRO) | CRISM limb aerosol abundance and particle size profiles, 2010-2017 | Derived (PDS4) | `mro-crism-guzewich-aerosol` | NASA PDS Atmospheres Node | Guzewich et al. (2014, 2019); data: Khayat (2024), doi:10.17189/76ha-be75 |
 | Mars Express (MEX) | MaRS (Radio Science) | L4 | `mex-m-mrs-5-occ` | ESA PSA (mirror: NASA PDS Geosciences Node) | Pätzold et al. (2016); Pätzold et al. (2004); Chicarro et al. (2004) |
 | Akatsuki (VCO) | RS (Radio Science) | L3/L4 | `vco-v-rs-5-occ-v1.0` | JAXA DARTS | Imamura et al. (2017); Nakamura et al. (2016) |
 | Akatsuki (VCO) | RS (Radio Science) | L2 | `vco-v-rs-3-occ-v1.0` | JAXA DARTS | Imamura et al. (2017); Nakamura et al. (2016) |

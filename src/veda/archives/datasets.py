@@ -596,6 +596,80 @@ DATASETS: List[Dataset] = [
         doi="10.2514/1.15173",
     ),
     Dataset(
+        id="mro-crism-smith2013-aerosol", mission_id="mro", instrument="CRISM (limb)", level="Derived (PDS4)",
+        title="MRO CRISM limb observations: vertical profiles of dust and water-ice aerosol, 2009-2012 (Smith et al. 2013)",
+        body_ids=("mars",), archive="NASA PDS Atmospheres Node (PDS4)",
+        base_url="https://pds-atmospheres.nmsu.edu/PDS/data/PDS4/mro-crism_atmos-db/data_derived/",
+        volume_pattern=r"^repository$",
+        # One table holds the 502 profiles; a profile is one Mars year, Ls, latitude and (west)
+        # longitude.  The table gives no time: the date is found from the Mars year and Ls (the
+        # label's start and stop dates are those of the first and last rows' Ls).
+        repository={"kind": "csv_split",
+                    "url": "https://pds-atmospheres.nmsu.edu/PDS/data/PDS4/mro-crism_atmos-db/data_derived/"
+                           "Smith2013_vertical_distribution_ice_dust.csv",
+                    "header": False,
+                    "columns": [("MARS_YEAR", ""), ("SOLAR_LONGITUDE", "deg"), ("LATITUDE", "deg"), ("LONGITUDE", "deg"),
+                                ("HEIGHT_SCALE", "scale heights"), ("DUST_MIXING_RATIO", ""), ("ICE_MIXING_RATIO", ""),
+                                ("HEIGHT_KM", "km")],
+                    "split": ("MARS_YEAR", "SOLAR_LONGITUDE", "LATITUDE", "LONGITUDE"),
+                    "product_id": "crism_smith2013_{key}", "mars_year": "MARS_YEAR", "ls": "SOLAR_LONGITUDE",
+                    "latitude": "LATITUDE", "longitude": "LONGITUDE", "west_longitude": True,
+                    "keep": ("HEIGHT_KM", "HEIGHT_SCALE", "DUST_MIXING_RATIO", "ICE_MIXING_RATIO")},
+        rules=((r"^crism_smith2013", "Dust and water-ice aerosol vertical profile (CRISM limb)", "profile"),),
+        profile_columns={"altitude": "HEIGHT_KM", "latitude": "LATITUDE", "longitude": "LONGITUDE"},
+        # "Mixing ratio" (Smith et al. 2013, eq. 1): optical depth at 2.2 um per unit fraction of
+        # the column mass; the column optical depth is the sum of mixing ratio x Qext x dp / p_surf
+        extra_variables={"dust_mixing_ratio": ("DUST_MIXING_RATIO", None), "ice_mixing_ratio": ("ICE_MIXING_RATIO", None)},
+        # retrieval levels 0.4 pressure scale heights apart from 0.2 above the surface (Smith et
+        # al. 2013); the table also holds the levels halfway between, interpolated
+        altitude_reference="the local surface (CRISM limb retrieval levels)",
+        citation=("Smith, M. D., Wolff, M. J., Clancy, R. T., Kleinböhl, A., & Murchie, S. L. (2013). Vertical distribution "
+                  "of dust and water ice aerosols from CRISM limb-geometry observations. JGR Planets, 118, 321-334. "
+                  "Data: Khayat, A. S. J. (2024), Atmospheric Retrievals for Mars Integrated from MRO-CRISM Bundle, "
+                  "NASA PDS, doi:10.17189/76ha-be75."),
+        doi="10.17189/76ha-be75",
+    ),
+    Dataset(
+        id="mro-crism-guzewich-aerosol", mission_id="mro", instrument="CRISM (limb)", level="Derived (PDS4)",
+        title="MRO CRISM limb observations: dust and water-ice aerosol abundance and particle size profiles, 2010-2017 "
+              "(Guzewich et al. 2014, 2019)",
+        body_ids=("mars",), archive="NASA PDS Atmospheres Node (PDS4)",
+        base_url="https://pds-atmospheres.nmsu.edu/PDS/data/PDS4/mro-crism_atmos-db/data_derived/",
+        volume_pattern=r"^repository$",
+        # 916 profiles, one per CRISM limb observation (OBSERVATION_NAME), dated from the Mars
+        # year and Ls as above; -999 is missing.
+        repository={"kind": "csv_split",
+                    "url": "https://pds-atmospheres.nmsu.edu/PDS/data/PDS4/mro-crism_atmos-db/data_derived/"
+                           "Guzewich2014_2019_vertical_distribution_ice_dust.csv",
+                    "header": True,
+                    "columns": [("MARS_YEAR", ""), ("SOLAR_LONGITUDE", "deg"), ("LATITUDE", "deg"), ("LONGITUDE", "deg"),
+                                ("HEIGHT", "km"), ("ICE_MIXING_RATIO", "1/mbar"), ("ICE_EFFECTIVE_RADIUS", "um"),
+                                ("ICE_EFFECTIVE_RADIUS_ERROR", "um"), ("DUST_MIXING_RATIO", "1/mbar"),
+                                ("DUST_EFFECTIVE_RADIUS", "um"), ("DUST_EFFECTIVE_RADIUS_ERROR", "um"),
+                                ("OBSERVATION_NAME", "text")],
+                    "split": ("OBSERVATION_NAME",), "fill": -999.0,
+                    "product_id": "crism_guzewich_{key}", "mars_year": "MARS_YEAR", "ls": "SOLAR_LONGITUDE",
+                    "latitude": "LATITUDE", "longitude": "LONGITUDE", "west_longitude": True,
+                    "text_meta": ("OBSERVATION_NAME",),
+                    "keep": ("HEIGHT", "ICE_MIXING_RATIO", "ICE_EFFECTIVE_RADIUS", "ICE_EFFECTIVE_RADIUS_ERROR",
+                             "DUST_MIXING_RATIO", "DUST_EFFECTIVE_RADIUS", "DUST_EFFECTIVE_RADIUS_ERROR")},
+        rules=((r"^crism_guzewich", "Dust and water-ice aerosol and particle size profile (CRISM limb)", "profile"),),
+        profile_columns={"altitude": "HEIGHT", "latitude": "LATITUDE", "longitude": "LONGITUDE"},
+        # Here the "mixing ratio" is the optical depth at 2.2 um per mbar (the label's unit is
+        # Delta(tau)/mb), not Smith et al.'s per unit column-mass fraction: separate variables
+        extra_variables={"dust_opacity_per_mbar": ("DUST_MIXING_RATIO", None),
+                         "ice_opacity_per_mbar": ("ICE_MIXING_RATIO", None),
+                         "dust_effective_radius": ("DUST_EFFECTIVE_RADIUS", "DUST_EFFECTIVE_RADIUS_ERROR"),
+                         "ice_effective_radius": ("ICE_EFFECTIVE_RADIUS", "ICE_EFFECTIVE_RADIUS_ERROR")},
+        # levels 0.4 pressure scale heights apart, 0.2 to 6.6 above the surface (Guzewich et al. 2014)
+        altitude_reference="the local surface (CRISM limb retrieval levels)",
+        citation=("Guzewich, S. D., Smith, M. D., & Wolff, M. J. (2014). The vertical distribution of Martian aerosol "
+                  "particle size. JGR Planets, 119, 2694-2708; Guzewich, S. D., & Smith, M. D. (2019). Seasonal "
+                  "variation in Martian water ice cloud particle size. JGR Planets, 124, 636-643. Data: Khayat, A. S. J. "
+                  "(2024), NASA PDS, doi:10.17189/76ha-be75."),
+        doi="10.17189/76ha-be75",
+    ),
+    Dataset(
         id="pvoro-nssdc", mission_id="pvo", instrument="ORO (Radio Occultation)", level="Derived (PDS4)",
         title="Pioneer Venus Orbiter radio occultations: temperature-pressure and electron density profiles "
               "(1978-1992, recovered from NSSDC by Withers et al. 2020)",
@@ -783,6 +857,8 @@ _REFS = {
     "msl-edl-atmosphere": ("holsteinrathlou2016", "holsteinrathlou2015data"),
     "insight-edl-atmosphere": ("karatekin2020data",),
     "ody-m-accel-5-derived-v1.0": ("tolson2005",),
+    "mro-crism-smith2013-aerosol": ("smith2013", "khayat2024data"),
+    "mro-crism-guzewich-aerosol": ("guzewich2014", "guzewich2019", "khayat2024data"),
     "corss-titan-neutral-profiles": ("schinder2011", "schinder2012", "schinder2015"),
     "corss-saturn-ionosphere": ("kliore2009", "kliore2014data"),
     "cassini-uvis-saturn-thermosphere": ("koskinen2015", "koskinen2018data"),

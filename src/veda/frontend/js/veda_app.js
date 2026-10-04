@@ -76,6 +76,14 @@ const VARIABLE_CONFIGS = {
   density_measured: { label: 'Mass density (archive)', units: 'kg/m³', axis: 'Mass density ρ (kg/m³)', logScale: true, color: '#14b8a6' },
   number_density_m3: { label: 'Number density (archive)', units: 'm⁻³', axis: 'Number density (m⁻³)', logScale: true, color: '#22d3ee' },
   refractivity: { label: 'Radio Refractivity (N)', units: 'N-units', axis: 'Refractivity N', color: '#a1887f' },
+  // MRO CRISM limb aerosol profiles: Smith et al. (2013) give optical depth per unit column-mass
+  // fraction, Guzewich et al. (2014, 2019) optical depth per mbar (both at 2.2 um)
+  dust_mixing_ratio: { label: 'Dust mixing ratio, CRISM (τ per column-mass fraction)', units: '1', axis: 'Dust mixing ratio (2.2 µm)', color: '#d97706', bodies: ['mars'] },
+  ice_mixing_ratio: { label: 'Water-ice mixing ratio, CRISM (τ per column-mass fraction)', units: '1', axis: 'Water-ice mixing ratio (2.2 µm)', color: '#60a5fa', bodies: ['mars'] },
+  dust_opacity_per_mbar: { label: 'Dust opacity per mbar, CRISM', units: 'mbar⁻¹', axis: 'Dust Δτ/Δp at 2.2 µm (mbar⁻¹)', color: '#b45309', bodies: ['mars'] },
+  ice_opacity_per_mbar: { label: 'Water-ice opacity per mbar, CRISM', units: 'mbar⁻¹', axis: 'Water-ice Δτ/Δp at 2.2 µm (mbar⁻¹)', color: '#3b82f6', bodies: ['mars'] },
+  dust_effective_radius: { label: 'Dust effective radius, CRISM', units: 'µm', axis: 'Dust effective radius (µm)', color: '#92400e', bodies: ['mars'] },
+  ice_effective_radius: { label: 'Water-ice effective radius, CRISM', units: 'µm', axis: 'Water-ice effective radius (µm)', color: '#1d4ed8', bodies: ['mars'] },
 };
 
 // Mission Distinct Color Palette for Comparative Charts
@@ -1869,6 +1877,8 @@ async function inspectProfileObservation(obs) {
       'absorptivity_db_km',
       'density_measured',
       'number_density_m3',
+      'dust_mixing_ratio', 'ice_mixing_ratio', 'dust_opacity_per_mbar', 'ice_opacity_per_mbar',
+      'dust_effective_radius', 'ice_effective_radius',
     ];
 
     const hasValidData = (k) => {

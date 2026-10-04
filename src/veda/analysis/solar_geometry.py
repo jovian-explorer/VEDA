@@ -186,6 +186,36 @@ def solar_longitude(days: float, ra: float, dec: float) -> float:
     return math.degrees(math.atan2(np.dot(np.cross(h, e), sun), np.dot(e, sun))) % 360.0
 
 
+# Mars year 34 began (Ls = 0) on 2017-05-05 (Piqueux et al. 2015 calendar, Clancy et al.
+# 2000 numbering: MY 1 began on 1955-04-11); a Mars year is 686.97 days.
+_MY34_START = _dt.datetime(2017, 5, 5, 12)
+_MARS_YEAR_DAYS = 686.9726
+
+
+def mars_time_from_ls(mars_year: int, ls: float) -> Optional[str]:
+    """UTC time (ISO, to the minute) when Mars reached solar longitude ``ls`` in Mars
+    year ``mars_year``: the inverse of the Ls computed here, for data sets that give only
+    a Mars year and Ls (CRISM limb profiles)."""
+    try:
+        my, target = int(mars_year), float(ls) % 360.0
+    except (TypeError, ValueError):
+        return None
+    t0 = _MY34_START + _dt.timedelta(days=(my - 34) * _MARS_YEAR_DAYS)
+
+    def off(d: float) -> float:          # Ls(t0 + d) - target, wrapped to [-180, 180)
+        ss = _subsolar_point("mars", (t0 + _dt.timedelta(days=d)).isoformat())
+        return (ss["ls"] - target + 180.0) % 360.0 - 180.0
+
+    d = target / 360.0 * _MARS_YEAR_DAYS          # mean motion first guess
+    for _ in range(20):                           # Newton steps with a numerical slope
+        f = off(d)
+        if abs(f) < 1e-4:
+            break
+        slope = (off(d + 0.5) - f) / 0.5
+        d -= f / (slope if slope > 0.1 else 0.524)
+    return (t0 + _dt.timedelta(days=d)).strftime("%Y-%m-%dT%H:%M")
+
+
 def light_time_s(body_id: str, time_utc: str) -> Optional[float]:
     """One-way light time (s) between the body and Earth."""
     body = _PARENT.get(body_id.lower(), body_id.lower())
