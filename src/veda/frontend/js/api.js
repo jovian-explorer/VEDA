@@ -66,6 +66,8 @@ export const api = {
   },
   vedaCompareBody: (bodyId, req) =>
       call(`/api/veda/compare/body/${bodyId}`, {method: 'POST', body: req}),
+  vedaHarmonicFit: (req) =>
+      call('/api/veda/analysis/harmonic-fit', {method: 'POST', body: req}),
   vedaProfile: (missionId, obsId, decimate = 600) =>
       call(`/api/veda/profile/${missionId}/${encodeURIComponent(obsId)}?decimate_max=${decimate}`),
   vedaImageMeta: (missionId, obsId) =>

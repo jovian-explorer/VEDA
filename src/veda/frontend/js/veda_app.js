@@ -963,7 +963,7 @@ function setupBodyModeControls() {
     renderActiveSubtab();
   };
   SUBTABS.forEach(t => document.getElementById(`btn-subtab-${t}`)?.addEventListener('click', () => showSubtab(t)));
-  ['veda-cut-x', 'veda-cut-color', 'veda-cut-y'].forEach(id => document.getElementById(id)?.addEventListener('change', renderAltitudeCut));
+  ['veda-cut-x', 'veda-cut-color', 'veda-cut-y', 'veda-cut-fit'].forEach(id => document.getElementById(id)?.addEventListener('change', renderAltitudeCut));
   document.getElementById('veda-cut-altitude')?.addEventListener('change', (e) => {
     vedaState.cutAltitude = e.target.value === '' ? null : Number(e.target.value);
     renderAltitudeCut();
@@ -1280,6 +1280,18 @@ function renderAltitudeCut() {
     legend: { orientation: 'h', y: -0.18 },
   };
   Plotly.newPlot(plotDiv, traces, themedLayout(layout), { responsive: true, displayModeBar: true });
+  const period = { lst: 24, longitude: 360, ls: 360 }[xKey];
+  const fitLabel = document.getElementById('veda-cut-fit-label');
+  if (fitLabel) fitLabel.style.display = period ? '' : 'none';
+  const nHarm = period ? Number(document.getElementById('veda-cut-fit')?.value || 0) : 0;
+  const cutToken = ++altitudeCutRenders;
+  if (nHarm > 0) {
+    fitAltitudeCut(plotDiv, pts, yScale, period, nHarm, layout.yaxis.type === 'log', xKey,
+                   diag ? diag[1] : (isAlt ? 'km' : (pScale === 1 ? cfg.units : pUnit)), cutToken);
+  } else {
+    const fitStatus = document.getElementById('veda-cut-fit-status');
+    if (fitStatus) fitStatus.textContent = '';
+  }
   if (status) {
     status.textContent = (isDiag ? `${withY.length} of ${profiles.length} profiles have this quantity`
       : isLayer ? `${withY.length} of ${profiles.length} profiles cover ${layerText}`
@@ -1295,6 +1307,48 @@ function renderAltitudeCut() {
     const o = pts.find(q => hover(q) === pt.text);
     if (o) document.querySelector(`#veda-comparison-table-body tr[data-obs-id="${CSS.escape(o.p.observation_id)}"] .btn-dive-deep`)?.click();
   });
+}
+
+let altitudeCutRenders = 0;
+
+/** Harmonic fit of the altitude cut against local time, longitude or Ls (thermal tides,
+ *  waves; analysis/tides.py): the fitted curve over the points and the amplitude and
+ *  position of the maximum of each harmonic, with 1-sigma uncertainties.  Quantities on a
+ *  log axis are fitted as ln y, their amplitudes in percent of the mean. */
+async function fitAltitudeCut(plotDiv, pts, yScale, period, nHarm, logFit, xKey, unit, token) {
+  let fitStatus = document.getElementById('veda-cut-fit-status');
+  if (!fitStatus) {
+    fitStatus = document.createElement('div');
+    fitStatus.id = 'veda-cut-fit-status';
+    fitStatus.className = 'hint';
+    plotDiv.parentElement.insertBefore(fitStatus, plotDiv);
+  }
+  fitStatus.textContent = 'Fitting...';
+  let fit;
+  try {
+    fit = await api.vedaHarmonicFit({ x: pts.map(o => o.x), y: pts.map(o => o.y * yScale), period, harmonics: nHarm, log: logFit });
+  } catch (err) {
+    if (token === altitudeCutRenders) fitStatus.textContent = `Fit: ${err.message}`;
+    return;
+  }
+  if (token !== altitudeCutRenders) return;          // the cut was redrawn meanwhile
+  // longitudes given from -180 to 180: draw the curve over the same range
+  let cx = fit.curve_x, cy = fit.curve_y;
+  if (xKey === 'longitude' && pts.some(o => o.x < 0)) {
+    const pairs = cx.map((x, i) => [x > 180 ? x - 360 : x, cy[i]]).sort((a, b) => a[0] - b[0]);
+    cx = pairs.map(q => q[0]); cy = pairs.map(q => q[1]);
+  }
+  Plotly.addTraces(plotDiv, { type: 'scatter', mode: 'lines', name: `Fit, mean + ${nHarm} harmonic${nHarm > 1 ? 's' : ''}`,
+                              x: cx, y: cy, line: { color: '#e11d48', width: 2.5 }, hoverinfo: 'skip' });
+  const xUnit = { lst: ' h', longitude: '°', ls: '°' }[xKey];
+  const ampUnit = fit.log ? ' %' : (unit ? ` ${unit}` : '');
+  const fmt = (v) => (v == null || !isFinite(v) ? '?' : Math.abs(v) >= 100 ? v.toFixed(0) : v.toPrecision(3));
+  const parts = fit.components.map(c => `${c.n}: ${fmt(c.amplitude)} ± ${fmt(c.amplitude_sigma)}${ampUnit}, maximum at `
+    + `${fmt(c.x_of_max)} ± ${fmt(c.x_of_max_sigma)}${xUnit}` + (fit.max_gap > period / (2 * c.n) ? ' (not resolved: gap)' : ''));
+  fitStatus.textContent = `Fit (${fit.n_points} points): mean ${fmt(fit.mean)}${fit.log ? '' : ampUnit}; harmonic `
+    + parts.join('; ') + `. Residual rms ${fmt(fit.residual_rms)}${ampUnit}`
+    + (fit.r_squared != null ? `, R² ${fit.r_squared.toFixed(2)}` : '')
+    + `; widest gap without data ${fmt(fit.max_gap)}${xUnit}.`;
 }
 
 function renderComparisonPlot() {

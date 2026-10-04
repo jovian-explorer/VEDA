@@ -292,6 +292,15 @@
               <option value="lst">Local solar time</option>
             </select>
           </label>
+          <label id="veda-cut-fit-label" style="display: none;" title="Least-squares fit of the mean and harmonics of the day (against local time: thermal tides), of the circle (longitude: waves and non-migrating tides) or of the Mars year (Ls)">Fit
+            <select id="veda-cut-fit">
+              <option value="0">None</option>
+              <option value="1">Mean + 1 harmonic</option>
+              <option value="2">Mean + 2 harmonics</option>
+              <option value="3">Mean + 3 harmonics</option>
+              <option value="4">Mean + 4 harmonics</option>
+            </select>
+          </label>
           <span class="hint" id="veda-cut-status"></span>
         </div>
         <div id="veda-cut-plot" style="flex: 1; min-height: 440px; max-height: 760px;"></div>

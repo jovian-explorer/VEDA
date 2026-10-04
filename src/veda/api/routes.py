@@ -283,6 +283,34 @@ def _compare_or_404(body_id: str, req: "CrossCompareRequest") -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Harmonic fits of altitude cuts (thermal tides, waves)
+# ---------------------------------------------------------------------------
+
+class HarmonicFitRequest(BaseModel):
+    """Points of an altitude cut (one per profile) to fit with harmonics of a period."""
+    x: List[Optional[float]] = Field(..., max_length=100000)
+    y: List[Optional[float]] = Field(..., max_length=100000)
+    period: float = Field(24.0, gt=0.0, le=100000.0)       # 24 h (local time), 360 deg (longitude)
+    harmonics: int = Field(2, ge=1, le=6)
+    log: bool = False                                        # fit ln y (densities, pressure)
+
+
+@router.post("/analysis/harmonic-fit")
+def harmonic_fit_of_points(req: HarmonicFitRequest) -> dict:
+    """Thermal tide / wave fit of one value per profile against local time or longitude
+    (analysis/tides.py)."""
+    from ..analysis.tides import harmonic_fit
+    if len(req.x) != len(req.y):
+        raise HTTPException(status_code=400, detail="x and y must have the same length")
+    nan = float("nan")
+    try:
+        return harmonic_fit([nan if v is None else v for v in req.x], [nan if v is None else v for v in req.y],
+                            req.period, req.harmonics, req.log)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
+# ---------------------------------------------------------------------------
 # Observation Data Retrieval (Profiles & Images)
 # ---------------------------------------------------------------------------
 
