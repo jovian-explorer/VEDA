@@ -70,8 +70,9 @@ const VARIABLE_CONFIGS = {
   density: { label: 'Mass Density (ρ)', units: 'kg/m³', axis: 'Mass Density ρ (kg/m³)', logScale: true, color: '#4db6ac' },
   scale_height: { label: 'Scale Height (H)', units: 'km', axis: 'Scale Height H (km)', color: '#90caf9' },
   electron_density_cm3: { label: 'Electron Density (Ne)', units: 'cm⁻³', axis: 'Electron Density Ne (cm⁻³)', logScale: true, color: '#f06292' },
-  h2so4_ppm: { label: 'H₂SO₄ vapour (ppm)', units: 'ppm', axis: 'H₂SO₄ vapour volume mixing ratio (ppm)', color: '#eab308' },
-  absorptivity_db_km: { label: 'Microwave absorptivity', units: 'dB/km', axis: 'Absorptivity (dB/km)', color: '#f97316' },
+  // bodies: offered in the comparison only for these bodies (Magellan radio occultations)
+  h2so4_ppm: { label: 'H₂SO₄ vapour', units: 'ppm', bodies: ['venus'], axis: 'H₂SO₄ vapour volume mixing ratio (ppm)', color: '#eab308' },
+  absorptivity_db_km: { label: 'Microwave absorptivity', units: 'dB/km', bodies: ['venus'], axis: 'Absorptivity (dB/km)', color: '#f97316' },
   density_measured: { label: 'Mass density (archive)', units: 'kg/m³', axis: 'Mass density ρ (kg/m³)', logScale: true, color: '#14b8a6' },
   number_density_m3: { label: 'Number density (archive)', units: 'm⁻³', axis: 'Number density (m⁻³)', logScale: true, color: '#22d3ee' },
   refractivity: { label: 'Radio Refractivity (N)', units: 'N-units', axis: 'Refractivity N', color: '#a1887f' },
@@ -517,8 +518,24 @@ function renderCelestialBodiesGrid() {
   });
 }
 
+/** The comparison variables offered for the active body (Venus-only quantities elsewhere
+ *  would always give an empty comparison); falls back to temperature if the chosen one
+ *  is not offered there. */
+function fillCompareVariableOptions() {
+  const varSelect = document.getElementById('veda-compare-variable-select');
+  if (!varSelect) return;
+  const body = vedaState.activeBodyId;
+  const keys = Object.entries(VARIABLE_CONFIGS).filter(([, cfg]) => !cfg.bodies || !body || cfg.bodies.includes(body));
+  varSelect.innerHTML = keys.map(([key, cfg]) => `<option value="${key}">${cfg.label} (${cfg.units})</option>`).join('');
+  if (!keys.some(([k]) => k === vedaState.selectedCompareVariable)) {
+    vedaState.selectedCompareVariable = vedaState.unitsTemperature === 'C' ? 'temperature_c' : 'temperature_k';
+  }
+  varSelect.value = vedaState.selectedCompareVariable;
+}
+
 export async function loadAndRenderCelestialBody(bodyId) {
   vedaState.activeBodyId = bodyId;
+  fillCompareVariableOptions();
   const bodyDetails = await api.vedaBodyDetails(bodyId);
   vedaState.activeBody = bodyDetails;
 
@@ -764,10 +781,7 @@ function setupBodyModeControls() {
   COMPARE_OPTIONS.forEach(([id]) => document.getElementById(id)?.addEventListener('change', saveCompareForm));
   const varSelect = document.getElementById('veda-compare-variable-select');
   if (varSelect) {
-    varSelect.innerHTML = Object.entries(VARIABLE_CONFIGS).map(([key, cfg]) => `
-      <option value="${key}">${cfg.label} (${cfg.units})</option>
-    `).join('');
-    varSelect.value = vedaState.selectedCompareVariable;
+    fillCompareVariableOptions();
     varSelect.addEventListener('change', () => {
       vedaState.selectedCompareVariable = varSelect.value;
       updateComparison();
