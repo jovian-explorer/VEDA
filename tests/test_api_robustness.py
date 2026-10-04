@@ -528,3 +528,14 @@ def test_body_details_carry_molar_mass_and_heat_capacity(client):
     assert mars["mean_molecular_weight"] == pytest.approx(43.487)
     assert mars["isobaric_heat_capacity_cp"] == 830.0 and mars["cp_model"].startswith("temperature-dependent")
     assert client.get("/api/veda/bodies/saturn").json()["cp_model"] == "constant"
+
+
+def test_data_licenses_panel_names_every_mission_with_data():
+    """Data & Licenses lists, per archive, the missions VEDA reads from it; the lists were
+    written by hand and missed Odyssey, the Mars landers, VEGA and the research repositories."""
+    from veda.archives.datasets import DATASETS
+    from veda.core.registry import DATA_LICENSES, DATA_PORTALS
+    listed = {m for p in DATA_PORTALS for m in p["missions"]}
+    assert {ds.mission_id for ds in DATASETS} <= listed
+    repo = next(p for p in DATA_PORTALS if p["id"] == "research_repositories")
+    assert "vex" in repo["missions"] and "cc_by_4" in DATA_LICENSES

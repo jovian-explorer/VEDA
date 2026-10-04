@@ -1220,8 +1220,8 @@ DATA_PORTALS = [
         "description": "All PDS nodes (Atmospheres, Geosciences, Imaging, PPI, Small Bodies). VEDA reads PDS3 volume "
                        "and cumulative indexes and searches PDS4 products by instrument and date with the PDS "
                        "Registry API; no account is needed.",
-        "missions": ["magellan", "pvo", "vex", "mgs", "mro", "maven", "galileo", "cassini", "juno", "new_horizons",
-                     "messenger", "lro", "dawn"],
+        "missions": ["magellan", "pvo", "vega", "vex", "mgs", "ody", "mro", "maven", "mer", "phoenix", "msl",
+                     "insight", "galileo", "cassini", "juno", "new_horizons", "messenger", "lro", "dawn"],
         "login": False,
     },
     {
@@ -1253,6 +1253,17 @@ DATA_PORTALS = [
         "description": "Akatsuki radio occultation (L2 to L4) and UVI, IR1, IR2 and LIR camera products (raw, "
                        "calibrated, geometry), read from the archive's index tables over HTTPS; no account is needed.",
         "missions": ["akatsuki"],
+        "login": False,
+    },
+    {
+        "id": "research_repositories",
+        "name": "Research data repositories (Zenodo, BIRA-IASB)",
+        "agency": "CERN / BIRA-IASB",
+        "url": "https://zenodo.org/",
+        "description": "Profiles that the instrument teams published outside PDS and PSA: Venus Express VeRa "
+                       "radio occultations on Zenodo (Gramigna et al. 2023, Imamura et al. 2018) and SPICAV-SOIR "
+                       "solar occultations in the BIRA-IASB data repository (Mahieux et al. 2015); no account is needed.",
+        "missions": ["vex"],
         "login": False,
     },
     {
@@ -1299,6 +1310,13 @@ DATA_LICENSES = {
         "url": "https://darts.isas.jaxa.jp/",
         "terms": "Free for research and education. Acknowledge JAXA/ISAS and DARTS and cite the "
                  "mission team's reference publication.",
+    },
+    "cc_by_4": {
+        "name": "Creative Commons Attribution 4.0",
+        "type": "Open access (CC-BY-4.0)",
+        "url": "https://creativecommons.org/licenses/by/4.0/",
+        "terms": "Free to use, share and adapt with attribution: cite the data set DOI and the authors' "
+                 "publication.",
     },
     "isro_issdc": {
         "name": "ISRO ISSDC / PRADAN",

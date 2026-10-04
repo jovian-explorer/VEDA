@@ -12,6 +12,7 @@ From this version on, every tested change is published straight away as the late
 - A build whose release was published no longer reports failure when removing an older build fails (a tag already deleted by a cancelled run).
 - **Fix: flybys shown as orbiters.** In a body's mission list, Cassini and New Horizons at Jupiter (gravity-assist flybys) and Cassini at Titan (repeated flybys) were labelled *Orbiter*; they are now *Flyby*.
 - The scale heights on the body quick-cards follow from each body's gas constant, gravity and the temperature now stated beside them: Pluto showed 50 km, the value in its warm upper atmosphere, against 17.7 km at its 37 K surface (both now shown); Titan 20.8 km (was 20.0), Mars 11.0 km (was 11.1).
+- **Data & Licenses** lists every mission VEDA reads from each archive (the NASA PDS entry missed Mars Odyssey, Spirit and Opportunity, Phoenix, Curiosity, InSight and VEGA) and has an entry for the research data repositories (Zenodo, BIRA-IASB) with their CC-BY-4.0 terms, which the Venus Express VeRa and SOIR profiles come under.
 - The body banner shows the molar mass and the heat capacity cp beside the gas constant (the user guide said it did; it showed neither). For bodies with temperature-dependent cp the value is marked as the reference.
 - The test suite passes when `VEDA_HOME` points at a data folder already in use: two download tests found the files an earlier run had cached and fetched nothing.
 
