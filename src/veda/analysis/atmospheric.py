@@ -171,6 +171,10 @@ def compute_atmospheric_diagnostics(
         derived["dtheta_dz"] = _gradient_nan_safe(z, theta)
         derived["density"] = rho
 
+        # How well the archived pressure, temperature and altitudes fit hydrostatic balance
+        from .hydrostatic import hydrostatic_consistency
+        profile.raw_attributes.update(hydrostatic_consistency(z, p_hpa, t_k, gz, r_spec))
+
     # 6. Cold-point tropopause (where the body has one) and gravity waves
     try:
         from .wave_and_stability import extract_gravity_wave_activity, tropopause_for_body
@@ -262,6 +266,10 @@ PROFILE_DIAGNOSTICS: Dict[str, Tuple[str, str]] = {
     "tec_tecu": ("Electron content of the profile", "TECU"),
     "gw_mean_ep_j_kg": ("Mean gravity-wave potential energy", "J/kg"),
     "gw_wavelength_km": ("Dominant vertical wavelength", "km"),
+    "hydrostatic_max_pct": ("Largest departure from hydrostatic balance (pressure)", "%"),
+    "hydrostatic_median_pct": ("Median departure from hydrostatic balance (pressure)", "%"),
+    "hydrostatic_max_km": ("Altitude of the largest departure from hydrostatic balance", "km"),
+    "hydrostatic_top_temperature_k": ("Top temperature of the hydrostatic retrieval from density", "K"),
 }
 
 
@@ -283,6 +291,10 @@ def profile_diagnostics(profile: ObservationProfile) -> Dict[str, Optional[float
         "tec_tecu": _finite(a.get("vtec_tecu")),
         "gw_mean_ep_j_kg": ep if ep else None,          # 0.0 means "not computed"
         "gw_wavelength_km": _finite(a.get("gw_dominant_wavelength_km")),
+        "hydrostatic_max_pct": _finite(a.get("hydrostatic_max_pct")),
+        "hydrostatic_median_pct": _finite(a.get("hydrostatic_median_pct")),
+        "hydrostatic_max_km": _finite(a.get("hydrostatic_max_km")),
+        "hydrostatic_top_temperature_k": _finite(a.get("hydrostatic_top_temperature_k")),
     }
     return out
 

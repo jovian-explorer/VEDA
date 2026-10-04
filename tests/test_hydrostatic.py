@@ -90,3 +90,38 @@ def test_hydrostatic_variables_come_from_density_data_sets():
                   "phx-m-ase-5-edl-rdr-v1.0"):
         assert provides(get_dataset(ds_id), "temperature_from_density")
     assert not provides(get_dataset("hp-ssa-hasi-2-3-4-mission-v1.1"), "temperature_from_density")
+
+
+def test_hydrostatic_consistency_flags_inconsistent_pressures():
+    """An exactly hydrostatic profile departs by nothing; a 10 % pressure error at one level
+    shows there, at its altitude, and leaves the other levels (the median) at zero; a
+    wrong altitude scale is seen everywhere."""
+    from veda.analysis.hydrostatic import hydrostatic_consistency
+    temp = (lambda zz: 210.0 - 0.8 * (zz - 0.0))
+    z = np.arange(0.0, 60.01, 0.5)
+    rho = _atmosphere(temp, z)
+    p_hpa = rho * R_MARS * temp(z) / 100.0
+    good = hydrostatic_consistency(z, p_hpa, temp(z), _g(z), R_MARS)
+    assert good["hydrostatic_max_pct"] < 0.01
+    bad = p_hpa.copy()
+    bad[40] *= 1.1
+    r = hydrostatic_consistency(z, bad, temp(z), _g(z), R_MARS)
+    assert r["hydrostatic_max_pct"] == pytest.approx(10.0, abs=0.05) and r["hydrostatic_max_km"] == z[40]
+    assert r["hydrostatic_median_pct"] < 0.01
+    stretched = hydrostatic_consistency(z * 1.05, p_hpa, temp(z), _g(z), R_MARS)
+    assert stretched["hydrostatic_max_pct"] > 10.0
+    assert hydrostatic_consistency(z[:2], p_hpa[:2], temp(z[:2]), _g(z[:2]), R_MARS)["hydrostatic_max_pct"] is None
+
+
+def test_profiles_with_temperature_and_pressure_report_their_hydrostatic_balance():
+    from veda.analysis.atmospheric import compute_atmospheric_diagnostics, profile_diagnostics
+    mars = get_body("mars")
+    temp = (lambda zz: 200.0 + 0 * zz)
+    z = np.arange(0.0, 40.01, 1.0)
+    g = mars.surface_gravity * (mars.radius_km / (mars.radius_km + z)) ** 2
+    p = 6.1 * np.exp(-np.concatenate([[0.0], np.cumsum(0.5 * (g[1:] + g[:-1]) * 1000.0)]) / (mars.gas_constant_r * 200.0))
+    prof = ObservationProfile(observation_id="x", mission_id="mex", body_id="mars", instrument="MaRS",
+                              time_utc="", altitude_km=z, temperature_k=temp(z), pressure_hpa=p)
+    prof.derived.update(compute_atmospheric_diagnostics(prof, mars))
+    d = profile_diagnostics(prof)
+    assert d["hydrostatic_max_pct"] < 1e-6 and d["hydrostatic_median_pct"] < 1e-6

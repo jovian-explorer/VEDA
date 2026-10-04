@@ -13,6 +13,15 @@ dT_top in it decays downwards as dT_top rho_top / rho(z), i.e. by e every scale 
 so the temperatures are independent of it a few scale heights below the top.  Between
 two levels the density is taken as exponential, so the integral is exact for an
 isothermal layer: integral rho dz = (rho_1 - rho_2) dz / ln(rho_1 / rho_2).
+
+Hydrostatic consistency of a profile with temperature and pressure: the pressure
+integrated with the profile's own temperature,
+
+    p_hyd(z) = p_0 exp(-integral_z0^z g / (R T) dz'),
+
+against the archived pressure, p_0 chosen so that the median of ln(p / p_hyd) is zero
+(one bad level does not offset the rest).  The largest relative difference says whether
+the pressure, temperature and altitudes of a profile belong together.
 """
 from __future__ import annotations
 
@@ -88,3 +97,32 @@ def temperature_from_density(z_km, rho, g_ms2, r_spec: float, rho_sigma=None,
     p_out[idx] = p
     return result
 
+
+
+def hydrostatic_consistency(z_km, p_hpa, t_k, g_ms2, r_spec: float) -> Dict[str, Optional[float]]:
+    """How far a profile's pressure is from hydrostatic balance with its temperature:
+    the pressure integrated with the profile's temperature (module docstring) against the
+    archived one.  Returns the largest and the median |p / p_hyd - 1| in percent over the
+    levels with all three quantities, and the altitude of the largest (None without data)."""
+    z = np.asarray(z_km, dtype=float)
+    p = np.asarray(p_hpa, dtype=float)
+    t = np.asarray(t_k, dtype=float)
+    g = np.broadcast_to(np.asarray(g_ms2, dtype=float), z.shape)
+    empty = {"hydrostatic_max_pct": None, "hydrostatic_median_pct": None, "hydrostatic_max_km": None}
+    if not (z.shape == p.shape == t.shape):
+        return empty
+    with np.errstate(invalid="ignore"):
+        ok = np.isfinite(z) & np.isfinite(p) & np.isfinite(t) & (p > 0) & (t > 0) & np.isfinite(g)
+    if ok.sum() < 3:
+        return empty
+    idx = np.where(ok)[0]
+    idx = idx[np.argsort(z[idx], kind="stable")]
+    zs, ps, ts, gs = z[idx] * 1000.0, p[idx], t[idx], g[idx]
+    # integral of g / (R T) dz with the trapezoid rule (g / T varies slowly)
+    f = gs / (r_spec * ts)
+    expo = np.concatenate([[0.0], np.cumsum(0.5 * (f[1:] + f[:-1]) * np.diff(zs))])
+    p_hyd = np.exp(np.median(np.log(ps) + expo) - expo)
+    dev = np.abs(ps / p_hyd - 1.0) * 100.0
+    i = int(np.argmax(dev))
+    return {"hydrostatic_max_pct": float(dev[i]), "hydrostatic_median_pct": float(np.median(dev)),
+            "hydrostatic_max_km": float(zs[i] / 1000.0)}
