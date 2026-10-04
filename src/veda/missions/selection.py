@@ -143,12 +143,18 @@ def spread_order(n: int) -> List[int]:
 _CORE_COLUMNS = ("temperature", "pressure", "electron_density", "number_density", "refractivity")
 
 
+# Quantities VEDA retrieves from a measured mass or number density profile
+_FROM_DENSITY = ("temperature_from_density", "pressure_from_density")
+
+
 def provides(ds, variable: str) -> bool:
     """Whether profiles of data set ``ds`` can hold ``variable``: a quantity only some data
     sets publish (H2SO4, absorptivity, measured mass density, aerosol) only from those, and
     the usual variables not from data sets holding nothing else (Magellan H2SO4, Odyssey
     densities), whose profiles used up the budget of a temperature comparison."""
     from ..archives.datasets import DATASETS
+    if variable in _FROM_DENSITY:      # hydrostatic retrieval: any data set with a density
+        return "density_measured" in ds.extra_variables or "number_density" in ds.profile_columns
     if any(variable in d.extra_variables for d in DATASETS):
         return variable in ds.extra_variables
     return any(c in ds.profile_columns for c in _CORE_COLUMNS) or not ds.extra_variables

@@ -502,6 +502,7 @@ def export_compare_profiles(body_id: str, req: CrossCompareRequest):
 PUBLICATION_VARIABLES = (
     "temperature_k", "temperature_c", "pressure_hpa", "lapse_rate", "potential_temperature",
     "buoyancy_freq_sq", "density", "scale_height", "electron_density_cm3", "refractivity",
+    "temperature_from_density", "pressure_from_density",
 )
 
 
@@ -576,6 +577,8 @@ def _publication_figure(b, comp: dict, variable: str, dpi: int, fmt: str) -> Res
         "scale_height": "Scale Height $H$ (km)",
         "electron_density_cm3": r"Electron Density $N_e$ ($\mathrm{cm^{-3}}$)",
         "refractivity": "Radio Refractivity $N$",
+        "temperature_from_density": "Temperature from density (hydrostatic) $T$ (K)",
+        "pressure_from_density": "Pressure from density (hydrostatic) $P$ (hPa)",
     }
     xlabel = var_labels.get(variable, variable)
 

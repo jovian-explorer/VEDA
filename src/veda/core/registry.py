@@ -1110,6 +1110,28 @@ FIELD_REGISTRY: Dict[str, dict] = {
         "archive": "Planetary Thermodynamic Formulation",
         "description": "Atmospheric pressure e-folding scale height incorporating altitude-dependent planetary gravity g(z)."
     },
+    "temperature_from_density": {
+        "id": "temperature_from_density",
+        "label": "Temperature from the density profile (hydrostatic)",
+        "units": "K",
+        "category": "derived_structure",
+        "formula": r"p(z) = p_{top} + \int_z^{z_{top}} \rho g \, dz', \quad T = \frac{p}{\rho R_{spec}}",
+        "reference": "Withers, P. (2006), Geophys. Res. Lett., 33(2); Snowden, D., et al. (2013), Icarus, 226, 552-582",
+        "doi": "10.1029/2005GL024447",
+        "archive": "Planetary Thermodynamic Formulation",
+        "description": "Temperature from a measured density profile by downward hydrostatic integration, with an isothermal upper boundary fitted to the top of the profile (accelerometer, occultation densities)."
+    },
+    "pressure_from_density": {
+        "id": "pressure_from_density",
+        "label": "Pressure from the density profile (hydrostatic)",
+        "units": "hPa",
+        "category": "derived_structure",
+        "formula": r"p(z) = p_{top} + \int_z^{z_{top}} \rho g \, dz'",
+        "reference": "Withers, P. (2006), Geophys. Res. Lett., 33(2)",
+        "doi": "10.1029/2005GL024447",
+        "archive": "Planetary Thermodynamic Formulation",
+        "description": "Pressure from a measured density profile by downward hydrostatic integration."
+    },
     "density": {
         "id": "density",
         "label": "Atmospheric Mass Density",

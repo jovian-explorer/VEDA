@@ -107,6 +107,7 @@ def compute_atmospheric_diagnostics(
     if z is None or z.size < 2:
         return derived
     _ionosphere_diagnostics(profile, z)
+    _hydrostatic_temperature(profile, body, z, derived)
 
     t_k = profile.temperature_k
     if t_k is None and profile.temperature_c is not None:
@@ -185,6 +186,36 @@ def compute_atmospheric_diagnostics(
         pass
 
     return derived
+
+
+K_BOLTZMANN = 1.380649e-23          # J/K
+
+
+def _hydrostatic_temperature(profile: ObservationProfile, body: BodyInfo, z: np.ndarray,
+                             derived: Dict[str, np.ndarray]) -> None:
+    """Temperature and pressure from a measured mass density profile (or a total number
+    density, rho = n k_B / R_spec) by downward hydrostatic integration (hydrostatic.py),
+    as for accelerometer and occultation densities; the fitted top temperature and the
+    top altitude go into the profile's attributes."""
+    rho = profile.derived.get("density_measured")
+    sigma = (profile.uncertainty or {}).get("density_measured")
+    if rho is None and profile.derived.get("number_density_m3") is not None:
+        rho = np.asarray(profile.derived["number_density_m3"], dtype=float) * K_BOLTZMANN / body.gas_constant_r
+        s = (profile.uncertainty or {}).get("number_density_m3")
+        sigma = None if s is None else np.asarray(s, dtype=float) * K_BOLTZMANN / body.gas_constant_r
+    if rho is None or np.shape(rho) != np.shape(z):
+        return
+    from .hydrostatic import temperature_from_density
+    g, _ = gravity_profile(body, z, profile.latitude, (profile.raw_attributes or {}).get("ALTITUDE_REFERENCE", ""))
+    if sigma is not None and np.shape(sigma) != np.shape(z):
+        sigma = None
+    r = temperature_from_density(z, rho, g, body.gas_constant_r, rho_sigma=sigma)
+    if r["top_temperature_k"] is None:
+        return
+    derived["temperature_from_density"] = r["temperature_k"]
+    derived["pressure_from_density"] = r["pressure_pa"] / 100.0
+    profile.raw_attributes["hydrostatic_top_temperature_k"] = round(r["top_temperature_k"], 2)
+    profile.raw_attributes["hydrostatic_top_km"] = round(r["top_km"], 2)
 
 
 def _ionosphere_diagnostics(profile: ObservationProfile, z: np.ndarray) -> None:
@@ -359,7 +390,8 @@ def _group_composites(mat: np.ndarray, summaries: List[Dict[str, Any]], log_like
 MAX_GRID_LEVELS = 20000
 
 # Variables compared in log space (they change by orders of magnitude with height)
-LOG_VARIABLES = {"pressure_hpa", "density", "density_measured", "number_density_m3", "electron_density_cm3"}
+LOG_VARIABLES = {"pressure_hpa", "density", "density_measured", "number_density_m3", "electron_density_cm3",
+                 "pressure_from_density"}
 
 
 def _compared_variable(p: ObservationProfile, variable_name: str) -> Optional[np.ndarray]:
