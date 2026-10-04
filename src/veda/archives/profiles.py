@@ -185,6 +185,20 @@ def _header_text(attrs: Dict, name: str) -> Optional[str]:
     return None
 
 
+def above_spheroid(h, lat_deg, a: float, f: float) -> Tuple[np.ndarray, np.ndarray]:
+    """Radius (km) and planetocentric latitude (deg) of points at height ``h`` (km) along
+    the normal of the spheroid (equatorial radius ``a`` km, flattening ``f``) at geodetic
+    latitude ``lat_deg``.  With e^2 = f (2 - f) and N = a / sqrt(1 - e^2 sin^2 phi):
+    x = (N + h) cos phi, z = (N (1 - e^2) + h) sin phi."""
+    h = np.asarray(h, dtype=float)
+    phi = np.radians(np.asarray(lat_deg, dtype=float))
+    e2 = f * (2.0 - f)
+    n = a / np.sqrt(1.0 - e2 * np.sin(phi) ** 2)
+    x = (n + h) * np.cos(phi)
+    zc = (n * (1.0 - e2) + h) * np.sin(phi)
+    return np.hypot(x, zc), np.degrees(np.arctan2(zc, x))
+
+
 def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfile:
     cols = ds.profile_columns
     body = get_body(ds.body_ids[0])
@@ -246,6 +260,13 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
             r = r / 1000.0            # e.g. MGS radio science gives RADIUS in metres
         z = r - body.radius_km
         z_ref = f"a sphere of radius {body.radius_km:g} km (from the radius column)"
+    elif ds.altitude_spheroid and _key(tbl, cols.get("latitude")) is not None:
+        a, f = ds.altitude_spheroid
+        lat_key = _key(tbl, cols.get("latitude"))
+        r, tbl.columns[lat_key] = above_spheroid(z, tbl.columns[lat_key], a, f)
+        z = r - body.radius_km
+        z_ref = (f"a sphere of radius {body.radius_km:g} km (archive altitudes are above the spheroid "
+                 f"a = {a:g} km, f = {f:.4g}; converted with the latitude)")
     elif ds.altitude_reference_km is not None:
         shift = ds.altitude_reference_km - body.radius_km
         z = z + shift

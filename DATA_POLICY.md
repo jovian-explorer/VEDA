@@ -71,6 +71,7 @@ The authoritative list is VEDA's own catalogue (`src/veda/archives/datasets.py`,
 | Phoenix | ASE (entry profile) | L5 (RDR) | `phx-m-ase-5-edl-rdr-v1.0` | NASA PDS Atmospheres Node | Withers & Catling (2010) |
 | Mars Science Laboratory (Curiosity) | EDL atmospheric reconstruction | Derived (PDS4) | `msl-edl-atmosphere` | NASA PDS Atmospheres Node | Holstein-Rathlou et al. (2016); data doi:10.17189/1518944 |
 | InSight | EDL atmospheric reconstruction | Derived (PDS4) | `insight-edl-atmosphere` | NASA PDS Atmospheres Node | Karatekin, Banfield & Ashley (2020), data doi:10.17189/1518935 |
+| Mars Reconnaissance Orbiter (MRO) | ACC (aerobraking density profiles, 2006) | L5 (derived) | `mro-m-accel-5-profile-v1.0` | NASA PDS Atmospheres Node | Tolson et al. (2008); data: Tolson et al. (2010) |
 | 2001 Mars Odyssey | ACC (aerobraking density profiles, 2001-2002) | L5 (derived) | `ody-m-accel-5-derived-v1.0` | NASA PDS Atmospheres Node | Tolson et al. (2005); data: Withers & Murphy (2009) |
 | Mars Reconnaissance Orbiter (MRO) | CRISM limb dust and water-ice aerosol profiles, 2009-2012 | Derived (PDS4) | `mro-crism-smith2013-aerosol` | NASA PDS Atmospheres Node | Smith et al. (2013); data: Khayat (2024), doi:10.17189/76ha-be75 |
 | Mars Reconnaissance Orbiter (MRO) | CRISM limb aerosol abundance and particle size profiles, 2010-2017 | Derived (PDS4) | `mro-crism-guzewich-aerosol` | NASA PDS Atmospheres Node | Guzewich et al. (2014, 2019); data: Khayat (2024), doi:10.17189/76ha-be75 |

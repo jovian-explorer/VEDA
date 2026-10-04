@@ -5508,6 +5508,38 @@
    "note": "Data: ODY-M-ACCEL-5-DERIVED-V1.0 (Withers and Murphy, PDS Atmospheres Node)."
   },
   {
+   "key": "tolson2008",
+   "authors": [
+    "Tolson, R. H.",
+    "Bemis, E.",
+    "Hough, S.",
+    "Zaleski, K.",
+    "Keating, G.",
+    "Shidner, J.",
+    "Brown, S.",
+    "Brickler, A.",
+    "Scher, M.",
+    "Thomas, P."
+   ],
+   "et_al": true,
+   "year": 2008,
+   "title": "Atmospheric Modeling Using Accelerometer Data During Mars Reconnaissance Orbiter Aerobraking Operations",
+   "journal": "Journal of Spacecraft and Rockets",
+   "volume": "45",
+   "issue": "3",
+   "pages": "511-518",
+   "doi": "10.2514/1.34301",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mro",
+     "payload": "ACC"
+    }
+   ],
+   "note": "Data: MRO-M-ACCEL-5-PROFILE-V1.0 (Tolson et al., PDS Atmospheres Node, volume MROA_0001)."
+  },
+  {
    "key": "smith2013",
    "authors": [
     "Smith, M. D.",

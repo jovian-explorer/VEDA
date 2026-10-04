@@ -259,6 +259,23 @@ def _parse_value(chunk: str, c: ColumnDef) -> float:
     return f_val
 
 
+def _byte_positions_cut_numbers(lines: List[str], cols: List[ColumnDef]) -> bool:
+    """Whether the label's byte positions split the numbers of a space-separated table,
+    which then has to be read by fields.  The MRO accelerometer PROFILE.FMT starts every
+    column after the first one byte early (it leaves out the 1X separators of its own
+    RECORD_FORMAT), so "-73.1" was read as "-73." and "206.7" as "206.".  Only for
+    all-numeric tables whose every row has exactly one field per column, so packed
+    fixed-width values (no space between them) are still read by position."""
+    if not lines or not cols or any("CHAR" in (c.data_type or "").upper() for c in cols):
+        return False
+    first = lines[0]
+
+    def inside(i: int) -> bool:     # the character before position i and at i are one token
+        return 0 < i < len(first) and not first[i - 1].isspace() and not first[i].isspace()
+    cut = any(inside(c.start_byte - 1) or inside(c.start_byte - 1 + c.bytes_count) for c in cols)
+    return cut and all(len(ln.split()) == len(cols) for ln in lines)
+
+
 def _read_rows(lines: List[str], cols: List[ColumnDef]) -> Dict[str, np.ndarray]:
     """Numeric columns of a table, by CSV when the rows are comma separated, else by byte position."""
     n = len(lines)
@@ -266,6 +283,8 @@ def _read_rows(lines: List[str], cols: List[ColumnDef]) -> Dict[str, np.ndarray]
     first = lines[0] if lines else ""
     import csv
     rows = list(csv.reader(lines)) if ("," in first and len(first.split(",")) >= len(cols)) else None
+    if rows is None and _byte_positions_cut_numbers(lines, cols):
+        rows = [ln.split() for ln in lines]
     for idx, c in enumerate(cols):
         arr = np.full(n, np.nan, dtype=np.float64)
         for r_i in range(n):
@@ -322,6 +341,29 @@ def _rejoin_broken_records(lines: List[str]) -> List[str]:
     return out
 
 
+def _attached_label(p: Path) -> bool:
+    """Whether a data file starts with its own PDS3 label."""
+    try:
+        with p.open("rb") as fh:
+            return b"PDS_VERSION_ID" in fh.read(200).upper()
+    except OSError:
+        return False
+
+
+def _include_structures(label_text: str, folder: Path) -> str:
+    """The label with each ^STRUCTURE = "X.FMT" replaced by the format file's text, found
+    beside the label (where VEDA's downloads put it) or in a LABEL/ folder above it."""
+    def repl(m: "re.Match") -> str:
+        name = m.group(1)
+        dirs = [folder] + [up / d for up in list(folder.parents)[:3] for d in ("LABEL", "label")]
+        for d in dirs:
+            f = _find_file(d, name)
+            if f is not None and f.is_file():
+                return f.read_text(encoding="utf-8", errors="replace")
+        return m.group(0)
+    return re.sub(r'^\s*\^STRUCTURE\s*=\s*"?([^"\s]+)"?\s*$', repl, label_text, flags=re.M | re.I)
+
+
 def read_pds3_table(table_or_label_path: str) -> Pds3Table:
     """Read the main table of a PDS3 product (label + data file).
 
@@ -336,10 +378,16 @@ def read_pds3_table(table_or_label_path: str) -> Pds3Table:
         lbl_p = p
     else:
         lbl_p = _find_file(p.parent, p.with_suffix(".lbl").name) or p.with_suffix(".lbl")
+        if not lbl_p.exists() and _attached_label(p):
+            lbl_p = p                    # label at the top of the data file (MRO accelerometer)
     if not lbl_p.exists():
         raise FileNotFoundError(f"PDS3 label not found at {lbl_p}")
 
     lbl_text = lbl_p.read_text(encoding="utf-8", errors="replace")
+    if lbl_p == p and p.suffix.lower() != ".lbl":
+        m = re.search(r"^\s*END\s*$", lbl_text, re.M)
+        lbl_text = lbl_text[:m.end()] if m else lbl_text
+    lbl_text = _include_structures(lbl_text, lbl_p.parent)
     metadata, col_defs = parse_pds3_label(lbl_text)
     tables = parse_pds3_tables(lbl_text)
     if not tables and col_defs:

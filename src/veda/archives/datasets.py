@@ -66,6 +66,11 @@ class Dataset:
     # names a reference that is not a sphere (the 1-bar level of a giant planet).
     altitude_reference_km: Optional[float] = None
     altitude_reference: str = ""
+    # (equatorial radius km, flattening) of a reference spheroid the ALTITUDE column is
+    # measured above, along the normal at the (geodetic) latitude column: altitudes are
+    # turned into radii and put on the body's reference sphere, and latitudes become
+    # planetocentric (MRO accelerometer: the areodetic spheroid a = 3396.19 km).
+    altitude_spheroid: Optional[Tuple[float, float]] = None
     # Other archives holding the same volumes, tried when the primary fails:
     # (base URL, regex on the volume name, replacement), e.g. ESA PSA volume
     # MEX-M-MRS-5-OCC-9103-V1.0 is mexmrs_9103 at the PDS Geosciences Node.
@@ -670,6 +675,38 @@ DATASETS: List[Dataset] = [
         doi="10.17189/76ha-be75",
     ),
     Dataset(
+        id="mro-m-accel-5-profile-v1.0", mission_id="mro", instrument="ACC (aerobraking accelerometer)",
+        level="L5 (derived)",
+        title="MRO aerobraking: thermospheric density profiles from the accelerometer (Apr - Aug 2006)",
+        body_ids=("mars",), archive="NASA PDS Atmospheres Node",
+        base_url="https://pds-atmospheres.nmsu.edu/PDS/data/",
+        volume_pattern=r"^MROA_\d{4}$",
+        rules=((r"data/profile_data/", "Density profile along the aerobraking pass", "profile"),
+               (r"data/altitude_data/", "Densities and scale heights at constant altitude", "other"),
+               (r"data/raw_data/", "Raw accelerations, attitude and thruster data", "timeseries"),
+               (r"calib/", "Calibration and spacecraft data", "other")),
+        # Labels are attached; the columns are in LABEL/PROFILE.FMT.  Altitudes are above
+        # the areodetic spheroid (SIS_ACC.TXT: a = 3396.19 km, f = 5.88600756e-3) along
+        # its normal at the areodetic latitude, put on the 3389.5 km sphere.
+        profile_columns={"altitude": "1_SEC_ALTITUDE", "latitude": "AREODETIC LATITUDE",
+                         "longitude": "LONGITUDE", "lst": "LOCAL_SOLAR_TIME", "sza": "SOLAR_ZENITH_ANGLE"},
+        altitude_spheroid=(3396.19, 5.88600756e-3),
+        # The 1-s density, the data set's own resolution (about 0.5 km in altitude on the
+        # legs); the file's 39-s mean is there "for continuity with aerobraking data bases".
+        extra_variables={"density_measured": ("1_SEC_AVG_DENSITY", "1_SEC_SIGMA")},
+        # "A minus 1 (-1) anywhere in the data files indicates that data was not available"
+        # (SIS); not applied to latitude and longitude, where -1.0 is a real value.
+        fill_values={c: (-1.0,) for c in ("1_SEC_ALTITUDE", "1_SEC_AVG_DENSITY", "1_SEC_SIGMA",
+                                          "LOCAL_SOLAR_TIME", "SOLAR_ZENITH_ANGLE")},
+        value_factor={"density_measured": 1e-9},       # labelled KG/KM^3
+        pass_legs="TIME_FROM_PERIAPSIS",
+        citation=("Tolson, R. H., Keating, G. M., Bougher, S. W., Brown, S. P., & Murphy, J. M. (2010). "
+                  "MRO-M-ACCEL-5-PROFILE-V1.0, NASA Planetary Data System; Tolson, R. H., et al. (2008). "
+                  "Atmospheric modeling using accelerometer data during Mars Reconnaissance Orbiter aerobraking "
+                  "operations. J. Spacecraft Rockets, 45(3), 511-518."),
+        doi="10.2514/1.34301",
+    ),
+    Dataset(
         id="pvoro-nssdc", mission_id="pvo", instrument="ORO (Radio Occultation)", level="Derived (PDS4)",
         title="Pioneer Venus Orbiter radio occultations: temperature-pressure and electron density profiles "
               "(1978-1992, recovered from NSSDC by Withers et al. 2020)",
@@ -857,6 +894,7 @@ _REFS = {
     "msl-edl-atmosphere": ("holsteinrathlou2016", "holsteinrathlou2015data"),
     "insight-edl-atmosphere": ("karatekin2020data",),
     "ody-m-accel-5-derived-v1.0": ("tolson2005",),
+    "mro-m-accel-5-profile-v1.0": ("tolson2008",),
     "mro-crism-smith2013-aerosol": ("smith2013", "khayat2024data"),
     "mro-crism-guzewich-aerosol": ("guzewich2014", "guzewich2019", "khayat2024data"),
     "corss-titan-neutral-profiles": ("schinder2011", "schinder2012", "schinder2015"),

@@ -446,3 +446,77 @@ END
     np.testing.assert_allclose(out.uncertainty["density_measured"], [1e-9] * 3)
     assert inb.time_utc == out.time_utc == "2001-12-12T15:20:21.702"     # start + 502 s
     assert inb.latitude == 78.0 and out.latitude == 74.0
+
+
+def test_spheroid_altitudes_to_sphere():
+    """Heights above a spheroid along its normal: a + h at the equator, b + h at the poles,
+    and the planetocentric latitude is smaller in size than the geodetic one."""
+    from veda.archives.profiles import above_spheroid
+    a, f = 3396.19, 5.88600756e-3
+    r, lat = above_spheroid([100.0, 100.0, 100.0], [0.0, 90.0, -45.0], a, f)
+    np.testing.assert_allclose(r[:2], [a + 100.0, a * (1 - f) + 100.0])
+    assert lat[0] == 0.0 and lat[1] == pytest.approx(90.0)
+    assert -45.0 < lat[2] < -44.6
+
+
+def test_mro_accelerometer_pass_attached_label_and_misplaced_columns(tmp_path):
+    """MRO accelerometer profiles: the label is at the top of the data file, its columns
+    are in LABEL/PROFILE.FMT, whose byte positions start every column after the first
+    one byte early; altitudes are above the areodetic spheroid and densities in kg/km^3.
+    Rows from the archive's L2P150.TAB."""
+    from veda.archives import catalog
+    from veda.archives.profiles import profile_from_label
+    from veda.readers.pds3_reader import read_pds3_table
+    ds = get_dataset("mro-m-accel-5-profile-v1.0")
+    names = ["TIME_FROM_PERIAPSIS", "AREODETIC LATITUDE", "LONGITUDE", "LOCAL_SOLAR_TIME", "SOLAR_ZENITH_ANGLE",
+             "1_SEC_ALTITUDE", "1_SEC_AVG_DENSITY", "1_SEC_SIGMA", "39_SEC_ALTITUDE", "39_SEC_AVG_DENSITY",
+             "39_SEC_SIGMA"]
+    starts = [1, 8, 14, 21, 26, 32, 39, 47, 54, 61, 69]          # as in the archive's PROFILE.FMT
+    sizes = [7, 5, 6, 4, 5, 6, 7, 6, 6, 7, 6]
+    units = ["SECONDS", "DEGREES", "DEGREES", "HOURS", "DEGREES", "KILOMETERS", "KG/KM^3", "KG/KM^3",
+             "KILOMETERS", "KG/KM^3", "KG/KM^3"]
+    (tmp_path / "LABEL").mkdir()
+    (tmp_path / "LABEL" / "PROFILE.FMT").write_text("".join(
+        f' OBJECT = COLUMN\n  NAME = "{n}"\n  DATA_TYPE = ASCII_REAL\n  UNIT = "{u}"\n'
+        f'  START_BYTE = {s}\n  BYTES = {b}\n END_OBJECT = COLUMN\n\n'
+        for n, s, b, u in zip(names, starts, sizes, units)))
+    rows = [" -212.7 -73.1  206.7  3.9 122.7 151.16   0.020  0.036 149.91   0.015  0.006",
+            "  -18.7 -85.9  164.5  1.1 118.6 100.71  39.863  0.031 100.85  39.928  0.557",
+            "  211.3 -75.4   48.1 17.4 111.5   -1        -1     -1  149.19   0.034  0.011",
+            "  212.3 -75.3   48.1 17.4 111.4 151.14   0.022  0.027 149.72   0.032  0.010"]
+    label = ["PDS_VERSION_ID = PDS3", "RECORD_TYPE = FIXED_LENGTH", "RECORD_BYTES = 80", "^TABLE = 13",
+             'PRODUCT_ID = "ORBIT_PROFILE_L2P150"', "OBJECT = TABLE", " ROWS = 4", " INTERCHANGE_FORMAT = ASCII",
+             " COLUMNS = 11", ' ^STRUCTURE = "PROFILE.FMT"', "END_OBJECT = TABLE", "END"]
+    data_dir = tmp_path / "DATA" / "PROFILE_DATA" / "P100_199"
+    data_dir.mkdir(parents=True)
+    tab = data_dir / "L2P150.TAB"
+    tab.write_text("".join(line.ljust(78) + "\r\n" for line in label + rows), newline="")
+    tbl = read_pds3_table(str(tab))
+    np.testing.assert_allclose(tbl.columns["AREODETIC LATITUDE"], [-73.1, -85.9, -75.4, -75.3])
+    np.testing.assert_allclose(tbl.columns["1_SEC_AVG_DENSITY"], [0.02, 39.863, -1, 0.022])
+    # index rows: inbound and outbound legs, and files of one name in many folders kept apart
+    idx = [{"dataset_id": ds.id, "product_id": "ACCEL", "path": f"DATA/RAW_DATA/P001_099/P0{n}/ACCEL.TAB",
+            "extra": f'{{"PRODUCT_ID": "Y_ACCELEROMETER_DATA_P0{n}"}}'} for n in (16, 17)]
+    catalog._unique_product_ids(idx)
+    assert [r["product_id"] for r in idx] == ["Y_ACCELEROMETER_DATA_P016", "Y_ACCELEROMETER_DATA_P017"]
+    assert ds.classify("DATA/PROFILE_DATA/P100_199/L2P150.TAB")[1] == "profile"
+    assert ds.classify("DATA/RAW_DATA/P001_099/P016/ACCEL.TAB")[1] == "timeseries"
+    profs = {}
+    for leg in ("inbound", "outbound"):
+        prod = {"product_id": "L2P150_" + leg, "start_time": "2006-07-12T05:42:59.00", "leg": leg,
+                "volume": "MROA_0001", "url": "", "product_type": "profile"}
+        profs[leg] = profile_from_label(ds, prod, tab)
+    inb, out = profs["inbound"], profs["outbound"]
+    assert inb.time_utc == out.time_utc == "2006-07-12T05:46:31.700"        # start + 212.7 s
+    np.testing.assert_allclose(inb.derived["density_measured"], [2.0e-11, 3.9863e-8])
+    np.testing.assert_allclose(inb.uncertainty["density_measured"], [3.6e-11, 3.1e-11])
+    np.testing.assert_allclose(out.derived["density_measured"], [np.nan, 2.2e-11])     # -1: no data
+    # 100.71 km above the spheroid at areodetic latitude -85.9 deg is 3477.0 km from the centre
+    r = np.hypot((3396.19 / np.sqrt(1 - 0.011737 * np.sin(np.radians(85.9)) ** 2) + 100.71) * np.cos(np.radians(85.9)),
+                 (3396.19 / np.sqrt(1 - 0.011737 * np.sin(np.radians(85.9)) ** 2) * (1 - 0.011737) + 100.71)
+                 * np.sin(np.radians(85.9)))
+    assert inb.altitude_km[1] == pytest.approx(r - 3389.5, abs=0.01)
+    assert inb.altitude_km[1] == pytest.approx(87.5, abs=0.2)
+    assert -85.9 < inb.track["latitude"][1] < -85.8                     # planetocentric
+    assert np.isnan(out.altitude_km[0]) and out.altitude_km[1] > 0
+    assert "spheroid" in inb.raw_attributes["ALTITUDE_REFERENCE"]

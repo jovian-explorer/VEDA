@@ -275,7 +275,21 @@ def index_volume(ds: Dataset, volume: str) -> List[Dict[str, Any]]:
     label = _with_structure(label, tab_url.rsplit("/", 1)[0] + "/", ds.login_url)
     table = http.get_text(tab_url, login_url=ds.login_url)
     rows = [r for r in (_index_row(ds, volume, vol_url, row) for row in parse_index(label, table)) if r]
+    _unique_product_ids(rows)
     return [leg for r in rows for leg in _pass_legs(ds, r)]
+
+
+def _unique_product_ids(rows: List[Dict[str, Any]]) -> None:
+    """Products are keyed by file name, so files of one name in many folders (MRO
+    accelerometer RAW_DATA/Pnnn/ACCEL.TAB for every pass) replaced one another in the
+    catalogue; those take the index's own PRODUCT_ID instead (ACCEL -> Y_ACCELEROMETER_DATA_P016)."""
+    from collections import Counter
+    counts = Counter(r["product_id"] for r in rows)
+    for r in rows:
+        if counts[r["product_id"]] > 1:
+            pid = (json.loads(r["extra"] or "{}").get("PRODUCT_ID") or "").strip()
+            if pid:
+                r["product_id"] = pid
 
 
 def _pass_legs(ds: Dataset, row: Dict[str, Any]) -> List[Dict[str, Any]]:
