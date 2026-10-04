@@ -658,7 +658,8 @@ def export_profiles_long_csv(profiles: List[ObservationProfile], body: Optional[
         + (f", body={body.name}" if body else ""),
         "# One row per profile and level. Archived quantities are as published, converted to the units in the column names;",
         "# the other quantities are derived by VEDA (see the User Guide). sigma_* columns are 1-sigma uncertainties.",
-        "# altitude_km is above the body's reference radius; profile_* columns are each profile's header values,",
+        "# altitude_km is above each profile's altitude reference, given with its source below (most data sets: the",
+        "# body's reference radius); profile_* columns are each profile's header values,",
         "# level_* columns the position of each level along the ray path where the archive gives it.",
         f"# Processed with VEDA {__version__} (https://github.com/jovian-explorer/VEDA), MIT License",
     ]
@@ -670,8 +671,10 @@ def export_profiles_long_csv(profiles: List[ObservationProfile], body: Optional[
         lines.append("# units: " + "; ".join(units) + " (sigma_* as their quantity)")
     for p in profiles:
         if p.provenance:
+            ref = (p.raw_attributes or {}).get("ALTITUDE_REFERENCE")
             lines.append(f"# {p.observation_id}: {p.provenance.archive_source}, {p.provenance.original_file}"
-                         + (f", {p.provenance.doi_or_citation}" if p.provenance.doi_or_citation else ""))
+                         + (f", {p.provenance.doi_or_citation}" if p.provenance.doi_or_citation else "")
+                         + (f"; altitude above {ref}" if ref else ""))
     header = (["mission", "instrument", "observation_id", "time_utc", "profile_latitude_deg", "profile_longitude_deg",
                "profile_lst_h", "profile_sza_deg", "profile_ls_deg", "altitude_km"]
               + var_cols + [f"sigma_{k}" for k in sigma_cols]
@@ -692,6 +695,17 @@ def export_profiles_long_csv(profiles: List[ObservationProfile], body: Optional[
                 continue
             lines.append(",".join(fixed + [f"{z[i]:.4f}"] + [_csv_num(c[i]) if c is not None else "" for c in cols]))
     return "\n".join(lines) + "\n"
+
+
+def _altitude_note(profiles: List[Dict[str, Any]]) -> str:
+    """'# Altitude above ... (km)' for the comparison CSV: the shared altitude reference."""
+    refs = {p.get("altitude_reference") or "" for p in profiles} - {""}
+    sphere = lambda r: r.startswith(("a sphere", "as given"))  # noqa: E731
+    if len(refs) == 1 and not sphere(next(iter(refs))):
+        return f"# Altitude above {next(iter(refs))} (km)"
+    if len(refs) > 1 and not all(sphere(r) for r in refs):
+        return "# Altitude above each profile's own reference (km; see altitude_reference)"
+    return "# Altitude above the body's reference radius (km)"
 
 
 def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
@@ -715,14 +729,14 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
         "# Profiles from the official mission archives (see each product for its source); means and spreads computed by VEDA.",
         (f"# Common grid uniform in log pressure, every {comparison.get('pressure_step_decades'):g} decades."
          if by_pressure else
-         "# Altitude above the body's reference radius (km)"
+         _altitude_note(profiles)
          + (f", common grid every {comparison['altitude_step_km']:g} km." if comparison.get("altitude_step_km") else "."))
         + (f" Note: {comparison['vertical_reference_warning']}" if comparison.get("vertical_reference_warning") else ""),
         f"# Processed with VEDA {__version__} (https://github.com/jovian-explorer/VEDA), MIT License",
     ]
     diag_keys = list(comparison.get("diagnostic_labels") or {})
     lines.append("# column, mission, instrument, observation, time_utc, latitude_deg, longitude_deg, lst_h, sza_deg, ls_deg"
-                 + "".join(f", {k}" for k in diag_keys))
+                 + "".join(f", {k}" for k in diag_keys) + ", altitude_reference")
     cols = []
     for p in profiles:
         col = f"{p.get('mission_label') or p.get('mission_id')}_{p.get('observation_id')}"
@@ -731,7 +745,7 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
             col, p.get("mission_label") or p.get("mission_id"), p.get("instrument"), p.get("observation_id"),
             p.get("time_utc"), _csv_num(p.get("latitude")), _csv_num(p.get("longitude")),
             _csv_num(p.get("lst")), _csv_num(p.get("sza")), _csv_num(p.get("ls")),
-            *(_csv_num((p.get("diagnostics") or {}).get(k)) for k in diag_keys))))
+            *(_csv_num((p.get("diagnostics") or {}).get(k)) for k in diag_keys), p.get("altitude_reference") or "")))
     for g in groups:
         lines.append(f"# group {_csv_field(g['label'])}: n={g['n']}, profiles={' '.join(g['observation_ids'])}")
 

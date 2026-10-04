@@ -592,3 +592,20 @@ def test_comparison_candidates_come_from_data_sets_holding_the_variable():
     assert not provides(h2so4, "temperature_k") and provides(h2so4, "h2so4_ppm")
     assert not provides(ody, "temperature_k") and not provides(ody, "density") and provides(ody, "density_measured")
     assert provides(mex, "temperature_k") and provides(mex, "density") and not provides(mex, "h2so4_ppm")
+
+
+def test_comparison_csv_states_the_altitude_reference():
+    """The comparison CSV said 'Altitude above the body's reference radius' for every
+    comparison, including CRISM profiles above the local surface and probe profiles."""
+    from veda.analysis.atmospheric import export_comparison_to_csv
+    base = {"body_name": "Mars", "variable_name": "dust_mixing_ratio", "grid_km": [10.0], "altitude_step_km": 0.5,
+            "composite_mean": [0.1], "composite_plus_1sigma": [None], "composite_minus_1sigma": [None]}
+    prof = {"observation_id": "a", "mission_id": "mro", "interpolated_series": [0.1],
+            "altitude_reference": "the local surface (CRISM limb retrieval levels)"}
+    text = export_comparison_to_csv({**base, "profiles": [prof]})
+    assert "# Altitude above the local surface (CRISM limb retrieval levels) (km), common grid every 0.5 km." in text
+    line = next(x for x in text.splitlines() if x.startswith("# mro_a,"))
+    assert line.endswith(", the local surface (CRISM limb retrieval levels)")       # its own column
+    mixed = export_comparison_to_csv({**base, "profiles": [prof, {**prof, "observation_id": "b",
+                                      "altitude_reference": "a sphere of radius 3389.5 km (from the radius column)"}]})
+    assert "each profile's own reference" in mixed
