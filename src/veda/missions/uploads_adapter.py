@@ -181,10 +181,10 @@ class UploadsAdapter(BaseMissionAdapter):
             mission_id=MISSION_ID,
             body_id=item["body_id"],
             instrument=str(hdr.get("INSTRUME") or "Camera"),
-            time_utc=str(hdr.get("DATE-OBS") or hdr.get("DATE") or ""),
+            time_utc=str(hdr.get("DATE-OBS") or ""),        # (FITS DATE is when the file was written)
             target_name=str(hdr.get("OBJECT") or item["body_id"]).upper(),
             filter_name=str(hdr.get("FILTER") or ""),
-            exposure_seconds=_num("EXPTIME") or 0.0,
+            exposure_seconds=_num("EXPTIME") if _num("EXPTIME") is not None else _num("EXPOSURE"),
             target_distance_km=_num("DISTANCE"),
             solar_phase_angle_deg=_num("PHASE"),
             local_path=str(path),

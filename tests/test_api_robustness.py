@@ -569,3 +569,13 @@ def test_mission_details_say_what_kind_of_mission_it_is(client):
     assert client.get("/api/veda/missions/new_horizons").json()["mission_type"] == "flyby"
     assert client.get("/api/veda/missions/mer").json()["mission_type"] == "rover"
     assert client.get("/api/veda/missions/mex").json()["mission_type"] == "orbiter"
+
+
+def test_akatsuki_image_metadata_comes_from_the_file(client):
+    """The UVI sample was shown with made-up defaults (0.05 s, 350,000 km, phase 45 deg);
+    the file gives 0.5 s, 128,304 km and 23.23 deg (EXPOSURE, S_DISTAV, S_SSCPHA)."""
+    d = client.get("/api/veda/image/akatsuki/UVI_20181105_080112_283_GEO_V10").json()
+    assert d["exposure_seconds"] == 0.5
+    assert d["target_distance_km"] == pytest.approx(128304.0)
+    assert d["solar_phase_angle_deg"] == pytest.approx(23.2337)
+    assert d["time_utc"] == "2018-11-05T08:01:12.369" and d["filter_name"] == "283 nm"

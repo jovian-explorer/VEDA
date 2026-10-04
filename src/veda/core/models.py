@@ -180,7 +180,7 @@ class ObservationImage:
     time_utc: str
     target_name: str
     filter_name: str
-    exposure_seconds: float
+    exposure_seconds: Optional[float]
     target_distance_km: Optional[float] = None
     solar_phase_angle_deg: Optional[float] = None
     browse_url: str = ""

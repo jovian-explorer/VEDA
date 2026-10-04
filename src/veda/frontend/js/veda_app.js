@@ -2258,7 +2258,7 @@ async function inspectImageObservation(obs) {
             <span style="margin-left: auto; color: #64748b;">Click & drag on image to slice transect</span>
           </div>
           <div class="image-meta-strip">
-            <span>Filter: ${imgMeta.filter_name || 'Clear'}</span>
+            <span>Filter: ${imgMeta.filter_name || '-'}</span>
             <span>Target Dist: ${imgMeta.target_distance_km ? imgMeta.target_distance_km.toLocaleString() + ' km' : '-'}</span>
             <span>Phase Angle: ${imgMeta.solar_phase_angle_deg ? imgMeta.solar_phase_angle_deg.toFixed(1) + '°' : '-'}</span>
           </div>

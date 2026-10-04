@@ -161,17 +161,31 @@ class AkatsukiAdapter(BaseMissionAdapter):
         try:
             f_data = load_fits_image(str(fits_file))
             hdr = f_data.header
+
+            def num(*keys):
+                # header values only: nothing is filled in when the file does not give it
+                for k in keys:
+                    try:
+                        return float(hdr[k])
+                    except (KeyError, TypeError, ValueError):
+                        continue
+                return None
             return ObservationImage(
                 observation_id=observation_id,
                 mission_id="akatsuki",
                 body_id="venus",
                 instrument="UVI" if "uvi" in observation_id.lower() else "LIR",
-                time_utc=str(hdr.get("DATE-OBS") or hdr.get("DATE") or "2018-11-05T08:01:12Z"),
+                # DATE is when the file was made; DATE-OBS (mid-exposure) is in the geometry
+                # extensions of the Akatsuki camera files
+                time_utc=str(hdr.get("DATE-OBS") or ""),
                 target_name="VENUS",
-                filter_name=str(hdr.get("FILTER") or "283 nm SO2 Absorption Band"),
-                exposure_seconds=float(hdr.get("EXPTIME") or 0.05),
-                target_distance_km=float(hdr.get("DISTANCE") or 350000.0),
-                solar_phase_angle_deg=float(hdr.get("PHASE") or 45.0),
+                filter_name=str(hdr.get("FILTER") or ""),
+                # Akatsuki writes EXPOSURE, the spacecraft-Venus distance S_DISTAV and the phase
+                # angle at the sub-spacecraft point S_SSCPHA (the image showed made-up defaults,
+                # 0.05 s, 350,000 km and 45 deg, for these)
+                exposure_seconds=num("EXPTIME", "EXPOSURE"),
+                target_distance_km=num("DISTANCE", "S_DISTAV"),
+                solar_phase_angle_deg=num("PHASE", "S_SSCPHA"),
                 browse_url="",
                 fits_url=f"https://data.darts.isas.jaxa.jp/pub/pds3/vco-v-uvi-3-sedr-v1.0/geometry/{fits_file.name}",
                 local_path=str(fits_file),
