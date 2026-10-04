@@ -400,6 +400,13 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
             s = _col(tbl, sig) if sig else None
             if s is not None:
                 prof.uncertainty[key] = s * factor
+    # A 1-sigma uncertainty is never negative: negative values are fill (the Phoenix entry
+    # profile writes -1 in its SIGMA columns where there is no value)
+    for key, s in prof.uncertainty.items():
+        s = np.array(s, dtype=float)
+        with np.errstate(invalid="ignore"):
+            s[s < 0] = np.nan
+        prof.uncertainty[key] = s
     _add_solar_geometry(prof, ds)
     prof.derived.update(compute_atmospheric_diagnostics(prof, body))
     return prof

@@ -520,3 +520,28 @@ def test_mro_accelerometer_pass_attached_label_and_misplaced_columns(tmp_path):
     assert -85.9 < inb.track["latitude"][1] < -85.8                     # planetocentric
     assert np.isnan(out.altitude_km[0]) and out.altitude_km[1] > 0
     assert "spheroid" in inb.raw_attributes["ALTITUDE_REFERENCE"]
+
+
+def test_negative_uncertainties_are_fill(tmp_path):
+    """The Phoenix entry profile writes -1 in its SIGMA columns where it has no value: a
+    1-sigma uncertainty is never negative, so those are missing, not -1 K."""
+    from veda.archives.profiles import profile_from_label
+    ds = get_dataset("phx-m-ase-5-edl-rdr-v1.0")
+    names = ["RADIAL_DISTANCE", "TEMP", "SIGMA_TEMP", "PRESS", "SIGMA_PRESS", "RHO", "SIGMA_RHO"]
+    units = ["KILOMETER", "K", "K", "PASCAL", "PASCAL", "KG/M**3", "KG/M**3"]
+    rows = [(3400.0, -1.0, -1.0, -1.0, -1.0, -1.0, -1.0),
+            (3430.0, 150.0, 2.0, 30.0, 0.5, 1.0e-3, 2.0e-5),
+            (3440.0, 145.0, 3.0, 15.0, 0.4, 5.0e-4, 1.0e-5)]
+    (tmp_path / "PHX.TAB").write_text("".join("".join(f"{v:14.6g}" for v in r) + "\r\n" for r in rows), newline="")
+    cols = "".join(f"  OBJECT = COLUMN\n    NAME = {n}\n    DATA_TYPE = ASCII_REAL\n    START_BYTE = {1 + 14 * i}\n"
+                   f"    BYTES = 14\n    UNIT = \"{u}\"\n  END_OBJECT = COLUMN\n" for i, (n, u) in enumerate(zip(names, units)))
+    (tmp_path / "PHX.LBL").write_text(f"PDS_VERSION_ID = PDS3\nRECORD_TYPE = FIXED_LENGTH\nRECORD_BYTES = 100\n"
+                                      f"^TABLE = \"PHX.TAB\"\nOBJECT = TABLE\n  ROWS = 3\n  COLUMNS = 7\n  ROW_BYTES = 100\n"
+                                      f"{cols}END_OBJECT = TABLE\nEND\n")
+    prod = {"product_id": "PHX", "start_time": "2008-05-25T23:30:00", "volume": "phxase_0002", "url": "",
+            "product_type": "profile"}
+    p = profile_from_label(ds, prod, tmp_path / "PHX.LBL")
+    for key in ("temperature_k", "pressure_hpa", "density_measured"):
+        assert np.isnan(p.uncertainty[key][0]), key
+    np.testing.assert_allclose(p.uncertainty["temperature_k"][1:], [2.0, 3.0])
+    np.testing.assert_allclose(p.uncertainty["density_measured"][1:], [2.0e-5, 1.0e-5])
