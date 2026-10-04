@@ -350,6 +350,8 @@ def test_comparison_filters_by_date_and_latitude(client):
     inside = client.post("/api/veda/compare/body/mars", json={**base, "filter": {
         "start": "2004-04-01", "end": "2004-04-03", "lat_min": lat - 1, "lat_max": lat + 1, "download": False}}).json()
     assert sample in [p["observation_id"] for p in inside["profiles"]]
+    # each compared profile names its archive data set, for the Cite panel
+    assert {p["dataset_id"] for p in inside["profiles"]} == {"mex-m-mrs-5-occ"}
     assert inside["selection"]["mex"]["kept"] >= 1
     # only the bundled samples are catalogued: the archive itself is not indexed, and the
     # report says so (it counted the samples as an index)

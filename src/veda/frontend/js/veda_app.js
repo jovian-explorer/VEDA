@@ -1069,6 +1069,9 @@ async function updateComparison() {
     if (seq !== comparisonSeq) return;            // superseded by a newer comparison
 
     vedaState.lastComparisonData = compData;
+    // every archive data set in the comparison belongs in the Cite panel, not only the
+    // products picked by hand
+    (compData.profiles || []).forEach(p => { if (p.dataset_id) recordProduct({ dataset_id: p.dataset_id, volume: p.volume }); });
     renderSelectionReport(compData.selection);
     vedaState.currentBodyObservations = exploreData.observations || [];
 

@@ -502,6 +502,9 @@ def compare_profiles_on_body(
             "altitude_reference": (p.raw_attributes or {}).get("ALTITUDE_REFERENCE", ""),
             # the mission a loaded file comes from, as the user said (for legends and colours)
             "mission_label": (p.raw_attributes or {}).get("SOURCE_MISSION") or p.mission_id,
+            # archive data set and volume (none for loaded files), for the Cite panel
+            "dataset_id": (p.raw_attributes or {}).get("DATASET_ID"),
+            "volume": (p.raw_attributes or {}).get("VOLUME"),
             **{k: v for k, v in _geom(p).items() if k in ("lst", "sza", "ls")},
             "diagnostics": {k: v for k, v in profile_diagnostics(p).items() if v is not None},
             "interpolated_series": v_interp,
