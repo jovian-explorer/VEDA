@@ -561,3 +561,11 @@ def test_data_licenses_panel_names_every_mission_with_data():
     assert {ds.mission_id for ds in DATASETS} <= listed
     repo = next(p for p in DATA_PORTALS if p["id"] == "research_repositories")
     assert "vex" in repo["missions"] and "cc_by_4" in DATA_LICENSES
+
+
+def test_mission_details_say_what_kind_of_mission_it_is(client):
+    """The mission page badge read mission_type from the details, which did not carry it,
+    so New Horizons (a flyby) and the Mars landers and rovers were all shown as orbiters."""
+    assert client.get("/api/veda/missions/new_horizons").json()["mission_type"] == "flyby"
+    assert client.get("/api/veda/missions/mer").json()["mission_type"] == "rover"
+    assert client.get("/api/veda/missions/mex").json()["mission_type"] == "orbiter"

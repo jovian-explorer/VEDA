@@ -118,6 +118,8 @@ def get_mission_details(mission_id: str) -> dict:
         "agency": m.agency,
         "launch_date": m.launch_date,
         "mission_status": m.mission_status,
+        "mission_type": m.mission_type,
+        "target_encounters": m.target_encounters,
         "primary_targets": m.primary_targets,
         "authoritative_archive": m.authoritative_archive,
         "archive_url": m.archive_url,

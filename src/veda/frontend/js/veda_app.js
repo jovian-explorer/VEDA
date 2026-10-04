@@ -1786,9 +1786,12 @@ export async function loadAndRenderMission(missionId) {
   // Render Mission Header
   const headEl = document.getElementById('veda-mission-header');
   if (headEl) {
+    // (the mission details had no mission_type, so every mission was shown as an orbiter)
     const typeTag = mission.mission_type === 'flyby'
       ? '<span class="badge badge-flyby">Flyby</span>'
-      : '<span class="badge badge-orbiter">Orbiter</span>';
+      : ['lander', 'rover', 'probe'].includes(mission.mission_type)
+        ? `<span class="badge badge-constellation">${mission.mission_type[0].toUpperCase() + mission.mission_type.slice(1)}</span>`
+        : '<span class="badge badge-orbiter">Orbiter</span>';
     headEl.innerHTML = `
       <div class="mission-header-top">
         <h2>${mission.name}</h2>
