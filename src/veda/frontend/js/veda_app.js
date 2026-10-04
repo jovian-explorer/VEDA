@@ -1424,7 +1424,7 @@ function renderComparisonPlot() {
        varTitle: view.deviation
          ? `Deviation from the ${view.groups.length ? 'group' : 'composite'} mean (${view.logVar ? '%' : cleanPlotlyMath(varCfg.units || '')})`
          : cleanPlotlyMath(varCfg.axis),
-       coordTitle: byPressure ? 'Pressure (hPa)' : 'Altitude above reference radius (km)' });
+       coordTitle: byPressure ? 'Pressure (hPa)' : altitudeAxisTitle((data.profiles || []).map(p => p.altitude_reference)) });
   plotStyle.vertical = savedVertical;
 
   window.Plotly.newPlot(plotDiv, traces, themedLayout(layout), { responsive: true, displayModeBar: true });
@@ -2125,12 +2125,23 @@ function profileSeries(prof, varKey) {
   return ok ? { values, sigma, label, units, axis, log, color: cfg.color } : null;
 }
 
+/** Altitude axis title from the profiles' altitude references: "above reference radius"
+ *  for the sphere VEDA puts most data sets on, otherwise the shared reference (the 1-bar
+ *  level, a landing site, the local surface); mixed references keep the generic title. */
+function altitudeAxisTitle(refs) {
+  const uniq = [...new Set((refs || []).filter(Boolean))];
+  const sphere = (r) => /^a sphere|^as given/.test(r);
+  if (uniq.length > 1 && !uniq.every(sphere)) return 'Altitude (km; the references differ)';
+  if (!uniq.length || sphere(uniq[0])) return 'Altitude above reference radius (km)';
+  return `Altitude above ${uniq[0].split(/ \(|,/)[0]} (km)`;
+}
+
 function verticalCoordinate(prof) {
   const usePressure = plotStyle.vertical === 'pressure' && Array.isArray(prof.pressure_hpa)
     && prof.pressure_hpa.some(p => p != null && p > 0);
   return usePressure
     ? { coord: prof.pressure_hpa, title: 'Pressure (hPa)', isPressure: true }
-    : { coord: prof.altitude_km || [], title: 'Altitude above reference radius (km)', isPressure: false };
+    : { coord: prof.altitude_km || [], title: altitudeAxisTitle([prof.altitude_reference]), isPressure: false };
 }
 
 function trackChips(prof) {
