@@ -36,8 +36,8 @@ def _profile_from_roles(file_path: Path, b, tbl: Pds3Table, roles: Dict[str, Dic
     z = by_role.get("altitude", by_role.get("radius"))
     if z is None:
         raise ValueError("Choose the column that holds altitude or radius")
-    if not any(k in by_role for k in ("temperature", "pressure", "electron_density", "number_density")):
-        raise ValueError("Choose at least one measured column (temperature, pressure, electron or number density)")
+    if not any(k in by_role for k in ("temperature", "pressure", "electron_density", "number_density", "mass_density")):
+        raise ValueError("Choose at least one measured column (temperature, pressure, electron, number or mass density)")
     t_k = by_role.get("temperature")
     p = by_role.get("pressure")
     for a in (t_k, p):
@@ -69,6 +69,14 @@ def _profile_from_roles(file_path: Path, b, tbl: Pds3Table, roles: Dict[str, Dic
     )
     if "number_density" in by_role:
         prof.derived["number_density_m3"] = by_role["number_density"]
+    if "mass_density" in by_role:
+        # measured mass density (accelerometer, entry and occultation profiles): compared as
+        # "Mass density (archive)", like the archive data sets that publish one
+        rho = by_role["mass_density"]
+        rho[rho <= 0] = np.nan
+        prof.derived["density_measured"] = rho
+        if "mass_density_sigma" in by_role:
+            prof.uncertainty["density_measured"] = by_role["mass_density_sigma"]
     prof.derived.update(compute_atmospheric_diagnostics(prof, b))
     return prof, tbl
 
@@ -137,6 +145,8 @@ ROLE_UNITS: Dict[str, Tuple[str, ...]] = {
     "electron_density": ("cm-3", "m-3"),
     "electron_density_sigma": ("cm-3", "m-3"),
     "number_density": ("m-3", "cm-3"),
+    "mass_density": ("kg/m3", "g/cm3", "kg/km3"),
+    "mass_density_sigma": ("kg/m3", "g/cm3", "kg/km3"),
     "latitude": ("deg",),
     "longitude": ("deg",),
     "lst": ("h",),
@@ -166,6 +176,14 @@ def unit_from_label(role: str, label_unit: str) -> Optional[str]:
         if "PA" in u or "PASCAL" in u:
             return "Pa"
         return None
+    if role.startswith("mass_density"):
+        if "KM" in u or "KILOMET" in u:
+            return "kg/km3"
+        if u.startswith("G") or "GRAM/CM" in u or "G/CM" in u:
+            return "g/cm3"
+        if "KG" in u or "KILOGRAM" in u:
+            return "kg/m3"
+        return None
     if "density" in role:
         if "CM" in u or "CENTIMETER" in u:
             return "cm-3"
@@ -190,6 +208,8 @@ def to_standard(role: str, values: np.ndarray, unit: str, body) -> np.ndarray:
         return v * 1e-6 if unit == "m-3" else v
     if role == "number_density":
         return v * 1e6 if unit == "cm-3" else v
+    if role.startswith("mass_density"):
+        return v * {"kg/m3": 1.0, "g/cm3": 1000.0, "kg/km3": 1e-9}[unit]
     return v
 
 
@@ -203,6 +223,8 @@ def suggest_roles(tbl: Pds3Table) -> Dict[str, Dict[str, Optional[str]]]:
         ("electron_density_sigma", r"(SIGMA|ERR|DEV|UNC|NOISE).*(ELEC|NE\b)|(ELEC|EDEN).*(SIGMA|ERR|DEV|UNC)"),
         ("electron_density", r"ELECTRON|^NE$|^N_E$|EDEN|ELECDEN"),
         ("number_density", r"NUMBER.?DENS|^N$|NUM.?DENS|TOTAL.?DENS"),
+        ("mass_density_sigma", r"(SIGMA|ERR|DEV|UNC).*(RHO|MASS.?DENS)|(RHO|MASS.?DENS).*(SIGMA|ERR|DEV|UNC)"),
+        ("mass_density", r"^RHO|MASS.?DENS"),
         ("temperature", r"^T$|TEMP|^T_K$|^TK$"),
         ("pressure", r"^P$|PRESS|^P_(HPA|PA|BAR)$"),
         ("radius", r"RADIUS|^R$|RADIAL"),
@@ -214,6 +236,7 @@ def suggest_roles(tbl: Pds3Table) -> Dict[str, Dict[str, Optional[str]]]:
     ]
     out: Dict[str, Dict[str, Optional[str]]] = {}
     taken = set()
+    guessed = set()                 # columns whose unit neither the label nor the values gave
     for col in tbl.columns:
         name = col.upper().strip('"').replace(" ", "_")
         for role, rx in patterns:
@@ -228,9 +251,17 @@ def suggest_roles(tbl: Pds3Table) -> Dict[str, Dict[str, Optional[str]]]:
                     unit = "C" if np.nanmin(finite) < 0 else "K"
                 elif role in ("altitude", "radius"):
                     unit = "km"
+            if unit is None:
+                guessed.add(col)
             out[col] = {"role": role, "unit": unit or (ROLE_UNITS.get(role, (None,))[0])}
             taken.add(role)
             break
+    # An uncertainty column whose unit the file does not give is in its quantity's unit
+    for col, r in out.items():
+        if col in guessed and r["role"].endswith("_sigma"):
+            base = next((v["unit"] for v in out.values() if v["role"] == r["role"][:-6]), None)
+            if base in ROLE_UNITS[r["role"]]:
+                r["unit"] = base
     if "radius" in taken and "altitude" in taken:          # one vertical coordinate
         for col, r in list(out.items()):
             if r["role"] == "radius":

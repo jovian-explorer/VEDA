@@ -466,6 +466,28 @@ def test_load_rejects_bad_roles_and_does_not_invent_a_time(client):
     assert ok["data"]["time_utc"] == ""                     # was a made-up 2026-01-01T12:00:00Z
 
 
+def test_loaded_mass_density_profile_is_compared_as_measured_density(client):
+    """A file holding only a mass density (an accelerometer or entry profile) can be loaded:
+    there was no mass density column role, so such files could not be read at all."""
+    text = "alt,RHO [kg/km**3],RHO_SIGMA\n100,20.0,1.0\n110,6.0,0.4\n120,2.0,0.2\n"
+    pv = client.post("/api/veda/upload/preview", json={"filename": "acc.csv", "file_content": text}).json()
+    sug = pv["suggested_roles"]
+    alt, rho, srho = [c["name"] for c in pv["columns"]]
+    assert sug[rho]["role"] == "mass_density" and sug[rho]["unit"] == "kg/km3"      # name and label unit
+    assert sug[srho] == {"role": "mass_density_sigma", "unit": "kg/km3"}     # its quantity's unit
+    roles = {alt: {"role": "altitude", "unit": "km"}, rho: {"role": "mass_density", "unit": "kg/km3"},
+             srho: {"role": "mass_density_sigma", "unit": "kg/km3"}}
+    r = client.post("/api/veda/parse-file", json={"filename": "acc.csv", "file_content": text, "body_id": "mars",
+                                                  "roles": roles})
+    assert r.status_code == 200, r.text
+    d = r.json()["data"]
+    assert d["derived"]["density_measured"][0] == pytest.approx(2.0e-8)
+    assert d["uncertainty"]["density_measured"][0] == pytest.approx(1.0e-9)
+    from veda.pipeline.ingest import unit_from_label
+    assert unit_from_label("mass_density", "kg/km**3") == "kg/km3"
+    assert unit_from_label("mass_density", "KG/M**3") == "kg/m3" and unit_from_label("mass_density", "g/cm^3") == "g/cm3"
+
+
 def test_comparison_altitude_step_is_chosen_by_the_user(client):
     base = {"missions": ["mex"], "variable": "temperature_k",
             "filter": {"start": "2004-04-01", "end": "2004-04-03", "download": False}}

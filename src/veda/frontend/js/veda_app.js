@@ -2584,7 +2584,7 @@ const ROLE_LABELS = {
   '': 'Not used', altitude: 'Altitude', radius: 'Radius (from the centre)', temperature: 'Temperature',
   temperature_sigma: 'Temperature 1σ', pressure: 'Pressure', pressure_sigma: 'Pressure 1σ',
   electron_density: 'Electron density', electron_density_sigma: 'Electron density 1σ',
-  number_density: 'Number density', latitude: 'Latitude', longitude: 'Longitude', lst: 'Local solar time', sza: 'Solar zenith angle',
+  number_density: 'Number density', mass_density: 'Mass density', mass_density_sigma: 'Mass density 1σ', latitude: 'Latitude', longitude: 'Longitude', lst: 'Local solar time', sza: 'Solar zenith angle',
 };
 
 /**
