@@ -574,7 +574,8 @@ def test_mission_details_say_what_kind_of_mission_it_is(client):
 def test_akatsuki_image_metadata_comes_from_the_file(client):
     """The UVI sample was shown with made-up defaults (0.05 s, 350,000 km, phase 45 deg);
     the file gives 0.5 s, 128,304 km and 23.23 deg (EXPOSURE, S_DISTAV, S_SSCPHA)."""
-    d = client.get("/api/veda/image/akatsuki/uvi_20181105_080112_283_geo_v10")       # (the id the page uses; file names are case-sensitive on Linux).json()
+    # (the id the page sends: file names are case-sensitive on Linux)
+    d = client.get("/api/veda/image/akatsuki/uvi_20181105_080112_283_geo_v10").json()
     assert d["exposure_seconds"] == 0.5
     assert d["target_distance_km"] == pytest.approx(128304.0)
     assert d["solar_phase_angle_deg"] == pytest.approx(23.2337)
