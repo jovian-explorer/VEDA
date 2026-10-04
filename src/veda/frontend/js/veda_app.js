@@ -682,7 +682,8 @@ function renderSelectionReport(sel) {
   const el = document.getElementById('cf-report');
   if (!el) return;
   if (!sel || vedaState.comparisonProducts) { el.textContent = ''; return; }
-  const name = (mid) => (vedaState.missions.find(m => m.id === mid) || {}).name || mid.toUpperCase();
+  const name = (mid) => (mid === 'user_imported' ? 'Your loaded files'
+    : (vedaState.missions.find(m => m.id === mid) || {}).name || mid.toUpperCase());
   el.innerHTML = Object.entries(sel).map(([mid, r]) => {
     const out = Object.entries(r.left_out || {}).map(([why, n]) => `${n} ${escHtml(why)}`);
     if (r.failed) out.push(`${r.failed} unreadable`);
