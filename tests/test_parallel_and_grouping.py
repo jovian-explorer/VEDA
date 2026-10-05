@@ -142,7 +142,7 @@ def test_grouped_publication_figure_renders():
     client = TestClient(create_app())
     r = client.post("/api/veda/figure/publication?body_id=venus",
                     json={"variable": "temperature_k", "group_by": "latitude", "dpi": 72, "fmt": "png"})
-    assert r.status_code in (200, 400), r.text            # 400 only when no profiles are available offline
+    assert r.status_code == 200 and r.headers["content-type"] == "image/png", r.text[:200]   # bundled sample
 
 
 def test_long_profile_export_has_every_level_and_variable():

@@ -63,9 +63,12 @@ def test_publication_figure_bad_input_is_400_not_500(client, query):
 
 
 def test_publication_figure_all_frontend_variables(client):
-    for var in ("temperature_k", "pressure_hpa", "scale_height", "refractivity"):
+    # the bundled Akatsuki profile has temperature and pressure (and so a scale height)
+    for var in ("temperature_k", "pressure_hpa", "scale_height"):
         r = client.get(f"/api/veda/figure/publication?body_id=venus&variable={var}&dpi=72")
-        assert r.status_code in (200, 400), (var, r.text[:200])
+        assert r.status_code == 200 and r.headers["content-type"] == "image/png", (var, r.text[:200])
+    r = client.get("/api/veda/figure/publication?body_id=venus&variable=refractivity&dpi=72")
+    assert r.status_code == 400 and "contain" in r.json()["detail"]
     r = client.get("/api/veda/figure/publication?body_id=venus&dpi=72&fmt=svg")
     assert r.status_code == 200 and r.headers["content-type"].startswith("image/svg")
 
@@ -269,6 +272,19 @@ def test_bad_uploads_fail_cleanly(client, name, content, status, needle):
     assert r.status_code == status, (name, r.status_code, r.text[:200])
     if needle:
         assert needle.lower() in r.json()["detail"].lower()
+
+
+def test_upload_names_with_folders_stay_in_the_upload_folder(client):
+    """A file name with ../ (or a Windows path) is stored under its plain name inside the
+    upload folder; nothing is written where the path points."""
+    from veda.missions.uploads_adapter import UPLOAD_DIR
+    good = "altitude,temperature\n0,300\n10,280\n20,260\n"
+    for name in ("../../escaped.csv", "..\\..\\escaped.csv"):
+        assert _upload(client, name, good).status_code == 200, name
+        assert (UPLOAD_DIR / "escaped.csv" / "escaped.csv").is_file()
+        for up in (UPLOAD_DIR.parent, UPLOAD_DIR.parent.parent, UPLOAD_DIR / "escaped.csv" / ".."):
+            assert not (up / "escaped.csv").is_file()
+    client.delete("/api/veda/uploads/escaped")
 
 
 def test_uploaded_fits_can_be_rendered_and_listed(client, tmp_path):
