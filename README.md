@@ -20,11 +20,11 @@ All data shown in VEDA come straight from the mission archives (NASA PDS, ESA PS
 * **[License (MIT)](LICENSE)** and **[third-party licenses](THIRD_PARTY_LICENSES.md)**.
 * **[Contributing](CONTRIBUTING.md)** and **[changelog](CHANGELOG.md)**.
 
-![Multi-mission comparison of Venus (dark theme)](docs/screenshots/body-comparison-dark.png)
+![Akatsuki and Venus Express temperature profiles of Venus compared, with their composite mean and spread (dark theme)](docs/screenshots/body-comparison-dark.png)
 
-| Comparison, light theme | Mission view | Settings |
+| Group composites by latitude, light theme | Mission view and archive data | Settings |
 |---|---|---|
-| ![](docs/screenshots/comparison-light.png) | ![](docs/screenshots/mission-light.png) | ![](docs/screenshots/settings.png) |
+| ![Venus profiles grouped by latitude band](docs/screenshots/comparison-light.png) | ![Mars Express archive data](docs/screenshots/mission-light.png) | ![Settings panel](docs/screenshots/settings.png) |
 
 ---
 
