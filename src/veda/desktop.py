@@ -41,7 +41,7 @@ if _MEIPASS:
     os.chdir(_MEIPASS)
     os.environ["PATH"] = _MEIPASS + os.pathsep + os.environ.get("PATH", "")
 
-from .config import (APP_NAME, APP_TITLE, APP_VERSION, LOG_DIR,
+from .config import (APP_TITLE, APP_VERSION, LOG_DIR,
                      DATA_ROOT, ensure_dirs, frontend_dir)
 from .server import free_port
 

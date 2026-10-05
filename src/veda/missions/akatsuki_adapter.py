@@ -1,7 +1,6 @@
 """Akatsuki (Venus Climate Orbiter) Mission Adapter for VEDA."""
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 import numpy as np

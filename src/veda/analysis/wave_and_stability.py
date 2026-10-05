@@ -12,7 +12,7 @@ Provides:
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 import numpy as np
 from scipy.signal import butter, sosfiltfilt
 from scipy.optimize import curve_fit

@@ -5,11 +5,14 @@ comparative analysis across all supported planetary spacecraft.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 from ..core.base_adapter import BaseMissionAdapter
-from ..core.models import ObservationImage, ObservationProfile, ProvenanceRecord
-from ..core.registry import BODIES, MISSIONS, get_body, get_mission
+from ..core.models import ObservationImage, ObservationProfile
+from ..core.registry import MISSIONS, get_body
 from ..analysis.atmospheric import compare_profiles_on_body
+
+if TYPE_CHECKING:
+    from .selection import ProfileFilter
 
 from .akatsuki_adapter import AkatsukiAdapter
 from .archive_adapter import ArchiveMissionAdapter
