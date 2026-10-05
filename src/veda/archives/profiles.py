@@ -53,11 +53,19 @@ def _scale(unit: str) -> float:
 
 
 def _to_hpa(values: np.ndarray, unit: str) -> np.ndarray:
-    u = unit.replace(" ", "")
-    if "HPA" in u or "MBAR" in u or "MILLIBAR" in u:
+    u = unit.upper().replace(" ", "")
+    if "HPA" in u or "HECTOPASCAL" in u or "MBAR" in u or "MILLIBAR" in u:
         return values
     if u in ("BAR", "BARS"):
         return values * 1000.0
+    if u in ("KPA", "KILOPASCAL", "KILOPASCALS"):
+        return values * 10.0
+    if u in ("UBAR", "MICROBAR", "MICROBARS", "µBAR"):
+        return values * 1e-3
+    if u in ("NBAR", "NANOBAR", "NANOBARS"):
+        return values * 1e-6
+    if "DYN" in u:                      # dyn/cm^2 = 0.1 Pa
+        return values / 1000.0
     return values / 100.0               # PASCAL (the PDS radio-science default)
 
 

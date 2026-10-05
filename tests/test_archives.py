@@ -545,3 +545,12 @@ def test_negative_uncertainties_are_fill(tmp_path):
         assert np.isnan(p.uncertainty[key][0]), key
     np.testing.assert_allclose(p.uncertainty["temperature_k"][1:], [2.0, 3.0])
     np.testing.assert_allclose(p.uncertainty["density_measured"][1:], [2.0e-5, 1.0e-5])
+
+
+@pytest.mark.parametrize("unit,factor", [
+    ("PASCAL", 0.01), ("PA", 0.01), ("HPA", 1.0), ("MBAR", 1.0), ("MILLIBAR", 1.0), ("BAR", 1000.0),
+    ("KPA", 10.0), ("KILOPASCAL", 10.0), ("MICROBAR", 1e-3), ("NBAR", 1e-6), ("DYN/CM**2", 1e-3), ("hPa", 1.0),
+])
+def test_pressure_units_to_hpa(unit, factor):
+    """Pressures in kPa, microbar, nanobar or dyn/cm^2 were all taken for pascals."""
+    np.testing.assert_allclose(_to_hpa(np.array([2.0]), unit), [2.0 * factor])
