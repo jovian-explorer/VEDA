@@ -73,6 +73,7 @@ def _save_settings() -> None:
 
 
 _SAFE_METHODS = ("GET", "HEAD", "OPTIONS")
+MAX_REQUEST_BYTES = 640 * 1024 * 1024
 
 
 def _cross_site(request: Request) -> bool:
@@ -114,6 +115,15 @@ def create_app() -> FastAPI:
     async def refuse_cross_site(request: Request, call_next):
         if request.url.path.startswith("/api/") and _cross_site(request):
             return JSONResponse({"detail": "Requests from other websites are not accepted."}, status_code=403)
+        # The whole request is read into memory (uploads arrive base64-encoded in JSON), so
+        # its size is limited before reading: a file of 200 MB and its companions fit.
+        try:
+            size = int(request.headers.get("content-length") or 0)
+        except ValueError:
+            size = 0
+        if size > MAX_REQUEST_BYTES:
+            return JSONResponse({"detail": f"The request is larger than {MAX_REQUEST_BYTES // 2**20} MB; "
+                                           "load fewer or smaller files at a time."}, status_code=413)
         return await call_next(request)
 
     extra_hosts = [h.strip() for h in os.environ.get("VEDA_ALLOWED_HOSTS", "").split(",") if h.strip()]

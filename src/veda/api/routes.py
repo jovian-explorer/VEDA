@@ -240,7 +240,8 @@ class CompareFilter(BaseModel):
 
 
 class CrossCompareRequest(BaseModel):
-    observations: Optional[List[Dict[str, str]]] = None  # list of {"mission_id": ..., "observation_id": ...}
+    # list of {"mission_id": ..., "observation_id": ...}
+    observations: Optional[List[Dict[str, str]]] = Field(None, max_length=5000)
     missions: Optional[List[str]] = None  # e.g. ["akatsuki", "vex"]
     variable: str = "temperature_k"  # "temperature_k", "temperature_c", "pressure_hpa", "lapse_rate", "buoyancy_freq_sq"
     filter: Optional[CompareFilter] = None

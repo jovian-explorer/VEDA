@@ -177,6 +177,19 @@ def test_settings_that_cannot_be_saved_are_reported(client, monkeypatch, tmp_pat
     SETTINGS.save()
 
 
+def test_oversized_requests_are_refused_before_reading(client, monkeypatch):
+    """Uploads arrive whole in one JSON request; a request over the limit is refused from
+    its Content-Length instead of being read into memory, and a comparison cannot list
+    an unbounded number of observations."""
+    import veda.api.app as app_module
+    monkeypatch.setattr(app_module, "MAX_REQUEST_BYTES", 1000)
+    r = _upload(client, "big.csv", "altitude,temperature\n" + "1,2\n" * 500)
+    assert r.status_code == 413 and "larger than" in r.json()["detail"]
+    monkeypatch.undo()
+    many = [{"mission_id": "vex", "observation_id": str(i)} for i in range(5001)]
+    assert client.post("/api/veda/compare/body/venus", json={"observations": many}).status_code == 422
+
+
 def test_meta_reports_paths_and_repository(client):
     meta = client.get("/api/meta").json()
     assert meta["repository"] == "https://github.com/jovian-explorer/VEDA"
