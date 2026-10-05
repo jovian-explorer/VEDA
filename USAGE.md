@@ -51,7 +51,7 @@ Example: Mars, 2005-07-01 to 2005-07-31 returns several hundred profiles from Ma
 Mars Orbiter Mission and Chandrayaan-2 data are on ISRO's PRADAN portal, which requires a free registered account and its own download pages. Their mission views show **Sign in to ISRO ISSDC**, which opens PRADAN in your browser. Download the products there, then press **Import downloaded files** and select them (PDS3 `.lbl` + data, or PDS4 `.xml` + data). VEDA never sees your password.
 
 ### Connected data sets
-All 19 missions are connected, with 141 data sets covering nearly all of their payloads: indexed data sets (Akatsuki RS and cameras, Mars Express MaRS, Venus Express VeRa, Magellan, MGS, MRO MCS, Juno MWR/JunoCam/MAG, Galileo probe, Huygens HASI, Cassini Titan ionosphere and INMS, Pioneer Venus ONMS) and live data sets for the rest (ESA PSA, NASA PDS Registry, OPUS). The README has an overview and [DATA_POLICY.md](DATA_POLICY.md) the complete list with references and the few payloads not available yet.
+All 25 missions are connected, with 161 data sets covering nearly all of their payloads. 55 are indexed: the radio occultation profiles of Akatsuki, Mars Express, Venus Express (PSA, PDS and the research repositories), Magellan, Pioneer Venus, MGS, MRO and Cassini (Titan, Saturn ionosphere); Venus Express SOIR; Cassini UVIS Saturn occultations; the Mars entry profiles (Spirit, Opportunity, Phoenix, Curiosity, InSight); the MRO and Mars Odyssey aerobraking densities; MRO CRISM aerosol profiles; the Galileo probe, Huygens HASI and VEGA 2 descents; the Akatsuki cameras, MRO MCS, CTX and MARCI, Juno MWR, JunoCam and MAG, Cassini INMS and Pioneer Venus ONMS; and the ISRO portal entries. The other 106 are searched live (ESA PSA, NASA PDS Registry, OPUS). The README has an overview and [DATA_POLICY.md](DATA_POLICY.md) the complete list with references and the few payloads not available yet.
 
 ### What an opened profile shows
 * Every quantity in the product (temperature, pressure, number density, electron density, refractivity, absorptivity, H2SO4 and others) in its own panel, with the archived 1-sigma uncertainty as a band or error bars where the product provides it.
@@ -202,7 +202,7 @@ Electron density profiles are fitted with an alpha-Chapman layer, $N_e(z) = N_m 
 
 ## 5. Observation Geometry (SPICE)
 
-Press **Geometry** on any opened product. VEDA computes it with NAIF SPICE for every mission with public kernels (all except the Mars Orbiter Mission and Chandrayaan-2).
+Press **Geometry** on any opened product. VEDA computes it with NAIF SPICE for 17 of the 25 missions: all except Mars Odyssey, the Mars landers and rovers (Spirit, Opportunity, Phoenix, Curiosity, InSight) and VEGA, which are not set up yet, and the Mars Orbiter Mission and Chandrayaan-2, which publish no kernels.
 
 **Kernels are downloaded for you.** Opening a mission fetches its generic and body kernels in the background; opening an observation fetches the spacecraft ephemeris covering its date. VEDA knows each mission's kernel archive (NAIF operational and PDS SPICE archives, the ESA SPICE service, the Akatsuki archive) and how its files map to dates: from the file names, from the PDS3 archive's coverage table, or from the archive's read-me. In **Settings > Observation geometry** you can turn this off or set the size above which VEDA asks first (400 MB by default). Kernels are kept in the cache and reused.
 
@@ -242,7 +242,7 @@ FITS and PNG/JPEG images (for example the bundled Akatsuki UVI image) open in th
 ## 7. Downloads, Cache and Offline Use
 
 * Archive indexes are stored in a local SQLite catalogue (`archive_catalog.sqlite` in the cache folder) the first time a data set is searched. Re-indexing a data set picks up new volumes.
-* Products are downloaded one at a time on request, with retries when an archive is busy. Each file is written in full before it is used, so an interrupted download never leaves a broken product.
+* Products are downloaded when you open, select or compare them, several at a time (Settings > Performance > Parallel downloads, default 4), with retries when an archive is busy. Each file is written in full before it is used, so an interrupted download never leaves a broken product.
 * Everything is cached under the VEDA data folder (see the README). Downloaded products, the catalogue and SPICE kernels are reused offline.
 * With **Settings > Network > Allow downloads** off, VEDA makes no network requests at all and works from the cache and the bundled samples.
 
@@ -250,7 +250,7 @@ FITS and PNG/JPEG images (for example the bundled Akatsuki UVI image) open in th
 
 ## 8. Loading Your Own Files
 
-Click **Load File** in the toolbar, drop files anywhere on the window, or use the drop zone in the Workflow Guide. You can select several files at once.
+Click **Load File** in the toolbar, drop files anywhere on the window, or use the drop zone in the Workflow Guide. You can select several files at once (up to 200 MB per file).
 
 For a table, VEDA first shows what the file contains and asks what it is:
 
@@ -273,10 +273,11 @@ Column names are matched as whole words, preferring the column that *leads* with
 
 ## 9. Publication Figures and Data Export
 
-* **Publication Figure** (Celestial Body mode) renders a journal-style Matplotlib figure of the current comparison at the DPI set in Settings (72 to 1200, default 300).
+* **Publication Figure** (Celestial Body mode) renders a journal-style Matplotlib figure of the current comparison at the DPI set in Settings (72 to 1200, default 300), following the grouping and the vertical coordinate.
 * **Snapshot Plot (PNG)** saves the on-screen plot.
 * **Export figure** (on any profile or comparison) saves PNG or SVG at a journal column width; see section 4.
-* **Export Comparison CSV** saves the interpolated multi-mission table: altitude grid, each mission's curve, the composite mean and its 1-sigma spread.
+* **Export Comparison CSV** saves the compared variable on the common grid: the composite and group means and spreads, the number of profiles at each level and every profile, with a header line per profile and a recipe line for **Open comparison (from its CSV)** (section 2, *Comparing observations*).
+* **Export profiles, all variables (CSV)** saves the compared profiles at their own levels with every archived and derived quantity, one row per profile and level.
 * **Export CSV** and **Structured JSON** save the open observation with its derived quantities. The CSV header names the archive, the source URL and file, the citation and the VEDA version, and states which columns are archived and which are derived.
 
 ---
