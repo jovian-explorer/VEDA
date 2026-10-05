@@ -25,7 +25,7 @@ The archives are shared public services. VEDA is built to treat them politely:
 
 * it reads an archive's index once and keeps it in a local catalogue, so repeated searches do not contact the archive (at most four index files are read at a time);
 * live archive searches (ESA PSA, NASA PDS Registry, OPUS) ask once per data set and date window, list at most 5,000 products per answer, and are remembered for a week;
-* it downloads only the products you open, select or compare (a filtered comparison downloads the candidate profiles it needs, up to the number per mission you set; untick *Download* to use only the cache), a few at a time (Settings > Performance, default 4), waits and retries when a server is busy, and keeps every downloaded file in a local cache;
+* it downloads only the products you open, select or compare (a filtered comparison downloads the candidate profiles it needs, up to four times the number per mission you set; untick *Download* to use only the cache), a few at a time (Settings > Performance, default 4), waits and retries when a server is busy, and keeps every downloaded file in a local cache;
 * SPICE kernels are downloaded once per file and reused; automatic kernel downloads can be turned off, and above a size you choose VEDA asks first.
 
 Please do not use VEDA, or modify it, to download whole archives in bulk without need, to bypass access controls, or to put unreasonable load on any server. For bulk transfers, use the bulk-download services the archives provide.
