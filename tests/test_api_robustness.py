@@ -119,6 +119,30 @@ def test_settings_update_and_reset(client):
     assert r.json() == Settings().to_dict()
 
 
+def test_requests_from_other_websites_are_refused(client):
+    """A page of another website could make the browser send a form POST (settings,
+    reset, indexing) or an <img> GET to the local API; those are refused, while VEDA's
+    own page, a typed address and scripts (no browser headers) are served."""
+    before = client.get("/api/meta").json()["settings"]
+    form = {"content-type": "text/plain"}
+    r = client.post("/api/settings", content=b'{"ui_theme": "light"}',
+                    headers={**form, "origin": "https://evil.example", "sec-fetch-site": "cross-site"})
+    assert r.status_code == 403
+    # older browsers: no Sec-Fetch-Site, but an Origin that is not this server
+    assert client.post("/api/settings/reset", headers={"origin": "https://evil.example"}).status_code == 403
+    assert client.post("/api/settings/reset", headers={"origin": "null"}).status_code == 403
+    assert client.get("/api/veda/bodies", headers={"sec-fetch-site": "cross-site"}).status_code == 403
+    assert client.get("/api/veda/bodies", headers={"sec-fetch-site": "same-site"}).status_code == 403
+    # a JSON body is required: a text/plain form post cannot set anything even without the headers
+    assert client.post("/api/settings", content=b'{"ui_theme": "light"}', headers=form).status_code == 415
+    assert client.get("/api/meta").json()["settings"] == before
+    assert client.get("/api/veda/bodies", headers={"sec-fetch-site": "same-origin"}).status_code == 200
+    assert client.get("/api/veda/bodies", headers={"sec-fetch-site": "none"}).status_code == 200
+    assert client.post("/api/settings", json={}, headers={"origin": "http://testserver"}).status_code == 200
+    # opening a folder is a POST, not a GET an <img> could trigger
+    assert client.get("/api/reveal-folder?which=logs").status_code in (404, 405)
+
+
 def test_corrupt_settings_file_is_repaired_on_load():
     SETTINGS_PATH.write_text(json.dumps({"ui_theme": 42, "ui_font_size": "huge", "plot_dpi": 600}),
                              encoding="utf-8")

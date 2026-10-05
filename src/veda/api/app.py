@@ -64,6 +64,27 @@ def _warm_imports() -> None:
         pass
 
 
+_SAFE_METHODS = ("GET", "HEAD", "OPTIONS")
+
+
+def _cross_site(request: Request) -> bool:
+    """Whether a request comes from a page of another website.  Browsers mark every
+    request with Sec-Fetch-Site ("same-origin" for VEDA's own page, "none" for an
+    address typed or a desktop window); older ones send Origin on cross-origin POSTs,
+    which must then name this server.  Scripts and other programs send neither and are
+    let through: only a web page can be made to send requests without the user knowing."""
+    site = request.headers.get("sec-fetch-site")
+    if site is not None:
+        return site not in ("same-origin", "none")
+    if request.method in _SAFE_METHODS:
+        return False
+    origin = request.headers.get("origin")
+    if origin is None:
+        return False
+    from urllib.parse import urlsplit
+    return origin == "null" or urlsplit(origin).netloc.lower() != (request.headers.get("host") or "").lower()
+
+
 def create_app() -> FastAPI:
     ensure_dirs()
 
@@ -75,10 +96,18 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # The UI is served from this same origin, so no CORS headers are sent:
-    # other websites open in the browser cannot call this unauthenticated API.
-    # The Host check blocks DNS-rebinding; VEDA_ALLOWED_HOSTS adds more (for
-    # `veda-server --host 0.0.0.0`, e.g. "myhost,192.168.1.20").
+    # The UI is served from this same origin, so no CORS headers are sent and other
+    # websites cannot read the API's answers.  They could still send requests (a form
+    # POST, an <img> GET) that change settings or start downloads, so requests from
+    # another site are refused (see _cross_site).  The Host check blocks DNS-rebinding;
+    # VEDA_ALLOWED_HOSTS adds more (for `veda-server --host 0.0.0.0`, e.g.
+    # "myhost,192.168.1.20").
+    @app.middleware("http")
+    async def refuse_cross_site(request: Request, call_next):
+        if request.url.path.startswith("/api/") and _cross_site(request):
+            return JSONResponse({"detail": "Requests from other websites are not accepted."}, status_code=403)
+        return await call_next(request)
+
     extra_hosts = [h.strip() for h in os.environ.get("VEDA_ALLOWED_HOSTS", "").split(",") if h.strip()]
     app.add_middleware(TrustedHostMiddleware,
                        allowed_hosts=["127.0.0.1", "localhost", "testserver", *extra_hosts])
@@ -135,6 +164,8 @@ def create_app() -> FastAPI:
 
     @app.post("/api/settings")
     async def update_settings(request: Request) -> Dict[str, Any]:
+        if not (request.headers.get("content-type") or "").lower().startswith("application/json"):
+            raise HTTPException(415, "Settings must be sent as JSON (Content-Type: application/json)")
         try:
             patch = await request.json()
         except ValueError:
@@ -191,7 +222,7 @@ def create_app() -> FastAPI:
         p.unlink()
         return {"deleted": safe}
 
-    @app.get("/api/reveal-folder")
+    @app.post("/api/reveal-folder")
     def reveal_folder(which: Literal["exports", "cache", "logs", "data"] = "exports") -> Dict[str, Any]:
         target = {"exports": EXPORT_DIR, "cache": CACHE_DIR, "logs": LOG_DIR, "data": DATA_ROOT}[which]
         ensure_dirs()

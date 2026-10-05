@@ -48,7 +48,7 @@ export const api = {
   resetSettings: ()          => call('/api/settings/reset', {method: 'POST'}),
   updateCheck:   (force)     => call(`/api/update${force ? '?force=true' : ''}`),
 
-  revealFolder:  (which)     => call(`/api/reveal-folder?which=${which}`),
+  revealFolder:  (which)     => call(`/api/reveal-folder?which=${which}`, {method: 'POST'}),
 
   // VEDA Multi-Mission & Planetary Science Endpoints
   vedaInfo:        ()           => call('/api/veda/info'),
