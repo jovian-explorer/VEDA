@@ -334,3 +334,36 @@ def test_fetch_skips_optional_docs_and_is_not_repeated(monkeypatch, tmp_path):
     (p.parent / "T1.TAB").unlink()                   # part of the cache cleared
     catalog.fetch_product(ds.id, "t1")
     assert calls[-1] == "T1.TAB"
+
+
+def test_kernel_sizes_unknown_when_offline_or_unanswered(monkeypatch):
+    """Bug: the size check bypassed Settings > Network and cached failures as 0 bytes, so
+    kernels of unknown size counted as within the automatic download limit."""
+    from veda.archives import net
+    from veda.config import SETTINGS
+    calls = []
+
+    class Resp:
+        def __init__(self, n):
+            self.headers = {"Content-Length": str(n)} if n else {}
+
+        def raise_for_status(self):
+            pass
+
+    class Session:
+        def head(self, url, **kw):
+            calls.append(url)
+            if "down" in url:
+                raise net.requests.ConnectionError("no route")
+            return Resp(2 * 1048576)
+    monkeypatch.setattr(net, "session", lambda: Session())
+    monkeypatch.setattr(kernels, "_size_cache", {})
+    monkeypatch.setattr(SETTINGS, "network_enabled", False)
+    assert kernels.remote_size("https://x/a.bsp") is None and not calls
+    monkeypatch.setattr(SETTINGS, "network_enabled", True)
+    assert kernels.remote_size("https://down/b.bsp") is None
+    assert kernels.remote_size("https://down/b.bsp") is None and calls.count("https://down/b.bsp") == 2
+    assert kernels.total_mb(["https://x/a.bsp", "https://down/b.bsp"]) is None
+    assert kernels.total_mb(["https://x/a.bsp", "https://x/c.bsp"]) == 4.0
+    kernels.remote_size("https://x/a.bsp")
+    assert calls.count("https://x/a.bsp") == 1                         # known sizes are cached

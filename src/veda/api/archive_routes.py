@@ -292,9 +292,11 @@ def geometry(dataset_id: str, product_id: str, span_min: float = Query(90, ge=5,
     ds, prod, plan = _geometry_inputs(dataset_id, product_id)
     if plan.missing:
         files = [{"name": u.rsplit("/", 1)[1], "url": u, "bytes": kernels.remote_size(u)} for u in plan.missing]
-        total = sum(f["bytes"] for f in files) / 1048576
-        return {"kernels_needed": True, "kernels": files, "total_mb": round(total, 1),
-                "auto": bool(SETTINGS.spice_auto_download and total <= SETTINGS.spice_auto_limit_mb)}
+        total = kernels.total_mb(plan.missing)
+        # automatic download only when the total is known to be within the limit
+        return {"kernels_needed": True, "kernels": files, "total_mb": None if total is None else round(total, 1),
+                "auto": bool(SETTINGS.spice_auto_download and total is not None
+                             and total <= SETTINGS.spice_auto_limit_mb)}
     body_id = target_body(ds, prod)
     tr: Dict[str, Any] = {}
     prof = None
@@ -351,9 +353,11 @@ def geometry_kernels(dataset_id: str, product_id: str) -> Dict[str, Any]:
     from ..geometry import kernels
     _, _, plan = _geometry_inputs(dataset_id, product_id)
     files = [{"name": u.rsplit("/", 1)[1], "bytes": kernels.remote_size(u)} for u in plan.missing]
-    total = sum(f["bytes"] for f in files) / 1048576
-    return {"needed": [u.rsplit("/", 1)[1] for u in plan.urls], "missing": files, "missing_mb": round(total, 1),
-            "auto": bool(SETTINGS.spice_auto_download and total <= SETTINGS.spice_auto_limit_mb)}
+    total = kernels.total_mb(plan.missing)
+    return {"needed": [u.rsplit("/", 1)[1] for u in plan.urls], "missing": files,
+            "missing_mb": None if total is None else round(total, 1),
+            "auto": bool(SETTINGS.spice_auto_download and total is not None
+                         and total <= SETTINGS.spice_auto_limit_mb)}
 
 
 class PrefetchRequest(BaseModel):
@@ -382,7 +386,9 @@ def prefetch_kernels(req: PrefetchRequest) -> Dict[str, Any]:
     plan.missing = [u for u in plan.urls if not plan.local(u).is_file()]
     if not plan.missing:
         return {"job_id": None, "reason": "kernels already downloaded"}
-    total = sum(kernels.remote_size(u) for u in plan.missing) / 1048576
+    total = kernels.total_mb(plan.missing)
+    if total is None:
+        return {"job_id": None, "reason": "the size of the kernels is not known (archive not answering)"}
     if total > SETTINGS.spice_auto_limit_mb:
         return {"job_id": None, "reason": f"{total:.0f} MB is above the automatic download limit"}
     job = _new_job("kernels", total=len(plan.missing))

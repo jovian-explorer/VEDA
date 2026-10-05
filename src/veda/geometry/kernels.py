@@ -352,16 +352,31 @@ def base_plan(body_id: str) -> KernelPlan:
 _size_cache: Dict[str, int] = {}
 
 
-def remote_size(url: str) -> int:
+def remote_size(url: str) -> Optional[int]:
+    """Size in bytes of a kernel on the server, or None when it is not known (network
+    turned off in Settings, server not answering, no Content-Length).  Unknown sizes are
+    not cached, so they are asked again next time."""
     if url in _size_cache:
         return _size_cache[url]
+    from ..config import SETTINGS
+    if not SETTINGS.network_enabled:
+        return None
     try:
         r = net.session().head(url, timeout=20, allow_redirects=True)
+        r.raise_for_status()
         n = int(r.headers.get("Content-Length") or 0)
-    except Exception:  # noqa: BLE001 - size is only informative
-        n = 0
+    except Exception:  # noqa: BLE001 - size is only informative; None says it is unknown
+        return None
+    if n <= 0:
+        return None
     _size_cache[url] = n
     return n
+
+
+def total_mb(urls) -> Optional[float]:
+    """Total size of kernels in MB, or None when any size is unknown."""
+    sizes = [remote_size(u) for u in urls]
+    return None if any(s is None for s in sizes) else sum(sizes) / 1048576
 
 
 _download_lock = threading.Lock()
