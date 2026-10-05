@@ -126,6 +126,7 @@ def cpu_map(fn: Callable[..., Any], arg_tuples: Sequence[Tuple], min_parallel: i
             except Exception as exc:  # noqa: BLE001 - returned to the caller
                 out.append(exc)
         return out
+    from concurrent.futures import CancelledError
     from concurrent.futures.process import BrokenProcessPool
     out: List[Any] = [None] * len(items)
     pending = set(range(len(items)))
@@ -140,10 +141,14 @@ def cpu_map(fn: Callable[..., Any], arg_tuples: Sequence[Tuple], min_parallel: i
             for i, res in zip(idx, fut.result()):
                 out[i] = res
                 pending.discard(i)
-    except BrokenProcessPool:
-        # A worker died (killed, out of memory, or no importable main module):
-        # finish in this process and start a fresh pool next time.
-        shutdown()
+    except (BrokenProcessPool, CancelledError, RuntimeError) as exc:
+        # A worker died (killed, out of memory, or no importable main module): start a
+        # fresh pool next time.  Or the pool was replaced meanwhile (Settings >
+        # Performance changed), which cancels its queued work or refuses new work
+        # ("cannot schedule new futures after shutdown").  Either way the rest is
+        # finished in this process.
+        if isinstance(exc, BrokenProcessPool):
+            shutdown()
         for i in sorted(pending):
             try:
                 out[i] = fn(*items[i])

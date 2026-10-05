@@ -100,6 +100,7 @@ Each body's molar mass, gas constant and heat capacity now follow from a sourced
 - **Fix: entities in titles.** The footprint map titles showed a literal "&bull;" ("MARS &bull; Spatial Distribution of Observations"), and image titles in the product viewer "&middot; band 2"; the characters are shown now.
 
 ### Speed
+- **Fix: changing the number of workers during a comparison.** Changing Settings > Performance while a comparison was being read cancelled the old worker pool's queued work and the comparison failed with a server error; the rest of it is now read in the main process.
 - **Multiprocessing.** Profiles for comparisons are read and derived in parallel worker processes; the number is set in **Settings > Performance** (default: all CPU cores but one; 1 turns it off). The workers start in the background when VEDA opens and are reused, and work is sent in chunks; reading 240 Venus Express profiles took 1.0 s with 4 workers against 5.5 s before.
 - **Parallel downloads**: selected products, and the index pages of archive volumes, are fetched several at a time (Settings > Performance, default 4).
 - **Reading profiles about twice as fast.** PDS3 labels were parsed one character at a time (Mars radio science labels are 30 to 45 kB, each read twice), and the subsolar point was recomputed for every level of a profile although all levels share one time; together these were 60 % of the time to read a profile. A Mars comparison of 120 downloaded MEX, MGS and MRO profiles took 4.2 s in one process, now 2.2 s.

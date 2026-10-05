@@ -45,6 +45,25 @@ def test_cpu_map_pool_matches_serial(workers):
     assert sum(isinstance(o, ValueError) for o in out) == 2
 
 
+@pytest.mark.parametrize("failure", ["cancelled", "shut down"])
+def test_cpu_map_finishes_when_the_pool_is_replaced_meanwhile(monkeypatch, failure):
+    """Bug: changing the number of workers shuts the old pool down with its queued work
+    cancelled; a comparison using it then failed with CancelledError (a server error)."""
+    from concurrent.futures import Future
+    from veda import parallel
+
+    class ReplacedPool:
+        def submit(self, fn, *args):
+            if failure == "shut down":
+                raise RuntimeError("cannot schedule new futures after shutdown")
+            f = Future()
+            f.cancel()
+            f.set_running_or_notify_cancel()      # as the executor does for cancelled work
+            return f
+    monkeypatch.setattr(parallel, "process_pool", lambda: ReplacedPool())
+    assert parallel.cpu_map(pow, [(2, 3), (3, 2), (5, 0)]) == [8, 9, 1]
+
+
 def test_thread_map_reports_progress():
     seen = []
     out = parallel.thread_map(_square, [(i,) for i in range(6)], workers=3, on_done=lambda i, r: seen.append(i))
