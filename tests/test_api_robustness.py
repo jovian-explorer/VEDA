@@ -256,6 +256,27 @@ def test_uploaded_profile_can_be_exported(client):
     assert csv.status_code == 200 and "altitude" in csv.text.lower()
 
 
+def test_failed_upload_keeps_the_earlier_good_one(client):
+    """Bugs: a re-upload of a file that cannot be read deleted the good upload of the same
+    name before reading it, and a failed obs.tab deleted the good obs.csv (same id)."""
+    good = "altitude,temperature\n0,300\n10,280\n20,260\n30,240\n"
+    assert _upload(client, "keepme.csv", good).status_code == 200
+    assert _upload(client, "keepme.csv", "a;b;c\n1;2\nfoo;bar;baz\n").status_code == 422
+    assert _upload(client, "keepme.tab", "1 2 3\n4 5\n").status_code == 422
+    names = [u["filename"] for u in client.get("/api/veda/uploads").json()]
+    assert "keepme.csv" in names and "keepme.tab" not in names
+    assert client.get("/api/veda/export/profile/user_imported/keepme/csv").status_code == 200
+    from veda.missions.uploads_adapter import UPLOAD_DIR
+    assert not [d for d in UPLOAD_DIR.iterdir() if d.name.startswith(".staging-")]
+    # a companion named like the primary file cannot replace it
+    r = _upload(client, "twin.csv", good, companion_files=[{"filename": "twin.csv", "file_content": "x"}])
+    assert r.status_code == 200 and r.json()["data"]["n_points"] == 4
+    client.delete("/api/veda/uploads/keepme")
+    client.delete("/api/veda/uploads/twin")
+    # names the file system refuses are a bad request, not a server error
+    assert _upload(client, "x" * 300 + ".csv", good).status_code == 400
+
+
 # --- security -----------------------------------------------------------------
 
 def test_parse_file_path_restricted_to_veda_folders(client, tmp_path):

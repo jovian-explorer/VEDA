@@ -30,31 +30,55 @@ _META = "meta.json"
 def _entry_dirs() -> List[Path]:
     if not UPLOAD_DIR.is_dir():
         return []
-    return [d for d in UPLOAD_DIR.iterdir() if d.is_dir() and (d / _META).is_file()]
+    return [d for d in UPLOAD_DIR.iterdir() if d.is_dir() and not d.name.startswith(".staging-")
+            and (d / _META).is_file()]
 
 
-def save_upload(name: str, payload: bytes, companions: Dict[str, bytes], body_id: str,
-                info: Optional[Dict[str, Any]] = None) -> Path:
-    """Store an upload (and its companion files) and return the primary path.
+def stage_upload(name: str, payload: bytes, companions: Dict[str, bytes]) -> Path:
+    """Write an upload (and its companion files) to a staging folder of its own and
+    return the primary path, to be read before it replaces anything (commit_upload)
+    or thrown away (discard_upload).  The primary file is written last, so a
+    companion of the same name cannot replace it."""
+    import uuid
+    entry = UPLOAD_DIR / f".staging-{uuid.uuid4().hex}"
+    entry.mkdir(parents=True, exist_ok=True)
+    for cname, data in companions.items():
+        if cname != name:
+            (entry / cname).write_bytes(data)
+    primary = entry / name
+    primary.write_bytes(payload)
+    return primary
+
+
+def discard_upload(staged: Path) -> None:
+    shutil.rmtree(staged.parent, ignore_errors=True)
+
+
+def commit_upload(staged: Path, body_id: str, info: Optional[Dict[str, Any]] = None) -> Path:
+    """Make a staged upload the upload of its file name and return the primary path.
 
     Re-uploading a file of the same name replaces the earlier upload entirely,
     so companions left over from it are not reused.
     """
+    name = staged.name
+    companions = sorted(p.name for p in staged.parent.iterdir() if p.name != name)
+    # info: what the user said the file is (source mission and instrument, time,
+    # column roles and units), so the profile is rebuilt the same way later
+    meta = {"filename": name, "body_id": body_id, "companions": companions,
+            "uploaded_at": time.time(), **(info or {})}
+    (staged.parent / _META).write_text(json.dumps(meta), encoding="utf-8")
     entry = UPLOAD_DIR / name
     if entry.exists():
         shutil.rmtree(entry, ignore_errors=True)
-    entry.mkdir(parents=True, exist_ok=True)
-    primary = entry / name
-    primary.write_bytes(payload)
-    for cname, data in companions.items():
-        (entry / cname).write_bytes(data)
-    # info: what the user said the file is (source mission and instrument, time,
-    # column roles and units), so the profile is rebuilt the same way later
-    meta = {"filename": name, "body_id": body_id, "companions": sorted(companions),
-            "uploaded_at": time.time(), **(info or {})}
-    (entry / _META).write_text(json.dumps(meta), encoding="utf-8")
+    staged.parent.rename(entry)
     _prune()
-    return primary
+    return entry / name
+
+
+def save_upload(name: str, payload: bytes, companions: Dict[str, bytes], body_id: str,
+                info: Optional[Dict[str, Any]] = None) -> Path:
+    """Store an upload (and its companion files) and return the primary path."""
+    return commit_upload(stage_upload(name, payload, companions), body_id, info)
 
 
 def _read_meta(entry: Path) -> Optional[Dict[str, Any]]:
@@ -105,7 +129,8 @@ def delete_upload(observation_id: str) -> bool:
 def _prune() -> None:
     items = list_uploads()
     for old in items[MAX_RECENT:]:
-        delete_upload(old["observation_id"])
+        # by file name: another upload may share the id (obs.csv and obs.tab are both "obs")
+        shutil.rmtree(UPLOAD_DIR / old["filename"], ignore_errors=True)
 
 
 def find_upload(observation_id: str) -> Optional[tuple]:

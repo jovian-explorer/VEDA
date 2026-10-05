@@ -761,7 +761,7 @@ def _allowed_local_roots() -> List[Path]:
 @router.post("/parse-file")
 def parse_generic_file_endpoint(req: ParseFileRequest) -> dict:
     """Parse an uploaded file (plus companions), or a bundled/cached file on disk."""
-    from ..missions.uploads_adapter import MISSION_ID as UPLOADS, save_upload
+    from ..missions.uploads_adapter import MISSION_ID as UPLOADS, commit_upload, discard_upload, stage_upload
     from ..pipeline.ingest import ingest_planetary_file
 
     if get_body(req.body_id) is None:
@@ -784,15 +784,20 @@ def parse_generic_file_endpoint(req: ParseFileRequest) -> dict:
         from ..missions.uploads_adapter import describe
         info = {"source_mission": req.source_mission or "", "instrument": req.instrument or "",
                 "time_utc": req.time_utc or "", "roles": req.roles}
-        primary = save_upload(name, payload, companions, req.body_id, info)
+        # Read the file from a staging folder first: a file that cannot be read must not
+        # replace an earlier good upload of the same name (nor delete one of the same id).
         try:
-            res = ingest_planetary_file(primary, **{**common, "mission_id": req.mission_id or UPLOADS,
-                                                    "instrument": describe(info), "roles": req.roles,
-                                                    "time_utc": req.time_utc or None})
+            staged = stage_upload(name, payload, companions)
+        except OSError as exc:            # a name the file system refuses ("a|b.csv", too long)
+            raise HTTPException(status_code=400, detail=f"{name} cannot be stored under this name: {exc.strerror or exc}")
+        try:
+            res = ingest_planetary_file(staged, **{**common, "mission_id": req.mission_id or UPLOADS,
+                                                   "instrument": describe(info), "roles": req.roles,
+                                                   "time_utc": req.time_utc or None})
         except Exception as exc:  # noqa: BLE001
-            from ..missions.uploads_adapter import delete_upload
-            delete_upload(primary.stem)
+            discard_upload(staged)
             raise HTTPException(status_code=422, detail=_friendly_ingest_error(name, exc))
+        commit_upload(staged, req.body_id, info)
         res.pop("local_path", None)
         return res
 
