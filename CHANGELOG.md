@@ -110,6 +110,7 @@ Each body's molar mass, gas constant and heat capacity now follow from a sourced
 - A build whose release was published no longer reports failure when removing an older build fails (a tag already deleted by a cancelled run).
 - The build and test workflows use the current (Node 24) versions of the GitHub actions.
 - **Security: requests from other websites are refused.** A web page open in the browser could make it send requests to VEDA's local server (a form posting new settings or a reset, starting archive indexing or downloads, opening a folder); only reading the answers was blocked. Requests marked by the browser as coming from another site, or carrying another site's Origin, are now refused (403), settings must be sent as JSON, and opening a folder is a POST. VEDA's own window and pages, typed addresses and scripts are not affected.
+- **Security: observation ids cannot name files elsewhere.** Akatsuki observations were looked up by building a file path from the id in the address, so an id such as an absolute path or `../..` opened and returned any FITS image or PDS label on the computer (its header, rendering or parsed table). Ids must now be plain names and the file must lie in the data folder.
 - The test suite passes when `VEDA_HOME` points at a data folder already in use: two download tests found the files an earlier run had cached and fetched nothing.
 
 ## 0.1.0 (2026-10-02): first public release

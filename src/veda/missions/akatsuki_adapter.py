@@ -16,6 +16,24 @@ from ..core.registry import get_body
 from ..config import sampledata_dir
 
 
+def _file_in(folder: Path, observation_id: str, suffixes: tuple) -> Optional[Path]:
+    """The file of an observation in ``folder``: <id><suffix>, or the first file whose name
+    contains the id.  The id comes from the URL, so it must be a plain name (no folders,
+    drive letters or wildcards) and the file must lie inside the folder: an id such as
+    "../../x" or "C:/Users/x" would otherwise read files anywhere on the computer."""
+    if (not observation_id or observation_id in (".", "..")
+            or any(c in observation_id for c in '/\\:*?[]') or Path(observation_id).name != observation_id):
+        return None
+    root = folder.resolve()
+    cands = [folder / f"{observation_id}{s}" for s in suffixes]
+    for s in suffixes:
+        cands += sorted(folder.glob(f"*{observation_id}*{s}"))
+    for f in cands:
+        if f.is_file() and f.resolve().parent == root:
+            return f
+    return None
+
+
 class AkatsukiAdapter(BaseMissionAdapter):
     """Adapter for JAXA Akatsuki (VCO) Venus Radio Science and Imaging data."""
 
@@ -70,14 +88,8 @@ class AkatsukiAdapter(BaseMissionAdapter):
         if "uvi" in observation_id.lower() or "lir" in observation_id.lower():
             return None
 
-        d = Path(self.data_dir)
-        lbl_file = d / f"{observation_id}.lbl"
-        if not lbl_file.exists():
-            for f in d.glob(f"*{observation_id}*.lbl"):
-                lbl_file = f
-                break
-
-        if not lbl_file.exists():
+        lbl_file = _file_in(Path(self.data_dir), observation_id, (".lbl",))
+        if lbl_file is None:
             return None
 
         try:
@@ -148,16 +160,8 @@ class AkatsukiAdapter(BaseMissionAdapter):
 
     def load_image(self, observation_id: str) -> Optional[ObservationImage]:
         """Load JAXA Akatsuki camera observation (UVI, LIR, IR1, IR2)."""
-        d = Path(self.data_dir)
-        fits_file = d / f"{observation_id}.fit"
-        if not fits_file.exists():
-            fits_file = d / f"{observation_id}.fits"
-        if not fits_file.exists():
-            for f in d.glob(f"*{observation_id}*.fit*"):
-                fits_file = f
-                break
-
-        if not fits_file.exists():
+        fits_file = _file_in(Path(self.data_dir), observation_id, (".fit", ".fits"))
+        if fits_file is None:
             return None
 
         from ..readers.fits_reader import load_fits_image

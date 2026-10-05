@@ -634,3 +634,23 @@ def test_comparison_csv_states_the_altitude_reference():
     mixed = export_comparison_to_csv({**base, "profiles": [prof, {**prof, "observation_id": "b",
                                       "altitude_reference": "a sphere of radius 3389.5 km (from the radius column)"}]})
     assert "each profile's own reference" in mixed
+
+
+def test_observation_ids_cannot_reach_files_outside_the_data_folder(client, tmp_path):
+    """Observation ids come from the URL: an absolute path or ../ must not open a label or
+    FITS file elsewhere on the computer (the Akatsuki adapter built paths from the id)."""
+    import shutil
+    src = SAMPLES / "venus_akatsuki"
+    for f in src.iterdir():
+        shutil.copy(f, tmp_path / f.name)
+    stem = "rs_20160303_223100_udsc64_l4_ae_v10"
+    img = "uvi_20181105_080112_283_geo_v10"
+    assert client.get(f"/api/veda/profile/akatsuki/{stem}").status_code == 200       # the sample itself
+    outside = tmp_path.as_posix()
+    rel = "../" * 12 + outside.split(":", 1)[-1].lstrip("/")
+    for oid in (f"{outside}/{stem}", f"{rel}/{stem}", f"..\{stem}", "*", "rs_*"):
+        assert client.get(f"/api/veda/profile/akatsuki/{oid}").status_code == 404, oid
+        assert client.get(f"/api/veda/export/profile/akatsuki/{oid}/csv").status_code == 404, oid
+    for oid in (f"{outside}/{img}", f"{rel}/{img}"):
+        assert client.get(f"/api/veda/image/akatsuki/{oid}").status_code == 404, oid
+        assert client.get(f"/api/veda/image/akatsuki/{oid}/render").status_code == 404, oid
