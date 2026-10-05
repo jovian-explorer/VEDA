@@ -13,8 +13,8 @@ from __future__ import annotations
 import atexit
 import os
 import threading
-from concurrent.futures import Executor, ProcessPoolExecutor, ThreadPoolExecutor, as_completed
-from typing import Any, Callable, Iterable, Iterator, List, Optional, Sequence, Tuple
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
+from typing import Any, Callable, Iterable, List, Optional, Sequence, Tuple
 
 _pool: Optional[ProcessPoolExecutor] = None
 _pool_size = 0

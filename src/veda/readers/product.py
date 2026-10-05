@@ -1102,7 +1102,7 @@ def _pds4_char_reader(path: Path, offset: int, rows: int, rec_len: int,
 
 
 def _pds4_delim_reader(path: Path, offset: int, rows: int, delim: str, fields: List[ET.Element],
-                       flist: List[Field], skip_header: bool):
+                       flist: List[Field]):
     def read(names: Optional[List[str]] = None, limit: Optional[int] = None) -> Dict[str, Any]:
         text = path.read_bytes()[offset:].decode("utf-8", errors="replace")
         recs = list(csv.reader(io.StringIO(text), delimiter=delim))
@@ -1195,7 +1195,7 @@ def _open_pds4(label: Path) -> Product:
                         _t(el, "field_delimiter", "Comma"), ",")
                     rows = _int(_t(el, "records"))
                     obj = DataObject(name, "table", (rows, len(flist)), flist, _t(el, "description"),
-                                     _reader=_pds4_delim_reader(data, off, rows, delim, fields, flist, True))
+                                     _reader=_pds4_delim_reader(data, off, rows, delim, fields, flist))
                 elif tag.startswith("Array"):
                     obj = _pds4_array(el, name, data, off)
                 else:

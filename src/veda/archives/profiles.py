@@ -155,15 +155,15 @@ def load_profiles(pairs: List[Tuple[str, str]]) -> List[Any]:
     return out
 
 
-def load_profile(dataset_id: str, product_id: str, download: bool = True) -> ObservationProfile:
+def load_profile(dataset_id: str, product_id: str) -> ObservationProfile:
+    """One archive profile, downloaded first if it is not in the cache."""
     ds = get_dataset(dataset_id)
     prod = get_product(dataset_id, product_id)
     if ds is None or prod is None:
         raise LookupError(f"Unknown product {dataset_id}/{product_id}")
     if prod["kind"] != "profile":
         raise ValueError(f"{product_id} is a {prod['product_type']}, not a vertical profile")
-    label = fetch_product(dataset_id, product_id) if download else None
-    return profile_from_label(ds, prod, Path(label))
+    return profile_from_label(ds, prod, Path(fetch_product(dataset_id, product_id)))
 
 
 def _meta_value(tbl, name) -> Optional[float]:

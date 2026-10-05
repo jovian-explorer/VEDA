@@ -14,7 +14,7 @@ import threading
 import time
 from html.parser import HTMLParser
 from pathlib import Path
-from typing import Callable, Dict, List, Optional
+from typing import Callable, List, Optional
 from urllib.parse import urljoin, urlparse
 
 import requests
@@ -81,13 +81,6 @@ def session() -> requests.Session:
             s.mount("http://", requests.adapters.HTTPAdapter(pool_connections=16, pool_maxsize=16))
             _session = s
         return _session
-
-
-def set_cookies(domain: str, cookies: Dict[str, str]) -> None:
-    """Attach login cookies (copied from the user's browser) for one portal."""
-    s = session()
-    for name, value in cookies.items():
-        s.cookies.set(name, value, domain=domain)
 
 
 def _check_network() -> None:
