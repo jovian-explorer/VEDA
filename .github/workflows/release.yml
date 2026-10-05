@@ -67,6 +67,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0          # history and tags, for the list of changes
       - uses: actions/download-artifact@v7
         with:
           path: artifacts
@@ -83,13 +84,41 @@ jobs:
             echo "tag=v${version}-build.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
             echo "title=VEDA ${version} build ${{ github.run_number }}" >> "$GITHUB_OUTPUT"
           fi
+      - name: Write the release notes
+        shell: bash
+        run: |
+          # The changes since the previous release (the latest build, or for a version tag
+          # the previous version), one line per commit, then where to read more.
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            prev=$(git describe --tags --abbrev=0 --exclude '*-build.*' --match 'v[0-9]*' HEAD^ 2>/dev/null || true)
+          else
+            prev=$(gh release view --json tagName -q .tagName 2>/dev/null || true)
+          fi
+          {
+            echo "Downloads for Windows (x86_64), macOS (Apple Silicon) and Linux (x86_64) are below: unzip and run, no Python needed (see [Installation](https://github.com/${GH_REPO}/blob/main/README.md#installation)). Your data, downloads and settings are kept in a separate folder, so replacing an older VEDA folder keeps them."
+            echo
+            if [[ -n "$prev" ]] && git rev-parse -q --verify "refs/tags/$prev" >/dev/null && [[ -n "$(git log --format=%h "$prev..HEAD")" ]]; then
+              echo "### Changes since ${prev}"
+              echo
+              git log --no-merges --format='- %s' "$prev..HEAD"
+              echo
+              echo "**Full Changelog**: https://github.com/${GH_REPO}/compare/${prev}...${{ steps.name.outputs.tag }}"
+            else
+              echo "### Latest changes"
+              echo
+              git log --no-merges --format='- %s' -n 10
+            fi
+            echo
+            echo "All changes in this version, grouped by topic: [CHANGELOG.md](https://github.com/${GH_REPO}/blob/main/CHANGELOG.md)."
+          } > release-notes.md
+          cat release-notes.md
       - uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.name.outputs.tag }}
           name: ${{ steps.name.outputs.title }}
           target_commitish: ${{ github.event.workflow_run.head_sha || github.sha }}
           files: artifacts/*.zip
-          generate_release_notes: true
+          body_path: release-notes.md
           prerelease: false
           make_latest: "true"
       - name: Keep the 5 newest builds

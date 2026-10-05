@@ -3,6 +3,7 @@
     pip install -e ".[build]"
     python scripts/build_exe.py            # -> dist/VEDA/VEDA.exe | dist/VEDA/VEDA | dist/VEDA.app
     python scripts/build_exe.py --archive  # also writes dist/VEDA-<version>-<os>-<arch>.zip
+                                           # (the app plus licences and guides in one folder)
 
 Works on Windows, macOS and Linux; each OS builds its own binary.
 """
@@ -19,6 +20,9 @@ ROOT = Path(__file__).resolve().parents[1]
 DIST = ROOT / "dist"
 WORK = ROOT / "build" / "pyinstaller"
 SPEC = ROOT / "packaging" / "veda.spec"
+# placed beside the app in the distributed zip
+DOCS = ("README.md", "USAGE.md", "CHANGELOG.md", "DATA_POLICY.md", "TERMS.md",
+        "LICENSE", "THIRD_PARTY_LICENSES.md")
 
 
 def _version() -> str:
@@ -63,21 +67,28 @@ def main() -> int:
     print(f"built {_launcher()}")
 
     if args.archive:
+        # VEDA-<version>-<os>-<arch>/ holds the app (VEDA.exe or VEDA with _internal/, or
+        # VEDA.app) and the documents a user needs beside it: licences, terms, guides.
         arch = platform.machine().lower().replace("amd64", "x86_64")
         name = f"VEDA-{_version()}-{_os_tag()}-{arch}"
+        staging = DIST / name
+        shutil.rmtree(staging, ignore_errors=True)
         if sys.platform == "darwin":
+            staging.mkdir()
             # ditto keeps the .app bundle's symlinks and permissions intact
-            zip_path = DIST / f"{name}.zip"
-            subprocess.run(["ditto", "-c", "-k", "--keepParent", str(out), str(zip_path)],
+            subprocess.run(["ditto", str(out), str(staging / out.name)], check=True)
+        else:
+            shutil.copytree(out, staging)          # VEDA.exe/VEDA plus _internal/
+        for doc in DOCS:
+            shutil.copy2(ROOT / doc, staging / doc)
+        zip_path = DIST / f"{name}.zip"
+        zip_path.unlink(missing_ok=True)
+        if sys.platform == "darwin":
+            subprocess.run(["ditto", "-c", "-k", "--keepParent", str(staging), str(zip_path)],
                            check=True)
         else:
-            staging = DIST / name
-            shutil.rmtree(staging, ignore_errors=True)
-            shutil.copytree(out, staging)          # VEDA.exe/VEDA plus _internal/
-            for doc in ("README.md", "LICENSE", "TERMS.md", "THIRD_PARTY_LICENSES.md"):
-                shutil.copy2(ROOT / doc, staging / doc)
             zip_path = Path(shutil.make_archive(str(DIST / name), "zip", DIST, name))
-            shutil.rmtree(staging)
+        shutil.rmtree(staging)
         print(f"archived {zip_path}")
     return 0
 

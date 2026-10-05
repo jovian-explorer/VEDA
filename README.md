@@ -123,7 +123,7 @@ Open the [latest release](https://github.com/jovian-explorer/VEDA/releases/lates
 | OS | Asset | Run |
 |---|---|---|
 | Windows 10/11 (x64) | `VEDA-<version>-windows-x86_64.zip` | unzip, open the folder, double-click `VEDA.exe` (keep the `_internal` folder next to it) |
-| macOS (Apple Silicon) | `VEDA-<version>-macos-arm64.zip` | unzip, right-click `VEDA.app` > Open the first time (the app is not notarized) |
+| macOS (Apple Silicon) | `VEDA-<version>-macos-arm64.zip` | unzip, open the folder, right-click `VEDA.app` > Open the first time (the app is not notarized) |
 | Linux (x86_64) | `VEDA-<version>-linux-x86_64.zip` | unzip, `cd VEDA-*; chmod +x VEDA && ./VEDA` |
 
 **Updates.** Every tested change to VEDA is built for all three systems and published as the latest release ("VEDA 0.2.0 build 42"), usually within half an hour. VEDA checks for a newer build when it starts and shows a notice with a download link; About > *Check for updates* checks on demand. To update, download the new archive and replace the old VEDA folder: your data, downloads, settings and exports live in a separate folder (below) and are kept. Turn the check off in Settings > Network.
@@ -176,10 +176,10 @@ An internet connection is needed to search an archive for the first time, to dow
 
 ```bash
 pip install -e ".[build]"
-python scripts/build_exe.py            # dist/VEDA.exe, dist/VEDA.app or dist/VEDA
-python scripts/build_exe.py --archive  # also zips it for distribution
+python scripts/build_exe.py            # dist/VEDA/VEDA.exe, dist/VEDA.app or dist/VEDA/VEDA
+python scripts/build_exe.py --archive  # also zips it with the licences and guides for distribution
 ```
-PyInstaller cannot cross-compile, so each OS builds its own binary. Pushing a `v*` tag runs `.github/workflows/release.yml`, which builds all three and attaches them to a GitHub Release.
+PyInstaller cannot cross-compile, so each OS builds its own binary. `.github/workflows/release.yml` builds all three after every push to `main` that passes CI (published as "VEDA 0.2.0 build N", with the commits since the previous build as release notes) and for every pushed version tag (`v1.2.3`).
 
 ## Platform notes
 
