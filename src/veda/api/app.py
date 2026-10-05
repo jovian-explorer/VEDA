@@ -144,6 +144,8 @@ def create_app() -> FastAPI:
             "app": APP_TITLE,
             "name": APP_NAME,
             "version": APP_VERSION,
+            # set by the desktop launcher, so it knows the server answering is its own
+            "launch_id": os.environ.get("VEDA_LAUNCH_ID", ""),
         }
 
     from ..core.registry import (

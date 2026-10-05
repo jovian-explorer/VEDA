@@ -21,10 +21,15 @@ from .config import APP_TITLE, APP_VERSION, DATA_ROOT, ensure_dirs
 
 
 def free_port(preferred: int = 8765, tries: int = 40) -> int:
+    """The first port from ``preferred`` that can be bound on 127.0.0.1 (a port that
+    merely refuses connections may still be taken), else one chosen by the system."""
     for port in range(preferred, preferred + tries):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            if s.connect_ex(("127.0.0.1", port)) != 0:
-                return port
+            try:
+                s.bind(("127.0.0.1", port))
+            except OSError:
+                continue
+            return port
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.bind(("127.0.0.1", 0))
         return int(s.getsockname()[1])

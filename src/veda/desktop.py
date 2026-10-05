@@ -89,21 +89,36 @@ def _show_error_dialog(title: str, message: str) -> None:
 
 # ── Backend server ────────────────────────────────────────────────────────────
 
+# Why the server thread stopped, when it did (e.g. the port is taken)
+_server_error: list = []
+
+
 def _serve(host: str, port: int) -> None:
-    import uvicorn
-    from .api.app import app
-    uvicorn.run(app, host=host, port=port, log_level="warning")
+    try:
+        import uvicorn
+        from .api.app import app
+        uvicorn.run(app, host=host, port=port, log_level="warning")
+    except BaseException as exc:  # noqa: BLE001 - uvicorn exits with SystemExit when it cannot bind
+        _server_error.append(exc)
+        _log(f"Backend server stopped: {exc!r}")
 
 
-def _wait_until_up(url: str, timeout: float = STARTUP_TIMEOUT_S) -> bool:
+def _wait_until_up(url: str, launch_id: str, server: threading.Thread,
+                   timeout: float = STARTUP_TIMEOUT_S) -> bool:
+    """Wait for this launch's server to answer /api/health (another program answering
+    on the port is not taken for VEDA); False at once if the server thread ended."""
+    import json
     deadline = time.time() + timeout
     while time.time() < deadline:
+        if not server.is_alive():
+            return False
         try:
             with urllib.request.urlopen(url, timeout=2) as r:
-                if r.status == 200:
+                if r.status == 200 and json.loads(r.read().decode("utf-8")).get("launch_id") == launch_id:
                     return True
-        except (urllib.error.URLError, OSError):
-            time.sleep(0.25)
+        except (urllib.error.URLError, OSError, ValueError):
+            pass
+        time.sleep(0.25)
     return False
 
 
@@ -196,10 +211,18 @@ def main(argv: list[str] | None = None) -> int:
     host, port = "127.0.0.1", args.port or free_port()
     url = f"http://{host}:{port}/"
     _log(f"Backend URL: {url}")
-    threading.Thread(target=_serve, args=(host, port), daemon=True).start()
+    import uuid
+    launch_id = os.environ["VEDA_LAUNCH_ID"] = uuid.uuid4().hex      # answered by /api/health
+    server = threading.Thread(target=_serve, args=(host, port), daemon=True)
+    server.start()
 
-    if not _wait_until_up(url + "api/health"):
-        msg = f"The backend server did not start within {STARTUP_TIMEOUT_S}s.\nCheck: {LOG_DIR / 'startup.log'}"
+    if not _wait_until_up(url + "api/health", launch_id, server):
+        if _server_error:
+            msg = (f"The backend server could not start on port {port}"
+                   + (" (is another program using it? try --port)" if args.port else "")
+                   + f".\nCheck: {LOG_DIR / 'startup.log'}")
+        else:
+            msg = f"The backend server did not start within {STARTUP_TIMEOUT_S}s.\nCheck: {LOG_DIR / 'startup.log'}"
         _log(f"ERROR: {msg}")
         _show_error_dialog(f"{APP_TITLE} - Startup Error", msg)
         return 3
