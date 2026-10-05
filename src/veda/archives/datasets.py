@@ -439,12 +439,15 @@ DATASETS: List[Dataset] = [
         base_url="https://zenodo.org/records/4621070/",
         volume_pattern=r"^repository$",
         # Columns (from the values: p = n k T exactly): radius km, altitude km, T K, p Pa, n m^-3.
-        # Below the lowest valid level the files hold n constant; those rows are masked.
-        repository={"kind": "zenodo_files", "record": "4621070",
+        # Below the lowest valid level the files hold n constant; those rows are masked, and so
+        # are the levels just above where the density flattens as the signal fades (the
+        # temperature falls faster than 15 K/km with height there; dry adiabatic is about 10).
+        repository={"kind": "zenodo_files", "record": "4621070", "revision": 2,
                     "files": r"temperature_fsi_(?P<date>\d{6})[a-z]?-?\d*(_lin)?\.dat",
                     "columns": [("RADIUS", "km"), ("ALTITUDE", "km"), ("TEMPERATURE", "K"), ("PRESSURE", "Pa"),
                                 ("NUMBER_DENSITY", "m-3")],
                     "mask_constant": ("NUMBER_DENSITY", ("TEMPERATURE", "PRESSURE")),
+                    "max_lapse": ("TEMPERATURE", "ALTITUDE", 15.0, ("PRESSURE", "NUMBER_DENSITY")),
                     "meta_xlsx": "FSI_VeRa_profiles.xlsx",
                     "meta_columns": ["file", "year", "month", "day", "direction", "latitude", "local_time"]},
         rules=((r"^temperature_fsi_\d{6}", "Neutral atmosphere profile (T, p, n) by Full Spectrum Inversion", "profile"),),

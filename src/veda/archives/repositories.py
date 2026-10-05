@@ -16,7 +16,9 @@ which both the product viewer and the profile loader read like any other table.
 
 * ``zenodo_files``: one file per profile in a Zenodo record (``record``,
   ``files`` regex, ``columns``: [(name, unit), ...] for whitespace-separated text,
-  optional ``meta_xlsx``: a spreadsheet listing per-file date, latitude, local time);
+  optional ``meta_xlsx``: a spreadsheet listing per-file date, latitude, local time;
+  ``mask_constant`` and ``max_lapse`` mask padding and failed levels at the bottom,
+  ``revision`` is raised when that changes so that cached CSVs are rewritten);
 * ``zenodo_zip``: profiles are the members of a zip file in a Zenodo record
   (``record``, ``zip``, ``members`` regex, ``columns``, ``delimiter``);
 * ``votable_split``: one VOTable (inside a zip at ``url``, member ``member``) holding
@@ -141,6 +143,53 @@ def _mask_constant_runs(cols: Dict[str, np.ndarray], key: str, also: List[str], 
                     cols[c][sel] = np.nan
 
 
+def _mask_unstable_bottom(cols: Dict[str, np.ndarray], temperature: str, altitude: str, max_lapse: float,
+                          also: List[str], window: float = 1.0, ahead: float = 1.0) -> None:
+    """Mask the levels at the bottom of a profile where the temperature falls faster
+    with height than ``max_lapse`` (K/km, over ``window`` km), up to the first level
+    above which it does not for ``ahead`` km.  A lapse rate well beyond the dry
+    adiabatic one cannot last in an atmosphere (convection removes it); in FSI
+    profiles it marks the levels just above the constant-density padding where the
+    retrieved density flattens as the signal fades, so the temperature computed
+    from it rises to 400-580 K at 45-55 km (Venus: about 10 K/km adiabatic)."""
+    t, z = cols.get(temperature), cols.get(altitude)
+    if t is None or z is None:
+        return
+    ok = np.where(np.isfinite(t) & np.isfinite(z))[0]
+    if ok.size < 3:
+        return
+    ok = ok[np.argsort(z[ok])]
+    zi, ti = z[ok], t[ok]
+    lapse = (ti - np.interp(zi + window, zi, ti, right=np.nan)) / window
+    bad = lapse > max_lapse
+    k = 0
+    while k < zi.size:
+        if not bad[k]:
+            later = np.where(bad & (zi >= zi[k]) & (zi <= zi[k] + ahead))[0]
+            if later.size == 0:
+                break
+            k = later[-1]
+        k += 1
+    if k:
+        for c in [temperature, *also]:
+            if c in cols:
+                cols[c][ok[:k]] = np.nan
+
+
+def _stale(ds: Dataset, csv_path: Path) -> bool:
+    """A cached normalised CSV written before the data set's current ``revision``."""
+    rev = ds.repository.get("revision")
+    if not rev:
+        return False
+    with open(csv_path, encoding="utf-8") as fh:
+        for line in fh:
+            if not line.startswith("#"):
+                break
+            if line.strip() == f"# REVISION={rev}":
+                return False
+    return True
+
+
 def _xlsx_rows(path: Path) -> List[List[Any]]:
     """Cell values of the first sheet of an .xlsx file (numbers as floats, text as str);
     enough for the small file lists some data sets ship (no openpyxl needed)."""
@@ -212,9 +261,9 @@ def index_repository(ds: Dataset, progress=None) -> List[Dict[str, Any]]:
 def fetch_repository_product(ds: Dataset, prod: Dict[str, Any]) -> Path:
     """The product's normalised CSV, made from the repository file when needed."""
     out = _cache_dir(ds) / f"{prod['product_id']}.csv"
-    if out.is_file():
-        return out
     kind = ds.repository["kind"]
+    if out.is_file() and not (kind == "zenodo_files" and _stale(ds, out)):
+        return out
     if kind == "zenodo_files":
         return _fetch_zenodo_file(ds, prod, out)
     if kind == "zenodo_zip":
@@ -273,10 +322,13 @@ def _fetch_zenodo_file(ds: Dataset, prod: Dict[str, Any], out: Path) -> Path:
     if r.get("mask_constant"):
         key, also = r["mask_constant"]
         _mask_constant_runs(cols, key, list(also))
+    if r.get("max_lapse"):
+        temperature, altitude, lapse, also = r["max_lapse"]
+        _mask_unstable_bottom(cols, temperature, altitude, lapse, list(also))
     extra = prod.get("extra") or {}
     extra = json.loads(extra) if isinstance(extra, str) else extra
     meta = {"START_TIME": prod["start_time"], "LATITUDE": extra.get("LATITUDE"), "LST": extra.get("LST"),
-            "DIRECTION": extra.get("DIRECTION"), "SOURCE": prod["path"]}
+            "DIRECTION": extra.get("DIRECTION"), "SOURCE": prod["path"], "REVISION": r.get("revision")}
     n = len(next(iter(cols.values())))
     return write_normalised(out, meta, list(names), (tuple(cols[c][i] for c, _ in names) for i in range(n)))
 
