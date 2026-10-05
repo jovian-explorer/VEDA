@@ -358,6 +358,23 @@ def test_download_job_where_every_product_failed_is_failed(client, monkeypatch):
     assert mixed["status"] == "completed" and mixed["result"]["fetched"] == ["good"] and len(mixed["errors"]) == 1
 
 
+def test_product_transect_and_spectrum_validate_their_input(client, monkeypatch):
+    """A band beyond the image (or non-numeric line ends) gave a server error (IndexError)
+    in the product viewer's transect; it is now a 400 answer."""
+    from veda.api import product_routes
+    from veda.readers.product import open_product
+    lbl = SAMPLES / "venus_akatsuki" / "uvi_20181105_080112_283_geo_v10.lbl"
+    monkeypatch.setattr(product_routes, "_product", lambda ds, pid, confirm_large=True: open_product(str(lbl)))
+    base = "/api/veda/product/x/y"
+    ok = client.get(f"{base}/image/transect", params={"x0": 10, "y0": 10, "x1": 200, "y1": 300})
+    assert ok.status_code == 200 and len(ok.json()["intensities"]) > 10
+    r = client.get(f"{base}/image/transect", params={"x0": 10, "y0": 10, "x1": 200, "y1": 300, "band": 3})
+    assert r.status_code == 400 and "band" in r.json()["detail"]
+    assert client.get(f"{base}/image/transect", params={"x0": "nan", "y0": 10, "x1": 200, "y1": 300}).status_code == 400
+    assert client.get(f"{base}/cube/spectrum", params={"line": 10, "sample": 10}).status_code == 200
+    assert client.get(f"{base}/cube/spectrum", params={"line": 10**6, "sample": 10}).status_code == 400
+
+
 # --- security -----------------------------------------------------------------
 
 def test_parse_file_path_restricted_to_veda_folders(client, tmp_path):

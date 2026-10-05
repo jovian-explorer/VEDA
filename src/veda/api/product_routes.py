@@ -239,6 +239,16 @@ def table(dataset_id: str, product_id: str, object: Optional[str] = None,
     return out
 
 
+def _read(obj: DataObject, **kw) -> np.ndarray:
+    """obj.read_array, with read failures as 422 answers instead of server errors."""
+    try:
+        return obj.read_array(**kw)
+    except ProductError as exc:
+        raise HTTPException(422, str(exc))
+    except (OSError, ValueError, MemoryError) as exc:
+        raise HTTPException(422, f"Could not read {obj.name}: {exc}")
+
+
 def _band_array(obj: DataObject, band: int, max_dim: int) -> tuple:
     bands, lines, samples = obj.shape if len(obj.shape) == 3 else (1, *obj.shape[-2:])
     if not 0 <= band < bands:
@@ -309,13 +319,17 @@ def image_transect(dataset_id: str, product_id: str, x0: float, y0: float, x1: f
     from ..readers.fits_reader import extract_photometric_transect
     prod = _product(dataset_id, product_id)
     obj = _object(prod, object, ("image", "cube", "array"))
-    _, lines, samples = obj.shape if len(obj.shape) == 3 else (1, *obj.shape[-2:])
+    bands, lines, samples = obj.shape if len(obj.shape) == 3 else (1, *obj.shape[-2:])
+    if not 0 <= band < bands:
+        raise HTTPException(400, f"band must be between 0 and {bands - 1}")
+    if not all(math.isfinite(v) for v in (x0, y0, x1, y1)):
+        raise HTTPException(400, "the line's end points must be numbers")
     lo_l, hi_l = int(max(0, min(y0, y1))), int(min(lines, max(y0, y1) + 2))
     lo_s, hi_s = int(max(0, min(x0, x1))), int(min(samples, max(x0, x1) + 2))
     if hi_l - lo_l < 2 or hi_s - lo_s < 2:      # nearly horizontal/vertical: widen the window
         lo_l, hi_l = max(0, lo_l - 1), min(lines, hi_l + 1)
         lo_s, hi_s = max(0, lo_s - 1), min(samples, hi_s + 1)
-    a = obj.read_array(bands=slice(band, band + 1), lines=slice(lo_l, hi_l), samples=slice(lo_s, hi_s))[0]
+    a = _read(obj, bands=slice(band, band + 1), lines=slice(lo_l, hi_l), samples=slice(lo_s, hi_s))[0]
     res = extract_photometric_transect(np.asarray(a, dtype=np.float64), x0 - lo_s, y0 - lo_l, x1 - lo_s, y1 - lo_l,
                                        num_samples=300)
     res.update({"x0": x0, "y0": y0, "x1": x1, "y1": y1, "unit": obj.unit})
@@ -331,8 +345,8 @@ def cube_spectrum(dataset_id: str, product_id: str, line: int, sample: int,
     bands, lines, samples = obj.shape if len(obj.shape) == 3 else (1, *obj.shape[-2:])
     if not (0 <= line < lines and 0 <= sample < samples):
         raise HTTPException(400, "pixel outside the cube")
-    a = obj.read_array(lines=slice(max(0, line - box), line + box + 1),
-                       samples=slice(max(0, sample - box), sample + box + 1))
+    a = _read(obj, lines=slice(max(0, line - box), line + box + 1),
+              samples=slice(max(0, sample - box), sample + box + 1))
     with np.errstate(invalid="ignore"):
         spec = np.nanmean(a.reshape(a.shape[0], -1), axis=1)
     return {"object": obj.name, "line": line, "sample": sample, "box": box, "unit": obj.unit,

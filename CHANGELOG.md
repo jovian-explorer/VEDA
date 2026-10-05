@@ -88,6 +88,7 @@ Each body's molar mass, gas constant and heat capacity now follow from a sourced
 - **Fix: compared data missing from *Cite*.** Only products opened one by one or picked by hand were listed in the Cite panel; profiles that entered a comparison through the filter or the default selection (the usual way) were not, so the panel could say no archive product had been opened under a plotted comparison. Every archive data set in a comparison is now listed.
 
 ### Plots and interface
+- Product viewer: a transect on a band the image does not have, or with end points that are not numbers, and a cube file that cannot be read, give a message instead of a server error.
 - The altitude axis names the altitude reference when it is not VEDA's reference sphere: "Altitude above the 1-bar NAIF reference ellipsoid of Saturn", "above the surface at the Huygens landing site", "above the local surface" (CRISM); it read "above reference radius" for every profile. A comparison mixing references says so on the axis.
 - The profile view's *Plot variable* list shows units, so the two "Temperature" entries (K and °C) can be told apart, and leaves out the Venus-only Magellan quantities on other bodies.
 - **Data & Licenses** lists every mission VEDA reads from each archive (the NASA PDS entry missed Mars Odyssey, Spirit and Opportunity, Phoenix, Curiosity, InSight and VEGA) and has an entry for the research data repositories (Zenodo, BIRA-IASB) with their CC-BY-4.0 terms, which the Venus Express VeRa and SOIR profiles come under.
