@@ -10,7 +10,7 @@ These terms describe how VEDA may be used and what it does on your computer. The
 
 ## 2. The data
 
-* The data you search and download belong to the mission teams and are published by their archives (NASA PDS, ESA PSA, JAXA DARTS, ISRO ISSDC, NASA NAIF and the mission SPICE archives). Each archive's terms apply to the data, and you are responsible for following them, including any registration terms you accept with ISSDC/PRADAN.
+* The data you search and download belong to the mission teams and are published by their archives (NASA PDS, ESA PSA, JAXA DARTS, ISRO ISSDC, NASA NAIF and the mission SPICE archives) and by the instrument teams' research data repositories (Zenodo, BIRA-IASB). Each archive's terms apply to the data, and you are responsible for following them, including any registration terms you accept with ISSDC/PRADAN.
 * VEDA does not redistribute data, apart from a few unmodified public sample products bundled for demonstrations and tests (listed in DATA_POLICY.md).
 * Cite the data sets, the instrument teams and the archives in any publication, as described in DATA_POLICY.md.
 
@@ -25,7 +25,7 @@ The archives are shared public services. VEDA is built to treat them politely:
 
 * it reads an archive's index once and keeps it in a local catalogue, so repeated searches do not contact the archive (at most four index files are read at a time);
 * live archive searches (ESA PSA, NASA PDS Registry, OPUS) ask once per data set and date window, list at most 5,000 products per answer, and are remembered for a week;
-* it downloads only the products you ask for, one at a time, waits and retries when a server is busy, and keeps every downloaded file in a local cache;
+* it downloads only the products you open, select or compare (a filtered comparison downloads the candidate profiles it needs, up to the number per mission you set; untick *Download* to use only the cache), a few at a time (Settings > Performance, default 4), waits and retries when a server is busy, and keeps every downloaded file in a local cache;
 * SPICE kernels are downloaded once per file and reused; automatic kernel downloads can be turned off, and above a size you choose VEDA asks first.
 
 Please do not use VEDA, or modify it, to download whole archives in bulk without need, to bypass access controls, or to put unreasonable load on any server. For bulk transfers, use the bulk-download services the archives provide.
@@ -33,7 +33,7 @@ Please do not use VEDA, or modify it, to download whole archives in bulk without
 ## 5. Privacy
 
 * VEDA has no user accounts, no analytics, no advertising and no telemetry. It does not send anything about you or your work to the author or to anyone else.
-* It connects to the internet only to contact the archive and SPICE servers you search or download from (including the SPICE kernels for missions and observations you open, if automatic kernel downloads are on), and only while **Settings > Network > Allow downloads** is on. Those servers see an ordinary web request from your computer, with a User-Agent that names VEDA.
+* It connects to the internet only to contact the archive and SPICE servers you search or download from (including the SPICE kernels for missions and observations you open, if automatic kernel downloads are on), and once per session GitHub, to see whether a newer VEDA build has been published (turn this off in **Settings > Network**); nothing about you or your data is sent. With **Settings > Network > Allow downloads** off it makes no network requests at all. Those servers see an ordinary web request from your computer, with a User-Agent that names VEDA.
 * Logins to ISRO ISSDC/PRADAN happen on the PRADAN website in your browser. VEDA never sees or stores your credentials.
 * Everything VEDA stores (settings, archive catalogue, downloaded products, kernels, exports, logs) stays in its data folder on your computer (see the README). The list behind the **Cite** panel (which data sets and features you used) is kept only in this browser's local storage. Delete the data folder, or press *Start a new list* in Cite, to remove it.
 * The local server binds to `127.0.0.1` by default. If you start it with `--host 0.0.0.0`, anyone on your network can use it, since it has no authentication.
