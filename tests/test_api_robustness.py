@@ -391,6 +391,26 @@ def test_product_transect_and_spectrum_validate_their_input(client, monkeypatch)
     assert client.get(f"{base}/cube/spectrum", params={"line": 10**6, "sample": 10}).status_code == 400
 
 
+def test_profile_failures_are_explained(client, monkeypatch):
+    """Bug: an archive that could not be reached, or a product that could not be read,
+    gave a bare 500 "Internal Server Error" when a profile was opened."""
+    from veda.archives import net, profiles
+    oid = "M32ICL2L04_AIX_040931105_60"
+
+    def down(*a, **k):
+        raise net.ArchiveError("Could not connect to archives.esac.esa.int. Check your internet connection.")
+    monkeypatch.setattr(profiles, "load_profile_cached", down)
+    r = client.get(f"/api/veda/profile/mex/{oid}")
+    assert r.status_code == 502 and "internet connection" in r.json()["detail"]
+    assert client.get(f"/api/veda/export/profile/mex/{oid}/csv").status_code == 502
+
+    def corrupt(*a, **k):
+        raise ValueError("C:/Users/x/cache/M32.TAB: no altitude or radius column")
+    monkeypatch.setattr(profiles, "load_profile_cached", corrupt)
+    r = client.get(f"/api/veda/profile/mex/{oid}")
+    assert r.status_code == 422 and "no altitude" in r.json()["detail"] and "Users" not in r.json()["detail"]
+
+
 # --- security -----------------------------------------------------------------
 
 def test_parse_file_path_restricted_to_veda_folders(client, tmp_path):

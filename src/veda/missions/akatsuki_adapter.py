@@ -155,8 +155,8 @@ class AkatsukiAdapter(BaseMissionAdapter):
             prof.derived = compute_atmospheric_diagnostics(prof, venus_body)
             return prof
 
-        except Exception as e:
-            return None
+        except Exception as exc:  # noqa: BLE001 - reported to the user by the API
+            raise ValueError(f"Could not read {lbl_file.name}: {exc}") from exc
 
     def load_image(self, observation_id: str) -> Optional[ObservationImage]:
         """Load JAXA Akatsuki camera observation (UVI, LIR, IR1, IR2)."""
@@ -208,8 +208,8 @@ class AkatsukiAdapter(BaseMissionAdapter):
                 ),
                 metadata=hdr,
             )
-        except Exception:
-            return None
+        except Exception as exc:  # noqa: BLE001 - reported to the user by the API
+            raise ValueError(f"Could not read {fits_file.name}: {exc}") from exc
 
     def get_provenance(self, observation_id: str) -> Optional[ProvenanceRecord]:
         return ProvenanceRecord(

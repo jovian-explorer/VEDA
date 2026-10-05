@@ -334,6 +334,25 @@ def harmonic_fit_of_points(req: HarmonicFitRequest) -> dict:
 # Observation Data Retrieval (Profiles & Images)
 # ---------------------------------------------------------------------------
 
+def _load_observation(load, mission_id: str, observation_id: str):
+    """``load(mission_id, observation_id)``, with failures as answers the user can read:
+    an archive that cannot be reached (502), an account needed (401), a file that cannot
+    be read (422), instead of a bare "Internal Server Error".  None stays None (404)."""
+    from ..archives import net
+    try:
+        return load(mission_id, observation_id)
+    except HTTPException:
+        raise
+    except net.LoginRequired as exc:
+        raise HTTPException(status_code=401, detail=str(exc))
+    except net.ArchiveError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+    except LookupError:
+        return None
+    except Exception as exc:  # noqa: BLE001 - a product VEDA cannot read
+        raise HTTPException(status_code=422, detail=_friendly_ingest_error(observation_id, exc))
+
+
 @router.get("/profile/{mission_id}/{observation_id:path}")
 def get_observation_profile(
     mission_id: str,
@@ -342,7 +361,7 @@ def get_observation_profile(
 ) -> dict:
     """Load normalized 1D profile with body-specific derived thermodynamics."""
     mgr = get_mission_manager()
-    prof = mgr.load_profile(mission_id, observation_id)
+    prof = _load_observation(mgr.load_profile, mission_id, observation_id)
     if not prof:
         raise HTTPException(status_code=404, detail=f"Profile '{observation_id}' for mission '{mission_id}' not found")
     return prof.to_dict(decimate_max=decimate_max)
@@ -365,7 +384,7 @@ def render_image(
         raise HTTPException(status_code=400, detail=f"Unknown colormap '{colormap}'. Use one of: {', '.join(IMAGE_COLORMAPS)}")
     max_dim = max(64, min(int(max_dim), 4096))
     mgr = get_mission_manager()
-    img = mgr.load_image(mission_id, observation_id)
+    img = _load_observation(mgr.load_image, mission_id, observation_id)
     if not img:
         raise HTTPException(status_code=404, detail="Image observation not found")
 
@@ -408,7 +427,7 @@ def get_image_transect(
 ) -> dict:
     """Compute 1D photometric line slice along (x0, y0) -> (x1, y1)."""
     mgr = get_mission_manager()
-    img = mgr.load_image(mission_id, observation_id)
+    img = _load_observation(mgr.load_image, mission_id, observation_id)
     if not img or not img.local_path:
         raise HTTPException(status_code=404, detail="Image not found for transect")
 
@@ -429,7 +448,7 @@ def get_image_histogram_endpoint(
     if not 2 <= bins <= 1000:
         raise HTTPException(status_code=400, detail="bins must be between 2 and 1000")
     mgr = get_mission_manager()
-    img = mgr.load_image(mission_id, observation_id)
+    img = _load_observation(mgr.load_image, mission_id, observation_id)
     if not img or not img.local_path:
         raise HTTPException(status_code=404, detail="Image not found for histogram")
 
@@ -449,7 +468,7 @@ def get_image_metadata(
 ) -> dict:
     """Get metadata for an astronomical camera observation."""
     mgr = get_mission_manager()
-    img = mgr.load_image(mission_id, observation_id)
+    img = _load_observation(mgr.load_image, mission_id, observation_id)
     if not img:
         raise HTTPException(status_code=404, detail=f"Image observation '{observation_id}' not found")
     return img.to_dict()
@@ -463,7 +482,7 @@ def get_image_metadata(
 def export_profile_csv(mission_id: str, observation_id: str):
     """Download vertical profile observation as RFC 4180 CSV with metadata header."""
     mgr = get_mission_manager()
-    prof = mgr.load_profile(mission_id, observation_id)
+    prof = _load_observation(mgr.load_profile, mission_id, observation_id)
     if not prof:
         raise HTTPException(status_code=404, detail="Profile not found")
     csv_text = export_profile_to_csv(prof)
@@ -480,7 +499,7 @@ def export_profile_json(mission_id: str, observation_id: str):
     """Download vertical profile observation as structured JSON with full provenance."""
     import json
     mgr = get_mission_manager()
-    prof = mgr.load_profile(mission_id, observation_id)
+    prof = _load_observation(mgr.load_profile, mission_id, observation_id)
     if not prof:
         raise HTTPException(status_code=404, detail="Profile not found")
     filename = f"{mission_id}_{observation_id.replace('/', '_')}.json"

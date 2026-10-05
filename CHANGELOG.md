@@ -90,6 +90,7 @@ Each body's molar mass, gas constant and heat capacity now follow from a sourced
 - **Fix: compared data missing from *Cite*.** Only products opened one by one or picked by hand were listed in the Cite panel; profiles that entered a comparison through the filter or the default selection (the usual way) were not, so the panel could say no archive product had been opened under a plotted comparison. Every archive data set in a comparison is now listed.
 
 ### Plots and interface
+- **Fix: "Internal Server Error" when a profile could not be opened.** Opening, exporting or rendering an observation whose archive could not be reached, or whose file could not be read, gave a bare server error (and a damaged Akatsuki file was reported as "not found"); VEDA now says what went wrong (archive unreachable, account needed, file not readable).
 - Product viewer: a transect on a band the image does not have, or with end points that are not numbers, and a cube file that cannot be read, give a message instead of a server error.
 - The altitude axis names the altitude reference when it is not VEDA's reference sphere: "Altitude above the 1-bar NAIF reference ellipsoid of Saturn", "above the surface at the Huygens landing site", "above the local surface" (CRISM); it read "above reference radius" for every profile. A comparison mixing references says so on the axis.
 - The profile view's *Plot variable* list shows units, so the two "Temperature" entries (K and °C) can be told apart, and leaves out the Venus-only Magellan quantities on other bodies.
