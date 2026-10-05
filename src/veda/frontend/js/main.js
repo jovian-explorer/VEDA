@@ -319,7 +319,7 @@ function settingsBody() {
       el('legend', {}, 'Network'),
       el('label', { class: 'settings-check' },
         el('input', { type: 'checkbox', id: 's-network', checked: s.network_enabled !== false }),
-        el('span', {}, 'Allow downloads from online archives (NASA PDS, ESA PSA, JAXA DARTS, ISRO ISSDC)')),
+        el('span', {}, 'Allow downloads from online archives (NASA PDS, ESA PSA, JAXA DARTS, ISRO ISSDC, research data repositories)')),
       el('label', { class: 'settings-check' },
         el('input', { type: 'checkbox', id: 's-check-updates', checked: s.check_updates !== false }),
         el('span', {}, 'Tell me when a newer VEDA is published (one request to GitHub at start-up)')),
