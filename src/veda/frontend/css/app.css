@@ -690,6 +690,12 @@ body.no-curious [data-curious] { display: none; }
 .badge-agency { background: rgba(255, 255, 255, 0.1); color: var(--ink-soft); }
 .status-badge.status-operational { background: rgba(76, 175, 80, 0.15); color: #81c784; }
 .status-badge.status-completed { background: rgba(158, 158, 158, 0.15); color: #b0bec5; }
+/* Light theme: the bright badge colours of the dark theme are unreadable on white */
+:root:not([data-theme="dark"]) .badge-orbiter { color: #1d4ed8; }
+:root:not([data-theme="dark"]) .badge-flyby { color: #92400e; background: rgba(217, 119, 6, 0.12); border-color: rgba(217, 119, 6, 0.35); }
+:root:not([data-theme="dark"]) .badge-constellation { color: #047857; }
+:root:not([data-theme="dark"]) .status-badge.status-operational { color: #2e7d32; }
+:root:not([data-theme="dark"]) .status-badge.status-completed { color: #475569; }
 
 /* Mission Mode Layout */
 .mission-filters-bar { display: flex; gap: 8px; margin-bottom: 12px; }
