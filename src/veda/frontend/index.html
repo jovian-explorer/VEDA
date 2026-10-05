@@ -546,15 +546,20 @@
             while data arrays preserve raw 16-bit or 32-bit floating point CCD photon counts.
           </li>
           <li>
-            <strong>Universal Fallback Engine:</strong> If you load a standalone CSV, TSV, or plain text table without a label, VEDA inspects
-            delimiters, identifies headers, and auto-detects physical coordinate columns.
+            <strong>PDS4 Labels (.xml) and Tables:</strong> PDS4 products describe their character, delimited or binary tables in an XML label;
+            select the label and its data file together.
+          </li>
+          <li>
+            <strong>Text Tables (.csv, .txt, .dat, .asc):</strong> comma, tab, semicolon or space separated, with or without a header row.
+            Before a table is read, VEDA shows its columns with their units and ranges and asks what each one is (altitude, temperature,
+            pressure, densities, uncertainties, geometry) and in which unit, and which body, mission, instrument and time the file belongs to.
           </li>
         </ul>
 
         <!-- Drag and drop zone -->
         <div class="drag-drop-zone" id="guide-drag-drop-zone">
           <h4>📁 Drop Any Planetary File Here (or Click to Browse)</h4>
-          <p>Supports PDS3 (.tab, .lbl), ASCII CSV, FITS (.fit, .fits), or camera images (.png, .jpg)</p>
+          <p>Supports PDS3 (.lbl + .tab), PDS4 (.xml + data), CSV and text tables, FITS (.fit, .fits) and images (.png, .jpg)</p>
         </div>
       </div>
       <div class="guide-actions-bar">
@@ -630,10 +635,11 @@
           VEDA overcomes this by interpolating soundings onto a uniform planetary vertical grid:
         </p>
         <ul>
-          <li><strong>Grid Regularization:</strong> Raw vertical soundings from multiple missions are aligned onto a standardized altitude grid ($dz = 0.5$ or $1.0\text{ km}$).</li>
-          <li><strong>Composite Mean Profile $\mu(z)$:</strong> Calculates the multi-spacecraft average at each altitude layer.</li>
-          <li><strong>Encounter Spread ($\pm 1\sigma$):</strong> Quantifies natural planetary atmospheric variability and instrument retrieval dispersion.</li>
-          <li><strong>Dynamic Variable Switching:</strong> Seamlessly compare Potential Temperature, Static Stability $N^2$, Lapse Rate, Pressure, or Mass Density.</li>
+          <li><strong>Which profiles:</strong> choose them by date, latitude, local time, solar zenith angle or Mars season (Ls) and the number per mission; VEDA searches the whole archive and reports why profiles were left out.</li>
+          <li><strong>Common grid:</strong> profiles are interpolated (never extrapolated) onto altitude levels (default 0.5 km on Venus, Mars and Pluto, 2 km elsewhere; set <em>Grid step</em>) or onto pressure levels uniform in log pressure.</li>
+          <li><strong>Composite mean $\mu(z)$ and spread ($\pm 1\sigma$):</strong> arithmetic for temperature-like quantities, geometric (in log space) for pressure and densities; per group for climatologies by latitude, local time, zenith angle, Ls, year, month or mission, and as deviations from the mean.</li>
+          <li><strong>Altitude cut:</strong> one point per profile at a fixed altitude, a layer statistic or a whole-profile diagnostic, against time, latitude, local time, zenith angle, Ls, longitude or day of year, with tide and wave fits.</li>
+          <li><strong>Any variable:</strong> temperature, pressure, densities, potential temperature, $N^2$, lapse rate, temperature from density and more, in the units you choose.</li>
         </ul>
       </div>
       <div class="guide-actions-bar">
@@ -682,9 +688,9 @@
           VEDA ensures full scientific provenance and reproducible workflows:
         </p>
         <ul>
-          <li><strong>RFC 4180 CSV Export:</strong> Exports numerical sounding data along with structured metadata headers documenting original archive files, spacecraft ID, and retrieval DOIs.</li>
+          <li><strong>CSV exports:</strong> a profile with its derived quantities, a comparison on its common grid (with a recipe line to redo it), or every compared profile with all variables at its own levels; the headers name the archive, source file, citation and VEDA version.</li>
           <li><strong>Structured JSON Export:</strong> Delivers complete profile records with derived physics for automated downstream analysis in Python or Julia.</li>
-          <li><strong>Publication Figure Generator:</strong> Generates 300-DPI high-resolution figures with publication typography and shaded $\pm 1\sigma$ envelopes.</li>
+          <li><strong>Figures:</strong> the publication figure at the DPI set in Settings (300 by default), and PNG or SVG at a journal's column width with <em>Export figure</em>.</li>
           <li>
             <strong>Citation:</strong> Please cite the data set and the instrument team's reference publication (listed under <em>Data &amp; Licenses</em>)
             and the software: <em>Keshav Aggarwal (2026), VEDA, https://github.com/jovian-explorer/VEDA.</em>
@@ -703,13 +709,13 @@
         <span class="badge" style="background: rgba(0, 229, 255, 0.15); color: #00e5ff;">Planetary Physics &amp; Inversion</span>
       </div>
       <p class="hint" style="margin-bottom: 16px;">
-        Rigorous mathematical expressions implemented in VEDA for cross-mission planetary radio occultation sounding, thermodynamic scaling, and wave analysis:
+        How the archived radio occultation profiles are retrieved (1), and the relations VEDA uses for its derived quantities (2 to 6):
       </p>
 
       <div class="grid-2" style="gap: 14px;">
         <!-- Formula 1: Abel Inversion for Oblate Planetary Bodies -->
         <div class="guide-formula-box" style="padding: 12px; background: rgba(0,0,0,0.18); border: 1px solid var(--border-color); border-radius: 6px;">
-          <h4 style="margin: 0 0 6px 0; color: #00e5ff; font-size: calc(14px * var(--font-scale, 1.0));">1. Radio Occultation Abel Inversion for Oblate Bodies</h4>
+          <h4 style="margin: 0 0 6px 0; color: #00e5ff; font-size: calc(14px * var(--font-scale, 1.0));">1. Radio Occultation Abel Inversion (instrument team retrievals)</h4>
           <p style="font-size: calc(12px * var(--font-scale, 1.0)); margin-bottom: 6px; color: var(--text-secondary);">
             The Doppler frequency shift provides the ray bending angle \( \alpha(a) \). For oblate planets (Jupiter, Saturn), the standard spherical Abel transform is generalized using the local radius of curvature \( R_c(\phi, \theta) \):
           </p>
@@ -735,7 +741,7 @@
         <div class="guide-formula-box" style="padding: 12px; background: rgba(0,0,0,0.18); border: 1px solid var(--border-color); border-radius: 6px;">
           <h4 style="margin: 0 0 6px 0; color: #00e5ff; font-size: calc(14px * var(--font-scale, 1.0));">3. Hydrostatic Integration &amp; Mass Density</h4>
           <p style="font-size: calc(12px * var(--font-scale, 1.0)); margin-bottom: 6px; color: var(--text-secondary);">
-            Integrating refractivity downward under hydrostatic equilibrium yields pressure \( P(z) \) and atmospheric mass density \( \rho(z) \):
+            Hydrostatic balance links pressure \( P(z) \), mass density \( \rho(z) \) and temperature; the radio science teams integrate it downwards from refractivity, and VEDA from measured densities (accelerometers, entry probes, SOIR) to give temperature and pressure:
           </p>
           <p style="text-align: center; margin: 8px 0;">$$P(z) = \int_z^\infty \rho(z') g(z') \, dz', \quad \rho(z) = \frac{P(z)}{R_{spec} T(z)}$$</p>
           <p style="font-size: calc(11px * var(--font-scale, 1.0)); color: var(--text-muted); margin: 0;">
@@ -792,10 +798,11 @@
       </div>
       <p>
         VEDA does not own or host any data. It downloads products from
-        <a href="https://pds-atmospheres.nmsu.edu/" target="_blank" rel="noopener">NASA PDS Atmospheres</a>,
+        the <a href="https://pds.nasa.gov/" target="_blank" rel="noopener">NASA PDS</a> (Atmospheres and other nodes),
         <a href="https://archives.esac.esa.int/psa/" target="_blank" rel="noopener">ESA PSA</a>,
         <a href="https://data.darts.isas.jaxa.jp/pub/pds3/" target="_blank" rel="noopener">JAXA DARTS</a> and
-        <a href="https://pradan.issdc.gov.in/" target="_blank" rel="noopener">ISRO ISSDC / PRADAN</a>
+        <a href="https://pradan.issdc.gov.in/" target="_blank" rel="noopener">ISRO ISSDC / PRADAN</a>,
+        and research data repositories (Zenodo, BIRA-IASB)
         (ephemerides from <a href="https://naif.jpl.nasa.gov/" target="_blank" rel="noopener">NASA NAIF</a>) and each archive's terms apply.
         When you publish, cite the data set, the instrument team's reference publication and VEDA.
         <strong>Data &amp; Licenses</strong> lists every connected data set with its citation and a data availability statement you can copy.
