@@ -24,13 +24,13 @@
 
   <!-- Primary Exploration Mode Switcher -->
   <div class="mode-switcher-wrap" role="tablist">
-    <button class="mode-btn active" id="btn-mode-body" role="tab" title="Compare multiple spacecraft missions observing the same celestial body">
+    <button class="mode-btn active" id="btn-mode-body" role="tab" aria-selected="true" title="Compare multiple spacecraft missions observing the same celestial body">
       🪐 By Celestial Body
     </button>
-    <button class="mode-btn" id="btn-mode-mission" role="tab" title="Explore scientific observations from a specific spacecraft mission">
+    <button class="mode-btn" id="btn-mode-mission" role="tab" aria-selected="false" title="Explore scientific observations from a specific spacecraft mission">
       🛰️ By Planetary Mission
     </button>
-    <button class="mode-btn" id="btn-mode-guide" role="tab" title="Interactive step-by-step tutorial on loading, processing, and analyzing planetary data">
+    <button class="mode-btn" id="btn-mode-guide" role="tab" aria-selected="false" title="Interactive step-by-step tutorial on loading, processing, and analyzing planetary data">
       📖 Workflow Guide
     </button>
   </div>
@@ -38,7 +38,7 @@
   <div class="topright">
     <div class="font-zoom-ctrl" title="Universal UI text scaling">
       <button type="button" class="zoom-btn" id="btn-font-dec" title="Decrease UI font size (A-)">A-</button>
-      <span class="zoom-label" id="font-scale-display" title="Click to reset font scale to 100%">100%</span>
+      <button type="button" class="zoom-label" id="font-scale-display" title="Interface zoom; click to reset to 100%" aria-label="Interface zoom, click to reset to 100%">100%</button>
       <button type="button" class="zoom-btn" id="btn-font-inc" title="Increase UI font size (A+)">A+</button>
     </div>
     <button class="ghost" id="btn-load-file" title="Load any local PDS3 (.lbl/.tab), CSV, or FITS (.fit/.fits) file">📁 Load File</button>

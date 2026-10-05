@@ -448,6 +448,8 @@ export function switchMode(mode) {
   if (btnBodyMode) btnBodyMode.classList.toggle('active', mode === 'body');
   if (btnMissionMode) btnMissionMode.classList.toggle('active', mode === 'mission');
   if (btnGuideMode) btnGuideMode.classList.toggle('active', mode === 'guide');
+  [[btnBodyMode, 'body'], [btnMissionMode, 'mission'], [btnGuideMode, 'guide']]
+    .forEach(([b, m]) => b && b.setAttribute('aria-selected', String(mode === m)));
 
   if (viewBody) viewBody.style.display = (mode === 'body') ? 'block' : 'none';
   if (viewMission) viewMission.style.display = (mode === 'mission') ? 'block' : 'none';
