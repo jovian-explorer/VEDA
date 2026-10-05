@@ -4,9 +4,9 @@ from __future__ import annotations
 import io
 import json
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Annotated, Dict, List, Optional
 import numpy as np
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Query, Response
 from pydantic import BaseModel, Field, field_validator
 
 from ..core.registry import (
@@ -179,7 +179,7 @@ def explore_by_mission(
     mission_id: str,
     body_id: Optional[str] = None,
     instrument_id: Optional[str] = None,
-    limit: int = 50,
+    limit: Annotated[int, Query(ge=1, le=2000)] = 50,
 ) -> dict:
     """Retrieve observations available for a selected spacecraft mission."""
     mgr = get_mission_manager()
@@ -207,7 +207,7 @@ def explore_by_mission(
 def explore_by_body(
     body_id: str,
     missions: Optional[str] = None,  # comma-separated mission IDs e.g. "akatsuki,vex"
-    limit_per_mission: int = 25,
+    limit_per_mission: Annotated[int, Query(ge=1, le=500)] = 25,
 ) -> dict:
     """Retrieve multi-mission observations for a selected target body."""
     mgr = get_mission_manager()

@@ -99,7 +99,7 @@ def search(
     product_type: Optional[str] = None,
     q: Optional[str] = Query(None, max_length=100),
     limit: int = Query(200, ge=1, le=2000),
-    offset: int = Query(0, ge=0),
+    offset: int = Query(0, ge=0, le=10_000_000),
     newest_first: bool = False,
     downloaded_only: bool = False,
 ) -> Dict[str, Any]:
