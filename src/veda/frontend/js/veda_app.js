@@ -296,7 +296,7 @@ export function renderPlanetaryBodyQuickCard(bodyId, bodyDetails) {
     <div class="quick-card-head">
       <div class="quick-card-title">
         <span style="font-size: calc(22px * var(--font-scale, 1.0));">${emoji}</span>
-        <h3>Planetary Body Physical Constants Quick-Card: ${name}</h3>
+        <h3>Physical constants of ${name}</h3>
       </div>
       <span class="quick-card-badge">${c.category}</span>
     </div>

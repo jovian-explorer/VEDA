@@ -99,6 +99,8 @@ body {
 h1 { font-size: calc(18px * var(--font-scale, 1.0)); margin: 0; letter-spacing: -0.015em; font-weight: 700; }
 h2 { font-size: calc(14.5px * var(--font-scale, 1.0)); margin: 0 0 10px; letter-spacing: 0.01em; font-weight: 650; }
 h3 { font-size: calc(13px * var(--font-scale, 1.0)); margin: 14px 0 6px; color: var(--ink-soft); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+/* product ids and file names keep their case */
+h3 code { text-transform: none; }
 p { margin: 0 0 8px; font-size: inherit; }
 code, pre { font-family: var(--mono); font-size: calc(12px * var(--font-scale, 1.0)); }
 hr { border: 0; border-top: 1px solid var(--line); margin: 16px 0; }
@@ -1127,6 +1129,7 @@ body.no-curious [data-curious] { display: none; }
 }
 .quick-card-title h3 {
   margin: 0;
+  text-transform: none;  /* keeps the body name and units as written */
   font-size: calc(16px * var(--font-scale, 1.0));
   color: var(--ink);
   letter-spacing: 0.02em;
@@ -1143,7 +1146,7 @@ body.no-curious [data-curious] { display: none; }
 }
 .quick-card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
   gap: 12px;
 }
 .quick-card-tile {
@@ -1169,11 +1172,10 @@ body.no-curious [data-curious] { display: none; }
   font-size: calc(15px * var(--font-scale, 1.0));
 }
 .tile-label {
-  font-size: calc(11.5px * var(--font-scale, 1.0));
+  font-size: calc(12px * var(--font-scale, 1.0));
   font-weight: 600;
   color: var(--ink-soft);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.01em;
 }
 .tile-value {
   font-size: calc(15px * var(--font-scale, 1.0));
@@ -1516,10 +1518,18 @@ kbd {
 }
 :root:not([data-theme="dark"]) .mode-btn:not(.active):hover { background: rgba(15, 23, 42, 0.06); }
 
-/* Keep the header on one row on typical laptop widths. */
+/* Keep the header on one row on typical laptop widths; on narrow windows the
+   toolbar moves to a second row instead of covering the name. */
+.topbar { flex-wrap: wrap; row-gap: 8px; }
+.brand { flex: none; }
+.topright > a.btn-feedback { white-space: nowrap; }
 @media (max-width: 1600px) {
   .brand .sub { display: none; }
   .brand { min-width: 0; }
+  .topbar { gap: 12px; padding-left: 16px; padding-right: 16px; }
+  .topright { gap: 2px; }
+  .topright > button.ghost, .topright > a.btn-feedback { padding-left: 9px; padding-right: 9px; }
+  .mode-btn { padding: 7px 13px; }
 }
 .version-tag { font-size: 0.6em; font-weight: 600; color: var(--ink-soft); vertical-align: middle; margin-left: 4px; }
 
