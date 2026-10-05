@@ -1495,6 +1495,8 @@ kbd {
 .about-paths dt { color: var(--ink-soft); }
 .about-paths dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
 
+/* links follow the theme (the browser default blue is unreadable on the dark theme) */
+a { color: var(--focal); text-underline-offset: 2px; }
 .drawer a { color: var(--focal); text-underline-offset: 2px; }
 .drawer a:hover { text-decoration-thickness: 2px; }
 .policy-card {

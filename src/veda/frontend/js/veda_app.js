@@ -1323,6 +1323,13 @@ async function fitAltitudeCut(plotDiv, pts, yScale, period, nHarm, logFit, xKey,
     fitStatus.className = 'hint';
     plotDiv.parentElement.insertBefore(fitStatus, plotDiv);
   }
+  // too few points: say so here instead of asking the server for a fit it must refuse
+  const nPts = pts.filter(o => Number.isFinite(o.x) && Number.isFinite(o.y) && (!logFit || o.y > 0)).length;
+  if (nPts < 2 * nHarm + 2) {
+    fitStatus.textContent = `Fit: the mean and ${nHarm} harmonic${nHarm > 1 ? 's' : ''} need at least ${2 * nHarm + 2} points; `
+      + `there ${nPts === 1 ? 'is' : 'are'} ${nPts}. Compare more profiles or choose fewer harmonics.`;
+    return;
+  }
   fitStatus.textContent = 'Fitting...';
   let fit;
   try {
@@ -1832,7 +1839,7 @@ function renderMissionsCatalog() {
         ${typeBadge}
       </div>
       <div class="mission-card-agency">${m.agency} &bull; Launched ${m.launch_date.split('-')[0]}</div>
-      <div class="mission-card-targets">Targets: ${(m.primary_targets || []).map(t => t.toUpperCase()).join(', ')}</div>
+      <div class="mission-card-targets">Targets: ${(m.primary_targets || []).map(t => t.replace(/_/g, ' ').toUpperCase()).join(', ')}</div>
     `;
     card.addEventListener('click', () => {
       document.querySelectorAll('.mission-card').forEach(el => el.classList.remove('active'));
