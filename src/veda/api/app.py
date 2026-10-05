@@ -6,17 +6,14 @@ and comparative planetary science analysis.
 """
 from __future__ import annotations
 
-import math
 import os
 import subprocess
 import sys
-from pathlib import Path
 from typing import Any, Dict, Literal
 
-import numpy as np
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from contextlib import asynccontextmanager
@@ -35,7 +32,6 @@ from ..config import (
     SETTINGS_PATH,
     ensure_dirs,
     frontend_dir,
-    sampledata_dir,
 )
 from .archive_routes import citation_router, geometry_router, router as archive_router
 from .product_routes import router as product_router
@@ -210,37 +206,6 @@ def create_app() -> FastAPI:
         SETTINGS.reset()
         _save_settings()
         return SETTINGS.to_dict()
-
-    @app.get("/api/exports")
-    def list_exports() -> Dict[str, Any]:
-        ensure_dirs()
-        files = []
-        for p in EXPORT_DIR.glob("*"):
-            if p.is_file():
-                files.append({
-                    "name": p.name,
-                    "size_bytes": p.stat().st_size,
-                    "modified": p.stat().st_mtime,
-                })
-        files.sort(key=lambda x: x["modified"], reverse=True)
-        return {"exports": files}
-
-    @app.get("/api/exports/{filename}")
-    def get_export(filename: str):
-        safe = Path(filename).name
-        p = EXPORT_DIR / safe
-        if not p.is_file():
-            raise HTTPException(404, f"Export file {safe} not found")
-        return FileResponse(p, filename=safe)
-
-    @app.delete("/api/exports/{filename}")
-    def delete_export(filename: str) -> Dict[str, Any]:
-        safe = Path(filename).name
-        p = EXPORT_DIR / safe
-        if not p.is_file():
-            raise HTTPException(404, f"Export file {safe} not found")
-        p.unlink()
-        return {"deleted": safe}
 
     @app.post("/api/reveal-folder")
     def reveal_folder(which: Literal["exports", "cache", "logs", "data"] = "exports") -> Dict[str, Any]:

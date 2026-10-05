@@ -4,20 +4,18 @@ from __future__ import annotations
 import io
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 import numpy as np
-from fastapi import APIRouter, HTTPException, Query, Response
+from fastapi import APIRouter, HTTPException, Response
 from pydantic import BaseModel, Field, field_validator
 
 from ..core.registry import (
-    BODIES, MISSIONS, FIELD_REGISTRY, DATA_PORTALS, DATA_LICENSES, LEAD_RESEARCHER,
+    BODIES, DATA_LICENSES, LEAD_RESEARCHER,
     DATA_AVAILABILITY_STATEMENT, get_body, get_mission, list_bodies, list_missions,
     get_missions_for_body, list_variables, get_variable_info, list_data_portals,
 )
-from ..core.models import ObservationProfile, ProvenanceRecord
 from ..missions.manager import get_mission_manager
 from ..analysis.atmospheric import (
-    compute_atmospheric_diagnostics,
     export_profile_to_csv,
     export_comparison_to_csv,
 )
@@ -27,7 +25,6 @@ from ..readers.fits_reader import (
     load_fits_image,
     render_to_png,
 )
-from ..readers.pds3_reader import read_any_table, read_pds3_table
 from ..analysis.thermo import cp_model
 from ..config import APP_VERSION, CACHE_DIR, sampledata_dir
 
