@@ -26,9 +26,10 @@ def _new_job(kind: str, total: int = 0) -> Dict[str, Any]:
            "message": "", "errors": [], "result": None, "started": time.time()}
     with _jobs_lock:
         _jobs[job["id"]] = job
-        # keep the registry small
+        # keep the registry small (finished jobs only: a running one is still polled)
         for old in sorted(_jobs.values(), key=lambda j: j["started"])[:-50]:
-            _jobs.pop(old["id"], None)
+            if old["status"] != "running":
+                _jobs.pop(old["id"], None)
     return job
 
 
@@ -36,7 +37,9 @@ def _run(job: Dict[str, Any], fn) -> None:
     def target():
         try:
             job["result"] = fn(job)
-            job["status"] = "failed" if job["errors"] and not job["result"] else "completed"
+            # a job whose every item failed (job["succeeded"] == 0) failed, although it
+            # returns a result (e.g. {"fetched": []})
+            job["status"] = "failed" if job["errors"] and not job.get("succeeded", 1) else "completed"
         except net.LoginRequired as exc:
             job.update(status="login_required", message=str(exc), login_url=exc.login_url)
         except Exception as exc:  # noqa: BLE001 - reported to the UI
@@ -49,7 +52,9 @@ def job_status(job_id: str) -> Dict[str, Any]:
     job = _jobs.get(job_id)
     if not job:
         raise HTTPException(404, "Job not found (it may have finished long ago)")
-    return {k: v for k, v in job.items() if k != "started"}
+    snap = dict(job)          # one copy: the worker thread keeps updating the job
+    snap.pop("started", None)
+    return snap
 
 
 # ------------------------------------------------------------------ datasets
@@ -148,6 +153,7 @@ def live_search(req: LiveRequest) -> Dict[str, Any]:
                 raise
             except net.ArchiveError as exc:
                 j["errors"].append(f"{ds.mission_id.upper()} {ds.instrument}: {exc}")
+        j["succeeded"] = len(results)
         listed = sum(r["listed"] for r in results)
         more = [r for r in results if r["available"] > r["listed"]]
         j.update(done=len(sets), message=f"{listed} products listed from {len(results)} live data sets" +
@@ -195,7 +201,8 @@ def fetch(req: FetchRequest) -> Dict[str, Any]:
         login = next((r for r in results if isinstance(r, net.LoginRequired)), None)
         if login is not None and not fetched:
             raise login
-        j.update(done=len(req.items), message=f"Downloaded {len(fetched)} of {len(req.items)}")
+        j.update(done=len(req.items), message=f"Downloaded {len(fetched)} of {len(req.items)}",
+                 succeeded=len(fetched))
         return {"fetched": fetched}
 
     _run(job, work)

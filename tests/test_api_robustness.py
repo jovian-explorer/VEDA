@@ -277,6 +277,34 @@ def test_failed_upload_keeps_the_earlier_good_one(client):
     assert _upload(client, "x" * 300 + ".csv", good).status_code == 400
 
 
+def test_download_job_where_every_product_failed_is_failed(client, monkeypatch):
+    """Bug: a download job always ended "completed" ("Downloaded 0 of 2") because its
+    result, {"fetched": []}, was not empty."""
+    import time as _time
+    from veda.archives import catalog, net
+
+    def fetch(dataset_id, product_id, *a, **k):
+        if product_id == "good":
+            return "x"
+        raise net.ArchiveError("archive down")
+    monkeypatch.setattr(catalog, "get_product", lambda ds, pid: {"product_id": pid})
+    monkeypatch.setattr(catalog, "fetch_product", fetch)
+
+    def run(pids):
+        items = [{"dataset_id": "mex-m-mrs-5-occ", "product_id": p} for p in pids]
+        job_id = client.post("/api/veda/archive/fetch", json={"items": items}).json()["job_id"]
+        for _ in range(200):
+            job = client.get(f"/api/veda/archive/jobs/{job_id}").json()
+            if job["status"] != "running":
+                return job
+            _time.sleep(0.02)
+        raise AssertionError("job did not finish")
+    bad = run(["a", "b"])
+    assert bad["status"] == "failed" and len(bad["errors"]) == 2 and "Downloaded 0 of 2" in bad["message"]
+    mixed = run(["good", "b"])
+    assert mixed["status"] == "completed" and mixed["result"]["fetched"] == ["good"] and len(mixed["errors"]) == 1
+
+
 # --- security -----------------------------------------------------------------
 
 def test_parse_file_path_restricted_to_veda_folders(client, tmp_path):

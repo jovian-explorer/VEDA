@@ -106,6 +106,7 @@ Each body's molar mass, gas constant and heat capacity now follow from a sourced
 - **Faster start, no leftover temporary folders.** The app gave Matplotlib a new temporary folder on every start, so it rebuilt its font list each time and every closed or crashed process (including each worker) left a folder in the temp directory (8 per launch). It now keeps one in VEDA's cache.
 
 ### Releases and updates
+- **Fix: failed downloads reported as done.** A download (or live search) in which every product failed ended as completed ("Downloaded 0 of 2", in green); it is now reported as failed with the archive's errors. Finished jobs are pruned from the job list, running ones no longer.
 - **Automatic builds**: each change to VEDA that passes the tests on Windows, macOS and Linux is built for all three and published as the latest release, with the list of changes since the previous build as release notes. Each download holds the app with the licences, terms, user guide, data policy and this changelog beside it.
 - VEDA tells you when a newer build has been published (a notice with a download link; About > *Check for updates*). About shows the build number, date and commit. Turn it off in Settings > Network.
 - A build whose release was published no longer reports failure when removing an older build fails (a tag already deleted by a cancelled run).
