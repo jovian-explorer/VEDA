@@ -186,3 +186,16 @@ def test_wave_energy_uses_background_stability():
     # N_bar^2 there: (g/T)(dT/dz + g/cp) with dT/dz = -3 K/km; E_p peaks at (g/N_bar)^2 (2 K / T)^2 / 2
     assert np.nanmax(ep[upper]) < 40.0
     assert np.nanmax(ep) < 200.0                                    # was 1860 J/kg
+
+
+def test_failed_chapman_fit_reports_no_fit(monkeypatch):
+    """Bug: when the fit did not converge, the measured peak was returned as the 'Chapman
+    fit' peak density and altitude (shown as fit results in the altitude cut and CSV)."""
+    from veda.analysis import wave_and_stability as ws
+
+    def no_convergence(*a, **k):
+        raise RuntimeError("Optimal parameters not found")
+    monkeypatch.setattr(ws, "curve_fit", no_convergence)
+    z = np.linspace(100.0, 500.0, 50)
+    res = ws.fit_chapman_ionosphere(z, 1e5 * np.exp(-((z - 300.0) / 60.0) ** 2))
+    assert res == {"nmf2_cm3": None, "hmf2_km": None, "scale_height_km": None, "r_squared": None}

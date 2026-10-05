@@ -330,10 +330,7 @@ def fit_chapman_ionosphere(
             "scale_height_km": round(float(h_fit), 2),
             "r_squared": round(float(r2), 4),
         }
-    except Exception:
-        return {
-            "nmf2_cm3": round(nm_guess, 2),
-            "hmf2_km": round(hm_guess, 2),
-            "scale_height_km": None,
-            "r_squared": None,
-        }
+    except (RuntimeError, ValueError):
+        # no convergence: report no fit (the measured peak is given separately as
+        # ne_peak_cm3 / hmf2_km; labelling it "Chapman fit" would be wrong)
+        return {"nmf2_cm3": None, "hmf2_km": None, "scale_height_km": None, "r_squared": None}
