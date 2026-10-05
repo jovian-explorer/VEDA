@@ -1525,6 +1525,7 @@ function renderComparisonTable() {
         // Switch to Mission Mode
         const btnMission = document.getElementById('btn-mode-mission');
         if (btnMission) {
+          vedaState.activeMissionId = mid;   // so switching mode does not open the previous mission
           btnMission.click();
           loadAndRenderMission(mid).then(() => {
             inspectProfileObservation({ mission_id: mid, observation_id: obsId, instrument: '' });
@@ -1852,7 +1853,10 @@ function renderMissionsCatalog() {
 
 export async function loadAndRenderMission(missionId) {
   vedaState.activeMissionId = missionId;
+  document.querySelectorAll('.mission-card').forEach(c => c.classList.toggle('active', c.dataset.missionId === missionId));
   const mission = await api.vedaMissionDetails(missionId);
+  // another mission was chosen while this one loaded (e.g. Deep Dive while the default mission opened)
+  if (vedaState.activeMissionId !== missionId) return;
   vedaState.activeMission = mission;
   // SPICE: generic and body kernels for this mission, in the background (Settings can turn this off)
   prefetchMission(missionId, (mission.primary_targets || [])[0]);
