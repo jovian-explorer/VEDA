@@ -2721,9 +2721,9 @@ async function openLoadDialog(file, companions = [], queue = []) {
     <fieldset><legend>What it is</legend>
       <label class="settings-field"><span class="settings-label">Body</span><select name="body">${bodyOpts}</select></label>
       <label class="settings-field"><span class="settings-label">Mission</span><select name="mission"></select></label>
-      <label class="settings-field ld-other-mission" hidden><span class="settings-label">Mission name</span><input name="mission_other" placeholder="e.g. Venera 15" /></label>
+      <label class="settings-field ld-other-mission" hidden><span class="settings-label">Mission name</span><input name="mission_other" type="text" placeholder="e.g. Venera 15" /></label>
       <label class="settings-field"><span class="settings-label">Instrument</span><select name="instrument"></select></label>
-      <label class="settings-field ld-other-inst" hidden><span class="settings-label">Instrument name</span><input name="instrument_other" placeholder="e.g. radio occultation" /></label>
+      <label class="settings-field ld-other-inst" hidden><span class="settings-label">Instrument name</span><input name="instrument_other" type="text" placeholder="e.g. radio occultation" /></label>
       <label class="settings-field"><span class="settings-label">Observation time (UTC)</span><input name="time" type="datetime-local" step="1" />
         <span class="hint">Used to place the profile in date searches and comparisons; leave empty if unknown.</span></label>
     </fieldset>

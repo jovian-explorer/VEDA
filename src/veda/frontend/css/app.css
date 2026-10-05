@@ -243,7 +243,10 @@ label.check, .switch {
   font-size: calc(12.5px * var(--font-scale, 1.0)); color: var(--ink); margin-bottom: 8px; cursor: pointer;
 }
 input, select, button, textarea { font: inherit; }
-input[type=date], input[type=number], input[type=text], input[type=search], select {
+/* native date pickers, scroll bars and drop-down lists follow the theme */
+:root[data-theme="dark"] { color-scheme: dark; }
+:root[data-theme="light"] { color-scheme: light; }
+input[type=date], input[type=datetime-local], input[type=number], input[type=text], input[type=search], select {
   width: 100%; margin-top: 4px; padding: 7px 10px;
   border: 1px solid var(--line); border-radius: var(--radius-sm);
   background: var(--surface-glass); color: var(--ink); font-size: calc(13px * var(--font-scale, 1.0));
@@ -1456,6 +1459,8 @@ button.unit-pill.active:hover:not(:disabled) {
 /* ---------- Settings / Help / About drawers ---------- */
 .settings-form fieldset { margin: 0 0 14px; }
 .settings-field { display: grid; gap: 4px; margin-bottom: 12px; }
+/* the hidden attribute wins over display rules (Mission name / Instrument name in the load dialog showed when not chosen) */
+[hidden] { display: none !important; }
 .settings-field .hint { margin: 0; }
 .settings-label { color: var(--ink); font-weight: 600; }
 .settings-field input, .settings-field select { width: 100%; }
@@ -1685,6 +1690,8 @@ a.btn-feedback:hover { border-color: var(--accent); }
 .arch-ds-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .arch-ds-head .badge { width: auto; }
 /* Load dialog: column roles */
+/* fieldsets grow to their content by default, which pushed the unit column out of the drawer */
+.load-dialog fieldset { min-width: 0; }
 .load-dialog .ld-cols { max-height: 46vh; overflow: auto; border: 1px solid var(--line); border-radius: var(--radius-sm); }
 .load-dialog .ld-cols table { width: 100%; font-size: 0.86em; }
 .load-dialog .ld-cols td, .load-dialog .ld-cols th { padding: 4px 6px; vertical-align: top; }
