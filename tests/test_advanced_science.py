@@ -409,3 +409,10 @@ def test_profile_json_keeps_small_values():
     assert d["derived"]["density_measured"] == [2.0e-8, 6.123457e-9, 2.0e-9]
     assert d["derived"]["buoyancy_freq_sq"] == [5.3e-5, 1.27e-4, -2.4e-5]
     assert d["pressure_hpa"][2] == 2.2e-5 and d["altitude_km"] == [100.0, 110.0, 120.0]
+
+
+def test_every_body_gas_constant_follows_from_its_molar_mass():
+    """R = R_universal / mu for every body (Ceres and 67P had 461.5 against 461.9 from 18.0 g/mol)."""
+    from veda.core.registry import BODIES
+    for b in BODIES.values():
+        assert b.gas_constant_r == pytest.approx(8314.462618 / b.mean_molecular_weight, rel=5e-4), b.id

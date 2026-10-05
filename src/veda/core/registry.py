@@ -187,7 +187,7 @@ BODIES: Dict[str, BodyInfo] = {
         category="dwarf_planet",
         radius_km=469.7,
         surface_gravity=0.28,
-        mean_molecular_weight=18.0,
+        mean_molecular_weight=18.015,     # water vapour, the dominant gas; R = 8314.46 / 18.015
         gas_constant_r=461.5,
         isobaric_heat_capacity_cp=1850.0,
         reference_pressure_hpa=1e-10,
@@ -219,7 +219,7 @@ BODIES: Dict[str, BodyInfo] = {
         category="comet",
         radius_km=2.0,
         surface_gravity=0.0001,
-        mean_molecular_weight=18.0,
+        mean_molecular_weight=18.015,     # water vapour, the dominant gas; R = 8314.46 / 18.015
         gas_constant_r=461.5,
         isobaric_heat_capacity_cp=1850.0,
         reference_pressure_hpa=1e-8,
