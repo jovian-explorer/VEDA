@@ -350,8 +350,8 @@ def render_image(
     if not img:
         raise HTTPException(status_code=404, detail="Image observation not found")
 
-    # If local FITS file exists, render with requested astronomical stretch
-    if img.local_path and (img.local_path.endswith(".fit") or img.local_path.endswith(".fits")):
+    # FITS images are rendered with the requested stretch (loaded files may be .FITS or .fts)
+    if img.local_path and Path(img.local_path).suffix.lower() in (".fit", ".fits", ".fts"):
         try:
             fits_data = load_fits_image(img.local_path)
             png_bytes = render_to_png(fits_data.primary_data, stretch_method=stretch,

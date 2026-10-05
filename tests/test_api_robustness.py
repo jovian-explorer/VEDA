@@ -287,6 +287,21 @@ def test_uploaded_fits_can_be_rendered_and_listed(client, tmp_path):
     assert client.get("/api/veda/image/user_imported/my_upload/render").status_code == 404
 
 
+@pytest.mark.parametrize("name", ["upper_case.FITS", "short_suffix.fts", "lower.fits"])
+def test_uploaded_images_of_every_accepted_suffix_render(client, tmp_path, name):
+    """Bug: only lower-case .fit/.fits were rendered, so accepted .FITS and .fts
+    files loaded but their image gave 404."""
+    from astropy.io import fits as _fits
+    f = tmp_path / name
+    _fits.PrimaryHDU((np.mgrid[0:32, 0:32][0] * 8.0).astype("float32")).writeto(f)
+    r = _upload(client, name, _b64(f), body_id="pluto")
+    assert r.status_code == 200 and r.json()["type"] == "image", r.text[:200]
+    stem = name.rsplit(".", 1)[0]
+    png = client.get(f"/api/veda/image/user_imported/{stem}/render")
+    assert png.status_code == 200 and png.headers["content-type"] == "image/png"
+    client.delete(f"/api/veda/uploads/{stem}")
+
+
 def test_uploaded_profile_can_be_exported(client):
     r = _upload(client, "sounding.csv", "altitude,temperature\n0,300\n10,280\n20,260\n30,240\n")
     assert r.status_code == 200
