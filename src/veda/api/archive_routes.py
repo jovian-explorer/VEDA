@@ -93,8 +93,8 @@ def search(
     body_id: Optional[str] = None,
     dataset_id: Optional[List[str]] = Query(None),
     target: Optional[str] = None,
-    start: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}"),
-    end: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}"),
+    start: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
+    end: Optional[str] = Query(None, pattern=r"^\d{4}-\d{2}-\d{2}$"),
     kind: Optional[str] = Query(None, pattern=r"^(profile|timeseries|image|geometry|table|spectrum|cube|other)$"),
     product_type: Optional[str] = None,
     q: Optional[str] = Query(None, max_length=100),
@@ -118,8 +118,8 @@ def search(
 # ------------------------------------------------------------------ live search (PSA, PDS Registry, OPUS)
 
 class LiveRequest(BaseModel):
-    start: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}")
-    end: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}")
+    start: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    end: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
     mission_id: Optional[str] = None
     body_id: Optional[str] = None
     dataset_ids: Optional[List[str]] = Field(None, max_length=200)

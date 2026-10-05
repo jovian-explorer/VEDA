@@ -389,6 +389,16 @@ def test_archive_api_rejects_unknown_and_bad_input(client):
     assert client.get("/api/veda/archive/search?dataset_id=nope").status_code == 404
     assert client.get("/api/veda/archive/search?start=yesterday").status_code == 422
     assert client.get("/api/veda/archive/search?start=2020-01-02&end=2020-01-01").status_code == 400
+    # dates are compared as text: anything but YYYY-MM-DD is refused, not misread
+    assert client.get("/api/veda/archive/search?start=2020-01-01junk").status_code == 422
+    for bad in ("2020-1-31", "2020-02-30", "31/01/2020"):
+        r = client.post("/api/veda/compare/body/mars", json={"filter": {"start": bad, "download": False}})
+        assert r.status_code == 422, bad
+    r = client.post("/api/veda/export/compare/mars/profiles",
+                    json={"filter": {"start": "2005-01-01", "end": "2004-01-01", "download": False}})
+    assert r.status_code == 422 and "after the end" in r.json()["detail"]
+    r = client.post("/api/veda/export/compare/mars/profiles", json={"group_by": "zodiac"})
+    assert r.status_code == 422
     assert client.post("/api/veda/archive/datasets/nope/index").status_code == 404
     r = client.post("/api/veda/archive/fetch", json={"items": [{"dataset_id": "mex-m-mrs-5-occ", "product_id": "../../x"}]})
     assert r.status_code == 404

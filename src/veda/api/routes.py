@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 import numpy as np
 from fastapi import APIRouter, HTTPException, Query, Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from ..core.registry import (
     BODIES, MISSIONS, FIELD_REGISTRY, DATA_PORTALS, DATA_LICENSES, LEAD_RESEARCHER,
@@ -224,6 +224,8 @@ def explore_by_body(
 
 class CompareFilter(BaseModel):
     """Which profiles to compare when none are hand-picked (see missions/selection.py)."""
+    # Dates as YYYY-MM-DD: they are compared with the profiles' ISO times as text, so
+    # "2020-1-31" would select the wrong profiles.
     start: Optional[str] = None
     end: Optional[str] = None
     lat_min: Optional[float] = Field(None, ge=-90, le=90)
@@ -237,6 +239,20 @@ class CompareFilter(BaseModel):
     per_mission: int = Field(10, ge=1, le=100)
     download: bool = True
     include_uploads: bool = True
+
+    @field_validator("start", "end")
+    @classmethod
+    def _iso_date(cls, v: Optional[str]) -> Optional[str]:
+        import datetime as _dt
+        if v in (None, ""):
+            return None
+        try:
+            if len(v) != 10:
+                raise ValueError
+            _dt.date.fromisoformat(v)
+        except ValueError:
+            raise ValueError(f"dates must be written YYYY-MM-DD, not {v!r}")
+        return v
 
 
 class CrossCompareRequest(BaseModel):
@@ -264,7 +280,8 @@ def compare_missions_on_body(
     return _compare_or_404(body_id, req)
 
 
-def _compare_or_404(body_id: str, req: "CrossCompareRequest") -> dict:
+def _checked_selection(body_id: str, req: "CrossCompareRequest"):
+    """The request's profile filter, after the checks every comparison endpoint makes."""
     if not get_body(body_id):
         raise HTTPException(status_code=404, detail=f"Body '{body_id}' not found")
     from ..missions.selection import ProfileFilter
@@ -274,6 +291,11 @@ def _compare_or_404(body_id: str, req: "CrossCompareRequest") -> dict:
     from ..analysis.atmospheric import GROUPINGS
     if req.group_by and req.group_by not in GROUPINGS:
         raise HTTPException(status_code=422, detail=f"group_by must be one of: {', '.join(GROUPINGS)}")
+    return sel
+
+
+def _compare_or_404(body_id: str, req: "CrossCompareRequest") -> dict:
+    sel = _checked_selection(body_id, req)
     comp = get_mission_manager().compare_on_body(
         body_id, req.observations, mission_ids=req.missions, variable_name=req.variable, selection=sel,
         group_by=req.group_by or "", group_width=req.group_width, altitude_step_km=req.altitude_step_km,
@@ -507,11 +529,8 @@ def export_compare_profiles(body_id: str, req: CrossCompareRequest):
     """The compared profiles at their own levels with every archived and derived
     quantity (long format), instead of one variable on the common grid."""
     from ..analysis.atmospheric import export_profiles_long_csv
+    sel = _checked_selection(body_id, req)
     body = get_body(body_id)
-    if not body:
-        raise HTTPException(status_code=404, detail=f"Body '{body_id}' not found")
-    from ..missions.selection import ProfileFilter
-    sel = ProfileFilter(**req.filter.model_dump()) if req.filter else None
     profiles, _ = get_mission_manager().profiles_for_comparison(
         body_id, req.observations, mission_ids=req.missions, variable_name=req.variable, selection=sel)
     # the profiles on screen: those that carry the compared variable
