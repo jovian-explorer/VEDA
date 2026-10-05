@@ -14,9 +14,10 @@ Everything the app writes lives under a single writable root:
 from __future__ import annotations
 
 import json
+import math
 import os
 import sys
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Dict
 
@@ -135,7 +136,8 @@ class Settings:
                 raise ValueError(f"{key} must be true or false")
             return value
         if isinstance(default, int):
-            if isinstance(value, bool) or not isinstance(value, (int, float)) or value != int(value):
+            if (isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value)
+                    or value != int(value)):
                 raise ValueError(f"{key} must be a whole number")
             lo, hi = rule
             if not lo <= int(value) <= hi:
@@ -168,7 +170,10 @@ class Settings:
         ensure_dirs()
         s = cls()
         if not SETTINGS_PATH.is_file():
-            s.save()
+            try:
+                s.save()
+            except OSError:
+                pass            # a read-only data folder: run with the defaults
             return s
         try:
             with open(SETTINGS_PATH, "r", encoding="utf-8") as fh:
@@ -184,6 +189,8 @@ class Settings:
         return s
 
     def save(self) -> None:
+        """Write settings.json; raises OSError when it cannot be written (the caller
+        tells the user: the settings then hold for this session only)."""
         ensure_dirs()
         tmp = SETTINGS_PATH.with_suffix(".json.tmp")
         try:
@@ -191,7 +198,11 @@ class Settings:
                 json.dump(self.to_dict(), fh, indent=2)
             os.replace(tmp, SETTINGS_PATH)  # atomic: no half-written file on crash
         except OSError:
-            pass
+            try:
+                tmp.unlink()
+            except OSError:
+                pass
+            raise
 
 
 SETTINGS = Settings.load()

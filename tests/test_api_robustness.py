@@ -152,6 +152,31 @@ def test_corrupt_settings_file_is_repaired_on_load():
     SETTINGS.save()
 
 
+def test_infinite_numbers_in_settings_are_rejected(client):
+    """int(inf) raises OverflowError, not ValueError: {"plot_dpi": Infinity} gave a server
+    error, and a settings.json holding 1e400 stopped VEDA from starting."""
+    r = client.post("/api/settings", content=b'{"plot_dpi": Infinity}', headers={"content-type": "application/json"})
+    assert r.status_code == 422 and "whole number" in r.json()["detail"]
+    r = client.post("/api/settings", content=b'{"plot_dpi": NaN}', headers={"content-type": "application/json"})
+    assert r.status_code == 422 and "whole number" in r.json()["detail"]
+    SETTINGS_PATH.write_text('{"plot_dpi": 1e400, "ui_font_size": 16}', encoding="utf-8")
+    s = Settings.load()
+    assert s.plot_dpi == 300 and s.ui_font_size == 16
+    SETTINGS.reset()
+    SETTINGS.save()
+
+
+def test_settings_that_cannot_be_saved_are_reported(client, monkeypatch, tmp_path):
+    """Bug: a failed write of settings.json was ignored and the request answered 200."""
+    import veda.config as config
+    monkeypatch.setattr(config, "SETTINGS_PATH", tmp_path / "missing-folder" / "settings.json")
+    r = client.post("/api/settings", json={"plot_dpi": 600})
+    assert r.status_code == 500 and "could not be saved" in r.json()["detail"]
+    monkeypatch.undo()
+    SETTINGS.reset()
+    SETTINGS.save()
+
+
 def test_meta_reports_paths_and_repository(client):
     meta = client.get("/api/meta").json()
     assert meta["repository"] == "https://github.com/jovian-explorer/VEDA"

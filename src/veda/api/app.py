@@ -64,6 +64,14 @@ def _warm_imports() -> None:
         pass
 
 
+def _save_settings() -> None:
+    try:
+        SETTINGS.save()
+    except OSError as exc:
+        raise HTTPException(500, f"The settings apply until VEDA is closed but could not be saved to "
+                                 f"{SETTINGS_PATH}: {exc.strerror or exc}")
+
+
 _SAFE_METHODS = ("GET", "HEAD", "OPTIONS")
 
 
@@ -176,7 +184,7 @@ def create_app() -> FastAPI:
             SETTINGS.update(patch)
         except ValueError as exc:
             raise HTTPException(422, str(exc))
-        SETTINGS.save()
+        _save_settings()
         return SETTINGS.to_dict()
 
     @app.get("/api/update")
@@ -188,7 +196,7 @@ def create_app() -> FastAPI:
     @app.post("/api/settings/reset")
     def reset_settings() -> Dict[str, Any]:
         SETTINGS.reset()
-        SETTINGS.save()
+        _save_settings()
         return SETTINGS.to_dict()
 
     @app.get("/api/exports")
