@@ -6,7 +6,7 @@
 
 **VEDA** is a desktop laboratory for planetary atmosphere and ionosphere data. Pick a planet or moon and a date range, and VEDA finds every product the official archives hold for it across all connected missions. You can then download the products, plot them, derive physical parameters, compare observations and compute the observation geometry with SPICE.
 
-All data shown in VEDA come straight from the mission archives (NASA PDS, ESA PSA, JAXA DARTS, ISRO ISSDC, OPUS). Nothing is simulated. Nearly every payload of every mission in VEDA can be searched by date and plotted; the few that cannot (no searchable archive route yet) are listed in DATA_POLICY.md.
+All data shown in VEDA come straight from the mission archives (NASA PDS, ESA PSA, JAXA DARTS, ISRO ISSDC, OPUS) and the instrument teams' research data repositories (Zenodo, BIRA-IASB). Nothing is simulated. Nearly every payload of every mission in VEDA can be searched by date and plotted; the few that cannot (no searchable archive route yet) are listed in DATA_POLICY.md.
 
 > **VEDA is public and updated continuously** (version 0.2.0; every tested change is published as the latest build). It is ready for use and for testing; please report problems, wrong results and suggestions through **Feedback** in the app or on the [issue tracker](https://github.com/jovian-explorer/VEDA/issues/new/choose).
 
@@ -43,7 +43,7 @@ In **By Planetary Mission**, *Archive data* lists every payload and data set of 
 
 ### Connected archives and payloads
 
-All 19 missions in VEDA are connected (141 data sets). Highlights:
+All 25 missions in VEDA are connected (161 data sets: 55 read from archive indexes, 106 searched live). Highlights:
 
 | Body | Mission | Payloads | Route |
 |---|---|---|---|
@@ -84,16 +84,28 @@ An opened profile shows every quantity in the product with the archived 1-sigma 
 * Brunt-Vaisala frequency $N^2 = \frac{g}{T}\left(\frac{dT}{dz} + \frac{g}{c_p}\right)$ and buoyancy period
 * Cold-point tropopause (Titan, Jupiter, Saturn), gravity-wave temperature perturbations and potential energy
 * For ionospheres, the peak height and density, a fitted Chapman layer and $\text{VTEC} = 10^{-7}\int N_e\,dz$ (TECU)
-* Any of these, or the minimum, maximum or mean of a variable in a layer you choose, plotted for all compared profiles against time, latitude, local time, zenith angle or Ls
+* From a measured density (accelerometer and entry-probe profiles, SOIR, radio occultation number densities): temperature and pressure by downward hydrostatic integration
+* For profiles with temperature and pressure: their hydrostatic consistency (largest and median departure of the archived pressure from the hydrostatic one)
+
+Heat capacity depends on temperature for Venus, Mars, Titan and Pluto ($c_p(T)$ from JANAF tables), gravity on latitude for Jupiter and Saturn, and the body constants come from measured compositions; the [User Guide](USAGE.md#3-scientific-inversion-and-atmospheric-physics) gives every method with its checks against archive values.
 
 ### Compare observations
-Selected profiles from any missions are interpolated onto a common altitude grid (no extrapolation, no bridging of data gaps) and drawn with their mean and 1-sigma spread: arithmetic mean and sample standard deviation for temperature-like quantities, geometric mean and a multiplicative spread for pressure, densities and electron density. Colour the curves by mission, date or latitude, switch the variable and units, and export the comparison table as CSV.
+* **Choose the profiles** by date, latitude band, local solar time, solar zenith angle, Mars season (Ls) and number per mission: VEDA searches the whole archive catalogue, downloads what it needs and reports why profiles were left out. Or tick profiles in any search table.
+* **Common grid**: profiles from any missions are interpolated onto common altitude levels (grid step of your choice) or pressure levels (uniform in log pressure, so profiles with different altitude references line up), with no extrapolation and no bridging of data gaps, and drawn with their mean and 1-sigma spread: arithmetic for temperature-like quantities, geometric with a multiplicative spread for pressure, densities and electron density.
+* **Climatologies**: group composites by latitude band, local time, zenith angle, Ls, year, month, month of the year or mission, and deviations from the group or composite mean.
+* **Altitude cut**: one point per profile against time, latitude, local time, zenith angle, Ls, longitude or day of year: the variable at one altitude, its minimum, maximum or mean in a layer (or their altitudes), or a quantity from the whole profile (tropopause, electron density peak, Chapman fit, electron content, gravity-wave energy, hydrostatic consistency). Against local time, longitude or Ls a least-squares fit of up to four harmonics gives tide and wave amplitudes and phases with 1-sigma uncertainties.
+* Colour the curves by mission, date or latitude and switch the variable and units at any time.
+
+### Export data
+* **Comparison CSV**: the compared variable on the common grid (composite and group means and spreads, profiles per level, every profile) with a header line per profile (mission, time, geometry, altitude reference) and a recipe line from which **Open comparison** redoes the same comparison.
+* **Profiles, all variables (CSV)**: the compared profiles at their own levels with every archived and derived quantity and uncertainty, one row per profile and level, ready for pandas, R or a spreadsheet.
+* For an opened profile: CSV and structured JSON with its derived quantities; every CSV names the archive, source file, citation and VEDA version.
 
 ### Style and export figures
 **Plot style** controls lines, markers, palettes, uncertainty bands or error bars, linear or log axes, swapped axes, altitude or pressure as the vertical axis, grid, ticks, fonts and legend, with journal templates for AGU, Elsevier (Icarus/PSS), A&A and MNRAS. It applies to profiles, comparisons, time series, spectra and images. **Export figure** writes PNG at a chosen DPI or vector SVG at the journal's single- or double-column width.
 
 ### Observation geometry with SPICE, kernels downloaded for you
-**Geometry** works for every mission with public SPICE kernels (17 of 19; MOM and Chandrayaan-2 publish none):
+**Geometry** is set up for 17 of the 25 missions (not yet for Mars Odyssey, the Mars landers and rovers or VEGA; MOM and Chandrayaan-2 publish no kernels):
 
 * **Radio occultations**: the orbit around the occultation (planet-fixed and J2000), the view from Earth, the tangent-point track (cylindrical, polar or orthographic) and SZA, local time and Sun-Earth-probe angle along the profile. Times are Earth-received and light-time corrected; tangent radii agree with Mars Express's archived values to about 1 km.
 * **Any other observation**: the spacecraft orbit, the sub-spacecraft ground track and altitude, local solar time and solar zenith, emission and phase angles over the observation.
@@ -111,7 +123,7 @@ When you open a mission, its generic and body kernels download in the background
 It gives BibTeX, plain text and a matching data availability statement, all ready to copy.
 
 ### Your own files
-**Load File** or drag and drop: PDS3 (`.lbl` + data), PDS4 (`.xml` + data), FITS, netCDF, CSV and text tables, PNG/JPEG.
+**Load File** or drag and drop: PDS3 (`.lbl` + data), PDS4 (`.xml` + data), CSV and text tables, FITS and PNG/JPEG images (up to 200 MB per file). For tables VEDA shows the columns with their units and ranges and asks what each one is and in which unit, and which body, mission, instrument and time the file belongs to; loaded profiles then take part in comparisons like archive profiles.
 
 ---
 
@@ -156,7 +168,7 @@ pytest
 | `veda` | Starts the backend on a free local port (8765 or the next free one) and opens the native window |
 | `veda --browser` | Same, but opens your default browser |
 | `veda --no-window --port 8765` | Server only; open `http://127.0.0.1:8765/` yourself |
-| `veda-server --host 0.0.0.0` | Serve on your network (the API has no authentication, so only do this on a trusted network) |
+| `veda-server --host 0.0.0.0` | Serve on your network; set `VEDA_ALLOWED_HOSTS` to the host names or addresses others will use (for example `myhost,192.168.1.20`). The API has no accounts, so only do this on a trusted network |
 
 The interactive REST API documentation is at `/api/docs` on the same address. The archive endpoints are under `/api/veda/archive` (data sets, index, search, fetch, profile) and `/api/veda/geometry`.
 
