@@ -77,7 +77,7 @@ function wireChrome() {
 
   const btnVars = $('#btn-veda-vars');
   if (btnVars) {
-    btnVars.addEventListener('click', () => drawer('Planetary Science Variables & Algorithm Catalog', variablesCatalogBody()));
+    btnVars.addEventListener('click', () => drawer('Variables and formulas', variablesCatalogBody()));
   }
 
   $('#btn-cite')?.addEventListener('click', async () => {
@@ -405,9 +405,26 @@ function helpBody() {
     </section>
 
     <section data-help>
-      <h3>Plotting, derived parameters and comparison</h3>
-      <p>An opened profile shows every quantity the product contains (temperature, pressure, number or electron density, refractivity, absorptivity, H<sub>2</sub>SO<sub>4</sub>, &hellip;) with the archived &plusmn;1&sigma; uncertainty where the product gives one. VEDA also derives lapse rate, scale height, potential temperature, mass density, Brunt-V&auml;is&auml;l&auml; frequency, gravity-wave perturbations, tropopause and, for ionospheres, the peak and VTEC, using the body's constants. The time, latitude, longitude, solar zenith angle and local time come from the product.</p>
-      <p>In a comparison the profiles are put on a common altitude grid with their mean and &plusmn;1&sigma; spread; colour the curves by mission, date or latitude.</p>
+      <h3>Opened profiles and derived quantities</h3>
+      <p>An opened profile shows every quantity the product contains (temperature, pressure, number, mass or electron density, refractivity, absorptivity, H<sub>2</sub>SO<sub>4</sub>, aerosol profiles, &hellip;) with the archived &plusmn;1&sigma; uncertainty where the product gives one, and its time, latitude, longitude, solar zenith angle, local time and altitude reference. Values VEDA computed (local time, zenith angle or Ls the archive does not give) are marked with an asterisk.</p>
+      <p>From the body's constants VEDA derives the lapse rate, scale height, potential temperature, mass density, speed of sound, Brunt-V&auml;is&auml;l&auml; frequency, gravity-wave perturbations and potential energy, the cold-point tropopause and, for ionospheres, the peak, a Chapman fit and VTEC. Profiles with a measured density (accelerometers, entry probes, SOIR) also get a temperature and pressure by hydrostatic integration, and profiles with temperature and pressure a hydrostatic consistency check. The User Guide (USAGE.md, section 3) gives every method.</p>
+    </section>
+
+    <section data-help>
+      <h3>Comparing profiles</h3>
+      <p>Tick missions under <strong>2. Select Missions to Compare</strong>. Under <em>Which profiles</em> set a date range, latitude band, local time, solar zenith angle or Mars season (Ls) range and the number of profiles per mission, then press <strong>Apply</strong>: VEDA searches the whole archive, downloads what it needs (untick <em>Download</em> to use only the cache) and reports per mission how many profiles were kept and why others were left out. Profiles ticked in a search table (<strong>Compare selected</strong>) are used as they are.</p>
+      <p>The profiles are put on a common grid (<em>Grid step</em> in km, or <em>Vertical: Pressure</em> for levels uniform in log pressure) with their mean and &plusmn;1&sigma; spread; pressure and densities are averaged in log space. <em>Group composites by</em> gives a mean per latitude band, local time, zenith angle, Ls, year, month or mission (a climatology), and <em>Show: Deviation from the mean</em> brings out waves and tides. Colour the curves by mission, date or latitude; switch the variable and units under <strong>3. Analysis Variable &amp; Units</strong>.</p>
+      <p><strong>Altitude cut</strong> plots one point per profile against time, latitude, local time, zenith angle, Ls, longitude or day of the year: the variable at one altitude, its minimum, maximum or mean in a layer (or their altitudes), or a quantity computed from the whole profile (tropopause, electron density peak, Chapman fit, electron content, wave energy, hydrostatic consistency). Against local time, longitude or Ls, <em>Fit</em> gives the mean and up to four harmonics (tides and waves) with amplitudes, phases and 1&sigma; uncertainties. Click a point to open its profile.</p>
+    </section>
+
+    <section data-help>
+      <h3>Exports</h3>
+      <ul>
+        <li><strong>Export Comparison CSV</strong>: the compared variable on the common grid (composite and group means and spreads, the number of profiles at each level, every profile), a header line per profile with its time, geometry and altitude reference, and a recipe line that <strong>Open comparison (from its CSV)</strong> uses to redo the comparison.</li>
+        <li><strong>Export profiles, all variables (CSV)</strong>: the same profiles at their own levels with every archived and derived quantity, one row per profile and level.</li>
+        <li><strong>Publication Figure</strong> (at the DPI set in Settings), <strong>Snapshot Plot (PNG)</strong> and <strong>Export figure</strong> (PNG or SVG at a journal column width).</li>
+        <li>On an opened profile: <strong>Export CSV</strong> and <strong>Structured JSON</strong> with its derived quantities.</li>
+      </ul>
     </section>
 
     <section data-help>
@@ -423,13 +440,13 @@ function helpBody() {
 
     <section data-help>
       <h3>Loading your own files</h3>
-      <p>Use <strong>Load File</strong> or drag files onto the window. Supported: PDS3 tables (<code>.lbl</code> + <code>.tab</code>), CSV and plain-text tables (<code>.csv</code>, <code>.txt</code>, <code>.dat</code>, <code>.asc</code>), FITS images (<code>.fit</code>, <code>.fits</code>, <code>.fts</code>) and PNG/JPEG images.</p>
-      <p>For a PDS3 product, select the <code>.lbl</code> label <em>and</em> its <code>.tab</code> table together: the label describes the columns. Text tables need an altitude column (ALTITUDE, ALT, HEIGHT, Z or RADIUS); temperature, pressure, electron density and refractivity columns are detected by name. Loaded files appear under the <em>user_imported</em> mission so you can reopen them.</p>
+      <p>Use <strong>Load File</strong> or drag files onto the window. Supported: PDS3 tables (<code>.lbl</code> + <code>.tab</code>), PDS4 tables (<code>.xml</code> + data), CSV and plain-text tables (<code>.csv</code>, <code>.txt</code>, <code>.dat</code>, <code>.asc</code>), FITS images (<code>.fit</code>, <code>.fits</code>, <code>.fts</code>) and PNG/JPEG images.</p>
+      <p>Select a PDS3 or PDS4 label <em>and</em> its data file together: the label describes the columns. For a table VEDA then shows each column with its unit and range and asks what it is (altitude or radius, temperature, pressure, electron, number or mass density, uncertainties, geometry) and in which unit, and what the file is (body, mission, instrument, time). The choices are remembered. Loaded files appear under the <em>user_imported</em> mission and take part in comparisons of their body.</p>
     </section>
 
     <section data-help>
       <h3>Units and settings</h3>
-      <p>The quick unit switcher (K / &deg;C, bar / hPa / Pa) changes the comparison plot straight away. Default units, the start-up body, figure DPI, network access and the theme are in <strong>Settings</strong>.</p>
+      <p>The quick unit switcher (K / &deg;C, bar / hPa / Pa) changes the comparison plot straight away. <strong>Settings</strong> holds the theme and text size, default units, the start-up body and mission, the publication figure DPI, network access (downloads, update notices, timeout, large-file limit), the number of worker processes and parallel downloads, automatic SPICE kernel downloads, and links to the data folders.</p>
     </section>
 
     <section data-help>
@@ -471,9 +488,13 @@ function helpBody() {
         <li><strong>Brunt-V&auml;is&auml;l&auml; frequency ($N^2$):</strong>
           <p>$$N^2(z) = \\frac{g(z)}{T(z)}\\left(\\frac{dT}{dz} + \\Gamma_d\\right), \\quad \\Gamma_d = g/c_p(T)$$</p>
           Negative $N^2$ marks convectively unstable layers. For Venus, Mars, Titan and Pluto $c_p$ depends on temperature (JANAF ideal-gas values of the main gases weighted by composition): about 740 J/(kg K) on Mars at 200 K, 850 to 1140 J/(kg K) from 300 to 735 K on Venus.</li>
-        <li><strong>Gravity-wave potential energy:</strong>
-          <p>$$E_p(z) = \\frac{1}{2}\\left(\\frac{g}{N}\\right)^2 \\overline{\\left(\\frac{T'}{\\overline{T}}\\right)^2}$$</p></li>
-        <li><strong>Radio occultation (Abel inversion):</strong>
+        <li><strong>Gravity-wave potential energy</strong> ($\\overline{T}$ a Butterworth low-pass of the profile with an 8 km cutoff, $\\overline{N}$ its stability):
+          <p>$$E_p(z) = \\frac{1}{2}\\left(\\frac{g}{\\overline{N}}\\right)^2 \\left(\\frac{T'}{\\overline{T}}\\right)^2, \\quad T' = T - \\overline{T}$$</p></li>
+        <li><strong>Temperature from a density profile</strong> (integrated downwards from an isothermal fit to the top of the profile):
+          <p>$$p(z) = p_{top} + \\int_z^{z_{top}} \\rho g \\,dz', \\quad T(z) = \\frac{p(z)}{\\rho(z) R_{spec}}$$</p></li>
+        <li><strong>Chapman layer:</strong>
+          <p>$$N_e(z) = N_m \\exp\\left(\\tfrac{1}{2}\\left(1 - \\zeta - e^{-\\zeta}\\right)\\right), \\quad \\zeta = (z - h_m)/H$$</p></li>
+        <li><strong>Radio occultation (Abel inversion; how the archived profiles were retrieved):</strong>
           <p>$$\\mu(r) - 1 = \\frac{1}{\\pi} \\int_r^{r_{top}} \\frac{\\alpha(a)}{\\sqrt{a^2 - r^2}}\\,da$$</p></li>
         <li><strong>Vertical total electron content:</strong>
           <p>$$\\text{VTEC} = 10^{-7} \\int N_e(z)\\,dz \\quad [\\text{TECU}]$$</p></li>
@@ -576,7 +597,7 @@ function aboutBody() {
     <button type="button" class="ghost small" id="btn-copy-bibtex">Copy citation</button>
 
     <h3>License and terms</h3>
-    <p>VEDA is free software under the MIT License and comes with no warranty. The data belong to the mission teams and archives (NASA PDS, ESA PSA, JAXA DARTS, ISRO ISSDC; ephemerides from NASA NAIF); VEDA only downloads and reads them, and your use of them is governed by each archive's terms. Check results against the product documentation before you publish. VEDA sends nothing about you anywhere: it contacts only the archives you search, and only when downloads are allowed in Settings. See <code>TERMS.md</code>, <code>DATA_POLICY.md</code> and <code>THIRD_PARTY_LICENSES.md</code> in the repository.</p>
+    <p>VEDA is free software under the MIT License and comes with no warranty. The data belong to the mission teams and archives (NASA PDS, ESA PSA, JAXA DARTS, ISRO ISSDC, and the research data repositories Zenodo and BIRA-IASB; ephemerides from NASA NAIF); VEDA only downloads and reads them, and your use of them is governed by each archive's terms. Check results against the product documentation before you publish. VEDA sends nothing about you anywhere: it contacts only the archives you search, and only when downloads are allowed in Settings. See <code>TERMS.md</code>, <code>DATA_POLICY.md</code> and <code>THIRD_PARTY_LICENSES.md</code> in the repository.</p>
     <p class="hint">Bundled libraries: Plotly.js, KaTeX (MIT); FastAPI, Pydantic, SpiceyPy (MIT); Uvicorn, NumPy, SciPy, Astropy, PyWebView (BSD-3-Clause); Requests (Apache-2.0); Matplotlib (PSF-based); Pillow (MIT-CMU); NAIF CSPICE (public, see NAIF rules).</p>
     <h3>This installation</h3>
     <dl class="about-paths">
@@ -631,9 +652,8 @@ function variablesCatalogBody() {
   });
 
   container.innerHTML = `
-    <h2>Planetary Science Variables & Algorithm Catalog</h2>
     <p class="hint" style="margin-bottom: 12px;">
-      Exhaustive physical formulas, thermodynamic definitions, peer-reviewed citations, DOIs, and space agency archive sources for planetary atmospheric and ionospheric analysis:
+      The variables VEDA reads from the archives or derives from them, with their units, formulas, references and DOIs.
     </p>
     <div style="margin-top: 12px;">
       ${cardsHtml}
