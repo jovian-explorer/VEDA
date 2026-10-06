@@ -294,7 +294,10 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
     p_hpa = _to_hpa(p, p_unit) if p is not None else None
     ne = _col(tbl, cols.get("electron_density"))
     ne_cm3 = _to_per_cm3(ne, ne_unit) if ne is not None else None
-    n = _col(tbl, cols.get("number_density"))
+    # The neutral number density only: in ionospheric files (MaRS/VeRa "IID") the
+    # whole-word search for NUMBER DENSITY finds ELECTRON NUMBER DENSITY instead.
+    n_key = _key(tbl, cols.get("number_density"))
+    n = _col(tbl, cols.get("number_density")) if n_key and "ELECTRON" not in n_key.upper() else None
     if n is not None:
         n_unit = _unit(tbl, cols.get("number_density"))
         if n_unit:                                       # stored as m^-3; Cassini gives cm^-3

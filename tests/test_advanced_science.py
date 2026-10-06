@@ -416,3 +416,28 @@ def test_every_body_gas_constant_follows_from_its_molar_mass():
     from veda.core.registry import BODIES
     for b in BODIES.values():
         assert b.gas_constant_r == pytest.approx(8314.462618 / b.mean_molecular_weight, rel=5e-4), b.id
+
+
+def test_electron_number_density_is_not_taken_for_the_neutral_number_density():
+    """MaRS ionosphere files (IID) have ELECTRON NUMBER DENSITY and no neutral NUMBER DENSITY;
+    the whole-word match took the electron column, which gave a retrieved temperature of
+    millions of kelvin from the 'density'."""
+    import dataclasses
+    from veda.archives.datasets import RS_PROFILE_COLUMNS, get_dataset
+    from veda.archives.profiles import profile_from_label
+    import os, tempfile, pathlib
+    tmp = pathlib.Path(tempfile.mkdtemp(dir=os.environ.get("VEDA_HOME")))
+    rows = [(3500.0 + 50 * i, 1e4 * np.exp(-((50 * i - 150) / 40.0) ** 2)) for i in range(8)]
+    (tmp / "p.tab").write_text("".join(f"{r:10.2f} {n:12.4e}\r\n" for r, n in rows), newline="")
+    cols = [("RADIUS", 1, 10, "KILOMETER"), ("ELECTRON NUMBER DENSITY", 12, 12, "10^6 PER CUBIC METER")]
+    body = "".join(f"OBJECT = COLUMN\nNAME = \"{n}\"\nDATA_TYPE = ASCII_REAL\nSTART_BYTE = {s}\nBYTES = {b}\n"
+                   f"UNIT = \"{u}\"\nEND_OBJECT = COLUMN\n" for n, s, b, u in cols)
+    (tmp / "p.lbl").write_text(f"PDS_VERSION_ID = PDS3\nRECORD_TYPE = FIXED_LENGTH\nRECORD_BYTES = 25\n^TABLE = \"p.tab\"\n"
+                               f"OBJECT = TABLE\nINTERCHANGE_FORMAT = ASCII\nROWS = 8\nCOLUMNS = 2\nROW_BYTES = 25\n{body}"
+                               f"END_OBJECT = TABLE\nEND\n")
+    ds = dataclasses.replace(get_dataset("phx-m-ase-5-edl-rdr-v1.0"), extra_variables={},
+                             profile_columns=dict(RS_PROFILE_COLUMNS))
+    prof = profile_from_label(ds, {"product_id": "p", "start_time": "2022-06-21T18:51:00", "volume": "v", "url": "",
+                                   "product_type": "profile"}, tmp / "p.lbl")
+    assert prof.electron_density_cm3 is not None and np.nanmax(prof.electron_density_cm3) == pytest.approx(1e4, rel=0.05)
+    assert "number_density_m3" not in prof.derived and "temperature_from_density" not in prof.derived
