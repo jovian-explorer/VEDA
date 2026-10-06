@@ -710,7 +710,8 @@ def _publication_figure(b, comp: dict, variable: str, dpi: int, fmt: str) -> Res
     ax.grid(True, linestyle="--", alpha=0.5)
     ax.legend(loc="upper right", framealpha=0.9, fontsize=9)
 
-    fig.tight_layout()
+    # Room below the axis label for the altitude-reference note (it overlapped the label)
+    fig.tight_layout(rect=(0, 0.05, 1, 1) if comp.get("vertical_reference_warning") else (0, 0, 1, 1))
 
     buf = io.BytesIO()
     fig.savefig(buf, format=fmt, dpi=dpi, bbox_inches="tight")

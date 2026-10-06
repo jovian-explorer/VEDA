@@ -819,3 +819,29 @@ def test_observation_ids_cannot_reach_files_outside_the_data_folder(client, tmp_
     for oid in (f"{outside}/{img}", f"{rel}/{img}"):
         assert client.get(f"/api/veda/image/akatsuki/{oid}").status_code == 404, oid
         assert client.get(f"/api/veda/image/akatsuki/{oid}/render").status_code == 404, oid
+
+
+def test_publication_figure_note_does_not_cover_the_axis_label(monkeypatch):
+    """The altitude-reference note under the figure overlapped the x-axis label."""
+    from matplotlib.figure import Figure
+    from veda.api import routes
+    from veda.core.registry import get_body
+    seen = {}
+    orig = Figure.savefig
+    def keep(self, *a, **k):
+        seen["fig"] = self
+        return orig(self, *a, **k)
+    monkeypatch.setattr(Figure, "savefig", keep)
+    comp = {"grid_km": [50.0, 60.0, 70.0], "profile_count": 2, "composite_mean": [330.0, 260.0, 230.0],
+            "profiles": [{"mission_id": "vex", "observation_id": "a", "interpolated_series": [330.0, 260.0, 230.0]},
+                         {"mission_id": "akatsuki", "observation_id": "b", "interpolated_series": [331.0, 262.0, 229.0]}],
+            "vertical_reference_warning": "Altitudes are measured from different references (AKATSUKI, VEX: the body's "
+                                          "reference sphere; VEX: the Venus surface at the tangent point, as given by the "
+                                          "SOIR team), so they are offset from each other."}
+    routes._publication_figure(get_body("venus"), comp, "temperature_k", 100, "png")
+    fig = seen["fig"]
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
+    r = FigureCanvasAgg(fig).get_renderer()
+    label = fig.axes[0].xaxis.label.get_window_extent(r)
+    note = fig.texts[0].get_window_extent(r)
+    assert note.y1 < label.y0

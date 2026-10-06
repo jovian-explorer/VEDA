@@ -90,6 +90,7 @@ Each body's molar mass, gas constant and heat capacity now follow from a sourced
 
 ### Exports
 - **Export profiles, all variables**: the compared profiles at their own levels with every archived and derived quantity, uncertainties and per-level geometry, one row per profile and level, for analysis in Python, R or a spreadsheet.
+- The publication figure's note on differing altitude references no longer covers the x-axis label.
 - The CSV exports state each profile's altitude reference: the comparison CSV said "Altitude above the body's reference radius" for every comparison and now names the shared reference (or says the references differ) and lists it per profile; the all-variables CSV gives it beside each profile's source.
 - **Fix: comparison CSV wrote small values as zero.** Values had four fixed decimals, so densities (1e-7 kg/m3 in the thermosphere) and pressures above about 60 km on Mars were exported as 0.0000; they now have six significant figures. The CSV also gains the group composites, the number of profiles at each level, and a header line per profile with mission, instrument, time, latitude, longitude, local time and solar zenith angle.
 - **Fix: compared data missing from *Cite*.** Only products opened one by one or picked by hand were listed in the Cite panel; profiles that entered a comparison through the filter or the default selection (the usual way) were not, so the panel could say no archive product had been opened under a plotted comparison. Every archive data set in a comparison is now listed.
