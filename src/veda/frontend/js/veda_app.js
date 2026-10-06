@@ -1036,7 +1036,7 @@ function setupBodyModeControls() {
   }
 
   // Subtabs: profiles, altitude cut, map
-  const SUBTABS = ['soundings', 'cut', 'cross', 'map'];
+  const SUBTABS = ['soundings', 'cut', 'cross', 'spectra', 'map'];
   const showSubtab = (name) => {
     vedaState.bodySubtab = name;
     SUBTABS.forEach(t => {
@@ -1056,6 +1056,18 @@ function setupBodyModeControls() {
     updateComparison();
   });
   document.getElementById('veda-cross-show')?.addEventListener('change', renderCrossSection);
+  document.getElementById('veda-btn-spectra')?.addEventListener('click', computeSpectra);
+  const btnSpec = document.getElementById('veda-btn-export-spectra');
+  btnSpec?.addEventListener('click', async () => {
+    const req = spectraRequest();
+    if (!req) return;
+    const res = await fetch(`/api/veda/analysis/vertical-spectra/${vedaState.activeBodyId}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...req, csv: true }) });
+    if (!res.ok) { let d = res.statusText; try { d = (await res.json()).detail || d; } catch (_) {} return toast(`Export failed: ${d}`, 'bad'); }
+    const url = URL.createObjectURL(await res.blob());
+    const a = document.createElement('a'); a.href = url; a.download = `veda_vertical_spectra_${vedaState.activeBodyId}.csv`; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  });
   const btnCross = document.getElementById('veda-btn-export-cross');
   btnCross?.addEventListener('click', () => exportComparison(btnCross, 'cross-section',
     `veda_cross_section_${vedaState.activeBodyId}_${vedaState.selectedCompareVariable}.csv`));
@@ -1215,6 +1227,7 @@ function renderActiveSubtab() {
   if (vedaState.bodySubtab === 'map') renderPlanetaryMap(vedaState.planetaryMapProjection || '2d');
   else if (vedaState.bodySubtab === 'cut') renderAltitudeCut();
   else if (vedaState.bodySubtab === 'cross') renderCrossSection();
+  else if (vedaState.bodySubtab === 'spectra') prefillSpectraLayer();
   else renderComparisonPlot();
 }
 
@@ -1444,6 +1457,80 @@ function renderAltitudeCut() {
 }
 
 let altitudeCutRenders = 0;
+
+/** The comparison request with the layer of the spectra, or null (with a message). */
+function spectraRequest() {
+  const z1 = Number(document.getElementById('veda-spec-zmin')?.value);
+  const z2 = Number(document.getElementById('veda-spec-zmax')?.value);
+  if (!isFinite(z1) || !isFinite(z2) || document.getElementById('veda-spec-zmin').value === '' || z2 <= z1) {
+    toast('Give a layer: the top above the bottom', 'bad');
+    return null;
+  }
+  const { cross_section_width, reference, ...base } = currentComparisonRequest();
+  return { ...base, variable: 'temperature_k', z_min: z1, z_max: z2 };
+}
+
+/** Default layer of the spectra: the 30 km covered by most compared profiles. */
+function prefillSpectraLayer() {
+  const a = document.getElementById('veda-spec-zmin'), b = document.getElementById('veda-spec-zmax');
+  const data = vedaState.lastComparisonData;
+  if (!a || !b || a.value !== '' || !data || !(data.grid_km || []).length) return;
+  const counts = data.profiles_per_level || [];
+  const k = counts.indexOf(Math.max(...counts));
+  const z = data.grid_km[Math.max(0, k)];
+  a.value = Math.round(z - 15); b.value = Math.round(z + 15);
+}
+
+let spectraRuns = 0;
+async function computeSpectra() {
+  const req = spectraRequest();
+  if (!req) return;
+  const plotDiv = document.getElementById('veda-spec-plot');
+  const status = document.getElementById('veda-spec-status');
+  const token = ++spectraRuns;
+  if (status) status.textContent = 'Computing spectra...';
+  let r;
+  try { r = await api.vedaVerticalSpectra(vedaState.activeBodyId, req); }
+  catch (err) { if (token === spectraRuns && status) status.textContent = `Spectra: ${err.message}`; return; }
+  if (token !== spectraRuns || !plotDiv) return;
+  const c = r.composite || {};
+  if (!c.m) {
+    if (plotDiv.data) Plotly.purge(plotDiv);
+    plotDiv.innerHTML = `<div class="empty-state">${c.error ? escHtml(c.error) : `None of the ${r.profiles_with_temperature} temperature profiles covers ${req.z_min} to ${req.z_max} km.`}</div>`;
+    if (status) status.textContent = '';
+    return;
+  }
+  const traces = r.profiles.map(p => ({ type: 'scatter', mode: 'lines', x: p.m, y: p.psd, showlegend: false, hoverinfo: 'skip',
+    line: { width: 0.8, color: 'rgba(148, 163, 184, 0.35)' } }));
+  if (c.ci95_low) {
+    traces.push({ type: 'scatter', mode: 'lines', x: c.m, y: c.ci95_low, line: { width: 0 }, showlegend: false, hoverinfo: 'skip' });
+    traces.push({ type: 'scatter', mode: 'lines', x: c.m, y: c.ci95_high, line: { width: 0 }, fill: 'tonexty',
+      fillcolor: 'rgba(56, 189, 248, 0.25)', name: '95 % interval of the mean (bootstrap)', hoverinfo: 'skip' });
+  }
+  traces.push({ type: 'scatter', mode: 'lines', x: c.m, y: c.mean, name: `Mean of ${c.n} profiles`,
+    line: { width: 2.5, color: plotColors().ink }, hovertemplate: 'm %{x:.3g} cycles/km (λ %{customdata:.3g} km)<br>PSD %{y:.3g}<extra></extra>',
+    customdata: c.m.map(m => 1 / m) });
+  if (c.slope != null && c.slope_band) {
+    const [lo, hi] = c.slope_band;
+    const i0 = c.m.findIndex(m => m >= lo);
+    const y0 = c.mean[i0];
+    // the m^-3 line of saturated gravity waves through the mean at the start of the band
+    traces.push({ type: 'scatter', mode: 'lines', x: [lo, hi], y: [y0, y0 * (hi / lo) ** -3], name: 'm⁻³',
+      line: { width: 1.5, dash: 'dash', color: '#e11d48' }, hoverinfo: 'skip' });
+  }
+  const layout = {
+    title: { text: `Vertical wavenumber spectra, ${req.z_min} to ${req.z_max} km` },
+    margin: { l: 75, r: 25, t: 56, b: 60 },
+    xaxis: { title: { text: 'Vertical wavenumber m (cycles/km)' }, type: 'log' },
+    yaxis: { title: { text: 'PSD of (T − T₀)/T₀ ((cycles/km)⁻¹)' }, type: 'log' },
+    legend: { orientation: 'h', y: -0.18 },
+  };
+  Plotly.newPlot(plotDiv, traces, themedLayout(layout), { responsive: true, displayModeBar: true });
+  const f = (v) => (v == null ? '?' : Number(v).toFixed(2));
+  if (status) status.textContent = `${c.n} of ${r.profiles_with_temperature} temperature profiles cover the layer.`
+    + (c.slope != null ? ` Slope ${f(c.slope)} ± ${f(c.slope_se)}` + (c.slope_ci95 ? ` [95 %: ${f(c.slope_ci95[0])} to ${f(c.slope_ci95[1])}]` : '')
+      + ` between ${(1 / c.slope_band[1]).toPrecision(2)} and ${(1 / c.slope_band[0]).toPrecision(2)} km wavelength (saturated gravity waves: −3).` : '');
+}
 
 /** Zonal-mean latitude-altitude cross section of the comparison (mean, its standard error
  *  or the number of profiles in each latitude band and level), as a heat map. */

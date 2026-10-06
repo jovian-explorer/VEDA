@@ -278,6 +278,7 @@
         <button class="view-subtab-btn active" id="btn-subtab-soundings">📈 Soundings & Profiles</button>
         <button class="view-subtab-btn" id="btn-subtab-cut" title="One point per profile (the variable at one altitude, a layer statistic or a whole-profile quantity) against time, latitude, local time, zenith angle, Ls, longitude or day of year">📍 Altitude cut</button>
         <button class="view-subtab-btn" id="btn-subtab-cross" title="Zonal mean of the compared profiles in latitude bands at every level, with its standard error and the number of profiles">🗺️ Cross section</button>
+        <button class="view-subtab-btn" id="btn-subtab-spectra" title="Vertical wavenumber spectra of the temperature perturbations of the compared profiles in a layer">〰️ Spectra</button>
         <button class="view-subtab-btn" id="btn-subtab-map">🌐 Planetary Spatial Map & Footprints</button>
       </div>
 
@@ -358,6 +359,18 @@
           <span class="hint" id="veda-cross-status"></span>
         </div>
         <div id="veda-cross-plot" style="flex: 1; min-height: 440px; max-height: 760px;"></div>
+      </div>
+
+      <!-- Tab 1d: vertical wavenumber spectra of temperature perturbations -->
+      <div id="veda-subtab-spectra-panel" style="flex: 1; display: none; flex-direction: column;">
+        <div class="row cut-controls">
+          <label>Layer from (km) <input type="number" id="veda-spec-zmin" step="any" style="width: 6em;" /></label>
+          <label>to (km) <input type="number" id="veda-spec-zmax" step="any" style="width: 6em;" /></label>
+          <button type="button" class="primary small" id="veda-btn-spectra">Compute spectra</button>
+          <button type="button" class="ghost small" id="veda-btn-export-spectra">📥 Export spectra (CSV)</button>
+          <span class="hint" id="veda-spec-status">Temperature profiles of the comparison; choose a layer they cover and press Compute.</span>
+        </div>
+        <div id="veda-spec-plot" style="flex: 1; min-height: 440px; max-height: 760px;"></div>
       </div>
 
       <!-- Tab 2: Planetary Spatial Footprints Map -->

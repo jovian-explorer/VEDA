@@ -322,6 +322,52 @@ def _compare_or_404(body_id: str, req: "CrossCompareRequest") -> dict:
     return comp
 
 
+class SpectraRequest(CrossCompareRequest):
+    """The profiles of a comparison and the layer for vertical wavenumber spectra."""
+    z_min: float = Field(..., ge=-100.0, le=10000.0)
+    z_max: float = Field(..., ge=-100.0, le=10000.0)
+    csv: bool = False
+
+
+@router.post("/analysis/vertical-spectra/{body_id}")
+def vertical_spectra(body_id: str, req: SpectraRequest):
+    """Vertical wavenumber spectra of the normalised temperature perturbations of the
+    comparison's profiles in a layer, their mean with standard error and bootstrap
+    interval, and the fitted slope (analysis/spectra.py)."""
+    from ..analysis.spectra import composite_spectrum, profile_spectrum
+    if req.z_max <= req.z_min:
+        raise HTTPException(status_code=422, detail="The top of the layer must be above its bottom")
+    sel = _checked_selection(body_id, req)
+    profiles, _ = get_mission_manager().profiles_for_comparison(body_id, req.observations, req.missions,
+                                                                "temperature_k", sel)
+    per, used = [], []
+    for p in profiles:
+        if p.temperature_k is None:
+            continue
+        s = profile_spectrum(p.altitude_km, p.temperature_k, req.z_min, req.z_max)
+        if s is None:
+            continue
+        used.append(s)
+        per.append({"mission_id": p.mission_id, "observation_id": p.observation_id, "dz_km": round(s["dz"], 4),
+                    "variance": s["variance"], "m": s["m"].tolist(), "psd": s["psd"].tolist()})
+    comp = composite_spectrum(used)
+    out = {"body_id": body_id, "z_min": req.z_min, "z_max": req.z_max, "profiles_with_temperature":
+           sum(1 for p in profiles if p.temperature_k is not None), "profiles": per, "composite": comp}
+    if not req.csv:
+        return out
+    lines = [f"# VEDA vertical wavenumber spectra of (T - T0) / T0, body={body_id}, layer {req.z_min:g} to {req.z_max:g} km,"
+             f" {comp.get('n', 0)} profiles; T0 a quadratic fit in the layer, Hann window, one-sided PSD in (cycles/km)^-1",
+             f"# slope of log10 PSD against log10 m: {comp.get('slope')} +- {comp.get('slope_se')}"
+             f" (bootstrap 95 %: {comp.get('slope_ci95')}) over m = {comp.get('slope_band')} cycles/km",
+             f"# profiles: {' '.join(p['observation_id'] for p in per)}",
+             "m_cycles_per_km,wavelength_km,mean_psd,sem,ci95_low,ci95_high"]
+    for i, m in enumerate(comp.get("m") or []):
+        at = (lambda key: "" if not comp.get(key) or comp[key][i] is None else f"{comp[key][i]:.6g}")
+        lines.append(f"{m:.6g},{1.0 / m:.6g},{comp['mean'][i]:.6g},{at('sem')},{at('ci95_low')},{at('ci95_high')}")
+    return Response(content="\n".join(lines) + "\n", media_type="text/csv", headers={
+        "Content-Disposition": f'attachment; filename="veda_vertical_spectra_{body_id}.csv"'})
+
+
 class PointStatisticsRequest(BaseModel):
     """One value per profile (an altitude cut, a layer statistic, a diagnostic)."""
     values: List[Optional[float]] = Field(..., max_length=100000)
