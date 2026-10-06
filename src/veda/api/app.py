@@ -201,6 +201,50 @@ def create_app() -> FastAPI:
         from .. import updates
         return updates.check(force=force)
 
+    @app.get("/api/update/status")
+    def update_status() -> Dict[str, Any]:
+        """The weekly automatic update: last check, a build waiting to be installed, a
+        download in progress, or why this copy does not update itself."""
+        from .. import autoupdate
+        return autoupdate.status()
+
+    @app.post("/api/update/download")
+    def update_download() -> Dict[str, Any]:
+        """Check now: look for a newer published build and download it in the background;
+        it is installed when VEDA next starts."""
+        from .. import autoupdate
+        problem = autoupdate.install_problem()
+        if problem:
+            raise HTTPException(409, f"This copy cannot update itself: {problem}")
+        if not SETTINGS.network_enabled:
+            raise HTTPException(409, "Downloads are turned off (Settings > Network)")
+        return autoupdate.start_check(force=True)
+
+    @app.get("/api/settings/changes")
+    def settings_changes() -> Dict[str, Any]:
+        """Settings added, removed or changed since the version the user last saw, and
+        after an update the new build's release notes (shown once)."""
+        from .. import settings_migration
+        return settings_migration.pending()
+
+    @app.post("/api/settings/changes/ack")
+    async def settings_changes_ack(request: Request) -> Dict[str, Any]:
+        """The user has seen the changes; ``{"settings": {...}}`` holds their choices."""
+        from .. import settings_migration
+        try:
+            body = await request.json()
+        except ValueError:
+            body = {}
+        patch = (body or {}).get("settings") if isinstance(body, dict) else None
+        if patch is not None and not isinstance(patch, dict):
+            raise HTTPException(400, "settings must be a JSON object")
+        try:
+            return settings_migration.acknowledge(patch)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc))
+        except OSError as exc:
+            raise HTTPException(500, f"The settings could not be saved: {exc}")
+
     @app.post("/api/settings/reset")
     def reset_settings() -> Dict[str, Any]:
         SETTINGS.reset()

@@ -326,12 +326,18 @@ Open **Settings** in the toolbar. Changes apply as soon as you save; **Reset to 
 | Units | Temperature, Pressure | Default units for the comparison plot and the quick unit switcher. |
 | Start-up | Open on body, Default mission | Where VEDA opens next time. |
 | Figures | Publication figure DPI | Resolution of exported publication figures. |
-| Network | Allow downloads, Update notices, Timeout, Large-file limit | Turn online archive downloads off (offline work), whether VEDA tells you when a newer build is published (one request to GitHub per session), how long to wait for a slow archive, and the size (default 250 MB) above which opening a product asks first, showing the file size and an estimated download time. |
+| Network | Allow downloads, Update notices, Automatic updates (*Check now*), Timeout, Large-file limit | Turn online archive downloads off (offline work), whether VEDA tells you when a newer build is published (one request to GitHub per session), whether a published build downloads the newest build once a week and installs it when it next starts (see below), how long to wait for a slow archive, and the size (default 250 MB) above which opening a product asks first, showing the file size and an estimated download time. |
 | Performance | CPU worker processes, Parallel downloads | Worker processes read and derive many profiles at once (filtered comparisons, batch reading); the default is all cores but one, 1 runs everything in the main process. Profiles are read in batches across the workers, which is several times faster for comparisons of tens to hundreds of profiles. Parallel downloads (1 to 16, default 4) sets how many products are fetched at the same time. |
 | Observation geometry | Automatic SPICE downloads, size limit | Download the kernels for opened missions and observations by themselves, and ask first above the limit. |
 | Data folders | Open | Shows and opens the data, cache, export and log folders. |
 
-Settings are stored in `settings.json` inside the VEDA data folder (see the README). A damaged or hand-edited file never stops VEDA from starting: invalid entries fall back to their defaults.
+Settings are stored in `settings.json` inside the VEDA data folder (see the README). A damaged or hand-edited file never stops VEDA from starting: invalid entries fall back to their defaults, and are kept in the file as they were until you have seen them (below).
+
+### Automatic updates
+
+A published build (not a copy run from source) looks for a newer build once a week, a minute after it starts, when *Automatic updates* and *Allow downloads* are on; *Check now* looks at once and shows the progress. A newer build for your system (`VEDA-<version>-windows-x86_64.zip`, `-macos-arm64`, `-linux-x86_64`) is downloaded into `updates/` in the data folder, checked against the size and SHA-256 digest that GitHub lists for the file, and unpacked beside the installation as `<folder>.update`. The next time VEDA starts it hands over to a small script (PowerShell on Windows, sh on macOS and Linux) that waits for it to exit, renames the installation to `<folder>.previous`, moves the new build into its place and starts it with the same command-line options; if a step fails, the old build is put back and started. The new build deletes `<folder>.previous` once it runs; `updates/install.log` records each step. Only the installation folder changes: the data folder, with your downloads and `settings.json`, is never touched, and VEDA does not update itself when the data folder lies inside the installation folder or the folder holding the installation cannot be written.
+
+After an update, and whenever another version wrote `settings.json`, VEDA shows once what is new (the release notes) and the settings that were added (with their defaults), removed, renamed or changed (allowed values or default), with your stored value kept wherever this version accepts it and shown where it no longer does. *Use these settings* saves the values in the panel; closing it keeps everything as it is. What you saw is recorded in `settings_seen.json` beside `settings.json`.
 
 ---
 

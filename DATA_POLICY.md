@@ -7,7 +7,7 @@ VEDA is a tool for finding, downloading, reading and analysing planetary science
 * Products are downloaded from the official archive, on your request, into a cache on your own computer.
 * The downloaded files are kept exactly as the archive published them. Unit conversions, derived quantities and comparisons are computed in memory, and exports say which archive file they came from.
 * The terms of the archive that published a product apply to it. VEDA's MIT License applies only to the VEDA software.
-* Apart from the archives you search or download from, VEDA contacts only GitHub, once per session, to see whether a newer VEDA has been published (the request sends nothing about you or your data; turn it off in Settings > Network). With downloads turned off, VEDA makes no network requests at all.
+* Apart from the archives you search or download from, VEDA contacts only GitHub, once per session, to see whether a newer VEDA has been published, and once a week, in a published build with automatic updates on, to download the newest build (the requests send nothing about you or your data; turn them off in Settings > Network). With downloads turned off, VEDA makes no network requests at all.
 
 The sample products bundled with VEDA (`src/veda/sampledata`) are unmodified copies of public archive products, included so the demonstrations and tests work offline. Each is listed in section 3 with its source.
 

@@ -218,6 +218,195 @@ function field(label, control, hint) {
     hint ? el('span', { class: 'hint' }, hint) : null);
 }
 
+/** "Check now" for the weekly automatic update, with what it last did. */
+function autoUpdateRow() {
+  const status = el('span', { class: 'hint', id: 's-update-status' }, '');
+  const button = el('button', { type: 'button', class: 'ghost small', id: 's-update-now' }, 'Check now');
+  const when = (t) => (t ? new Date(t * 1000).toLocaleString() : 'never');
+  let timer = null;
+  const show = (st) => {
+    const job = st.job || {};
+    let text;
+    if (st.problem) text = `Automatic updates are not available: ${st.problem}.`;
+    else if (job.running) text = job.total ? `${job.message}: ${Math.round(100 * job.done / job.total)} %` : (job.message || 'Checking...');
+    else if (job.error) text = `The last check failed: ${job.error}`;
+    else if (st.staged) text = `${st.staged.name || st.staged.tag} is downloaded and will be installed when VEDA next starts.`;
+    else text = (job.message ? `${job.message}. ` : '') + `Last checked: ${when(st.last_check)}.`;
+    status.textContent = text;
+    button.disabled = !!st.problem || !!job.running;
+    clearTimeout(timer);
+    if (job.running) timer = setTimeout(refresh, 1000);
+  };
+  const refresh = async () => {
+    if (!document.body.contains(status) && timer) return;     // the drawer was closed
+    try { show(await api.updateStatus()); } catch (err) { status.textContent = err.message; }
+  };
+  button.addEventListener('click', async () => {
+    button.disabled = true;
+    try { show(await api.updateDownload()); } catch (err) { status.textContent = err.message; button.disabled = false; }
+  });
+  refresh();
+  return el('div', { class: 'settings-update-row' }, button, status);
+}
+
+const SETTING_LABELS = {
+  ui_theme: 'Theme', ui_font_size: 'Base font size (px)', plot_dpi: 'Publication figure DPI',
+  units_temperature: 'Temperature unit', units_pressure: 'Pressure unit',
+  network_enabled: 'Allow downloads from online archives', check_updates: 'Tell me when a newer VEDA is published',
+  auto_update: 'Update VEDA automatically (weekly)', network_timeout_s: 'Download timeout (seconds)',
+  spice_auto_download: 'Download SPICE kernels automatically', spice_auto_limit_mb: 'Ask first when the kernels are larger than (MB)',
+  product_confirm_mb: 'Ask before downloading a product file larger than (MB)', cpu_workers: 'CPU worker processes',
+  download_workers: 'Parallel downloads', default_body: 'Open on body', default_mission: 'Default mission',
+};
+
+function ruleText(rule) {
+  if (rule == null) return '';
+  if (Array.isArray(rule)) return rule.map(String).join(', ');
+  if (typeof rule === 'object') return `${rule.min} to ${rule.max}`;
+  return String(rule);
+}
+
+/** An input for one setting in the after-update panel, from its allowed values. */
+function settingControl(key, rule, value) {
+  const id = `su-${key}`;
+  if (Array.isArray(rule) && rule.length === 2 && rule.every(v => typeof v === 'boolean')) {
+    return el('input', { type: 'checkbox', id, 'data-key': key, 'data-kind': 'bool', checked: value === true });
+  }
+  if (Array.isArray(rule)) {
+    return el('select', { id, 'data-key': key, 'data-kind': 'text' },
+      ...rule.map(v => el('option', { value: String(v), selected: String(v) === String(value) }, String(v))));
+  }
+  if (rule && typeof rule === 'object') {
+    return el('input', { type: 'number', id, 'data-key': key, 'data-kind': 'int', value, min: rule.min, max: rule.max, step: 1 });
+  }
+  return el('input', { type: 'text', id, 'data-key': key, 'data-kind': 'text', value: value == null ? '' : String(value) });
+}
+
+/** Release notes (Markdown from GitHub) as plain elements: headings, list items, links. */
+function notesNode(md) {
+  const box = el('div', { class: 'whats-new' });
+  let list = null;
+  const inline = (text) => {
+    const out = [];
+    const re = /\[([^\]]+)\]\((https?:[^)\s]+)\)|\*\*([^*]+)\*\*|(https?:\/\/\S+)/g;
+    let last = 0;
+    let m;
+    while ((m = re.exec(text))) {
+      if (m.index > last) out.push(text.slice(last, m.index));
+      if (m[1]) out.push(el('a', { href: m[2], target: '_blank', rel: 'noopener' }, m[1]));
+      else if (m[3]) out.push(el('strong', {}, m[3]));
+      else out.push(el('a', { href: m[4], target: '_blank', rel: 'noopener' }, m[4]));
+      last = re.lastIndex;
+    }
+    if (last < text.length) out.push(text.slice(last));
+    return out;
+  };
+  for (const raw of String(md || '').split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line) { list = null; continue; }
+    const h = line.match(/^#{1,6}\s+(.*)$/);
+    if (h) { list = null; box.append(el('h4', {}, ...inline(h[1]))); continue; }
+    const li = line.match(/^[-*]\s+(.*)$/);
+    if (li) {
+      if (!list) { list = el('ul'); box.append(list); }
+      list.append(el('li', {}, ...inline(li[1])));
+      continue;
+    }
+    list = null;
+    box.append(el('p', {}, ...inline(line)));
+  }
+  return box;
+}
+
+/**
+ * Once after an update (or after another version wrote settings.json): what is new in
+ * this build and which settings were added, removed or changed, with the stored values
+ * kept and editable.  Closing the panel keeps everything as it is.
+ */
+async function showSettingsChanges() {
+  let r;
+  try { r = await api.settingsChanges(); } catch (_) { return; }
+  if (!r || !r.show) return;
+  const c = r.changes || {};
+  const label = (k) => SETTING_LABELS[k] || k;
+  const fmtVal = (v) => (v === undefined || v === null ? 'none' : typeof v === 'object' ? JSON.stringify(v) : String(v));
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const body = el('div', { class: 'stack settings-changes' });
+  const build = r.build ? `${r.version} build ${r.build}` : r.version;
+  const prev = r.previous && (r.previous.build ? `${r.previous.version} build ${r.previous.build}` : r.previous.version);
+  body.append(el('p', {}, `This is VEDA ${build}${prev && prev !== build ? ` (before: ${prev})` : ''}. `
+    + 'Your settings are kept as they were; check the ones listed below.'));
+  if (r.whats_new) {
+    body.append(el('h3', {}, `What's new in ${r.whats_new.name || r.whats_new.tag}`), notesNode(r.whats_new.notes));
+    if (r.whats_new.url) body.append(el('p', {}, el('a', { href: r.whats_new.url, target: '_blank', rel: 'noopener' }, 'Release page')));
+  }
+  const rows = [];
+  const row = (key, rule, value, note) => {
+    const ctl = settingControl(key, rule, value);
+    rows.push(ctl);
+    if (ctl.dataset.kind === 'bool') {
+      return el('label', { class: 'settings-check' }, ctl,
+        el('span', {}, el('span', { class: 'settings-label' }, label(key)), el('br'), el('span', { class: 'hint' }, note)));
+    }
+    return el('label', { class: 'settings-field' }, el('span', { class: 'settings-label' }, label(key)), ctl,
+      el('span', { class: 'hint' }, note));
+  };
+  if ((c.new || []).length) {
+    body.append(el('h3', {}, 'New settings'),
+      ...c.new.map(n => row(n.key, n.rule, n.default, `New in this version. Default: ${fmtVal(n.default)}`
+        + `${n.rule && !Array.isArray(n.rule) ? ` (allowed: ${ruleText(n.rule)})` : ''}.`)));
+  }
+  const changed = [...(c.changed || []), ...(c.invalid || []).map(x => ({ ...x, valid: false }))];
+  if (changed.length) {
+    body.append(el('h3', {}, 'Changed settings'),
+      ...changed.map(x => row(x.key, x.rule, x.valid ? x.stored : x.default,
+        (x.old_rule !== undefined && !same(x.old_rule, x.rule) ? `Allowed values were ${ruleText(x.old_rule)}, now ${ruleText(x.rule)}. ` : '')
+        + (x.old_default !== undefined && !same(x.old_default, x.default) ? `Default was ${fmtVal(x.old_default)}, now ${fmtVal(x.default)}. ` : '')
+        + (x.valid ? `Your value ${fmtVal(x.stored)} is kept.`
+          : `Your stored value ${fmtVal(x.stored)} is not allowed now (${ruleText(x.rule)}); the default ${fmtVal(x.default)} is used until you choose.`))));
+  }
+  if ((c.renamed || []).length) {
+    body.append(el('h3', {}, 'Renamed settings'),
+      el('ul', {}, ...c.renamed.map(x => el('li', {},
+        `${x.old} is now ${label(x.key)}; your value ${fmtVal(x.stored)} ${x.valid ? 'is kept' : 'is not allowed there, the default is used'}.`))));
+  }
+  if ((c.removed || []).length) {
+    body.append(el('h3', {}, 'Settings no longer used'),
+      el('ul', {}, ...c.removed.map(x => el('li', {}, `${x.key} (your value: ${fmtVal(x.stored)})`))));
+  }
+  let sent = false;
+  const send = async (withChoices) => {
+    if (sent) return;
+    sent = true;
+    const patch = {};
+    if (withChoices) {
+      for (const ctl of rows) {
+        const key = ctl.dataset.key;
+        if (ctl.dataset.kind === 'bool') patch[key] = ctl.checked;
+        else if (ctl.dataset.kind === 'int') patch[key] = Number(ctl.value);
+        else patch[key] = ctl.value;
+      }
+    }
+    try {
+      const updated = await api.ackSettingsChanges(patch);
+      if (state.meta) state.meta.settings = updated;
+      applySettings(updated);
+      applyUserPreferences(updated);
+      if (withChoices) toast('Settings saved', 'good');
+    } catch (err) {
+      sent = false;
+      toast(`Could not save the settings: ${err.message}`, 'bad');
+      throw err;
+    }
+  };
+  body.append(el('div', { class: 'settings-actions' },
+    el('button', {
+      class: 'primary', type: 'button', id: 'su-accept',
+      onclick: async () => { try { await send(true); closeDrawer(); } catch (_) { /* message shown */ } },
+    }, 'Use these settings')));
+  drawer(r.whats_new ? 'VEDA was updated' : 'Settings changed', body, { onClose: () => { send(false).catch(() => {}); } });
+}
+
 function settingsBody() {
   const s = (state.meta && state.meta.settings) || {};
   const paths = (state.meta && state.meta.paths) || {};
@@ -260,6 +449,7 @@ function settingsBody() {
         network_enabled: $('#s-network').checked,
         network_timeout_s: parseInt($('#s-timeout').value, 10),
         check_updates: $('#s-check-updates').checked,
+        auto_update: $('#s-auto-update').checked,
         spice_auto_download: $('#s-spice-auto').checked,
         spice_auto_limit_mb: parseInt($('#s-spice-limit').value, 10),
         product_confirm_mb: parseInt($('#s-product-limit').value, 10),
@@ -323,6 +513,10 @@ function settingsBody() {
       el('label', { class: 'settings-check' },
         el('input', { type: 'checkbox', id: 's-check-updates', checked: s.check_updates !== false }),
         el('span', {}, 'Tell me when a newer VEDA is published (one request to GitHub at start-up)')),
+      el('label', { class: 'settings-check' },
+        el('input', { type: 'checkbox', id: 's-auto-update', checked: s.auto_update !== false }),
+        el('span', {}, 'Update VEDA automatically: look for a new build once a week, download it in the background and install it when VEDA next starts (your data, downloads and settings are kept)')),
+      autoUpdateRow(),
       field('Download timeout (seconds)',
         el('input', { type: 'number', id: 's-timeout', value: s.network_timeout_s || 30, min: 5, max: 300, required: true }),
         'How long to wait for a slow archive before giving up.'),
@@ -448,7 +642,7 @@ function helpBody() {
 
     <section data-help>
       <h3>Units and settings</h3>
-      <p>The quick unit switcher (K / &deg;C, bar / hPa / Pa) changes the comparison plot straight away. <strong>Settings</strong> holds the theme and text size, default units, the start-up body and mission, the publication figure DPI, network access (downloads, update notices, timeout, large-file limit), the number of worker processes and parallel downloads, automatic SPICE kernel downloads, and links to the data folders.</p>
+      <p>The quick unit switcher (K / &deg;C, bar / hPa / Pa) changes the comparison plot straight away. <strong>Settings</strong> holds the theme and text size, default units, the start-up body and mission, the publication figure DPI, network access (downloads, update notices, weekly automatic updates with <em>Check now</em>, timeout, large-file limit), the number of worker processes and parallel downloads, automatic SPICE kernel downloads, and links to the data folders.</p>
     </section>
 
     <section data-help>
@@ -754,6 +948,7 @@ async function boot() {
 
   await initVeda();
   renderMath(document.body);
+  showSettingsChanges();
   setTimeout(() => checkForUpdate(), 4000);   // after start-up, not competing with it
 }
 

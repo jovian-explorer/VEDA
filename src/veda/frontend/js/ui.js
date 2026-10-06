@@ -326,7 +326,13 @@ export function updatePlotlyFonts() {
   }
 }
 
-export function drawer(title, bodyNode) {
+let drawerOnClose = null;
+
+/** Open the side drawer; ``onClose`` runs once when it is next closed. */
+export function drawer(title, bodyNode, { onClose = null } = {}) {
+  const previous = drawerOnClose;               // replacing a drawer closes it
+  drawerOnClose = onClose;
+  if (previous) { try { previous(); } catch (err) { console.error(err); } }
   const t = $('#drawer-title');
   if (t) t.textContent = title;
   const body = $('#drawer-body') || $('#drawer-content') || $('.drawer-body');
@@ -347,6 +353,9 @@ export function drawer(title, bodyNode) {
 }
 
 export function closeDrawer() {
+  const cb = drawerOnClose;
+  drawerOnClose = null;
+  if (cb) { try { cb(); } catch (err) { console.error(err); } }
   const d = $('#drawer');
   if (d) {
     d.classList.add('hidden');

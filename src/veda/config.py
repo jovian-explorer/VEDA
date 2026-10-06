@@ -86,6 +86,7 @@ SETTING_CHOICES: Dict[str, Any] = {
     "units_pressure": ("hPa", "bar", "Pa"),
     "network_enabled": (False, True),
     "check_updates": (False, True),
+    "auto_update": (False, True),
     "network_timeout_s": (5, 300),
     "spice_auto_download": (False, True),
     "spice_auto_limit_mb": (10, 5000),
@@ -95,6 +96,13 @@ SETTING_CHOICES: Dict[str, Any] = {
     "default_body": None,       # validated against the body registry
     "default_mission": None,    # validated against the mission registry
 }
+
+
+# Options renamed between versions: old name -> new name (settings_migration.py)
+RENAMED_SETTINGS: Dict[str, str] = {}
+
+# Whether this start created settings.json (a first start: nothing to migrate)
+SETTINGS_CREATED = False
 
 
 @dataclass
@@ -107,6 +115,9 @@ class Settings:
     units_pressure: str = "hPa"
     network_enabled: bool = True
     check_updates: bool = True
+    # Download a newer published build once a week and install it on the next start
+    # (published builds only; autoupdate.py)
+    auto_update: bool = True
     network_timeout_s: int = 30
     # Download the SPICE kernels an observation needs without asking (up to the size limit)
     spice_auto_download: bool = True
@@ -160,16 +171,29 @@ class Settings:
         clean = {k: self.validate(k, v) for k, v in patch.items()}
         for k, v in clean.items():
             setattr(self, k, v)
+            self.preserved().pop(k, None)       # the user has chosen a value now
 
     def reset(self) -> None:
         for k, v in Settings().to_dict().items():
             setattr(self, k, v)
+        self.preserved().clear()
+
+    def preserved(self) -> Dict[str, Any]:
+        """Entries of settings.json that this version cannot use (options it no longer
+        has, values outside an option's present range): kept in the file as they are
+        until the user has seen them (settings_migration.py), so that nothing stored is
+        lost by starting a different version."""
+        if "_preserved" not in self.__dict__:
+            self.__dict__["_preserved"] = {}
+        return self.__dict__["_preserved"]
 
     @classmethod
     def load(cls) -> Settings:
+        global SETTINGS_CREATED
         ensure_dirs()
         s = cls()
         if not SETTINGS_PATH.is_file():
+            SETTINGS_CREATED = True
             try:
                 s.save()
             except OSError:
@@ -181,21 +205,30 @@ class Settings:
         except (OSError, ValueError):
             return s
         if isinstance(data, dict):
+            # an option renamed since: its value moves to the new name when valid there
+            for old, new in RENAMED_SETTINGS.items():
+                if old in data and new not in data:
+                    try:
+                        setattr(s, new, cls.validate(new, data[old]))
+                    except ValueError:
+                        pass
             for k, v in data.items():
                 try:
                     setattr(s, k, cls.validate(k, v))
                 except ValueError:
-                    pass  # keep the default for unknown or invalid entries
+                    # unknown or invalid here: the default is used, the stored entry kept
+                    s.preserved()[k] = v
         return s
 
     def save(self) -> None:
         """Write settings.json; raises OSError when it cannot be written (the caller
-        tells the user: the settings then hold for this session only)."""
+        tells the user: the settings then hold for this session only).  Entries this
+        version cannot use are written back unchanged (``preserved``)."""
         ensure_dirs()
         tmp = SETTINGS_PATH.with_suffix(".json.tmp")
         try:
             with open(tmp, "w", encoding="utf-8") as fh:
-                json.dump(self.to_dict(), fh, indent=2)
+                json.dump({**self.to_dict(), **self.preserved()}, fh, indent=2)
             os.replace(tmp, SETTINGS_PATH)  # atomic: no half-written file on crash
         except OSError:
             try:

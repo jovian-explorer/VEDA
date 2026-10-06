@@ -47,6 +47,10 @@ export const api = {
   saveSettings:  (patch)     => call('/api/settings', {method: 'POST', body: patch}),
   resetSettings: ()          => call('/api/settings/reset', {method: 'POST'}),
   updateCheck:   (force)     => call(`/api/update${force ? '?force=true' : ''}`),
+  updateStatus:  ()          => call('/api/update/status'),
+  updateDownload: ()         => call('/api/update/download', {method: 'POST'}),
+  settingsChanges: ()        => call('/api/settings/changes'),
+  ackSettingsChanges: (settings) => call('/api/settings/changes/ack', {method: 'POST', body: {settings}}),
 
   revealFolder:  (which)     => call(`/api/reveal-folder?which=${which}`, {method: 'POST'}),
 
