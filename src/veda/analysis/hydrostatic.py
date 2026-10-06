@@ -22,6 +22,13 @@ integrated with the profile's own temperature,
 against the archived pressure, p_0 chosen so that the median of ln(p / p_hyd) is zero
 (one bad level does not offset the rest).  The largest relative difference says whether
 the pressure, temperature and altitudes of a profile belong together.
+
+Its noise level (hydrostatic_uncertainty), from the archived 1-sigma of p and T by
+Monte Carlo: the departures that a perfectly hydrostatic profile with the same errors
+would show (the median over the draws of its median departure, and the 95th percentile
+of its largest), errors taken as independent between levels.  Departures well above it
+are not explained by the errors.  Retrievals whose p and T come from one integration
+have strongly correlated errors and usually depart much less than this level.
 """
 from __future__ import annotations
 
@@ -178,3 +185,39 @@ def hydrostatic_consistency(z_km, p_hpa, t_k, g_ms2, r_spec: float) -> Dict[str,
     i = int(np.argmax(dev))
     return {"hydrostatic_max_pct": float(dev[i]), "hydrostatic_median_pct": float(np.median(dev)),
             "hydrostatic_max_km": float(zs[i] / 1000.0)}
+
+
+def hydrostatic_uncertainty(z_km, p_hpa, t_k, g_ms2, r_spec: float, p_draws, t_draws) -> Dict[str, Optional[float]]:
+    """Noise level of hydrostatic_consistency (module docstring): the departures that a
+    perfectly hydrostatic profile with the profile's own temperature would show when its
+    pressure and temperature are redrawn within their errors (``p_draws``, ``t_draws``:
+    draws x levels, the archived values plus their Gaussian errors)."""
+    import warnings
+    z = np.asarray(z_km, dtype=float)
+    p = np.asarray(p_hpa, dtype=float)
+    t = np.asarray(t_k, dtype=float)
+    g = np.broadcast_to(np.asarray(g_ms2, dtype=float), z.shape)
+    empty = {"hydrostatic_noise_median_pct": None, "hydrostatic_noise_max_pct": None}
+    with np.errstate(invalid="ignore"):
+        ok = np.isfinite(z) & np.isfinite(p) & np.isfinite(t) & (p > 0) & (t > 0) & np.isfinite(g)
+    if ok.sum() < 3:
+        return empty
+    idx = np.where(ok)[0]
+    idx = idx[np.argsort(z[idx], kind="stable")]
+    zs, gs = z[idx] * 1000.0, g[idx]
+    f = gs / (r_spec * t[idx])
+    expo = np.concatenate([[0.0], np.cumsum(0.5 * (f[1:] + f[:-1]) * np.diff(zs))])
+    p_cons = np.exp(np.median(np.log(p[idx]) + expo) - expo)        # hydrostatic with the profile's T
+    noise_p = p_draws[:, idx] - p[idx] + p_cons
+    med, mx = [], []
+    with np.errstate(all="ignore"), warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        for i in range(p_draws.shape[0]):
+            b = hydrostatic_consistency(zs / 1000.0, noise_p[i], t_draws[i, idx], gs, r_spec)
+            if b["hydrostatic_median_pct"] is not None:
+                med.append(b["hydrostatic_median_pct"])
+                mx.append(b["hydrostatic_max_pct"])
+    if len(med) < 2:
+        return empty
+    return {"hydrostatic_noise_median_pct": float(np.median(med)),
+            "hydrostatic_noise_max_pct": float(np.percentile(mx, 95))}

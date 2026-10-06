@@ -170,6 +170,14 @@ def propagate(profile, body, derived: Dict[str, np.ndarray], gz: Optional[np.nda
             d[:, ok_th] = (op @ theta[:, ok_th].T).T
             out["dtheta_dz"] = _std(d)
 
+    # uncertainty and noise level of the hydrostatic consistency check
+    if (profile.raw_attributes or {}).get("hydrostatic_median_pct") is not None and p is not None \
+            and (s_t is not None or s_p is not None) and gz is not None:
+        from .hydrostatic import hydrostatic_uncertainty
+        tt = t_draws if t_draws is not None else np.broadcast_to(t, (MC_DRAWS, z.size))
+        pp = p + _draws(s_p, z, corr_km, rng) if s_p is not None else np.broadcast_to(p, (MC_DRAWS, z.size))
+        profile.raw_attributes.update(hydrostatic_uncertainty(z, p, t, gz, r_spec, np.where(pp > 0, pp, np.nan), tt))
+
     if "temperature_from_density" in derived:
         rho, s_rho = _density_and_sigma(profile, body, z.shape)
         if rho is not None and s_rho is not None:

@@ -196,3 +196,17 @@ def test_batched_density_retrieval_equals_the_single_one():
     np.testing.assert_allclose(many["temperature_k"][0], one["temperature_k"], rtol=1e-9)
     np.testing.assert_allclose(many["pressure_pa"][0], one["pressure_pa"], rtol=1e-9)
     np.testing.assert_allclose(many["temperature_k"][1], one["temperature_k"], rtol=1e-9)   # a constant factor cancels
+
+
+def test_noise_level_of_the_hydrostatic_check():
+    """A hydrostatic profile with 1 % independent pressure errors: the median departure
+    expected from the errors alone is about 0.67 % (median of |N(0, 1 %)|), the largest
+    a few percent; with 0.1 % errors both are ten times smaller."""
+    levels = {}
+    for rel in (0.01, 0.001):
+        prof, mars = _mars_profile(dz=0.5, sigma_t=1e-6, sigma_p_rel=rel)
+        a = prof.raw_attributes
+        levels[rel] = (a["hydrostatic_noise_median_pct"], a["hydrostatic_noise_max_pct"])
+    assert levels[0.01][0] == pytest.approx(0.67, rel=0.25)
+    assert levels[0.001][0] == pytest.approx(levels[0.01][0] / 10, rel=0.1)
+    assert 1.5 < levels[0.01][1] < 6.0

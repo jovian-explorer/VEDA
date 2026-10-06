@@ -301,6 +301,8 @@ PROFILE_DIAGNOSTICS: Dict[str, Tuple[str, str]] = {
     "hydrostatic_max_pct": ("Largest departure from hydrostatic balance (pressure)", "%"),
     "hydrostatic_median_pct": ("Median departure from hydrostatic balance (pressure)", "%"),
     "hydrostatic_max_km": ("Altitude of the largest departure from hydrostatic balance", "km"),
+    "hydrostatic_noise_median_pct": ("Median departure expected from the profile's errors alone", "%"),
+    "hydrostatic_noise_max_pct": ("Largest departure expected from the errors alone (95th percentile)", "%"),
     "hydrostatic_top_temperature_k": ("Top temperature of the hydrostatic retrieval from density", "K"),
 }
 
@@ -326,6 +328,8 @@ def profile_diagnostics(profile: ObservationProfile) -> Dict[str, Optional[float
         "hydrostatic_max_pct": _finite(a.get("hydrostatic_max_pct")),
         "hydrostatic_median_pct": _finite(a.get("hydrostatic_median_pct")),
         "hydrostatic_max_km": _finite(a.get("hydrostatic_max_km")),
+        "hydrostatic_noise_median_pct": _finite(a.get("hydrostatic_noise_median_pct")),
+        "hydrostatic_noise_max_pct": _finite(a.get("hydrostatic_noise_max_pct")),
         "hydrostatic_top_temperature_k": _finite(a.get("hydrostatic_top_temperature_k")),
     }
     return out
