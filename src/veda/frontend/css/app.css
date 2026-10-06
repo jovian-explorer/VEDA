@@ -1676,6 +1676,8 @@ a.btn:hover { border-color: var(--focal); }
 .compare-filter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
 .compare-filter-grid label { display: flex; flex-direction: column; font-size: 0.9em; gap: 2px; min-width: 0; }
 .compare-filter-grid input { width: 100%; min-width: 0; }
+.compare-filter-grid label.wide { grid-column: 1 / -1; }
+.compare-filter-grid select[multiple] { width: 100%; min-width: 0; font-size: 0.95em; }
 .compare-filter-buttons { display: flex; gap: 8px; }
 #cf-report div { margin-top: 3px; }
 

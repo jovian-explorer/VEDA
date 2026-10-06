@@ -146,6 +146,17 @@
           <label title="Mars solar longitude (season): 0 northern spring equinox, 90 northern summer solstice, 180 autumn, 270 winter; 330 to 30 wraps through 0. Other bodies: leave empty">Mars season Ls from <input type="number" id="cf-ls-min" min="0" max="360" step="any" placeholder="0" /></label>
           <label>to <input type="number" id="cf-ls-max" min="0" max="360" step="any" placeholder="360" />&deg;</label>
           <label>Profiles per mission <input type="number" id="cf-per-mission" min="1" max="100" value="10" /></label>
+          <label title="Keep only profiles in which the compared variable reaches down to this altitude">Must cover from <input type="number" id="cf-cover-min" step="any" placeholder="km" /></label>
+          <label title="... and up to this altitude">to <input type="number" id="cf-cover-max" step="any" placeholder="km" /> km</label>
+          <label title="Keep only profiles whose levels are at most this far apart (median spacing)">Level spacing at most <input type="number" id="cf-max-spacing" min="0" step="any" placeholder="km" /> km</label>
+          <label title="Keep only profiles whose 1σ of the compared variable (median over the profile, archived or propagated) is at most this, in the variable's unit; profiles without an uncertainty are left out">1σ at most <input type="number" id="cf-max-sigma" min="0" step="any" placeholder="unit" /></label>
+          <label title="... or at most this percentage of the value">or <input type="number" id="cf-max-sigma-pct" min="0" max="1000" step="any" placeholder="%" /> %</label>
+          <label class="wide" title="Only these data sets (none selected: all). Ctrl or Shift to select several.">Data sets
+            <select id="cf-datasets" multiple size="3"></select>
+          </label>
+          <label class="wide" title="Only data sets of these instruments (none selected: all)">Instruments
+            <select id="cf-instruments" multiple size="3"></select>
+          </label>
         </div>
         <label class="inline"><input type="checkbox" id="cf-download" checked /> Download profiles not yet downloaded</label>
         <div class="compare-filter-buttons">

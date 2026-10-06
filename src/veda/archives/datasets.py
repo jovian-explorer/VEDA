@@ -158,6 +158,7 @@ class Dataset:
             "portal_only": self.portal_only, "portal_help": self.portal_help,
             "live": bool(self.service), "service": self.service, "refs": list(self.refs),
             "auto_index": self.auto_index, "index_note": self.index_note,
+            "has_profiles": any(kind == "profile" for _, _, kind in self.rules),
         }
 
 

@@ -191,6 +191,8 @@ class MissionManager:
         )
         if report is not None and isinstance(out, dict):
             out["selection"] = report
+            if selection is not None:
+                out["selection_filters"] = selection.describe()
         return out
 
 

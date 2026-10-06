@@ -236,6 +236,13 @@ class CompareFilter(BaseModel):
     per_mission: int = Field(10, ge=1, le=100)
     download: bool = True
     include_uploads: bool = True
+    cover_min_km: Optional[float] = Field(None, ge=-1000, le=100000)
+    cover_max_km: Optional[float] = Field(None, ge=-1000, le=100000)
+    max_spacing_km: Optional[float] = Field(None, gt=0, le=1000)
+    max_sigma: Optional[float] = Field(None, gt=0, le=1e30)
+    max_sigma_pct: Optional[float] = Field(None, gt=0, le=1000)
+    datasets: Optional[List[str]] = Field(None, max_length=200)
+    instruments: Optional[List[str]] = Field(None, max_length=100)
 
     @field_validator("start", "end")
     @classmethod
@@ -287,6 +294,8 @@ def _checked_selection(body_id: str, req: "CrossCompareRequest"):
     sel = ProfileFilter(**req.filter.model_dump()) if req.filter else None
     if sel and sel.start and sel.end and sel.start > sel.end:
         raise HTTPException(status_code=422, detail="The start date is after the end date")
+    if sel and sel.cover_min_km is not None and sel.cover_max_km is not None and sel.cover_min_km > sel.cover_max_km:
+        raise HTTPException(status_code=422, detail="The altitude range to cover is reversed")
     from ..analysis.atmospheric import GROUPINGS
     if req.group_by and req.group_by not in GROUPINGS:
         raise HTTPException(status_code=422, detail=f"group_by must be one of: {', '.join(GROUPINGS)}")
@@ -541,6 +550,8 @@ def comparison_recipe(body_id: str, req: "CrossCompareRequest", comp: dict) -> d
             "group_by": req.group_by or None, "group_width": req.group_width,
             "altitude_step_km": req.altitude_step_km, "vertical": req.vertical,
             "pressure_step_decades": req.pressure_step_decades, "weighting": req.weighting,
+            # the filter that chose the profiles, for the record (the profiles are listed below)
+            **({"filter": req.filter.model_dump(exclude_none=True)} if req.filter else {}),
             "observations": [{"mission_id": p["mission_id"], "observation_id": p["observation_id"]}
                              for p in comp.get("profiles", [])]}
 

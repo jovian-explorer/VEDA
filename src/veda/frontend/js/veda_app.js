@@ -551,6 +551,7 @@ function fillCompareVariableOptions() {
 export async function loadAndRenderCelestialBody(bodyId) {
   vedaState.activeBodyId = bodyId;
   fillCompareVariableOptions();
+  fillCompareDatasetOptions(bodyId);
   const bodyDetails = await api.vedaBodyDetails(bodyId);
   vedaState.activeBody = bodyDetails;
 
@@ -687,7 +688,16 @@ function readCompareFilter() {
     ls_min: num('cf-ls-min'), ls_max: num('cf-ls-max'),
     per_mission: num('cf-per-mission') || 10,
     download: !!document.getElementById('cf-download')?.checked,
+    cover_min_km: num('cf-cover-min'), cover_max_km: num('cf-cover-max'),
+    max_spacing_km: num('cf-max-spacing') || null,
+    max_sigma: num('cf-max-sigma') || null, max_sigma_pct: num('cf-max-sigma-pct') || null,
   };
+  const picked = (id) => Array.from(document.getElementById(id)?.selectedOptions || []).map(o => o.value);
+  if (picked('cf-datasets').length) f.datasets = picked('cf-datasets');
+  if (picked('cf-instruments').length) f.instruments = picked('cf-instruments');
+  if (f.cover_min_km != null && f.cover_max_km != null && f.cover_min_km > f.cover_max_km) {
+    throw new Error('The altitude range to cover is reversed');
+  }
   if (f.start && f.end && f.start > f.end) throw new Error('The start date is after the end date');
   for (const [a, b, what] of [['lat_min', 'lat_max', 'latitude'], ['sza_min', 'sza_max', 'solar zenith angle']]) {
     if (f[a] != null && f[b] != null && f[a] > f[b]) throw new Error(`The ${what} range is reversed`);
@@ -695,10 +705,32 @@ function readCompareFilter() {
   return f;
 }
 
-function renderSelectionReport(sel) {
+/** Fill the Data sets and Instruments lists of the filter with the body's profile data sets. */
+async function fillCompareDatasetOptions(bodyId) {
+  const dsSel = document.getElementById('cf-datasets');
+  const insSel = document.getElementById('cf-instruments');
+  if (!dsSel || !insSel) return;
+  let list = [];
+  try { list = ((await api.archiveDatasets(null, bodyId)).datasets || []).filter(d => d.has_profiles && !d.live && !d.portal_only); }
+  catch (_) { list = []; }
+  const keep = (sel) => new Set(Array.from(sel.selectedOptions).map(o => o.value));
+  const was = keep(dsSel), wasIns = keep(insSel);
+  dsSel.innerHTML = '';
+  list.forEach(d => {
+    const o = new Option(`${d.mission_id.toUpperCase()} · ${d.instrument} · ${d.id}`, d.id);
+    o.title = d.title; o.selected = was.has(d.id); dsSel.appendChild(o);
+  });
+  insSel.innerHTML = '';
+  [...new Set(list.map(d => d.instrument))].sort().forEach(i => {
+    const o = new Option(i, i); o.selected = wasIns.has(i); insSel.appendChild(o);
+  });
+}
+
+function renderSelectionReport(sel, filters) {
   const el = document.getElementById('cf-report');
   if (!el) return;
   if (!sel || vedaState.comparisonProducts) { el.textContent = ''; return; }
+  const limits = (filters || []).length ? `<div>Filters: ${filters.map(escHtml).join('; ')}</div>` : '';
   const name = (mid) => (mid === 'user_imported' ? 'Your loaded files'
     : (vedaState.missions.find(m => m.id === mid) || {}).name || mid.toUpperCase());
   el.innerHTML = Object.entries(sel).map(([mid, r]) => {
@@ -709,7 +741,7 @@ function renderSelectionReport(sel) {
     if (out.length) parts.push(`left out: ${out.join(', ')}`);
     if (r.not_indexed?.length) parts.push(`not indexed yet: open the mission's archive data to index ${r.not_indexed.map(escHtml).join(', ')}`);
     return `<div>${parts.join('; ')}</div>`;
-  }).join('') + (vedaState.compareFilter ? '' : '<div>Showing downloaded profiles only. Set dates or ranges and press Apply to search the whole archive.</div>');
+  }).join('') + (vedaState.compareFilter ? limits : '<div>Showing downloaded profiles only. Set dates or ranges and press Apply to search the whole archive.</div>');
 }
 
 // The comparison choices (which profiles, grouping, grid, vertical, view) are kept on this
@@ -1097,7 +1129,7 @@ async function updateComparison() {
     // every archive data set in the comparison belongs in the Cite panel, not only the
     // products picked by hand
     (compData.profiles || []).forEach(p => { if (p.dataset_id) recordProduct({ dataset_id: p.dataset_id, volume: p.volume }); });
-    renderSelectionReport(compData.selection);
+    renderSelectionReport(compData.selection, compData.selection_filters);
     vedaState.currentBodyObservations = exploreData.observations || [];
 
     renderActiveSubtab();

@@ -6,6 +6,11 @@ the first ones), downloaded when needed, and kept when their latitude, local
 solar time and solar zenith angle fall in the requested ranges.  Geometry is
 known only once a profile is read, so each mission has a budget of profiles to
 try; what was tried, kept and why others were left out is reported.
+
+Profiles can also be required to cover an altitude range with the compared variable,
+to have levels no farther apart than a given spacing (median), and to have a 1-sigma
+of the compared variable (median over the profile) below a limit, absolute or in
+percent; and the data sets or instruments to draw from can be chosen.
 """
 from __future__ import annotations
 
@@ -41,10 +46,46 @@ class ProfileFilter:
     per_mission: int = 10                  # profiles kept per mission
     download: bool = True                  # fetch profiles not yet downloaded
     include_uploads: bool = True           # files the user loaded for this body
+    cover_min_km: Optional[float] = None   # the compared variable must reach down to this altitude
+    cover_max_km: Optional[float] = None   # ... and up to this one
+    max_spacing_km: Optional[float] = None  # median spacing of the levels at most this
+    max_sigma: Optional[float] = None      # median 1-sigma of the compared variable at most this (its unit)
+    max_sigma_pct: Optional[float] = None  # ... or at most this percentage of the value
+    datasets: Optional[List[str]] = None   # only these data sets (ids)
+    instruments: Optional[List[str]] = None  # only data sets of these instruments
 
     def geometry_limits(self) -> bool:
+        """Limits known only once a profile is read (geometry, coverage, resolution,
+        uncertainty): more candidates must then be tried."""
         return any(v is not None for v in (self.lat_min, self.lat_max, self.lst_min, self.lst_max,
-                                           self.sza_min, self.sza_max, self.ls_min, self.ls_max))
+                                           self.sza_min, self.sza_max, self.ls_min, self.ls_max,
+                                           self.cover_min_km, self.cover_max_km, self.max_spacing_km,
+                                           self.max_sigma, self.max_sigma_pct))
+
+    def describe(self) -> List[str]:
+        """The limits in force, in words (selection report)."""
+        out = []
+        def rng(lo, hi, u):
+            return f"{'...' if lo is None else f'{lo:g}'} to {'...' if hi is None else f'{hi:g}'}{u}"
+        if self.start or self.end:
+            out.append(f"dates {self.start or '...'} to {self.end or '...'}")
+        for lo, hi, what, u in ((self.lat_min, self.lat_max, "latitude", " deg"), (self.lst_min, self.lst_max, "local time", " h"),
+                                (self.sza_min, self.sza_max, "solar zenith angle", " deg"), (self.ls_min, self.ls_max, "Ls", " deg")):
+            if lo is not None or hi is not None:
+                out.append(f"{what} {rng(lo, hi, u)}")
+        if self.cover_min_km is not None or self.cover_max_km is not None:
+            out.append(f"covering {rng(self.cover_min_km, self.cover_max_km, ' km')}")
+        if self.max_spacing_km is not None:
+            out.append(f"level spacing at most {self.max_spacing_km:g} km")
+        if self.max_sigma is not None:
+            out.append(f"1-sigma at most {self.max_sigma:g}")
+        if self.max_sigma_pct is not None:
+            out.append(f"1-sigma at most {self.max_sigma_pct:g} %")
+        if self.datasets:
+            out.append("data sets " + ", ".join(self.datasets))
+        if self.instruments:
+            out.append("instruments " + ", ".join(self.instruments))
+        return out
 
 
 def _median(a) -> Optional[float]:
@@ -96,6 +137,42 @@ def passes(geom: Dict[str, Optional[float]], f: ProfileFilter) -> Tuple[bool, st
             return False, f"{name} unknown"
         if not ok:
             return False, f"{name} outside the range"
+    return True, ""
+
+
+def quality_passes(p: ObservationProfile, f: ProfileFilter, variable: str) -> Tuple[bool, str]:
+    """Altitude coverage, vertical resolution and uncertainty limits of ``f`` for the
+    compared variable of profile ``p`` (True, "" when it meets them)."""
+    if all(v is None for v in (f.cover_min_km, f.cover_max_km, f.max_spacing_km, f.max_sigma, f.max_sigma_pct)):
+        return True, ""
+    from ..analysis.atmospheric import _compared_sigma, _compared_variable
+    v = _compared_variable(p, variable)
+    z = np.asarray(p.altitude_km, dtype=float)
+    if v is None or v.shape != z.shape:
+        return False, "variable missing"
+    ok = np.isfinite(v) & np.isfinite(z)
+    if ok.sum() < 2:
+        return False, "variable missing"
+    zv = np.sort(z[ok])
+    if (f.cover_min_km is not None and zv[0] > f.cover_min_km) or (f.cover_max_km is not None and zv[-1] < f.cover_max_km):
+        return False, "altitude range not covered"
+    if f.max_spacing_km is not None:
+        dz = np.diff(zv)
+        dz = dz[dz > 0]
+        if not dz.size or float(np.median(dz)) > f.max_spacing_km:
+            return False, "levels too far apart"
+    if f.max_sigma is not None or f.max_sigma_pct is not None:
+        s = _compared_sigma(p, variable)
+        if s is None or s.shape != z.shape or not np.isfinite(s[ok]).any():
+            return False, "no uncertainty"
+        good = ok & np.isfinite(s)
+        if f.max_sigma is not None and float(np.median(s[good])) > f.max_sigma:
+            return False, "uncertainty above the limit"
+        if f.max_sigma_pct is not None:
+            with np.errstate(divide="ignore", invalid="ignore"):
+                rel = 100.0 * s[good] / np.abs(v[good])
+            if not np.isfinite(rel).any() or float(np.nanmedian(rel)) > f.max_sigma_pct:
+                return False, "uncertainty above the limit"
     return True, ""
 
 
@@ -168,11 +245,13 @@ def select_profiles(manager, body_id: str, mission_ids: List[str], variable: str
     budget = f.per_mission * (4 if f.geometry_limits() else 1)
     for mid in mission_ids:
         ds_ids = [d.id for d in datasets_for(mid, body_id) if not d.portal_only and not d.service
-                  and any(kind == "profile" for _, _, kind in d.rules) and provides(d, variable)]
+                  and any(kind == "profile" for _, _, kind in d.rules) and provides(d, variable)
+                  and (not f.datasets or d.id in f.datasets) and (not f.instruments or d.instrument in f.instruments)]
         r = {"in_date_range": 0, "tried": 0, "kept": 0, "left_out": {}, "failed": 0}
         report[mid] = r
         if not ds_ids:
-            r["note"] = "no profile data sets with this variable for this body"
+            r["note"] = ("no data set matches the chosen data sets or instruments" if f.datasets or f.instruments
+                         else "no profile data sets with this variable for this body")
             continue
         # No archive volume indexed yet: the catalogue may still hold the bundled samples,
         # which are not the archive (a date-range search found only them, unannounced).
@@ -199,18 +278,21 @@ def select_profiles(manager, body_id: str, mission_ids: List[str], variable: str
                     r["failed"] += 1            # one bad product must not stop the comparison
                     continue
                 ok, why = passes(profile_geometry(prof), f)
+                if ok:
+                    ok, why = quality_passes(prof, f, variable)
                 if not ok:
                     r["left_out"][why] = r["left_out"].get(why, 0) + 1
                     continue
                 kept.append(prof)
                 n_kept += 1
         r["kept"] = n_kept
-    if f.include_uploads:
-        kept += _uploads(manager, body_id, f, report)
+    if f.include_uploads and not f.datasets and not f.instruments:
+        kept += _uploads(manager, body_id, f, report, variable)
     return kept, report
 
 
-def _uploads(manager, body_id: str, f: ProfileFilter, report: Dict[str, Any]) -> List[ObservationProfile]:
+def _uploads(manager, body_id: str, f: ProfileFilter, report: Dict[str, Any],
+             variable: str = "temperature_k") -> List[ObservationProfile]:
     """The user's loaded profiles of this body that match the dates and geometry."""
     from .uploads_adapter import MISSION_ID, list_uploads
     items = [i for i in list_uploads() if i["body_id"] == body_id and i["data_type"] == "profile"]
@@ -232,6 +314,8 @@ def _uploads(manager, body_id: str, f: ProfileFilter, report: Dict[str, Any]) ->
             r["failed"] += 1
             continue
         ok, why = passes(profile_geometry(prof), f)
+        if ok:
+            ok, why = quality_passes(prof, f, variable)
         if not ok:
             r["left_out"][why] = r["left_out"].get(why, 0) + 1
             continue
