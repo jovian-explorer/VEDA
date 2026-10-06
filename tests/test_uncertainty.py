@@ -303,3 +303,17 @@ def test_correlation_lowers_the_sigma_of_differences_and_raises_that_of_sums():
     t_cor.uncertainty = {"temperature_k": np.ones(t_cor.altitude_km.size), "pressure_hpa": t_cor.uncertainty["pressure_hpa"]}
     t_cor.derived = compute_atmospheric_diagnostics(t_cor, mars)
     assert np.median(t_cor.uncertainty["lapse_rate"]) < 0.3 * np.median(t_ind.uncertainty["lapse_rate"])
+
+
+def test_monte_carlo_spread_is_not_swayed_by_a_few_far_draws():
+    """Half the central 68 % of the draws: the standard deviation for normal draws, but a
+    few draws far out (a retrieval that blows up) do not set it."""
+    rng = np.random.default_rng(0)
+    normal = rng.normal(0.0, 2.0, (unc.MC_DRAWS, 3))
+    assert np.allclose(unc._std(normal), normal.std(axis=0, ddof=1), rtol=0.15)
+    tailed = normal.copy()
+    tailed[:4, :] = 1e4
+    assert np.all(unc._std(tailed) < 3.0) and np.all(tailed.std(axis=0) > 1000)
+    few = np.full((unc.MC_DRAWS, 1), np.nan)
+    few[:10, 0] = 1.0
+    assert np.isnan(unc._std(few)[0])

@@ -12,8 +12,9 @@ pressure, densities) at each level.  They are carried into the derived quantitie
 * by Monte Carlo where a quantity depends on several levels (vertical derivatives) or
   on the whole profile (the temperature retrieved from a density profile, whose top
   boundary is fitted): the profile is redrawn ``MC_DRAWS`` times with Gaussian errors of
-  the archived size, everything is recomputed, and the standard deviation of the
-  results is the uncertainty.  Lapse rate, N^2, d(theta)/dz, and temperature and
+  the archived size, everything is recomputed, and the spread of the results (half
+  the width of their central 68 %, the standard deviation for normal results) is the
+  uncertainty.  Lapse rate, N^2, d(theta)/dz, and temperature and
   pressure from density are done this way (densities are redrawn log-normally, with
   their relative error, so that they stay positive).
 
@@ -156,13 +157,18 @@ def gradient_operator(z_km: np.ndarray, ok: np.ndarray):
 
 
 def _std(a: np.ndarray) -> np.ndarray:
-    """Standard deviation over the draws (axis 0), NaN where fewer than half give a value."""
+    """Spread of the draws (axis 0): half the width of their central 68.27 % (the standard
+    deviation when they are normal), NaN where fewer than half give a value.  The standard
+    deviation itself was swayed by a few draws far out where the result depends strongly
+    on the errors (SOIR temperature from density with 30-50 % density errors: up to
+    50 times the half-width, thousands of kelvin); on normal results the two agree (Mars
+    Express lapse rate: 0.98-0.99)."""
     import warnings
     ok = np.isfinite(a).sum(axis=0)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)
-        std = np.nanstd(a, axis=0, ddof=1)
-    return np.where(ok >= MC_DRAWS // 2, std, np.nan)
+        lo, hi = np.nanpercentile(a, [15.865, 84.135], axis=0)
+    return np.where(ok >= MC_DRAWS // 2, (hi - lo) / 2.0, np.nan)
 
 
 def _sigma_of(profile, key: str, shape) -> Optional[np.ndarray]:
