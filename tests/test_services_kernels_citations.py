@@ -367,3 +367,53 @@ def test_kernel_sizes_unknown_when_offline_or_unanswered(monkeypatch):
     assert kernels.total_mb(["https://x/a.bsp", "https://x/c.bsp"]) == 4.0
     kernels.remote_size("https://x/a.bsp")
     assert calls.count("https://x/a.bsp") == 1                         # known sizes are cached
+
+
+def _flaky_server(data: bytes, cut_every: int, ranges: bool = True):
+    """A local HTTP server that closes the connection after ``cut_every`` bytes of each
+    answer; with ``ranges`` it answers Range requests (206) as archives that allow
+    resuming do."""
+    import http.server
+    import threading
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def log_message(self, *a):
+            pass
+
+        def do_GET(self):
+            start = 0
+            rng = self.headers.get("Range")
+            if rng and ranges:
+                start = int(rng.split("=")[1].split("-")[0])
+                self.send_response(206)
+                self.send_header("Content-Range", f"bytes {start}-{len(data) - 1}/{len(data)}")
+            else:
+                self.send_response(200)
+            self.send_header("Content-Length", str(len(data) - start))
+            self.end_headers()
+            self.wfile.write(data[start:start + cut_every])
+            self.wfile.flush()
+            self.close_connection = True
+
+    srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    return srv
+
+
+def test_broken_downloads_are_continued_where_they_stopped(tmp_path, monkeypatch):
+    from veda.archives import net
+    monkeypatch.setattr(net.time, "sleep", lambda s: None)
+    data = bytes(range(256)) * 4000                       # 1 MB, cut every 300 kB
+    srv = _flaky_server(data, 300_000)
+    try:
+        out = net.download(f"http://127.0.0.1:{srv.server_address[1]}/f.zip", tmp_path / "f.zip")
+        assert out.read_bytes() == data
+    finally:
+        srv.shutdown()
+    srv = _flaky_server(data, 300_000, ranges=False)      # a server that cannot resume
+    try:
+        with pytest.raises(net.ArchiveError):
+            net.download(f"http://127.0.0.1:{srv.server_address[1]}/g.zip", tmp_path / "g.zip")
+        assert not (tmp_path / "g.zip").exists() and not list(tmp_path.glob("*.part*"))
+    finally:
+        srv.shutdown()

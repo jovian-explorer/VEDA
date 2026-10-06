@@ -107,13 +107,14 @@ RETRIES = 3
 
 
 def get(url: str, *, login_url: Optional[str] = None, stream: bool = False,
-        params: Optional[dict] = None, timeout: Optional[float] = None) -> requests.Response:
+        params: Optional[dict] = None, timeout: Optional[float] = None,
+        headers: Optional[dict] = None) -> requests.Response:
     """GET with retries: archives drop connections when many index files are read."""
     _check_network()
     for attempt in range(RETRIES + 1):
         try:
             r = session().get(url, timeout=timeout or SETTINGS.network_timeout_s, stream=stream,
-                              allow_redirects=True, params=params)
+                              allow_redirects=True, params=params, headers=headers)
             if r.status_code in (401, 403) and login_url:
                 raise LoginRequired(urlparse(url).netloc, login_url)
             # (a 403 from a public archive is usually a busy server shedding load,
@@ -222,6 +223,12 @@ def download(url: str, dest: Path, progress: Optional[Callable[[int, int], None]
             raise exc from None          # report the HTTPS failure, the primary route
 
 
+# Transfers broken off part-way are continued from where they stopped (HTTP Range), this
+# many times: the BIRA-IASB repository dropped the 38 MB SOIR file after 5-11 MB on every
+# attempt, so it could not be read at all.
+RESUMES = 8
+
+
 def _https_download(url: str, dest: Path, progress=None, max_bytes: Optional[int] = None, **kw) -> Path:
     dest.parent.mkdir(parents=True, exist_ok=True)
     tmp = _part_path(dest)
@@ -230,16 +237,35 @@ def _https_download(url: str, dest: Path, progress=None, max_bytes: Optional[int
     if max_bytes is not None and total > max_bytes:
         r.close()
         raise TooLarge(dest.name, total)
+    # only a plain (not compressed) body of known length can be continued by byte offset
+    resumable = total > 0 and r.headers.get("Content-Encoding", "identity").lower() in ("", "identity")
     done = 0
+    resumes = 0
     try:
         with open(tmp, "wb") as fh:
-            for chunk in r.iter_content(chunk_size=256 * 1024):
-                if not chunk:
-                    continue
-                fh.write(chunk)
-                done += len(chunk)
-                if progress:
-                    progress(done, total)
+            while True:
+                try:
+                    for chunk in r.iter_content(chunk_size=256 * 1024):
+                        if not chunk:
+                            continue
+                        fh.write(chunk)
+                        done += len(chunk)
+                        if progress:
+                            progress(done, total)
+                    if resumable and done < total:
+                        raise requests.exceptions.ChunkedEncodingError(f"connection closed after {done} of {total} bytes")
+                    break
+                except (requests.exceptions.ChunkedEncodingError, requests.ConnectionError, requests.Timeout) as exc:
+                    r.close()
+                    if not resumable or resumes >= RESUMES:
+                        raise
+                    resumes += 1
+                    time.sleep(min(2 ** resumes, 10))
+                    r = get(url, stream=True, headers={"Range": f"bytes={done}-"}, **kw)
+                    if r.status_code != 206 or not (r.headers.get("Content-Range") or "").startswith(f"bytes {done}-"):
+                        raise exc                  # the server cannot continue: report the break
+        if resumable and done != total:
+            raise ArchiveError(f"The download from {urlparse(url).netloc} has {done} bytes, the server announced {total}.")
         _install(tmp, dest)
     except requests.RequestException as exc:
         tmp.unlink(missing_ok=True)
