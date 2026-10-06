@@ -637,7 +637,7 @@
         <ul>
           <li><strong>Which profiles:</strong> choose them by date, latitude, local time, solar zenith angle or Mars season (Ls) and the number per mission; VEDA searches the whole archive and reports why profiles were left out.</li>
           <li><strong>Common grid:</strong> profiles are interpolated (never extrapolated) onto altitude levels (default 0.5 km on Venus, Mars and Pluto, 2 km elsewhere; set <em>Grid step</em>) or onto pressure levels uniform in log pressure.</li>
-          <li><strong>Composite mean $\mu(z)$ and spread ($\pm 1\sigma$):</strong> arithmetic for temperature-like quantities, geometric (in log space) for pressure and densities; per group for climatologies by latitude, local time, zenith angle, Ls, year, month or mission, and as deviations from the mean.</li>
+          <li><strong>Composite mean $\mu(z)$ and spread ($\pm 1\sigma$):</strong> arithmetic for temperature-like quantities, geometric (in log space) for pressure and densities; per group for climatologies by latitude, local time, zenith angle, Ls, year, month, month of the year or mission, and as deviations from the mean.</li>
           <li><strong>Altitude cut:</strong> one point per profile at a fixed altitude, a layer statistic or a whole-profile diagnostic, against time, latitude, local time, zenith angle, Ls, longitude or day of year, with tide and wave fits.</li>
           <li><strong>Any variable:</strong> temperature, pressure, densities, potential temperature, $N^2$, lapse rate, temperature from density and more, in the units you choose.</li>
         </ul>
@@ -663,8 +663,8 @@
           like cloud bands, atmospheric waves, volcanic plumes, and impact craters. VEDA provides astronomical image tools:
         </p>
         <ul>
-          <li><strong>Astronomical Contrast Stretches:</strong> ZScale (IRAF standard), Percentile (0.5% to 99.5%), Linear, Logarithmic, Square Root, and Asinh algorithms.</li>
-          <li><strong>False-Color Palettes:</strong> Inferno, Viridis, Plasma, Twilight, and Grayscale colormaps to highlight subtle intensity gradients.</li>
+          <li><strong>Astronomical Contrast Stretches:</strong> ZScale (IRAF standard), Percentile (0.5% to 99.5%), Linear, Logarithmic, Square Root, Asinh and Histogram Equalized.</li>
+          <li><strong>False-Color Palettes:</strong> Inferno, Viridis, Plasma, Magma, Twilight and Grayscale colormaps to highlight subtle intensity gradients.</li>
           <li><strong>Interactive 1D Photometric Line Transects:</strong> Click and drag across the image canvas to slice arbitrary cross-sections $(x_0, y_0) \to (x_1, y_1)$ with sub-pixel bilinear interpolation.</li>
           <li><strong>Pixel Histograms and CDF:</strong> Inspect dynamic range and pixel intensity distributions.</li>
         </ul>

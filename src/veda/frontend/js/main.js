@@ -376,7 +376,7 @@ function helpBody() {
       <h3>Quick start: find everything observed on a date</h3>
       <ol>
         <li>Pick a planet or moon under <strong>By Celestial Body</strong>.</li>
-        <li>In <strong>Find observations of &hellip;</strong> set <em>From</em> and <em>To</em> (or leave them empty for the whole archive) and press <strong>Search all missions</strong>. VEDA reads the official archive indexes of every connected mission for that body the first time (this needs the internet once) and lists every product in the range.</li>
+        <li>In <strong>Find observations of &hellip;</strong> set <em>From</em> and <em>To</em> (or leave them empty for every indexed data set; live-search data sets need both dates) and press <strong>Search all missions</strong>. VEDA reads the official archive indexes of every connected mission for that body the first time (this needs the internet once) and lists every product in the range.</li>
         <li>Press <strong>Open</strong> on a row to download and plot that profile, or tick several rows and press <strong>Compare selected</strong> to overlay them.</li>
         <li><strong>Download selected</strong> keeps the products in the cache so they also work offline.</li>
       </ol>
@@ -391,7 +391,7 @@ function helpBody() {
 
     <section data-help>
       <h3>Live data sets (every payload)</h3>
-      <p>Chips marked <span class="badge badge-live">live search</span> cover a whole instrument archive that is searched on the server for the dates you give: the ESA PSA for Mars Express, Venus Express, Rosetta, BepiColombo and Huygens, the NASA PDS Registry for MAVEN, Juno, New Horizons, MESSENGER, LRO, Galileo, Magellan, MGS, MRO, Pioneer Venus and Dawn, and OPUS for Cassini, Galileo and New Horizons imaging and spectra. Give <em>From</em> and <em>To</em> dates to include them; up to 5,000 products per data set and window are listed (narrow the dates if VEDA says there are more). Results are remembered for a week.</p>
+      <p>Chips marked <span class="badge badge-live">live search</span> cover a whole instrument archive that is searched on the server for the dates you give: the ESA PSA for Mars Express, Venus Express, Rosetta, BepiColombo and Huygens, the NASA PDS Registry for MAVEN, Juno, New Horizons, MESSENGER, LRO, Galileo, Magellan, MGS, MRO, Pioneer Venus and Dawn, and OPUS for Cassini and Galileo imaging and spectra. Give <em>From</em> and <em>To</em> dates to include them; up to 5,000 products per data set and window are listed (narrow the dates if VEDA says there are more). Results are remembered for a week.</p>
     </section>
 
     <section data-help>
@@ -413,7 +413,7 @@ function helpBody() {
     <section data-help>
       <h3>Comparing profiles</h3>
       <p>Tick missions under <strong>2. Select Missions to Compare</strong>. Under <em>Which profiles</em> set a date range, latitude band, local time, solar zenith angle or Mars season (Ls) range and the number of profiles per mission, then press <strong>Apply</strong>: VEDA searches the whole archive, downloads what it needs (untick <em>Download</em> to use only the cache) and reports per mission how many profiles were kept and why others were left out. Profiles ticked in a search table (<strong>Compare selected</strong>) are used as they are.</p>
-      <p>The profiles are put on a common grid (<em>Grid step</em> in km, or <em>Vertical: Pressure</em> for levels uniform in log pressure) with their mean and &plusmn;1&sigma; spread; pressure and densities are averaged in log space. <em>Group composites by</em> gives a mean per latitude band, local time, zenith angle, Ls, year, month or mission (a climatology), and <em>Show: Deviation from the mean</em> brings out waves and tides. Colour the curves by mission, date or latitude; switch the variable and units under <strong>3. Analysis Variable &amp; Units</strong>.</p>
+      <p>The profiles are put on a common grid (<em>Grid step</em> in km, or <em>Vertical: Pressure</em> for levels uniform in log pressure) with their mean and &plusmn;1&sigma; spread; pressure and densities are averaged in log space. <em>Group composites by</em> gives a mean per latitude band, local time, zenith angle, Ls, year, month, month of the year or mission (a climatology), and <em>Show: Deviation from the mean</em> brings out waves and tides. Colour the curves by mission, date or latitude; switch the variable and units under <strong>3. Analysis Variable &amp; Units</strong>.</p>
       <p><strong>Altitude cut</strong> plots one point per profile against time, latitude, local time, zenith angle, Ls, longitude or day of the year: the variable at one altitude, its minimum, maximum or mean in a layer (or their altitudes), or a quantity computed from the whole profile (tropopause, electron density peak, Chapman fit, electron content, wave energy, hydrostatic consistency). Against local time, longitude or Ls, <em>Fit</em> gives the mean and up to four harmonics (tides and waves) with amplitudes, phases and 1&sigma; uncertainties. Click a point to open its profile.</p>
     </section>
 
@@ -434,7 +434,7 @@ function helpBody() {
 
     <section data-help>
       <h3>Observation geometry (SPICE)</h3>
-      <p><strong>&#128752; Geometry</strong> works for every mission with public SPICE kernels (all except the Mars Orbiter Mission and Chandrayaan-2). For radio occultations: <em>Orbit (planet-fixed)</em>, <em>Orbit (inertial J2000)</em>, <em>View from Earth</em>, <em>Tangent-point map</em> (cylindrical, polar or orthographic) and <em>Angles along profile</em>; times are Earth-received and light-time corrected. For any other observation: the orbit, the sub-spacecraft <em>Ground track</em>, and altitude, solar zenith, emission and phase angles and local time over the observation.</p>
+      <p><strong>&#128752; Geometry</strong> works for the 17 missions whose SPICE kernels VEDA knows: Akatsuki, BepiColombo, Cassini, Dawn, Galileo, Juno, LRO, Magellan, MAVEN, MESSENGER, Mars Express, MGS, MRO, New Horizons, Pioneer Venus, Rosetta and Venus Express. For radio occultations: <em>Orbit (planet-fixed)</em>, <em>Orbit (inertial J2000)</em>, <em>View from Earth</em>, <em>Tangent-point map</em> (cylindrical, polar or orthographic) and <em>Angles along profile</em>; times are Earth-received and light-time corrected. For any other observation: the orbit, the sub-spacecraft <em>Ground track</em>, and altitude, solar zenith, emission and phase angles and local time over the observation.</p>
       <p>Kernels download by themselves: a mission's generic and body kernels when you open it, the spacecraft ephemeris when you open an observation. <strong>Settings &gt; Observation geometry</strong> turns this off or sets the size above which VEDA asks first. Kernels are kept and reused.</p>
     </section>
 
@@ -709,7 +709,7 @@ function dataPolicyBody() {
     <ul>
       <li>VEDA is provided as is, without warranty. Check derived values against the product labels and the instrument team's documentation before you publish them.</li>
       <li>Archived files are never altered. Unit conversions and derived quantities are computed in memory; the downloaded files stay exactly as the archive published them.</li>
-      <li>Download what you need: VEDA fetches products one at a time, backs off when an archive is busy, and keeps them in a local cache so the archives are not asked twice.</li>
+      <li>Download what you need: VEDA fetches a few products at a time (<em>Parallel downloads</em> in Settings, 4 by default), backs off when an archive is busy, and keeps them in a local cache so the archives are not asked twice.</li>
       <li>VEDA has no accounts, no analytics and no telemetry. It contacts only the archives you search, and only while <em>Allow downloads</em> is on in Settings. Archive passwords are never seen by VEDA: you sign in on the archive's own website.</li>
       <li>VEDA is not affiliated with or endorsed by NASA, ESA, JAXA or ISRO.</li>
     </ul>

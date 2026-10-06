@@ -17,7 +17,7 @@ The sample products bundled with VEDA (`src/veda/sampledata`) are unmodified cop
 
 ### NASA Planetary Data System (PDS)
 * **Hosts**: the PDS discipline nodes for NASA's Science Mission Directorate: Atmospheres (https://pds-atmospheres.nmsu.edu/), Geosciences, Imaging, Planetary Plasma Interactions, Small Bodies and Ring-Moon Systems.
-* **How VEDA reads it**: PDS3 volume and cumulative indexes (`INDEX.TAB`, `CUMINDEX.TAB` and format files) and PDS4 bundles over HTTPS, and the PDS Registry (Search) API (https://pds.nasa.gov/api/search/1/) to find PDS4 products by instrument and date. Cassini, Galileo and New Horizons imaging and spectra are found with the Ring-Moon Systems node's OPUS service (https://opus.pds-rings.seti.org/). No account is needed.
+* **How VEDA reads it**: PDS3 volume and cumulative indexes (`INDEX.TAB`, `CUMINDEX.TAB` and format files) and PDS4 bundles over HTTPS, and the PDS Registry (Search) API (https://pds.nasa.gov/api/search/1/) to find PDS4 products by instrument and date. Cassini and Galileo imaging and spectra are found with the Ring-Moon Systems node's OPUS service (https://opus.pds-rings.seti.org/). No account is needed.
 * **Terms**: PDS data are freely available without restriction on use. Cite the data set (and its DOI where the archive gives one), the instrument team's reference publication and the PDS node.
 
 ### ESA Planetary Science Archive (PSA)
