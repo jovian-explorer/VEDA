@@ -83,6 +83,11 @@ class Dataset:
     # Uncertainty from independent error tables of the same rows (PDS4 sibling files),
     # added in quadrature: variable -> ((file-name pattern, column), ...)
     sigma_from_siblings: Dict[str, Tuple[Tuple[str, str], ...]] = field(default_factory=dict)
+    # Systematic uncertainty from two retrievals with different assumptions, kept apart from
+    # the random 1-sigma: variable -> (column A, column B); systematic = |A - B| / 2, and
+    # derived quantities get half the difference of their values from A and B
+    # (radio occultations: the lower and upper boundary temperature at the top)
+    systematic_from_bracket: Dict[str, Tuple[str, str]] = field(default_factory=dict)
     # Factor turning the archive's error column into 1 sigma (0.5 for a full error-bar width)
     sigma_factor: Dict[str, float] = field(default_factory=dict)
     # Vertical correlation length (km) of the archived 1-sigma errors, where the archive
@@ -846,6 +851,12 @@ DATASETS: List[Dataset] = [
             (r"l04_i(\w{2})_", "L4 ionosphere electron density profile", "profile"),
         ),
         profile_columns=RS_PROFILE_COLUMNS,
+        # Each profile is integrated down from three temperatures at the top (the labels'
+        # LOWER / MEDIUM / UPPER BOUNDARY CONDITION columns, e.g. 130, 165 and 200 K); VEDA
+        # uses MEDIUM and keeps half the LOWER-UPPER difference as the systematic uncertainty
+        systematic_from_bracket={
+            "temperature_k": ("TEMPERATURE (LOWER BOUNDARY CONDITION)", "TEMPERATURE (UPPER BOUNDARY CONDITION)"),
+            "pressure_hpa": ("PRESSURE (LOWER BOUNDARY CONDITION)", "PRESSURE (UPPER BOUNDARY CONDITION)")},
         times_earth_received=True,
         citation=MEX_CITATION,
         # e.g. M65RSR0L04_AIX_041601543_60.LBL -> 2004 day 160 15:43
@@ -865,6 +876,11 @@ DATASETS: List[Dataset] = [
             (r"_l3_e_", "L3 bending angle / refractivity, egress", "other"),
         ),
         profile_columns=AKATSUKI_PROFILE_COLUMNS,
+        # as for Mars Express: three temperatures at the top (140, 170 and 200 K); the
+        # archive's own 1-sigma columns hold only the invalid value -9.99
+        systematic_from_bracket={
+            "temperature_k": ("TEMPERATURE (LOWER TEMPERATURE AT BOUNDARY)", "TEMPERATURE (HIGHER TEMPERATURE AT BOUNDARY)"),
+            "pressure_hpa": ("PRESSURE (LOWER TEMPERATURE AT BOUNDARY)", "PRESSURE (HIGHER TEMPERATURE AT BOUNDARY)")},
         citation=AKATSUKI_CITATION,
     ),
     Dataset(

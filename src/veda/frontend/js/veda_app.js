@@ -10,7 +10,7 @@ import { setupBodySearch, showBodySearch } from './body_search.js';
 import { showProductViewer } from './product_viewer.js';
 import { prefetchMission, prefetchObservation } from './spice_auto.js';
 import { recordProduct, recordFeature } from './citations.js';
-import { style as plotStyle, styleTrace, styleLayout, sigmaBand, orient, paletteColor, plotStyleBody, exportFigure } from './plot_style.js';
+import { style as plotStyle, styleTrace, styleLayout, sigmaBand, systematicBand, orient, paletteColor, plotStyleBody, exportFigure } from './plot_style.js';
 
 /** Surface gravity with three significant figures (comet 67P: 1.6e-4, not 0.00). */
 const fmtGravity = (g) => (g == null || !isFinite(g) ? 'N/A'
@@ -677,7 +677,7 @@ function comparisonView(data) {
       ? null : (logVar ? 100 * (v / ref[k] - 1) : v - ref[k])));
     return {
       deviation: true, logVar, fromReference: true,
-      data: { ...data, profiles: (data.profiles || []).map(p => ({ ...p, interpolated_series: dev(p.interpolated_series), interpolated_sigma: null })),
+      data: { ...data, profiles: (data.profiles || []).map(p => ({ ...p, interpolated_series: dev(p.interpolated_series), interpolated_sigma: null, interpolated_systematic: null })),
               composite_mean: dev(data.composite_mean), composite_plus_1sigma: dev(data.composite_plus_1sigma),
               composite_minus_1sigma: dev(data.composite_minus_1sigma), reference: { ...data.reference, series: ref.map(v => (v == null ? null : 0)) } },
       groups: groups.map(g => ({ ...g, mean: dev(g.mean), plus_1sigma: dev(g.plus_1sigma), minus_1sigma: dev(g.minus_1sigma) })),
@@ -1786,7 +1786,8 @@ function renderComparisonPlot() {
     composite_ci95_low: sc(raw.composite_ci95_low),
     composite_ci95_high: sc(raw.composite_ci95_high),
     profiles: (raw.profiles || []).map(pr => ({ ...pr, interpolated_series: sc(pr.interpolated_series),
-                                                interpolated_sigma: sc(pr.interpolated_sigma) })),
+                                                interpolated_sigma: sc(pr.interpolated_sigma),
+                                                interpolated_systematic: sc(pr.interpolated_systematic) })),
     groups: (raw.groups || []).map(g => ({ ...g, mean: sc(g.mean), plus_1sigma: sc(g.plus_1sigma), minus_1sigma: sc(g.minus_1sigma) })),
   };
   const view = comparisonView(scaled);
@@ -1840,6 +1841,8 @@ function renderComparisonPlot() {
     // Each profile's own 1-sigma (archived or propagated) when few profiles are drawn
     const ownSigma = !view.deviation && !view.groups.length && profs.length <= 8 ? p.interpolated_sigma : null;
     if (ownSigma) traces.push(...sigmaBand(p.interpolated_series, zGrid, ownSigma, color, `${who} ${when || p.observation_id}`));
+    const ownSys = !view.deviation && !view.groups.length && profs.length <= 8 ? p.interpolated_systematic : null;
+    if (ownSys) traces.push(...systematicBand(p.interpolated_series, zGrid, ownSys, color, `${who} ${when || p.observation_id}`));
     const flagged = p.outlier && p.outlier.flagged;
     if (flagged) t.name += ' (flagged outlier)';
     const styled = styleTrace(t, i, { color, sigma: ownSigma, dash: flagged ? 'dash' : undefined });
@@ -2590,12 +2593,14 @@ function exportLocalProfileCsv(prof) {
 function profileSeries(prof, varKey) {
   const cfg = VARIABLE_CONFIGS[varKey] || { label: varKey, units: '', axis: varKey };
   const unc = prof.uncertainty || {};
-  let values = null, sigma = null, label = cfg.label, units = cfg.units, axis = cfg.axis, log = !!cfg.logScale;
+  const sysAll = prof.systematic || {};
+  let values = null, sigma = null, sys = null, label = cfg.label, units = cfg.units, axis = cfg.axis, log = !!cfg.logScale;
   if (varKey === 'temperature_k' || varKey === 'temperature_c') {
     const c = vedaState.unitsTemperature === 'C';
     const k = prof.temperature_k || (prof.temperature_c ? prof.temperature_c.map(t => (t != null ? t + 273.15 : null)) : null);
     values = k ? (c ? k.map(t => (t != null ? t - 273.15 : null)) : k) : null;
     sigma = unc.temperature_k || unc.temperature_c || null;
+    sys = sysAll.temperature_k || null;
     label = c ? 'Temperature (°C)' : 'Temperature (K)'; units = c ? '°C' : 'K';
     axis = c ? 'Temperature T (°C)' : 'Temperature T (K)'; log = false;
   } else if (varKey === 'pressure_hpa') {
@@ -2603,6 +2608,7 @@ function profileSeries(prof, varKey) {
     const u = { bar: 'bar', Pa: 'Pa' }[vedaState.unitsPressure] || 'hPa';
     values = prof.pressure_hpa ? prof.pressure_hpa.map(p => (p != null ? p * f : null)) : null;
     sigma = unc.pressure_hpa ? unc.pressure_hpa.map(s => (s != null ? s * f : null)) : null;
+    sys = sysAll.pressure_hpa ? sysAll.pressure_hpa.map(s => (s != null ? s * f : null)) : null;
     label = `Pressure (${u})`; units = u; axis = `Pressure P (${u})`; log = true;
   } else if (varKey === 'electron_density_cm3') {
     values = prof.electron_density_cm3;
@@ -2610,9 +2616,10 @@ function profileSeries(prof, varKey) {
   } else if (prof.derived && prof.derived[varKey]) {
     values = prof.derived[varKey];
     sigma = unc[varKey] || null;               // propagated from the archived uncertainties
+    sys = sysAll[varKey] || null;              // from the two boundary assumptions
   }
   const ok = Array.isArray(values) && values.some(v => v != null && !Number.isNaN(v));
-  return ok ? { values, sigma, label, units, axis, log, color: cfg.color } : null;
+  return ok ? { values, sigma, sys, label, units, axis, log, color: cfg.color } : null;
 }
 
 /** Altitude axis title from the profiles' altitude references: "above reference radius"
@@ -2700,6 +2707,7 @@ function renderProfilePanels(prof, varKeys) {
     const xa = `x${axisSuffix}`;
     const band = sigmaBand(s.values, coord, s.sigma, color, s.label).map(t => ({ ...t, xaxis: xa, yaxis: 'y' }));
     traces.push(...band);
+    traces.push(...systematicBand(s.values, coord, s.sys, color, s.label).map(t => ({ ...t, xaxis: xa, yaxis: 'y' })));
     const t = { ...orient(s.values, coord), type: 'scatter', name: s.label, xaxis: xa, yaxis: 'y',
       hovertemplate: `%{y:.4g}<br>${s.label}: %{x:.4g}<extra></extra>` };
     traces.push(styleTrace(t, i, { color, sigma: s.sigma }));

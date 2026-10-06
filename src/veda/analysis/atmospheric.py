@@ -114,7 +114,51 @@ def compute_atmospheric_diagnostics(
             propagate(profile, body, derived, gz, _correlation_km(profile))
         except Exception:                     # uncertainties are extra; never lose the values
             pass
+    if profile.alternatives:
+        try:
+            _systematic(profile, body, derived)
+        except Exception:                     # as above
+            pass
     return derived
+
+
+def _systematic(profile: ObservationProfile, body: BodyInfo, derived: Dict[str, np.ndarray]) -> None:
+    """Systematic uncertainty of the measured and derived quantities: half the difference
+    between the values from the two alternative retrievals (``profile.alternatives``, e.g.
+    radio occultation profiles integrated down from a low and a high temperature at the
+    top), each derived quantity recomputed from both.  Kept in ``profile.systematic``,
+    apart from the random 1-sigma."""
+    import copy
+    z = np.asarray(profile.altitude_km, dtype=float)
+    sides = []
+    for i in (0, 1):
+        alt = copy.copy(profile)
+        alt.raw_attributes = dict(profile.raw_attributes or {})
+        alt.derived = {k: v for k, v in profile.derived.items() if k in ("number_density_m3", "density_measured")}
+        alt.uncertainty, alt.systematic, alt.alternatives = {}, {}, {}
+        for key, pair in profile.alternatives.items():
+            v = np.asarray(pair[i], dtype=float)
+            if v.shape != z.shape:
+                return
+            setattr(alt, key, v)
+            if key == "temperature_k":
+                alt.temperature_c = v - 273.15
+        values = dict(alt.derived)
+        values.update(_diagnostics(alt, body))
+        values.update({k: getattr(alt, k) for k in profile.alternatives})
+        sides.append(values)
+    out: Dict[str, np.ndarray] = {}
+    for key in list(profile.alternatives) + list(derived):
+        a, b = sides[0].get(key), sides[1].get(key)
+        if a is None or b is None or np.shape(a) != z.shape or np.shape(b) != z.shape:
+            continue
+        with np.errstate(invalid="ignore"):
+            half = np.abs(np.asarray(a, dtype=float) - np.asarray(b, dtype=float)) / 2.0
+        if np.any(np.isfinite(half) & (half > 0)):
+            out[key] = half
+    if "temperature_k" in out:
+        out["temperature_c"] = out["temperature_k"]
+    profile.systematic.update(out)
 
 
 def _correlation_km(profile: ObservationProfile) -> float:
@@ -790,6 +834,16 @@ def compare_profiles_on_body(
                     z_clean, v_clean, s_clean, log=log_like)
                 s_interp = _interpolated_sigma(z_grid, z_clean[good], s_clean[good], corr_levels)
                 s_interp[~np.isfinite(v_interp)] = np.nan
+        # the systematic uncertainty on the grid: linear interpolation is exact for it (the
+        # half difference of two retrievals interpolated level by level)
+        sys_p = (p.systematic or {}).get(variable_name)
+        sys_interp = None
+        if sys_p is not None and np.shape(sys_p) == z_p.shape:
+            y_sys = np.asarray(sys_p, dtype=float)[ok][sort_idx]
+            good_sys = np.isfinite(y_sys)
+            if good_sys.sum() >= 2:
+                sys_interp = np.interp(z_grid, z_clean[good_sys], y_sys[good_sys], left=np.nan, right=np.nan)
+                sys_interp[~np.isfinite(v_interp)] = np.nan
         with np.errstate(invalid="ignore", divide="ignore"):
             sigma_matrix.append(np.full(z_grid.size, np.nan) if s_interp is None else
                                 (s_interp / np.exp(v_interp) if log_like else s_interp))
@@ -814,6 +868,8 @@ def compare_profiles_on_body(
             "interpolated_series": v_interp,
             **({"interpolated_sigma": [None if not np.isfinite(x) else float(f"{x:.4g}") for x in s_interp]}
                if s_interp is not None else {}),
+            **({"interpolated_systematic": [None if not np.isfinite(x) else float(f"{x:.4g}") for x in sys_interp]}
+               if sys_interp is not None else {}),
             **({"sigma_correlation_km": _grid_error_correlation_km(corr_levels, z_clean)}
                if s_interp is not None and vertical != "pressure" else {}),
         })
@@ -965,13 +1021,21 @@ def export_profile_to_csv(profile: ObservationProfile) -> str:
     for k, v in profile.derived.items():
         cols.append(k)
         data_arrays.append(v)
-    for k in list(cols[1:]):
+    values_cols = list(cols[1:])
+    for k in values_cols:
         key = "refractivity" if k == "refractivity_n" else k
         if key in (profile.uncertainty or {}):
             cols.append(f"sigma_{k}")
             data_arrays.append(np.asarray(profile.uncertainty[key], dtype=float))
+    for k in values_cols:
+        if k in (profile.systematic or {}):
+            cols.append(f"systematic_{k}")
+            data_arrays.append(np.asarray(profile.systematic[k], dtype=float))
     if any(c.startswith("sigma_") for c in cols):
         lines.append("# sigma_* columns are 1-sigma uncertainties: archived, or propagated from them by VEDA (User Guide).")
+    if any(c.startswith("systematic_") for c in cols):
+        lines.append("# systematic_* columns are systematic uncertainties, apart from sigma_*: half the difference between the "
+                     "archive's retrievals with its lower and upper boundary temperature at the top, each quantity derived from both.")
 
     lines.append(",".join(cols))
     n_rows = profile.altitude_km.size if profile.altitude_km is not None else 0
@@ -1019,6 +1083,7 @@ def export_profiles_long_csv(profiles: List[ObservationProfile], body: Optional[
             if v is not None and k not in var_cols:
                 var_cols.append(k)
     sigma_cols = [k for k in var_cols if any(k in (p.uncertainty or {}) for p in profiles)]
+    sys_cols = [k for k in var_cols if any(k in (p.systematic or {}) for p in profiles)]
     track_cols = [k for k in _TRACK if any(k in (p.track or {}) for p in profiles)]
 
     lines = [
@@ -1036,7 +1101,10 @@ def export_profiles_long_csv(profiles: List[ObservationProfile], body: Optional[
     unit_of = (lambda k: (get_variable_info(k) or {}).get("units") or extra_units.get(k))
     units = [f"{k}={unit_of(k)}" for k in var_cols if unit_of(k)]
     if units:
-        lines.append("# units: " + "; ".join(units) + " (sigma_* as their quantity)")
+        lines.append("# units: " + "; ".join(units) + " (sigma_* and systematic_* as their quantity)")
+    if sys_cols:
+        lines.append("# systematic_* columns are systematic uncertainties (the boundary temperature of radio occultation "
+                     "retrievals: half the difference between the archive's lower- and upper-boundary retrievals).")
     for p in profiles:
         if p.provenance:
             ref = (p.raw_attributes or {}).get("ALTITUDE_REFERENCE")
@@ -1045,7 +1113,7 @@ def export_profiles_long_csv(profiles: List[ObservationProfile], body: Optional[
                          + (f"; altitude above {ref}" if ref else ""))
     header = (["mission", "instrument", "observation_id", "time_utc", "profile_latitude_deg", "profile_longitude_deg",
                "profile_lst_h", "profile_sza_deg", "profile_ls_deg", "altitude_km"]
-              + var_cols + [f"sigma_{k}" for k in sigma_cols]
+              + var_cols + [f"sigma_{k}" for k in sigma_cols] + [f"systematic_{k}" for k in sys_cols]
               + [f"level_{k}" + {"latitude": "_deg", "longitude": "_deg", "lst": "_h", "sza": "_deg"}[k] for k in track_cols])
     lines.append(",".join(header))
     for p in profiles:
@@ -1057,6 +1125,7 @@ def export_profiles_long_csv(profiles: List[ObservationProfile], body: Optional[
                  _csv_num(geom.get("lst")), _csv_num(geom.get("sza")), _csv_num(geom.get("ls"))]
         cols = [arr(getattr(p, k, None) if k in _MEASURED else p.derived.get(k), n) for k in var_cols]
         cols += [arr((p.uncertainty or {}).get(k), n) for k in sigma_cols]
+        cols += [arr((p.systematic or {}).get(k), n) for k in sys_cols]
         cols += [arr((p.track or {}).get(k), n) for k in track_cols]
         for i in range(n):
             if not np.isfinite(z[i]):
@@ -1141,6 +1210,11 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
     header += [f"sigma_{c}" for c, _ in with_sigma]
     if with_sigma:
         lines.append("# sigma_* columns: each profile's 1-sigma uncertainty on the grid, archived or propagated by VEDA.")
+    with_sys = [(c, p) for c, p in zip(cols, profiles) if p.get("interpolated_systematic")]
+    header += [f"systematic_{c}" for c, _ in with_sys]
+    if with_sys:
+        lines.append("# systematic_* columns: each profile's systematic uncertainty on the grid (boundary temperature of "
+                     "radio occultation retrievals), apart from sigma_*.")
     lines.append(",".join(_csv_field(h) for h in header))
 
     def at(seq, i):
@@ -1162,6 +1236,7 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
             row.append(_csv_num(at(ref, i)))
         row += [_csv_num(at(p.get("interpolated_series"), i)) for p in profiles]
         row += [_csv_num(at(p.get("interpolated_sigma"), i)) for _, p in with_sigma]
+        row += [_csv_num(at(p.get("interpolated_systematic"), i)) for _, p in with_sys]
         lines.append(",".join(row))
 
     return "\n".join(lines) + "\n"

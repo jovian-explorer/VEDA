@@ -6,7 +6,7 @@ atmospheric/ionospheric profiles, and astronomical imaging products.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 
 
@@ -103,6 +103,13 @@ class ObservationProfile:
     raw_attributes: Dict[str, Any] = field(default_factory=dict)
     # 1-sigma uncertainty per level, keyed like the variables ("temperature_k", ...)
     uncertainty: Dict[str, np.ndarray] = field(default_factory=dict)
+    # Systematic uncertainty per level, kept apart from the random 1-sigma above: half the
+    # difference between two retrievals that differ only in an assumption the data cannot
+    # fix (radio occultation: the temperature assumed at the top of the profile)
+    systematic: Dict[str, np.ndarray] = field(default_factory=dict)
+    # Those two retrievals of the measured variables: key -> (A, B); the systematic
+    # uncertainty of each derived quantity is half the difference of it computed from A and B
+    alternatives: Dict[str, Tuple[np.ndarray, np.ndarray]] = field(default_factory=dict)
     # Per-level observation geometry along the tangent-point track:
     # "latitude", "longitude" (deg), "sza" (deg), "lst" (h), "time_s" (s from first level)
     track: Dict[str, np.ndarray] = field(default_factory=dict)
@@ -153,6 +160,7 @@ class ObservationProfile:
             "electron_density_cm3": _dec(self.electron_density_cm3),
             "derived": der_dict,
             "uncertainty": {k: _dec(v) for k, v in self.uncertainty.items()},
+            "systematic": {k: _dec(v) for k, v in self.systematic.items()},
             "track": {k: _dec(v) for k, v in self.track.items()},
             "provenance": prov_dict,
             "n_points": int(self.altitude_km.size) if self.altitude_km is not None else 0,

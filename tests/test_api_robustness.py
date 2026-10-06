@@ -845,3 +845,42 @@ def test_publication_figure_note_does_not_cover_the_axis_label(monkeypatch):
     label = fig.axes[0].xaxis.label.get_window_extent(r)
     note = fig.texts[0].get_window_extent(r)
     assert note.y1 < label.y0
+
+
+def _label_rows(tab, cols):
+    """Columns (1-based, whitespace-separated) of a bundled sample table."""
+    rows = [line.split() for line in tab.read_text().splitlines() if line.strip()]
+    return [np.array([float(r[c - 1]) for r in rows]) for c in cols]
+
+
+def test_systematic_uncertainty_from_the_boundary_temperatures(client):
+    """Mars Express and Akatsuki profiles are integrated down from three temperatures at
+    the top; the systematic uncertainty is half the lower-upper difference, kept apart
+    from the random 1-sigma, and carried into the derived quantities and the exports."""
+    mex = client.get("/api/veda/archive/profile/mex-m-mrs-5-occ/M32ICL2L04_AIX_040931105_60").json()
+    t_lo, t_hi = _label_rows(SAMPLES / "mars_express" / "M32ICL2L04_AIX_040931105_60.TAB", (15, 19))
+    sys_t = np.array([np.nan if v is None else v for v in mex["systematic"]["temperature_k"]])
+    assert np.allclose(sys_t, np.abs(t_hi - t_lo) / 2, atol=1e-6)
+    assert sys_t[0] == pytest.approx(35.0) and sys_t[-1] < 0.5      # 130/200 K at the top, ~0 near the ground
+    assert mex["uncertainty"]["temperature_k"][0] == pytest.approx(10.0)  # the random 1-sigma stays as archived
+    assert "lapse_rate" in mex["systematic"] and "density" in mex["systematic"]
+    aka = client.get("/api/veda/archive/profile/vco-v-rs-5-occ-v1.0/rs_20160303_223100_udsc64_l4_ae_v10").json()
+    t_lo, t_hi = _label_rows(SAMPLES / "venus_akatsuki" / "rs_20160303_223100_udsc64_l4_ae_v10.tab", (15, 19))
+    sys_t = np.array([np.nan if v is None else v for v in aka["systematic"]["temperature_k"]])
+    assert np.nanmax(np.abs(sys_t - np.abs(t_hi - t_lo) / 2)) < 1e-6 and np.nanmax(sys_t) == pytest.approx(30.05, abs=0.01)
+    assert not aka["uncertainty"].get("temperature_k")                   # the archive's 1-sigma is -9.99 throughout
+    from veda.archives.profiles import load_profile
+    from veda.analysis.atmospheric import export_profile_to_csv
+    text = export_profile_to_csv(load_profile("mex-m-mrs-5-occ", "M32ICL2L04_AIX_040931105_60"))
+    header = next(line for line in text.splitlines() if line.startswith("altitude_km,"))
+    assert "systematic_temperature_k" in header and "systematic_lapse_rate" in header and "sigma_temperature_k" in header
+    comp = client.post("/api/veda/compare/body/mars", json={"observations": [
+        {"mission_id": "mex", "observation_id": "M32ICL2L04_AIX_040931105_60"}], "variable": "temperature_k",
+        "altitude_step_km": 1.0}).json()
+    p = comp["profiles"][0]
+    grid = np.asarray(comp["grid_km"])
+    z = np.asarray(mex["altitude_km"], dtype=float)
+    mex_sys = np.array([np.nan if v is None else v for v in mex["systematic"]["temperature_k"]])
+    o = np.argsort(z)
+    k = int(np.argmin(np.abs(grid - 40.0)))
+    assert p["interpolated_systematic"][k] == pytest.approx(np.interp(grid[k], z[o], mex_sys[o]), rel=1e-3)

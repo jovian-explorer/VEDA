@@ -335,6 +335,19 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
             if key == "temperature_k":
                 unc["temperature_c"] = half
 
+    # retrievals with the lower and upper boundary assumption, in the variable's units
+    alternatives: Dict[str, Any] = {}
+    for key, (ca, cb) in ds.systematic_from_bracket.items():
+        a, b = _col(tbl, ca), _col(tbl, cb)
+        if a is None or b is None or key not in ("temperature_k", "pressure_hpa"):
+            continue
+        conv = _to_kelvin if key == "temperature_k" else _to_hpa
+        a, b = conv(a, _unit(tbl, ca)), conv(b, _unit(tbl, cb))
+        with np.errstate(invalid="ignore"):
+            a[a <= 0] = np.nan
+            b[b <= 0] = np.nan
+        alternatives[key] = (a, b)
+
     for key, parts in ds.sigma_from_siblings.items():
         sq = None
         for pattern, colname in parts:
@@ -399,6 +412,7 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
                         **({"SZA": header["sza"]} if "sza" in header else {})},
         uncertainty=unc,
         track=track,
+        alternatives=alternatives,
     )
     if n is not None:
         prof.derived["number_density_m3"] = n

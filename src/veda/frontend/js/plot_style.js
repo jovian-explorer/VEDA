@@ -113,6 +113,20 @@ export function sigmaBand(values, coord, sigma, color, name) {
   ];
 }
 
+/** Systematic uncertainty (e.g. the boundary temperature of a radio occultation retrieval)
+ *  as dotted lines at value +/- systematic, apart from the random band; drawn unless the
+ *  uncertainty is hidden. */
+export function systematicBand(values, coord, sys, color, name) {
+  if (!sys || style.uncertainty === 'none' || !sys.some(v => v != null && v > 0)) return [];
+  const make = (vals) => (style.swapAxes ? { x: coord, y: vals } : { x: vals, y: coord });
+  const side = (sign, legend) => ({
+    ...make(values.map((v, k) => (v == null || sys[k] == null ? null : v + sign * sys[k]))),
+    type: 'scatter', mode: 'lines', line: { width: 1, color, dash: 'dot' }, hoverinfo: 'skip',
+    name: `${name} ± systematic (boundary)`, showlegend: legend, legendgroup: `sys-${name}`,
+  });
+  return [side(-1, true), side(1, false)];
+}
+
 function hexToRgba(hex, a) {
   const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex || '');
   if (!m) return `rgba(56,189,248,${a})`;
