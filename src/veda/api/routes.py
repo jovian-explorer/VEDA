@@ -680,6 +680,11 @@ def _publication_figure(b, comp: dict, variable: str, dpi: int, fmt: str) -> Res
             label = f"{mid.upper()} {p.get('instrument', '')} (n = {counts[mid]})"
         ax.plot(series, grid, label=label, linestyle="-", linewidth=1.2 if len(profiles) > 6 else 1.8,
                 alpha=0.75 if len(profiles) > 6 else 1.0, color=colors[mission_order.index(mid) % len(colors)])
+        sig = p.get("interpolated_sigma")
+        if sig and len(profiles) <= 8:          # each profile's own 1-sigma when few are drawn
+            v, e = np.array(series, dtype=float), np.array(nan(sig), dtype=float)
+            ax.fill_betweenx(grid, v - e, v + e, color=colors[mission_order.index(mid) % len(colors)],
+                             alpha=0.18, linewidth=0)
     for gi, g in enumerate(groups):
         c = colors[gi % len(colors)]
         if any(x is not None for x in g["plus_1sigma"]):

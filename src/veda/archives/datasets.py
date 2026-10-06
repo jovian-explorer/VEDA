@@ -85,6 +85,9 @@ class Dataset:
     sigma_from_siblings: Dict[str, Tuple[Tuple[str, str], ...]] = field(default_factory=dict)
     # Factor turning the archive's error column into 1 sigma (0.5 for a full error-bar width)
     sigma_factor: Dict[str, float] = field(default_factory=dict)
+    # Vertical correlation length (km) of the archived 1-sigma errors, where the archive
+    # documents one; 0: independent between levels (analysis/uncertainty.py)
+    uncertainty_correlation_km: float = 0.0
     # Factor for an extra variable (and its uncertainty) whose label unit is wrong: the
     # Odyssey accelerometer densities are labelled kg/m^3 but are in kg/km^3 (1e-9)
     value_factor: Dict[str, float] = field(default_factory=dict)
@@ -480,6 +483,7 @@ DATASETS: List[Dataset] = [
         rules=((r"^soir_co2", "Mesosphere and thermosphere profile at the terminator (T, p, n)", "profile"),),
         profile_columns={"altitude": "altitude", "temperature": "temperature", "temperature_sigma": "err_temperature",
                          "pressure": "pressure", "pressure_sigma": "err_pressure", "number_density": "total_density",
+                         "number_density_sigma": "err_total_density",
                          "latitude": "LATITUDE", "longitude": "LONGITUDE", "lst": "LST"},
         column_units={"altitude": "KM", "pressure": "MBAR", "err_pressure": "MBAR", "temperature": "K",
                       "err_temperature": "K", "total_density": "1/CM**3"},

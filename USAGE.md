@@ -182,6 +182,17 @@ The cold-point tropopause is the coldest level of a profile inside a range where
 ### Chapman layer
 Electron density profiles are fitted with an alpha-Chapman layer, $N_e(z) = N_m \exp\left(\tfrac{1}{2}\left(1 - \zeta - e^{-\zeta}\right)\right)$ with $\zeta = (z - h_m)/H$, by nonlinear least squares; the peak density $N_m$, peak altitude $h_m$, neutral scale height $H$ and $R^2$ of the fit are given with the measured peak. These, and the electron content, are computed for every profile with electron density, with or without temperature (most ionospheric occultations have none).
 
+
+### Uncertainties of derived quantities
+Where the archive gives 1-sigma uncertainties of the measured quantities, VEDA carries them into what it derives, and shows them as bands (or error bars, *Plot style*) in the profile view, around each profile of a comparison of up to eight profiles, in the publication figure, and as `sigma_*` columns in every export.
+
+Quantities that depend on one level are propagated to first order, the errors of $T$ and $p$ taken as independent:
+$$\sigma_H = H\,\frac{\sigma_T}{T}, \qquad \sigma_\rho = \rho\sqrt{\left(\frac{\sigma_p}{p}\right)^2 + \left(\frac{\sigma_T}{T}\right)^2}, \qquad \sigma_\theta = \theta\sqrt{\left(\frac{\sigma_T}{T}\right)^2 + \left(\kappa\,\frac{\sigma_p}{p}\right)^2}, \qquad \sigma_c = c\,\frac{\sigma_T}{2T}.$$
+
+Quantities that depend on several levels, the lapse rate, $N^2$ and $d\theta/dz$, and the temperature and pressure retrieved from a density profile (whose top boundary is fitted), are found by Monte Carlo: the profile is redrawn 200 times with Gaussian errors of the archived size, everything is recomputed with the same derivatives and the same retrieval as the values, and the standard deviation of the results is the uncertainty (a fixed seed makes it repeatable; a level needs results from at least half the draws). For a central difference over $\pm\Delta z$ of independent errors this gives $\sigma_{dT/dz} = \sigma_T\sqrt{2}/(2\Delta z)$.
+
+No archive VEDA reads says how its errors are correlated between levels, so they are taken as independent. That is the cautious choice for derivatives of finely sampled profiles: a Mars Express profile with $\sigma_T \approx 0.9$ K every 125 m gets a lapse rate uncertainty of about 5 K/km. It overstates the uncertainty of quantities integrated over many levels where the real errors are correlated: from the SOIR densities (20 % at each level) the retrieved temperature gets about 40 K, twice the archive's own temperature uncertainty. A data set can declare a correlation length $L$; the draws then have the correlation $\exp(-\Delta z^2 / 2L^2)$.
+
 ---
 
 ## 4. Plot Style and Figure Export

@@ -97,12 +97,37 @@ def compute_atmospheric_diagnostics(
     profile: ObservationProfile,
     body: Optional[BodyInfo] = None,
 ) -> Dict[str, np.ndarray]:
-    """Compute full suite of thermodynamic derived quantities for a profile."""
-    derived: Dict[str, np.ndarray] = {}
+    """Compute full suite of thermodynamic derived quantities for a profile, and their
+    1-sigma uncertainties from the archived ones (uncertainty.py, into profile.uncertainty)."""
     if body is None:
         body = get_body(profile.body_id)
     if body is None:
-        return derived
+        return {}
+    derived = _diagnostics(profile, body)
+    if derived:
+        try:
+            from .uncertainty import propagate
+            z = np.asarray(profile.altitude_km, dtype=float)
+            gz, _ = gravity_profile(body, z, profile.latitude,
+                                    (profile.raw_attributes or {}).get("ALTITUDE_REFERENCE", ""))
+            propagate(profile, body, derived, gz, _correlation_km(profile))
+        except Exception:                     # uncertainties are extra; never lose the values
+            pass
+    return derived
+
+
+def _correlation_km(profile: ObservationProfile) -> float:
+    """Vertical correlation length of the archived errors, where the data set gives one."""
+    ds_id = (profile.raw_attributes or {}).get("DATASET_ID")
+    if not ds_id:
+        return 0.0
+    from ..archives.datasets import get_dataset
+    ds = get_dataset(ds_id)
+    return float(getattr(ds, "uncertainty_correlation_km", 0.0) or 0.0) if ds else 0.0
+
+
+def _diagnostics(profile: ObservationProfile, body: BodyInfo) -> Dict[str, np.ndarray]:
+    derived: Dict[str, np.ndarray] = {}
     z = profile.altitude_km
     if z is None or z.size < 2:
         return derived
@@ -209,17 +234,24 @@ def _hydrostatic_temperature(profile: ObservationProfile, body: BodyInfo, z: np.
         sigma = None if s is None else np.asarray(s, dtype=float) * K_BOLTZMANN / body.gas_constant_r
     if rho is None or np.shape(rho) != np.shape(z):
         return
-    from .hydrostatic import temperature_from_density
-    g, _ = gravity_profile(body, z, profile.latitude, (profile.raw_attributes or {}).get("ALTITUDE_REFERENCE", ""))
     if sigma is not None and np.shape(sigma) != np.shape(z):
         sigma = None
-    r = temperature_from_density(z, rho, g, body.gas_constant_r, rho_sigma=sigma)
-    if r["top_temperature_k"] is None:
+    r = _hydrostatic_retrieval(profile, body, z, rho, sigma)
+    if r is None:
         return
     derived["temperature_from_density"] = r["temperature_k"]
     derived["pressure_from_density"] = r["pressure_pa"] / 100.0
     profile.raw_attributes["hydrostatic_top_temperature_k"] = round(r["top_temperature_k"], 2)
     profile.raw_attributes["hydrostatic_top_km"] = round(r["top_km"], 2)
+
+
+def _hydrostatic_retrieval(profile: ObservationProfile, body: BodyInfo, z: np.ndarray, rho: np.ndarray,
+                           sigma: Optional[np.ndarray]) -> Optional[Dict[str, Any]]:
+    """temperature_from_density at the profile's gravity, or None when it gives nothing."""
+    from .hydrostatic import temperature_from_density
+    g, _ = gravity_profile(body, z, profile.latitude, (profile.raw_attributes or {}).get("ALTITUDE_REFERENCE", ""))
+    r = temperature_from_density(z, rho, g, body.gas_constant_r, rho_sigma=sigma)
+    return None if r["top_temperature_k"] is None else r
 
 
 def _ionosphere_diagnostics(profile: ObservationProfile, z: np.ndarray) -> None:
@@ -415,6 +447,12 @@ def _compared_variable(p: ObservationProfile, variable_name: str) -> Optional[np
     return None if v is None else np.asarray(v, dtype=float)
 
 
+def _compared_sigma(p: ObservationProfile, variable_name: str) -> Optional[np.ndarray]:
+    """1-sigma uncertainty of ``variable_name`` in profile ``p`` (archived or propagated), or None."""
+    s = (p.uncertainty or {}).get(variable_name)
+    return None if s is None else np.asarray(s, dtype=float)
+
+
 VERTICALS = ("altitude", "pressure")
 
 
@@ -533,6 +571,15 @@ def compare_profiles_on_body(
                 for gap_lo, gap_hi in zip(z_clean[:-1][dz > 5 * typical], z_clean[1:][dz > 5 * typical]):
                     v_interp[(z_grid > gap_lo) & (z_grid < gap_hi)] = np.nan
         interpolated_matrix.append(v_interp)
+        # the profile's own 1-sigma on the grid (in the variable's units), where it has one
+        sig_p = _compared_sigma(p, variable_name)
+        s_interp = None
+        if sig_p is not None and sig_p.shape == z_p.shape:
+            s_clean = sig_p[ok][sort_idx]
+            if np.isfinite(s_clean).any():
+                good = np.isfinite(s_clean)
+                s_interp = np.interp(z_grid, z_clean[good], s_clean[good], left=np.nan, right=np.nan)
+                s_interp[~np.isfinite(v_interp)] = np.nan
 
         profile_summaries.append({
             "observation_id": p.observation_id,
@@ -552,6 +599,8 @@ def compare_profiles_on_body(
             **{k: v for k, v in _geom(p).items() if k in ("lst", "sza", "ls")},
             "diagnostics": {k: v for k, v in profile_diagnostics(p).items() if v is not None},
             "interpolated_series": v_interp,
+            **({"interpolated_sigma": [None if not np.isfinite(x) else float(f"{x:.4g}") for x in s_interp]}
+               if s_interp is not None else {}),
         })
 
     if not interpolated_matrix:
@@ -648,6 +697,13 @@ def export_profile_to_csv(profile: ObservationProfile) -> str:
     for k, v in profile.derived.items():
         cols.append(k)
         data_arrays.append(v)
+    for k in list(cols[1:]):
+        key = "refractivity" if k == "refractivity_n" else k
+        if key in (profile.uncertainty or {}):
+            cols.append(f"sigma_{k}")
+            data_arrays.append(np.asarray(profile.uncertainty[key], dtype=float))
+    if any(c.startswith("sigma_") for c in cols):
+        lines.append("# sigma_* columns are 1-sigma uncertainties: archived, or propagated from them by VEDA (User Guide).")
 
     lines.append(",".join(cols))
     n_rows = profile.altitude_km.size if profile.altitude_km is not None else 0
@@ -797,6 +853,10 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
     for g in groups:
         header += [f"{g['label']} mean", f"{g['label']} plus_1sigma", f"{g['label']} minus_1sigma"]
     header += cols
+    with_sigma = [(c, p) for c, p in zip(cols, profiles) if p.get("interpolated_sigma")]
+    header += [f"sigma_{c}" for c, _ in with_sigma]
+    if with_sigma:
+        lines.append("# sigma_* columns: each profile's 1-sigma uncertainty on the grid, archived or propagated by VEDA.")
     lines.append(",".join(_csv_field(h) for h in header))
 
     def at(seq, i):
@@ -809,6 +869,7 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
         for g in groups:
             row += [_csv_num(at(g["mean"], i)), _csv_num(at(g["plus_1sigma"], i)), _csv_num(at(g["minus_1sigma"], i))]
         row += [_csv_num(at(p.get("interpolated_series"), i)) for p in profiles]
+        row += [_csv_num(at(p.get("interpolated_sigma"), i)) for _, p in with_sigma]
         lines.append(",".join(row))
 
     return "\n".join(lines) + "\n"

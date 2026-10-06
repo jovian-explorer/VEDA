@@ -1,0 +1,103 @@
+"""Uncertainties of derived quantities from the archived 1-sigma values (analysis/uncertainty.py)."""
+from __future__ import annotations
+
+import numpy as np
+import pytest
+
+from veda.analysis import uncertainty as unc
+from veda.analysis.atmospheric import (_gradient_nan_safe, compare_profiles_on_body, compute_atmospheric_diagnostics,
+                                       export_comparison_to_csv, export_profile_to_csv)
+from veda.core.models import ObservationProfile
+from veda.core.registry import get_body
+
+
+def _mars_profile(dz=0.5, sigma_t=1.0, sigma_p_rel=0.01, oid="p1"):
+    mars = get_body("mars")
+    z = np.arange(0.0, 40.0 + 1e-9, dz)
+    t = 210.0 - 1.5 * z + 3.0 * np.sin(z / 3.0)
+    h = mars.gas_constant_r * 200.0 / mars.surface_gravity / 1000.0
+    p = 6.1 * np.exp(-z / h)
+    prof = ObservationProfile(observation_id=oid, mission_id="mex", body_id="mars", instrument="MaRS",
+                              time_utc="2005-01-01T00:00:00", latitude=10.0, longitude=20.0,
+                              altitude_km=z, temperature_k=t, pressure_hpa=p,
+                              uncertainty={"temperature_k": np.full(z.size, sigma_t), "pressure_hpa": p * sigma_p_rel})
+    prof.derived = compute_atmospheric_diagnostics(prof, mars)
+    return prof, mars
+
+
+def test_single_level_quantities_follow_the_analytic_formulas():
+    prof, mars = _mars_profile()
+    t, p, u = prof.temperature_k, prof.pressure_hpa, prof.uncertainty
+    np.testing.assert_allclose(u["scale_height"], prof.derived["scale_height"] / t, rtol=1e-9)
+    np.testing.assert_allclose(u["density"], prof.derived["density"] * np.sqrt((1 / t) ** 2 + 0.01 ** 2), rtol=1e-9)
+    kappa = mars.gas_constant_r / mars.isobaric_heat_capacity_cp
+    np.testing.assert_allclose(u["potential_temperature"],
+                               prof.derived["potential_temperature"] * np.sqrt((1 / t) ** 2 + (kappa * 0.01) ** 2), rtol=1e-9)
+    np.testing.assert_allclose(u["speed_of_sound"], prof.derived["speed_of_sound"] / (2 * t), rtol=1e-9)
+
+
+def test_lapse_rate_uncertainty_matches_central_differences_of_independent_errors():
+    """Central difference over 2 dz of independent errors sigma: sigma sqrt(2) / (2 dz)."""
+    prof, _ = _mars_profile(dz=0.5, sigma_t=1.0)
+    s = prof.uncertainty["lapse_rate"][1:-1]
+    expected = np.sqrt(2.0) / (2 * 0.5)
+    assert np.median(s) == pytest.approx(expected, rel=0.08)
+    assert "buoyancy_freq_sq" in prof.uncertainty and "dtheta_dz" in prof.uncertainty
+
+
+def test_correlated_errors_make_derivatives_more_certain():
+    prof, mars = _mars_profile(dz=0.5, sigma_t=1.0)
+    corr = unc.propagate(prof, mars, prof.derived, mars.surface_gravity * np.ones(prof.altitude_km.size), corr_km=5.0)
+    assert np.median(corr["lapse_rate"][1:-1]) < 0.3 * np.sqrt(2.0)
+    np.testing.assert_allclose(corr["scale_height"], prof.derived["scale_height"] / prof.temperature_k, rtol=1e-9)
+
+
+def test_gradient_operator_is_the_gradient_used_for_the_values():
+    rng = np.random.default_rng(1)
+    z = np.sort(rng.uniform(0, 30, 300))
+    z[50] = z[51]                                   # a repeated altitude
+    z[100:110] = z[100] + np.arange(10) * 0.004     # samples closer than the 50 m minimum half window
+    v = np.cos(z) + rng.normal(0, 0.1, z.size)
+    v[7] = np.nan
+    ok = np.isfinite(v)
+    op = unc.gradient_operator(z, ok)
+    np.testing.assert_allclose(op @ v[ok], _gradient_nan_safe(z, v)[ok], rtol=1e-10, atol=1e-12)
+
+
+def test_temperature_from_density_uncertainty():
+    """A 2 % independent density error gives about 2 % in T near the bottom (p there is an
+    integral over many levels, so T = p / (rho R) carries the error of rho), and less at the
+    top, where T is the boundary temperature fitted to the top 20 % of the levels."""
+    mars = get_body("mars")
+    z = np.arange(90.0, 160.0, 0.5)
+    rho = 1e-7 * np.exp(-(z - 90.0) / 8.0)
+    prof = ObservationProfile(observation_id="acc", mission_id="mro", body_id="mars", instrument="ACC",
+                              time_utc="2006-05-01T00:00:00", latitude=0.0, longitude=0.0, altitude_km=z,
+                              uncertainty={"density_measured": 0.02 * rho})
+    prof.derived["density_measured"] = rho
+    prof.derived.update(compute_atmospheric_diagnostics(prof, mars))
+    t, s = prof.derived["temperature_from_density"], prof.uncertainty["temperature_from_density"]
+    assert s[0] / t[0] == pytest.approx(0.02, rel=0.25)
+    assert 0 < s[-1] / t[-1] < 0.02 and np.isfinite(s).all()
+    assert "pressure_from_density" in prof.uncertainty
+
+
+def test_uncertainties_reach_the_comparison_and_the_exports():
+    a, mars = _mars_profile(oid="a")
+    b, _ = _mars_profile(oid="b", sigma_t=2.0)
+    comp = compare_profiles_on_body([a, b], mars, altitude_step_km=1.0, variable_name="scale_height")
+    sig = comp["profiles"][1]["interpolated_sigma"]
+    h = comp["profiles"][1]["interpolated_series"]
+    assert sig[10] == pytest.approx(2.0 * h[10] / np.interp(comp["grid_km"][10], b.altitude_km, b.temperature_k), rel=1e-3)
+    text = export_comparison_to_csv(comp)
+    header = next(line for line in text.splitlines() if line.startswith("altitude_km,"))
+    assert "sigma_mex_a" in header and "sigma_mex_b" in header
+    one = export_profile_to_csv(a)
+    assert "sigma_scale_height" in one and "sigma_lapse_rate" in one
+
+
+def test_profiles_without_uncertainties_get_none():
+    prof, mars = _mars_profile()
+    prof.uncertainty = {}
+    prof.derived = compute_atmospheric_diagnostics(prof, mars)
+    assert prof.uncertainty == {}

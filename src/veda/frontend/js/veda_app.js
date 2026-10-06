@@ -1393,7 +1393,8 @@ function renderComparisonPlot() {
     composite_mean: sc(raw.composite_mean),
     composite_plus_1sigma: sc(raw.composite_plus_1sigma),
     composite_minus_1sigma: sc(raw.composite_minus_1sigma),
-    profiles: (raw.profiles || []).map(pr => ({ ...pr, interpolated_series: sc(pr.interpolated_series) })),
+    profiles: (raw.profiles || []).map(pr => ({ ...pr, interpolated_series: sc(pr.interpolated_series),
+                                                interpolated_sigma: sc(pr.interpolated_sigma) })),
     groups: (raw.groups || []).map(g => ({ ...g, mean: sc(g.mean), plus_1sigma: sc(g.plus_1sigma), minus_1sigma: sc(g.minus_1sigma) })),
   };
   const view = comparisonView(scaled);
@@ -1444,7 +1445,10 @@ function renderComparisonPlot() {
     const t = { ...orient(p.interpolated_series, zGrid), type: 'scatter',
       name: `${who} ${when || p.observation_id}`,
       hovertemplate: `<b>${who}</b> ${when}<br>${p.observation_id}<br>Lat ${p.latitude != null ? p.latitude.toFixed(1) : '?'}°<br>%{x:.4g}, %{y:.4g}<extra></extra>` };
-    const styled = styleTrace(t, i, { color });
+    // Each profile's own 1-sigma (archived or propagated) when few profiles are drawn
+    const ownSigma = !view.deviation && !view.groups.length && profs.length <= 8 ? p.interpolated_sigma : null;
+    if (ownSigma) traces.push(...sigmaBand(p.interpolated_series, zGrid, ownSigma, color, `${who} ${when || p.observation_id}`));
+    const styled = styleTrace(t, i, { color, sigma: ownSigma });
     if (view.groups.length) { styled.opacity = 0.3; styled.showlegend = false; }   // grouped: the group means stand out
     traces.push(styled);
   });
@@ -2192,6 +2196,7 @@ function profileSeries(prof, varKey) {
     sigma = unc.electron_density_cm3 || null;
   } else if (prof.derived && prof.derived[varKey]) {
     values = prof.derived[varKey];
+    sigma = unc[varKey] || null;               // propagated from the archived uncertainties
   }
   const ok = Array.isArray(values) && values.some(v => v != null && !Number.isNaN(v));
   return ok ? { values, sigma, label, units, axis, log, color: cfg.color } : null;

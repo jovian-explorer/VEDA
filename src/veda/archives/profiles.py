@@ -318,6 +318,10 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
     s = _sigma(tbl, cols.get("pressure_sigma"))
     if s is not None:
         unc["pressure_hpa"] = _to_hpa(s, p_unit)
+    s = _sigma(tbl, cols.get("number_density_sigma"))
+    if s is not None and n is not None:
+        u = n_unit                                         # in the unit of the density itself
+        unc["number_density_m3"] = _to_per_cm3(s, u) * 1e6 if u else s
     s = _sigma(tbl, cols.get("electron_density_sigma"))
     if s is not None:
         sig_key = next((k for k in tbl.columns if k.upper().strip('"').startswith(("SIGMA ELECTRON", "NOISE LEVEL ELECTRON"))), None)
