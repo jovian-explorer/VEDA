@@ -368,6 +368,27 @@ def vertical_spectra(body_id: str, req: SpectraRequest):
         "Content-Disposition": f'attachment; filename="veda_vertical_spectra_{body_id}.csv"'})
 
 
+class CorrelationRequest(BaseModel):
+    """Two quantities, one value of each per profile."""
+    x: List[Optional[float]] = Field(..., max_length=100000)
+    y: List[Optional[float]] = Field(..., max_length=100000)
+    log_x: bool = False
+    log_y: bool = False
+
+
+@router.post("/analysis/correlation")
+def correlation_of_points(req: CorrelationRequest) -> dict:
+    """Pearson and Spearman correlation and the regression line of y on x, with 95 %
+    intervals (analysis/resampling.py)."""
+    from ..analysis.resampling import correlation
+    nan = float("nan")
+    try:
+        return correlation([nan if v is None else v for v in req.x], [nan if v is None else v for v in req.y],
+                           req.log_x, req.log_y)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
 class PointStatisticsRequest(BaseModel):
     """One value per profile (an altitude cut, a layer statistic, a diagnostic)."""
     values: List[Optional[float]] = Field(..., max_length=100000)

@@ -318,6 +318,10 @@
               <option value="ls">Mars season (Ls)</option>
               <option value="longitude">Longitude</option>
               <option value="season">Day of year (all years)</option>
+              <optgroup label="Another quantity of each profile">
+                <option value="value2">Variable at another altitude</option>
+              </optgroup>
+              <optgroup label="From each whole profile" id="veda-cut-xdiag-group"></optgroup>
             </select>
           </label>
           <label>Colour by
@@ -328,6 +332,10 @@
               <option value="lst">Local solar time</option>
             </select>
           </label>
+          <label id="veda-cut-x-alt-label" style="display: none;">at (km)
+            <input type="number" id="veda-cut-x-alt" step="any" style="width: 6em;" />
+          </label>
+          <label class="inline" id="veda-cut-regress-label" style="display: none;" title="Pearson and Spearman correlation and the least-squares line of the plotted quantity on the other, with 95 % intervals (Fisher z, Student t and bootstrap)"><input type="checkbox" id="veda-cut-regress" /> Correlation and regression</label>
           <label id="veda-cut-fit-label" style="display: none;" title="Least-squares fit of the mean and harmonics of the day (against local time: thermal tides), of the circle (longitude: waves and non-migrating tides) or of the Mars year (Ls)">Fit
             <select id="veda-cut-fit">
               <option value="0">None</option>

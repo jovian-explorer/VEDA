@@ -70,6 +70,8 @@ export const api = {
       call('/api/veda/analysis/harmonic-fit', {method: 'POST', body: req}),
   vedaVerticalSpectra: (bodyId, req) =>
       call(`/api/veda/analysis/vertical-spectra/${bodyId}`, {method: 'POST', body: req}),
+  vedaCorrelation: (req) =>
+      call('/api/veda/analysis/correlation', {method: 'POST', body: req}),
   vedaPointStatistics: (req) =>
       call('/api/veda/analysis/point-statistics', {method: 'POST', body: req}),
   vedaProfile: (missionId, obsId, decimate = 600) =>

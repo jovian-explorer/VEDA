@@ -36,3 +36,32 @@ def test_point_statistics_endpoint():
     r = c.post("/api/veda/analysis/point-statistics", json={"values": [1, 2, 3, None, 5], "groups": ["x"] * 5})
     assert r.status_code == 200 and r.json()["n"] == 4
     assert c.post("/api/veda/analysis/point-statistics", json={"values": [1, 2], "groups": ["x"]}).status_code == 400
+
+
+def test_correlation_and_regression_with_intervals():
+    from veda.analysis.resampling import correlation
+    rng = np.random.default_rng(9)
+    x = rng.uniform(0, 10, 120)
+    y = 3.0 + 0.5 * x + rng.normal(0, 1.0, x.size)
+    r = correlation(x, y)
+    assert r["n"] == 120 and r["slope"] == pytest.approx(0.5, abs=0.06)
+    lo, hi = r["pearson_ci95"]
+    assert lo < r["pearson_r"] < hi and r["p_value"] < 1e-10
+    blo, bhi = r["slope_ci95_bootstrap"]
+    tlo, thi = r["slope_ci95_t"]
+    assert blo < 0.5 < bhi and tlo < 0.5 < thi
+    assert (bhi - blo) == pytest.approx(thi - tlo, rel=0.3)
+    assert r["spearman_ci95"][0] < r["spearman_rho"] < r["spearman_ci95"][1]
+
+
+def test_correlation_on_log_axes_and_refusals():
+    from veda.analysis.resampling import correlation
+    x = np.array([1.0, 2.0, 4.0, 8.0, 16.0, -1.0])
+    y = 5.0 * x ** 2
+    r = correlation(x, y, log_x=True, log_y=True)
+    assert r["n"] == 5 and r["slope"] == pytest.approx(2.0) and r["pearson_r"] == pytest.approx(1.0)
+    assert r["line_y"][1] == pytest.approx(5.0 * 16.0 ** 2)
+    with pytest.raises(ValueError):
+        correlation([1, 2, 3], [1, 2, 3])
+    with pytest.raises(ValueError):
+        correlation([1, 1, 1, 1, 1], [1, 2, 3, 4, 5])

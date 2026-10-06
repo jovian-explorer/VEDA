@@ -1072,7 +1072,7 @@ function setupBodyModeControls() {
   btnCross?.addEventListener('click', () => exportComparison(btnCross, 'cross-section',
     `veda_cross_section_${vedaState.activeBodyId}_${vedaState.selectedCompareVariable}.csv`));
   SUBTABS.forEach(t => document.getElementById(`btn-subtab-${t}`)?.addEventListener('click', () => showSubtab(t)));
-  ['veda-cut-x', 'veda-cut-color', 'veda-cut-y', 'veda-cut-fit'].forEach(id => document.getElementById(id)?.addEventListener('change', renderAltitudeCut));
+  ['veda-cut-x', 'veda-cut-color', 'veda-cut-y', 'veda-cut-fit', 'veda-cut-regress', 'veda-cut-x-alt'].forEach(id => document.getElementById(id)?.addEventListener('change', renderAltitudeCut));
   document.getElementById('veda-cut-altitude')?.addEventListener('change', (e) => {
     vedaState.cutAltitude = e.target.value === '' ? null : Number(e.target.value);
     renderAltitudeCut();
@@ -1280,6 +1280,14 @@ function renderAltitudeCut() {
     diagGroup.dataset.keys = diagKeys;
     diagGroup.label = diagKeys ? 'From each whole profile' : 'From each whole profile (none for these profiles)';
   }
+  const xDiagGroup = document.getElementById('veda-cut-xdiag-group');
+  if (xDiagGroup && xDiagGroup.dataset.keys !== diagKeys) {
+    xDiagGroup.innerHTML = '';
+    Object.entries(diagLabels).forEach(([key, [label, unit]]) =>
+      xDiagGroup.appendChild(new Option(unit ? `${label} (${unit})` : label, `xdiag:${key}`)));
+    xDiagGroup.dataset.keys = diagKeys;
+    xDiagGroup.label = diagKeys ? 'From each whole profile' : 'From each whole profile (none for these profiles)';
+  }
   let yKey = (ySel && ySel.value) || 'value';
   if (yKey.startsWith('diag:') && !diagLabels[yKey.slice(5)]) {
     yKey = 'value';
@@ -1325,7 +1333,21 @@ function renderAltitudeCut() {
     return isAlt ? grid[bestK] : best;
   };
 
-  const xKey = document.getElementById('veda-cut-x')?.value || 'time';
+  let xKey = document.getElementById('veda-cut-x')?.value || 'time';
+  if (xKey.startsWith('xdiag:') && !diagLabels[xKey.slice(6)]) {
+    xKey = 'time';
+    document.getElementById('veda-cut-x').value = 'time';
+  }
+  const xAltLabel = document.getElementById('veda-cut-x-alt-label');
+  if (xAltLabel) xAltLabel.style.display = xKey === 'value2' ? '' : 'none';
+  const xAltInput = document.getElementById('veda-cut-x-alt');
+  let k2 = k;
+  if (xKey === 'value2') {
+    const v = xAltInput && xAltInput.value !== '' ? Number(xAltInput.value) : grid[k] + 10;
+    k2 = nearest(v);
+    if (xAltInput && document.activeElement !== xAltInput) xAltInput.value = grid[k2];
+  }
+  const xDiag = xKey.startsWith('xdiag:') ? diagLabels[xKey.slice(6)] : null;
   const colorKey = document.getElementById('veda-cut-color')?.value || 'mission';
   const cfg = VARIABLE_CONFIGS[vedaState.selectedCompareVariable] || { axis: vedaState.selectedCompareVariable, units: '' };
   const pUnit = vedaState.selectedCompareVariable === 'pressure_hpa' ? vedaState.unitsPressure : 'hPa';
@@ -1346,6 +1368,8 @@ function renderAltitudeCut() {
     return isNaN(d) ? null : (d - Date.UTC(d.getUTCFullYear(), 0, 1)) / 86400000 + 1;
   };
   const xOf = (p) => {
+    if (xKey === 'value2') { const v = p.interpolated_series[k2]; return v == null ? null : v * yScale; }
+    if (xDiag) { const v = (p.diagnostics || {})[xKey.slice(6)]; return v != null && isFinite(v) ? v : null; }
     if (xKey === 'time') return p.time_utc ? p.time_utc.replace(/Z$/, '') : null;
     if (xKey === 'season') return p.time_utc ? dayOfYear(p.time_utc) : null;
     return p[xKey] != null && isFinite(p[xKey]) ? p[xKey] : null;
@@ -1413,11 +1437,14 @@ function renderAltitudeCut() {
   }
   const xTitles = { time: 'Time (UTC)', latitude: 'Latitude (°)', lst: 'Local solar time (h)', sza: 'Solar zenith angle (°)',
                     ls: 'Solar longitude Ls (°)', longitude: 'Longitude (°)', season: 'Day of year' };
+  if (xKey === 'value2') xTitles.value2 = `${varLabel} at ${grid[k2]} km`;
+  if (xDiag) xTitles[xKey] = xDiag[1] ? `${xDiag[0]} (${xDiag[1]})` : xDiag[0];
   const layout = {
     title: { text: `${what} (${pts.length} profile${pts.length === 1 ? '' : 's'})` },
     hovermode: 'closest',
     margin: { l: 75, r: 25, t: 56, b: 60 },
-    xaxis: { title: { text: xTitles[xKey] }, type: xKey === 'time' ? 'date' : 'linear',
+    xaxis: { title: { text: xTitles[xKey] },
+             type: xKey === 'time' ? 'date' : (xKey === 'value2' && cfg.logScale) || (xDiag && ['cm^-3', 'J/kg'].includes(xDiag[1])) ? 'log' : 'linear',
              ...(xKey === 'lst' ? { range: [0, 24], dtick: 3 } : {}), ...(xKey === 'latitude' ? { range: [-90, 90], dtick: 30 } : {}),
              ...(xKey === 'ls' ? { range: [0, 360], dtick: 30 } : {}) },
     yaxis: { title: { text: yTitle },
@@ -1426,10 +1453,19 @@ function renderAltitudeCut() {
   };
   Plotly.newPlot(plotDiv, traces, themedLayout(layout), { responsive: true, displayModeBar: true });
   const period = { lst: 24, longitude: 360, ls: 360 }[xKey];
+
   const fitLabel = document.getElementById('veda-cut-fit-label');
   if (fitLabel) fitLabel.style.display = period ? '' : 'none';
   const nHarm = period ? Number(document.getElementById('veda-cut-fit')?.value || 0) : 0;
   const cutToken = ++altitudeCutRenders;
+  const regressLabel = document.getElementById('veda-cut-regress-label');
+  if (regressLabel) regressLabel.style.display = xKey !== 'time' ? '' : 'none';
+  if (xKey !== 'time' && document.getElementById('veda-cut-regress')?.checked) {
+    cutCorrelation(plotDiv, pts, yScale, layout.xaxis.type === 'log', layout.yaxis.type === 'log', cutToken);
+  } else {
+    const el = document.getElementById('veda-cut-corr');
+    if (el) el.textContent = '';
+  }
   if (nHarm > 0) {
     fitAltitudeCut(plotDiv, pts, yScale, period, nHarm, layout.yaxis.type === 'log', xKey,
                    diag ? diag[1] : (isAlt ? 'km' : (pScale === 1 ? cfg.units : pUnit)), cutToken);
@@ -1457,6 +1493,36 @@ function renderAltitudeCut() {
 }
 
 let altitudeCutRenders = 0;
+
+/** Correlation and regression of the altitude-cut points on their x quantity
+ *  (analysis/resampling.py): the line over the points and r, rho and the slope with 95 % intervals. */
+async function cutCorrelation(plotDiv, pts, yScale, logX, logY, token) {
+  let el = document.getElementById('veda-cut-corr');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'veda-cut-corr';
+    el.className = 'hint';
+    plotDiv.parentElement.insertBefore(el, plotDiv);
+  }
+  const list = pts.filter(o => typeof o.x === 'number');
+  el.textContent = 'Correlating...';
+  let r;
+  try {
+    r = await api.vedaCorrelation({ x: list.map(o => o.x), y: list.map(o => o.y * yScale), log_x: logX, log_y: logY });
+  } catch (err) {
+    if (token === altitudeCutRenders) el.textContent = `Correlation: ${err.message}`;
+    return;
+  }
+  if (token !== altitudeCutRenders) return;
+  Plotly.addTraces(plotDiv, { type: 'scatter', mode: 'lines', x: r.line_x, y: r.line_y, name: 'Least-squares line',
+                              line: { color: '#e11d48', width: 2 }, hoverinfo: 'skip' });
+  const f = (v, d = 2) => (v == null || !isFinite(v) ? '?' : Math.abs(v) >= 1000 || (Math.abs(v) < 0.01 && v !== 0) ? v.toExponential(2) : v.toFixed(d));
+  const ci = (c) => (c ? ` [95 %: ${f(c[0], 3)} to ${f(c[1], 3)}]` : '');
+  const lg = (on, what) => (on ? `log10 ${what}` : what);
+  el.textContent = `Correlation (${r.n} profiles): Pearson r = ${f(r.pearson_r, 3)}${ci(r.pearson_ci95)}, p = ${r.p_value.toExponential(1)}; `
+    + `Spearman ρ = ${f(r.spearman_rho, 3)}${ci(r.spearman_ci95)}. ${lg(r.log_y, 'y')} = ${f(r.intercept, 4)} ${r.slope < 0 ? '−' : '+'} ${f(Math.abs(r.slope), 4)} × ${lg(r.log_x, 'x')}, `
+    + `slope ± ${f(r.slope_se, 4)}${ci(r.slope_ci95_t)} (t)${r.slope_ci95_bootstrap ? `, ${ci(r.slope_ci95_bootstrap).trim()} (bootstrap)` : ''}.`;
+}
 
 /** The comparison request with the layer of the spectra, or null (with a message). */
 function spectraRequest() {
