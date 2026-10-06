@@ -123,7 +123,8 @@ def read_normalised(path: Path):
 def _mask_constant_runs(cols: Dict[str, np.ndarray], key: str, also: List[str], min_run: int = 5) -> None:
     """Rows at either end where ``key`` repeats one value are padding, not data
     (FSI profiles hold the number density constant below the lowest valid level,
-    which turns their temperature there into nonsense): set them to NaN."""
+    which turns their temperature there into nonsense; SOIR profiles hold the
+    temperature of the retrieval's upper boundary over their top 10 km): set them to NaN."""
     a = cols.get(key)
     if a is None or a.size < min_run:
         return
@@ -262,7 +263,7 @@ def fetch_repository_product(ds: Dataset, prod: Dict[str, Any]) -> Path:
     """The product's normalised CSV, made from the repository file when needed."""
     out = _cache_dir(ds) / f"{prod['product_id']}.csv"
     kind = ds.repository["kind"]
-    if out.is_file() and not (kind == "zenodo_files" and _stale(ds, out)):
+    if out.is_file() and not _stale(ds, out):
         return out
     if kind == "zenodo_files":
         return _fetch_zenodo_file(ds, prod, out)
@@ -449,9 +450,15 @@ def _index_votable_split(ds: Dataset, progress=None) -> List[Dict[str, Any]]:
         meta = {"START_TIME": t0}
         for name, (lo, hi) in r["geometry"].items():
             meta[name] = round((get(lo) + get(hi)) / 2.0, 4)
+        if r.get("revision"):
+            meta["REVISION"] = r["revision"]
+        cols = {fields[i][0]: np.array([float(c[i]) if c[i] else np.nan for c in cells]) for i in keep}
+        if r.get("mask_constant"):
+            mkey, also = r["mask_constant"]
+            _mask_constant_runs(cols, mkey, list(also))
         write_normalised(_cache_dir(ds) / f"{pid}.csv", meta, out_names,
-                         ([float(c[i]) if c[i] else np.nan for i in keep] for c in cells))
-        rows.append(_row(ds, pid, f"{r['member']}#{pid}", t0, {k: v for k, v in meta.items() if k != "START_TIME"}))
+                         ([cols[n][j] for n, _ in out_names] for j in range(len(cells))))
+        rows.append(_row(ds, pid, f"{r['member']}#{pid}", t0, {k: v for k, v in meta.items() if k not in ("START_TIME", "REVISION")}))
     return rows
 
 
@@ -514,5 +521,5 @@ def _index_csv_split(ds: Dataset, progress=None) -> List[Dict[str, Any]]:
         write_normalised(_cache_dir(ds) / f"{pid}.csv", meta, [r["columns"][i] for i in keep],
                          ([value(c[i]) for i in keep] for c in cells))
         out_rows.append(_row(ds, pid, f"{r['url'].rsplit('/', 1)[-1]}#{pid}", t0,
-                             {k: v for k, v in meta.items() if k != "START_TIME"}))
+                             {k: v for k, v in meta.items() if k not in ("START_TIME", "REVISION")}))
     return out_rows

@@ -191,6 +191,37 @@ def test_votable_split_into_profiles(tmp_path, monkeypatch):
     assert t.metadata["LATITUDE"] == 86.0 and t.metadata["START_TIME"].startswith("2006-05-12T01:30")
 
 
+def test_soir_temperature_held_at_the_upper_boundary_is_masked(tmp_path, monkeypatch):
+    """156 of the 644 SOIR profiles repeat one temperature over their top 10 km (orbit 335:
+    226.19782 K from 147 to 156 km): the retrieval's starting value, with p = n k T from it."""
+    ds = get_dataset("vex-soir-co2-temperature")
+    fields = ["orbit", "case", "longitude_min", "longitude_max", "latitude_min", "latitude_max", "solar_longitude_min",
+              "solar_longitude_max", "local_time_min", "local_time_max", "time_JDUTC_min", "time_JDUTC_max", "altitude",
+              "pressure", "err_pressure", "temperature", "err_temperature", "total_density", "err_total_density"]
+    temps = [228.4, 227.88327] + [226.19782] * 10
+    def tr(alt, t):
+        n = 4.0e8 * 0.85 ** (alt - 145)
+        vals = [335, 1, 280, 300, -60, -58, 120, 120.1, 18.0, 18.1, 2454204.5, 2454204.51, alt,
+                n * 1e6 * 1.380649e-23 * t / 100.0, 1e-10, t, 5.0, n, n / 20]
+        return "<TR>" + "".join(f"<TD>{v}</TD>" for v in vals) + "</TR>"
+    xml = ('<?xml version="1.0"?><VOTABLE xmlns="http://www.ivoa.net/xml/VOTable/v1.2"><RESOURCE><TABLE>'
+           + "".join(f'<FIELD name="{f}" datatype="double" unit="u"/>' for f in fields)
+           + "<DATA><TABLEDATA>" + "".join(tr(145 + i, t) for i, t in enumerate(temps))
+           + "</TABLEDATA></DATA></TABLE></RESOURCE></VOTABLE>")
+    zf = tmp_path / "co2.zip"
+    with zipfile.ZipFile(zf, "w") as z:
+        z.writestr("SOIRProfiles_CO2_0.xml", xml)
+    monkeypatch.setattr(repo, "_zip_path", lambda ds, progress=None: zf)
+    monkeypatch.setattr(repo, "_cache_dir", lambda ds: tmp_path)
+    stale = tmp_path / "soir_co2_orbit0335_1.csv"
+    stale.write_text("# START_TIME=2007-04-17\naltitude [km],temperature [K]\n156,226.19782\n")
+    t = repo.read_normalised(repo.fetch_repository_product(ds, {"product_id": "soir_co2_orbit0335_1"}))
+    assert t.columns["temperature"][:2].tolist() == [228.4, 227.88327]
+    for c in ("temperature", "err_temperature", "pressure", "err_pressure"):
+        assert np.isnan(t.columns[c][2:]).all(), c
+    assert np.isfinite(t.columns["total_density"]).all()
+
+
 def test_crism_limb_aerosol_tables_split_into_dated_profiles(tmp_path, monkeypatch):
     """CRISM limb aerosol profiles (PDS Atmospheres, mro-crism_atmos-db): one table, rows of
     real profiles copied from the archive files.  A profile is dated from its Mars year and

@@ -465,7 +465,11 @@ DATASETS: List[Dataset] = [
         body_ids=("venus",), archive="BIRA-IASB data repository (CC-BY-4.0)",
         base_url="https://data.aeronomie.be/dataset/venus-atmospheric-profiles-from-spicav-soir-vexv23/",
         volume_pattern=r"^repository$",
-        repository={"kind": "votable_split",
+        # Some profiles repeat one temperature over their top 10 km: the value the retrieval
+        # starts its downward integration from, not a measurement (pressure there is n k T
+        # with it); temperature and pressure are masked there, the density is kept.
+        repository={"kind": "votable_split", "revision": 2,
+                    "mask_constant": ("temperature", ("err_temperature", "pressure", "err_pressure")),
                     "url": "https://data.aeronomie.be/dataset/bc9068b4-00c0-41fd-a1fa-54a3afaa14a4/resource/0d385c08-73bc-4106-89da-47e9282d2cad/download/co2_soir_w23.zip",
                     "member": "SOIRProfiles_CO2_0.xml", "split": ("orbit", "case"),
                     "product_id": "soir_co2_orbit{0:04.0f}_{1:.0f}", "time": "time_JDUTC_min",
