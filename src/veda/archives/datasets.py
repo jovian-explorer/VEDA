@@ -471,8 +471,11 @@ DATASETS: List[Dataset] = [
         # Some profiles repeat one temperature over their top 10 km: the value the retrieval
         # starts its downward integration from, not a measurement (pressure there is n k T
         # with it); temperature and pressure are masked there, the density is kept.
-        repository={"kind": "votable_split", "revision": 2,
+        # The top level of every profile is that starting temperature too, written with an
+        # uncertainty of 0 (1e-13 K): also masked.
+        repository={"kind": "votable_split", "revision": 3,
                     "mask_constant": ("temperature", ("err_temperature", "pressure", "err_pressure")),
+                    "mask_zero_sigma": ("err_temperature", ("temperature", "err_temperature", "pressure", "err_pressure")),
                     "url": "https://data.aeronomie.be/dataset/bc9068b4-00c0-41fd-a1fa-54a3afaa14a4/resource/0d385c08-73bc-4106-89da-47e9282d2cad/download/co2_soir_w23.zip",
                     "member": "SOIRProfiles_CO2_0.xml", "split": ("orbit", "case"),
                     "product_id": "soir_co2_orbit{0:04.0f}_{1:.0f}", "time": "time_JDUTC_min",

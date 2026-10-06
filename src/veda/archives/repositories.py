@@ -456,6 +456,12 @@ def _index_votable_split(ds: Dataset, progress=None) -> List[Dict[str, Any]]:
         if r.get("mask_constant"):
             mkey, also = r["mask_constant"]
             _mask_constant_runs(cols, mkey, list(also))
+        if r.get("mask_zero_sigma"):
+            skey, masked = r["mask_zero_sigma"]
+            with np.errstate(invalid="ignore"):
+                zero = cols[skey] < 1e-6
+            for c in masked:
+                cols[c][zero] = np.nan
         write_normalised(_cache_dir(ds) / f"{pid}.csv", meta, out_names,
                          ([cols[n][j] for n, _ in out_names] for j in range(len(cells))))
         rows.append(_row(ds, pid, f"{r['member']}#{pid}", t0, {k: v for k, v in meta.items() if k not in ("START_TIME", "REVISION")}))

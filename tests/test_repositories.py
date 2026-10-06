@@ -193,20 +193,22 @@ def test_votable_split_into_profiles(tmp_path, monkeypatch):
 
 def test_soir_temperature_held_at_the_upper_boundary_is_masked(tmp_path, monkeypatch):
     """156 of the 644 SOIR profiles repeat one temperature over their top 10 km (orbit 335:
-    226.19782 K from 147 to 156 km): the retrieval's starting value, with p = n k T from it."""
+    226.19782 K from 147 to 156 km): the retrieval's starting value, with p = n k T from it.
+    In the other 488 only the top level holds it, with an uncertainty of about 1e-13 K."""
     ds = get_dataset("vex-soir-co2-temperature")
     fields = ["orbit", "case", "longitude_min", "longitude_max", "latitude_min", "latitude_max", "solar_longitude_min",
               "solar_longitude_max", "local_time_min", "local_time_max", "time_JDUTC_min", "time_JDUTC_max", "altitude",
               "pressure", "err_pressure", "temperature", "err_temperature", "total_density", "err_total_density"]
     temps = [228.4, 227.88327] + [226.19782] * 10
-    def tr(alt, t):
+    def tr(alt, t, orbit=335, err=5.0):
         n = 4.0e8 * 0.85 ** (alt - 145)
-        vals = [335, 1, 280, 300, -60, -58, 120, 120.1, 18.0, 18.1, 2454204.5, 2454204.51, alt,
-                n * 1e6 * 1.380649e-23 * t / 100.0, 1e-10, t, 5.0, n, n / 20]
+        vals = [orbit, 1, 280, 300, -60, -58, 120, 120.1, 18.0, 18.1, 2454204.5, 2454204.51, alt,
+                n * 1e6 * 1.380649e-23 * t / 100.0, 1e-10, t, err, n, n / 20]
         return "<TR>" + "".join(f"<TD>{v}</TD>" for v in vals) + "</TR>"
     xml = ('<?xml version="1.0"?><VOTABLE xmlns="http://www.ivoa.net/xml/VOTable/v1.2"><RESOURCE><TABLE>'
            + "".join(f'<FIELD name="{f}" datatype="double" unit="u"/>' for f in fields)
            + "<DATA><TABLEDATA>" + "".join(tr(145 + i, t) for i, t in enumerate(temps))
+           + "".join(tr(120 + i, 180.0 + i, 336, 1.1e-13 if i == 4 else 6.0) for i in range(5))
            + "</TABLEDATA></DATA></TABLE></RESOURCE></VOTABLE>")
     zf = tmp_path / "co2.zip"
     with zipfile.ZipFile(zf, "w") as z:
@@ -220,6 +222,9 @@ def test_soir_temperature_held_at_the_upper_boundary_is_masked(tmp_path, monkeyp
     for c in ("temperature", "err_temperature", "pressure", "err_pressure"):
         assert np.isnan(t.columns[c][2:]).all(), c
     assert np.isfinite(t.columns["total_density"]).all()
+    t = repo.read_normalised(tmp_path / "soir_co2_orbit0336_1.csv")
+    assert np.isfinite(t.columns["temperature"][:4]).all() and np.isnan(t.columns["temperature"][4])
+    assert np.isnan(t.columns["pressure"][4]) and np.isfinite(t.columns["total_density"][4])
 
 
 def test_crism_limb_aerosol_tables_split_into_dated_profiles(tmp_path, monkeypatch):
