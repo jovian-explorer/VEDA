@@ -275,6 +275,7 @@
       <div class="view-subtabs">
         <button class="view-subtab-btn active" id="btn-subtab-soundings">📈 Soundings & Profiles</button>
         <button class="view-subtab-btn" id="btn-subtab-cut" title="One point per profile (the variable at one altitude, a layer statistic or a whole-profile quantity) against time, latitude, local time, zenith angle, Ls, longitude or day of year">📍 Altitude cut</button>
+        <button class="view-subtab-btn" id="btn-subtab-cross" title="Zonal mean of the compared profiles in latitude bands at every level, with its standard error and the number of profiles">🗺️ Cross section</button>
         <button class="view-subtab-btn" id="btn-subtab-map">🌐 Planetary Spatial Map & Footprints</button>
       </div>
 
@@ -336,6 +337,25 @@
           <span class="hint" id="veda-cut-status"></span>
         </div>
         <div id="veda-cut-plot" style="flex: 1; min-height: 440px; max-height: 760px;"></div>
+      </div>
+
+      <!-- Tab 1c: zonal-mean latitude-altitude cross section -->
+      <div id="veda-subtab-cross-panel" style="flex: 1; display: none; flex-direction: column;">
+        <div class="row cut-controls">
+          <label title="Width of the latitude bands">Band width (°)
+            <input type="number" id="veda-cross-width" min="1" max="90" step="any" value="10" style="width: 6em;" />
+          </label>
+          <label>Show
+            <select id="veda-cross-show">
+              <option value="mean">Zonal mean</option>
+              <option value="sem">Standard error of the mean</option>
+              <option value="profiles">Number of profiles</option>
+            </select>
+          </label>
+          <button type="button" class="ghost small" id="veda-btn-export-cross">📥 Export cross section (CSV)</button>
+          <span class="hint" id="veda-cross-status"></span>
+        </div>
+        <div id="veda-cross-plot" style="flex: 1; min-height: 440px; max-height: 760px;"></div>
       </div>
 
       <!-- Tab 2: Planetary Spatial Footprints Map -->

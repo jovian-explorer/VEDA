@@ -129,3 +129,35 @@ def test_outlier_screen_within_groups():
     assert grouped["outlier_screen"]["flagged"] == [] and grouped["outlier_screen"]["against"] == "own group"
     alone = compare_profiles_on_body(profs, mars, altitude_step_km=1.0, outlier_z=3.5)
     assert sorted(alone["outlier_screen"]["flagged"]) == [f"po{i}" for i in range(6)]
+
+
+def test_latitude_cross_section_with_errors():
+    from veda.analysis.atmospheric import compare_profiles_on_body, export_cross_section_to_csv
+    from veda.core.registry import get_body
+    mars = get_body("mars")
+    profs = []
+    for i, (lat, t0) in enumerate([(-45, 180), (-42, 184), (5, 210), (8, 214), (2, 212), (70, 150), (None, 999)]):
+        p = _t_prof(f"q{i}", float(t0))
+        p.latitude = lat
+        profs.append(p)
+    comp = compare_profiles_on_body(profs, mars, altitude_step_km=1.0, cross_section_width=30.0)
+    xs = comp["cross_section"]
+    assert xs["latitude_centers"] == [-45.0, 15.0, 75.0] and xs["without_latitude"] == 1
+    k = 10
+    vals = [p["interpolated_series"][k] for p in comp["profiles"][2:5]]
+    assert xs["mean"][1][k] == pytest.approx(np.mean(vals), rel=1e-5)
+    assert xs["sem"][1][k] == pytest.approx(np.std(vals, ddof=1) / np.sqrt(3), rel=1e-3)
+    assert xs["profiles"][2][k] == 1 and xs["sem"][2][k] is None
+    text = export_cross_section_to_csv(comp)
+    assert text.splitlines()[3].startswith("latitude_center_deg,altitude_km,mean_temperature_k,sem,profiles")
+    assert compare_profiles_on_body(profs, mars, altitude_step_km=1.0)["cross_section"] is None
+
+
+def test_cross_section_endpoint():
+    from fastapi.testclient import TestClient
+    from veda.api.app import create_app
+    c = TestClient(create_app())
+    r = c.post("/api/veda/export/compare/venus/cross-section", json={"variable": "temperature_k"})
+    assert r.status_code in (200, 400)
+    if r.status_code == 200:
+        assert r.text.splitlines()[1].startswith("# recipe: ")

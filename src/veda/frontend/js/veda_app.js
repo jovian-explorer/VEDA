@@ -40,7 +40,8 @@ export const vedaState = {
   compareDropOutliers: false,    // leave flagged profiles out of the composites
   compareShowAs: 'values',  // values | deviation
   lastComparisonData: null,
-  bodySubtab: 'soundings', // 'soundings' | 'map'
+  bodySubtab: 'soundings', // 'soundings' | 'cut' | 'cross' | 'map'
+  crossWidth: 10,           // latitude band width of the cross section (deg)
   planetaryMapProjection: '2d', // '2d' | '3d'
   currentBodyObservations: [],
   // Mission Mode State
@@ -643,6 +644,7 @@ function currentComparisonRequest() {
     vertical: vedaState.compareVertical === 'pressure' ? 'pressure' : undefined,
     weighting: vedaState.compareWeighting === 'inverse_variance' ? 'inverse_variance' : undefined,
     outlier_z: Number(vedaState.compareOutlierZ) || undefined,
+    cross_section_width: vedaState.bodySubtab === 'cross' ? (Number(vedaState.crossWidth) || 10) : undefined,
     drop_outliers: Number(vedaState.compareOutlierZ) && vedaState.compareDropOutliers ? true : undefined,
   };
 }
@@ -1002,7 +1004,7 @@ function setupBodyModeControls() {
   }
 
   // Subtabs: profiles, altitude cut, map
-  const SUBTABS = ['soundings', 'cut', 'map'];
+  const SUBTABS = ['soundings', 'cut', 'cross', 'map'];
   const showSubtab = (name) => {
     vedaState.bodySubtab = name;
     SUBTABS.forEach(t => {
@@ -1010,8 +1012,21 @@ function setupBodyModeControls() {
       const panel = document.getElementById(`veda-subtab-${t}-panel`);
       if (panel) panel.style.display = t === name ? 'flex' : 'none';
     });
-    renderActiveSubtab();
+    // the cross section is computed with the comparison, only when it is shown
+    const xs = vedaState.lastComparisonData && vedaState.lastComparisonData.cross_section;
+    if (name === 'cross' && vedaState.lastComparisonData && (!xs || xs.width !== (Number(vedaState.crossWidth) || 10))) updateComparison();
+    else renderActiveSubtab();
   };
+  document.getElementById('veda-cross-width')?.addEventListener('change', (e) => {
+    const v = Number(e.target.value);
+    if (!(v >= 1 && v <= 90)) { e.target.value = vedaState.crossWidth || 10; return toast('Band width must be between 1 and 90°', 'bad'); }
+    vedaState.crossWidth = v;
+    updateComparison();
+  });
+  document.getElementById('veda-cross-show')?.addEventListener('change', renderCrossSection);
+  const btnCross = document.getElementById('veda-btn-export-cross');
+  btnCross?.addEventListener('click', () => exportComparison(btnCross, 'cross-section',
+    `veda_cross_section_${vedaState.activeBodyId}_${vedaState.selectedCompareVariable}.csv`));
   SUBTABS.forEach(t => document.getElementById(`btn-subtab-${t}`)?.addEventListener('click', () => showSubtab(t)));
   ['veda-cut-x', 'veda-cut-color', 'veda-cut-y', 'veda-cut-fit'].forEach(id => document.getElementById(id)?.addEventListener('change', renderAltitudeCut));
   document.getElementById('veda-cut-altitude')?.addEventListener('change', (e) => {
@@ -1167,6 +1182,7 @@ async function updateComparison() {
 function renderActiveSubtab() {
   if (vedaState.bodySubtab === 'map') renderPlanetaryMap(vedaState.planetaryMapProjection || '2d');
   else if (vedaState.bodySubtab === 'cut') renderAltitudeCut();
+  else if (vedaState.bodySubtab === 'cross') renderCrossSection();
   else renderComparisonPlot();
 }
 
@@ -1396,6 +1412,51 @@ function renderAltitudeCut() {
 }
 
 let altitudeCutRenders = 0;
+
+/** Zonal-mean latitude-altitude cross section of the comparison (mean, its standard error
+ *  or the number of profiles in each latitude band and level), as a heat map. */
+function renderCrossSection() {
+  const plotDiv = document.getElementById('veda-cross-plot');
+  const status = document.getElementById('veda-cross-status');
+  if (!plotDiv || !window.Plotly) return;
+  const data = vedaState.lastComparisonData;
+  const xs = data && data.cross_section;
+  const empty = (msg) => { if (plotDiv.data) Plotly.purge(plotDiv); plotDiv.innerHTML = `<div class="empty-state">${msg}</div>`; if (status) status.textContent = ''; };
+  if (!data || !(data.profiles || []).length) return empty('No profiles to show. Compare some profiles first.');
+  if (!xs) return empty('Computing the cross section...');
+  if (xs.error) return empty(escHtml(xs.error));
+  if (!xs.latitude_centers.length) return empty('None of the compared profiles has a latitude.');
+  const show = document.getElementById('veda-cross-show')?.value || 'mean';
+  const byPressure = data.vertical === 'pressure';
+  const grid = byPressure ? data.grid_hpa : data.grid_km;
+  const cfg = VARIABLE_CONFIGS[vedaState.selectedCompareVariable] || { axis: vedaState.selectedCompareVariable, units: '' };
+  const logVar = /geometric/.test(data.averaging || '');
+  const src = show === 'sem' ? xs.sem : show === 'profiles' ? xs.profiles.map(r => r.map(n => (n ? n : null))) : xs.mean;
+  // z as [level][band] for Plotly; log10 of log-averaged means
+  const z = grid.map((_, i) => src.map(row => {
+    const v = row[i];
+    if (v == null) return null;
+    return show === 'mean' && logVar ? (v > 0 ? Math.log10(v) : null) : v;
+  }));
+  const title = show === 'mean' ? (logVar ? `log₁₀ ${cleanPlotlyMath(cfg.axis)}` : cleanPlotlyMath(cfg.axis))
+    : show === 'sem' ? `Standard error (${xs.sem_unit === '%' ? '%' : cleanPlotlyMath(cfg.units || '')})` : 'Profiles';
+  const text = grid.map((_, i) => xs.latitude_centers.map((c, b) => `${c}°: ${xs.mean[b][i] != null ? Number(xs.mean[b][i]).toPrecision(5) : '-'}`
+    + (xs.sem[b][i] != null ? ` ± ${Number(xs.sem[b][i]).toPrecision(3)}${xs.sem_unit === '%' ? ' %' : ''}` : '') + `, n = ${xs.profiles[b][i]}`));
+  const trace = { type: 'heatmap', x: xs.latitude_centers, y: grid, z, text, hovertemplate: '%{text}<br>%{y}<extra></extra>',
+    colorscale: show === 'mean' ? 'RdBu' : 'Viridis', reversescale: show === 'mean', connectgaps: false,
+    colorbar: { title: { text: title }, thickness: 12, len: 0.8 }, xgap: 1 };
+  const layout = {
+    title: { text: `Zonal mean in ${xs.width}° bands (${data.profile_count} profiles)` },
+    margin: { l: 75, r: 25, t: 56, b: 60 },
+    xaxis: { title: { text: 'Latitude (°)' }, range: [-90, 90], dtick: 30 },
+    yaxis: byPressure ? { title: { text: 'Pressure (hPa)' }, type: 'log', autorange: 'reversed' }
+      : { title: { text: altitudeAxisTitle((data.profiles || []).map(p => p.altitude_reference)) } },
+  };
+  Plotly.newPlot(plotDiv, [trace], themedLayout(layout), { responsive: true, displayModeBar: true });
+  if (status) status.textContent = `${xs.latitude_centers.length} latitude bands with profiles`
+    + (xs.without_latitude ? `; ${xs.without_latitude} profiles without a latitude left out` : '')
+    + '. A band with one profile shows that profile; the standard error needs two.';
+}
 
 /** Mean of the altitude-cut points with its standard error and 95 % bootstrap intervals
  *  of the mean and the median (analysis/resampling.py), overall and per colour group. */

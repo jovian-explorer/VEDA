@@ -278,6 +278,8 @@ class CrossCompareRequest(BaseModel):
     # outlier screen: robust z threshold (None: off); leave flagged profiles out of the composites
     outlier_z: Optional[float] = Field(None, ge=1.0, le=20.0)
     drop_outliers: bool = False
+    # latitude band width of the zonal-mean cross section (None: not computed)
+    cross_section_width: Optional[float] = Field(None, ge=1.0, le=90.0)
 
 
 @router.post("/compare/body/{body_id}")
@@ -311,7 +313,7 @@ def _compare_or_404(body_id: str, req: "CrossCompareRequest") -> dict:
         body_id, req.observations, mission_ids=req.missions, variable_name=req.variable, selection=sel,
         group_by=req.group_by or "", group_width=req.group_width, altitude_step_km=req.altitude_step_km,
         vertical=req.vertical, pressure_step_decades=req.pressure_step_decades, weighting=req.weighting,
-        outlier_z=req.outlier_z, drop_outliers=req.drop_outliers)
+        outlier_z=req.outlier_z, drop_outliers=req.drop_outliers, cross_section_width=req.cross_section_width)
     if isinstance(comp, dict) and comp.get("error"):
         raise HTTPException(status_code=400, detail=comp["error"])
     return comp
@@ -555,6 +557,7 @@ def comparison_recipe(body_id: str, req: "CrossCompareRequest", comp: dict) -> d
             "altitude_step_km": req.altitude_step_km, "vertical": req.vertical,
             "pressure_step_decades": req.pressure_step_decades, "weighting": req.weighting,
             "outlier_z": req.outlier_z, "drop_outliers": req.drop_outliers,
+            "cross_section_width": req.cross_section_width,
             # the filter that chose the profiles, for the record (the profiles are listed below)
             **({"filter": req.filter.model_dump(exclude_none=True)} if req.filter else {}),
             "observations": [{"mission_id": p["mission_id"], "observation_id": p["observation_id"]}
@@ -577,6 +580,24 @@ def export_compare_csv(body_id: str, req: CrossCompareRequest):
         media_type="text/csv",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )
+
+
+@router.post("/export/compare/{body_id}/cross-section")
+def export_compare_cross_section(body_id: str, req: CrossCompareRequest):
+    """The zonal-mean latitude-altitude cross section of the comparison as CSV, one row per
+    latitude band and level: mean, standard error and number of profiles."""
+    from ..analysis.atmospheric import export_cross_section_to_csv
+    req = req.model_copy(update={"cross_section_width": req.cross_section_width or 10.0})
+    comp = _compare_or_404(body_id, req)
+    xs = comp.get("cross_section") or {}
+    if xs.get("error"):
+        raise HTTPException(status_code=400, detail=xs["error"])
+    recipe = comparison_recipe(body_id, req, comp)
+    text = export_cross_section_to_csv(comp)
+    first, rest = text.split("\n", 1)
+    text = f"{first}\n# recipe: {json.dumps(recipe, separators=(',', ':'))}\n{rest}"
+    return Response(content=text, media_type="text/csv", headers={
+        "Content-Disposition": f'attachment; filename="veda_cross_section_{body_id}_{req.variable}.csv"'})
 
 
 @router.post("/export/compare/{body_id}/profiles")

@@ -402,6 +402,39 @@ def _group_key(s: Dict[str, Any], by: str, width: float):
 
 WEIGHTINGS = ("equal", "inverse_variance")
 
+MAX_CROSS_SECTION_CELLS = 400000
+
+
+def latitude_cross_section(mat: np.ndarray, smat: Optional[np.ndarray], latitudes: List[Optional[float]],
+                           width: float, log_like: bool, weighting: str = "equal") -> Dict[str, Any]:
+    """Zonal mean in latitude bands of ``width`` degrees (from -90) at each level of the
+    grid: the (weighted) mean of the profiles whose latitude falls in the band, its
+    standard error (spread / sqrt(n_eff), two or more profiles) and the number of profiles,
+    as [band][level] lists; in log space for log-averaged variables (mean as values,
+    standard error in percent).  Profiles without a latitude are left out (counted)."""
+    edges = np.arange(-90.0, 90.0 + 1e-9, width)
+    if edges[-1] < 90.0:
+        edges = np.append(edges, 90.0)
+    lat = np.array([np.nan if v is None else float(v) for v in latitudes])
+    centers, means, sems, counts = [], [], [], []
+    for lo, hi in zip(edges[:-1], edges[1:]):
+        idx = np.where((lat >= lo) & ((lat < hi) | ((hi >= 90.0) & (lat <= hi))))[0]
+        if not idx.size:
+            continue
+        st = _level_statistics(mat[idx], None if smat is None else smat[idx], weighting)
+        m, e = st["mean"], st["sem"]
+        ok = st["n"] >= 1
+        val = np.exp(m) if log_like else m
+        err = 100.0 * e if log_like else e
+        centers.append(round(float((lo + hi) / 2), 4))
+        means.append([None if not (o and np.isfinite(v)) else float(f"{v:.6g}") for v, o in zip(val, ok)])
+        sems.append([None if not np.isfinite(v) else float(f"{v:.4g}") for v in err])
+        counts.append([int(x) for x in st["n"]])
+    return {"width": width, "edges": [float(x) for x in edges], "latitude_centers": centers, "mean": means,
+            "sem": sems, "sem_unit": "%" if log_like else "", "profiles": counts,
+            "without_latitude": int(np.sum(~np.isfinite(lat)))}
+
+
 # Outlier screen: robust z per level needs at least this many profiles there, and a
 # profile is flagged when |z| exceeds the threshold on at least this fraction of its levels
 OUTLIER_MIN_PROFILES = 5
@@ -598,6 +631,7 @@ def compare_profiles_on_body(
     weighting: str = "equal",
     outlier_z: Optional[float] = None,
     drop_outliers: bool = False,
+    cross_section_width: Optional[float] = None,
 ) -> Dict[str, Any]:
     """Cross-compare multi-mission profiles for a target planetary body.
 
@@ -811,6 +845,12 @@ def compare_profiles_on_body(
         # see the plus/minus values) and the effective number of profiles at each level
         "weighting": weighting,
         "outlier_screen": screen,
+        # zonal mean in latitude bands (latitude-altitude cross section), when asked
+        "cross_section": (None if not cross_section_width else
+                          {"error": "Too many levels for a cross section; choose a coarser grid step."}
+                          if mat.shape[1] * int(np.ceil(180.0 / cross_section_width)) > MAX_CROSS_SECTION_CELLS else
+                          latitude_cross_section(mat, smat, [s_["latitude"] for s_ in profile_summaries],
+                                                 cross_section_width, log_like, weighting)),
         "composite_sem": [sig(x) for x in sem_v],
         "composite_plus_sem": [sig(x) if n >= mean_min else None for x, n in zip(sem_hi, n_per_level)],
         "composite_minus_sem": [sig(x) if n >= mean_min else None for x, n in zip(sem_lo, n_per_level)],
@@ -1059,3 +1099,32 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
 
     return "\n".join(lines) + "\n"
 
+
+
+def export_cross_section_to_csv(comparison: Dict[str, Any]) -> str:
+    """The zonal-mean cross section of a comparison, one row per latitude band and level."""
+    from ..core.registry import get_variable_info
+    xs = comparison.get("cross_section") or {}
+    var_name = comparison.get("variable_name", "variable")
+    units = (get_variable_info(var_name) or {}).get("units", "")
+    by_pressure = comparison.get("vertical") == "pressure"
+    grid = comparison.get("grid_hpa", []) if by_pressure else comparison.get("grid_km", [])
+    lines = [
+        f"# VEDA zonal-mean cross section: body={comparison.get('body_name', '')}, variable={var_name}"
+        + (f" [{units}]" if units else ""),
+        f"# {comparison.get('profile_count', 0)} profiles in latitude bands {xs.get('width', 0):g} deg wide"
+        + (f" ({xs['without_latitude']} without latitude left out)" if xs.get("without_latitude") else "")
+        + f"; {comparison.get('averaging', '')}; sem = spread / sqrt(n_effective)"
+        + (" in percent of the mean" if xs.get("sem_unit") == "%" else ""),
+        f"# Processed with VEDA {__version__} (https://github.com/jovian-explorer/VEDA), MIT License",
+        ",".join(["latitude_center_deg", "pressure_hpa" if by_pressure else "altitude_km", f"mean_{var_name}",
+                  "sem_pct" if xs.get("sem_unit") == "%" else "sem", "profiles"]),
+    ]
+    for b, c in enumerate(xs.get("latitude_centers", [])):
+        for i, z in enumerate(grid):
+            m = xs["mean"][b][i]
+            if m is None:
+                continue
+            lines.append(",".join([f"{c:g}", f"{z:.6g}" if by_pressure else f"{z:.3f}", _csv_num(m),
+                                   _csv_num(xs["sem"][b][i]), str(xs["profiles"][b][i])]))
+    return "\n".join(lines) + "\n"
