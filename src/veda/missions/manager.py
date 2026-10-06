@@ -163,6 +163,8 @@ class MissionManager:
         vertical: str = "altitude",
         pressure_step_decades: float = 0.02,
         weighting: str = "equal",
+        outlier_z: Optional[float] = None,
+        drop_outliers: bool = False,
     ) -> Dict[str, Any]:
         """Load multiple profiles across missions and compute cross-mission comparison.
 
@@ -188,6 +190,8 @@ class MissionManager:
             vertical=vertical,
             pressure_step_decades=pressure_step_decades,
             weighting=weighting,
+            outlier_z=outlier_z,
+            drop_outliers=drop_outliers,
         )
         if report is not None and isinstance(out, dict):
             out["selection"] = report

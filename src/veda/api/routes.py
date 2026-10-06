@@ -275,6 +275,9 @@ class CrossCompareRequest(BaseModel):
     pressure_step_decades: float = Field(0.02, ge=0.001, le=1.0)
     # composite weights: equal, or 1/sigma^2 from each profile's uncertainty
     weighting: str = Field("equal", pattern="^(equal|inverse_variance)$")
+    # outlier screen: robust z threshold (None: off); leave flagged profiles out of the composites
+    outlier_z: Optional[float] = Field(None, ge=1.0, le=20.0)
+    drop_outliers: bool = False
 
 
 @router.post("/compare/body/{body_id}")
@@ -307,7 +310,8 @@ def _compare_or_404(body_id: str, req: "CrossCompareRequest") -> dict:
     comp = get_mission_manager().compare_on_body(
         body_id, req.observations, mission_ids=req.missions, variable_name=req.variable, selection=sel,
         group_by=req.group_by or "", group_width=req.group_width, altitude_step_km=req.altitude_step_km,
-        vertical=req.vertical, pressure_step_decades=req.pressure_step_decades, weighting=req.weighting)
+        vertical=req.vertical, pressure_step_decades=req.pressure_step_decades, weighting=req.weighting,
+        outlier_z=req.outlier_z, drop_outliers=req.drop_outliers)
     if isinstance(comp, dict) and comp.get("error"):
         raise HTTPException(status_code=400, detail=comp["error"])
     return comp
@@ -550,6 +554,7 @@ def comparison_recipe(body_id: str, req: "CrossCompareRequest", comp: dict) -> d
             "group_by": req.group_by or None, "group_width": req.group_width,
             "altitude_step_km": req.altitude_step_km, "vertical": req.vertical,
             "pressure_step_decades": req.pressure_step_decades, "weighting": req.weighting,
+            "outlier_z": req.outlier_z, "drop_outliers": req.drop_outliers,
             # the filter that chose the profiles, for the record (the profiles are listed below)
             **({"filter": req.filter.model_dump(exclude_none=True)} if req.filter else {}),
             "observations": [{"mission_id": p["mission_id"], "observation_id": p["observation_id"]}

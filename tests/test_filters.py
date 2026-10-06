@@ -76,3 +76,56 @@ def test_filter_reaches_the_api_report_and_recipe(monkeypatch):
     assert '"cover_min_km":45' in recipe.replace(".0", "")
     bad = {**req, "filter": {"cover_min_km": 90, "cover_max_km": 50}}
     assert c.post("/api/veda/compare/body/venus", json=bad).status_code == 422
+
+
+def _t_prof(oid, t0, n=41):
+    z = np.arange(0.0, n * 1.0, 1.0)
+    return ObservationProfile(observation_id=oid, mission_id="mex", body_id="mars", instrument="MaRS",
+                              time_utc="2005-01-01T00:00:00", latitude=0.0, longitude=0.0, altitude_km=z,
+                              temperature_k=t0 + 0.5 * np.sin(z + len(oid)))
+
+
+def test_outlier_screen_flags_and_optionally_leaves_out():
+    from veda.analysis.atmospheric import compare_profiles_on_body, export_comparison_to_csv
+    from veda.core.registry import get_body
+    mars = get_body("mars")
+    profs = [_t_prof(f"p{i}", 200.0 + i) for i in range(8)] + [_t_prof("hot", 260.0)]
+    comp = compare_profiles_on_body(profs, mars, altitude_step_km=1.0, outlier_z=3.5)
+    scr = comp["outlier_screen"]
+    assert scr["flagged"] == ["hot"] and not scr["left_out"] and comp["profile_count"] == 9
+    hot = next(p for p in comp["profiles"] if p["observation_id"] == "hot")
+    assert hot["outlier"]["flagged"] and hot["outlier"]["max_abs_z"] > 10
+    assert not any(p["outlier"]["flagged"] for p in comp["profiles"] if p["observation_id"] != "hot")
+    kept_mean = comp["composite_mean"][10]
+    dropped = compare_profiles_on_body(profs, mars, altitude_step_km=1.0, outlier_z=3.5, drop_outliers=True)
+    assert dropped["profile_count"] == 8 and dropped["outlier_screen"]["left_out"]
+    assert dropped["composite_mean"][10] < kept_mean - 5
+    assert dropped["outlier_screen"]["left_out_profiles"][0]["observation_id"] == "hot"
+    assert "# outlier screen: robust z > 3.5" in export_comparison_to_csv(dropped)
+    assert compare_profiles_on_body(profs, mars, altitude_step_km=1.0)["outlier_screen"] is None
+
+
+def test_outlier_screen_needs_enough_profiles():
+    from veda.analysis.atmospheric import screen_outliers
+    mat = np.array([[1.0, 1.0], [1.1, 1.2], [9.0, 9.0]])          # three profiles: too few to judge
+    assert not any(f["flagged"] for f in screen_outliers(mat, 3.5))
+
+
+def test_outlier_screen_within_groups():
+    """Grouped by latitude, warm equatorial and cold polar profiles are judged within their
+    own band: none is flagged, though against all profiles the minority band would be."""
+    from veda.analysis.atmospheric import compare_profiles_on_body
+    from veda.core.registry import get_body
+    mars = get_body("mars")
+    profs = []
+    for i in range(6):
+        a, b = _t_prof(f"eq{i}", 220.0 + i), _t_prof(f"po{i}", 160.0 + i)
+        a.latitude, b.latitude = 5.0, 75.0
+        profs += [a, b]
+    profs += [_t_prof(f"x{i}", 221.0 + i) for i in range(6)]
+    for p in profs[-6:]:
+        p.latitude = 10.0
+    grouped = compare_profiles_on_body(profs, mars, altitude_step_km=1.0, outlier_z=3.5, group_by="latitude", group_width=30.0)
+    assert grouped["outlier_screen"]["flagged"] == [] and grouped["outlier_screen"]["against"] == "own group"
+    alone = compare_profiles_on_body(profs, mars, altitude_step_km=1.0, outlier_z=3.5)
+    assert sorted(alone["outlier_screen"]["flagged"]) == [f"po{i}" for i in range(6)]

@@ -238,6 +238,15 @@
               <option value="ci95">95 % interval (bootstrap)</option>
             </select>
           </label>
+          <label title="Flag profiles far from the others: robust z = 0.6745 (x − median) / MAD at each level (levels with 5 or more profiles); a profile is flagged when |z| exceeds the threshold on at least 10 % of its levels. Flagged profiles are drawn dashed and listed; they stay in the composites unless you leave them out.">Outlier screen
+            <select id="veda-compare-outlier-z">
+              <option value="">Off</option>
+              <option value="3.5">|z| &gt; 3.5</option>
+              <option value="5">|z| &gt; 5</option>
+              <option value="2.5">|z| &gt; 2.5</option>
+            </select>
+          </label>
+          <label class="inline"><input type="checkbox" id="veda-compare-drop-outliers" /> Leave flagged profiles out</label>
           <label>Show
             <select id="veda-compare-show-as">
               <option value="values">Values</option>

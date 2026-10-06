@@ -402,6 +402,39 @@ def _group_key(s: Dict[str, Any], by: str, width: float):
 
 WEIGHTINGS = ("equal", "inverse_variance")
 
+# Outlier screen: robust z per level needs at least this many profiles there, and a
+# profile is flagged when |z| exceeds the threshold on at least this fraction of its levels
+OUTLIER_MIN_PROFILES = 5
+OUTLIER_LEVEL_FRACTION = 0.10
+
+
+def screen_outliers(mat: np.ndarray, threshold: float) -> List[Dict[str, Any]]:
+    """Robust z of every value against the other profiles at its level,
+    z = 0.6745 (x - median) / MAD (MAD the median absolute deviation; 0.6745 makes it
+    comparable to a standard score for normal data), at levels with at least
+    OUTLIER_MIN_PROFILES values; ``mat`` is profiles x levels, in log space for
+    log-averaged variables.  Per profile: the fraction of its screened levels with
+    |z| > threshold, the largest |z|, and whether it is flagged (fraction at least
+    OUTLIER_LEVEL_FRACTION)."""
+    import warnings
+    with np.errstate(invalid="ignore", divide="ignore"), warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        n = np.sum(np.isfinite(mat), axis=0)
+        med = np.nanmedian(mat, axis=0)
+        mad = np.nanmedian(np.abs(mat - med), axis=0)
+        z = 0.6745 * (mat - med) / mad
+        z[:, (n < OUTLIER_MIN_PROFILES) | ~(mad > 0)] = np.nan
+    out = []
+    for row in z:
+        ok = np.isfinite(row)
+        if not ok.any():
+            out.append({"flagged": False, "fraction": None, "max_abs_z": None})
+            continue
+        frac = float(np.mean(np.abs(row[ok]) > threshold))
+        out.append({"flagged": frac >= OUTLIER_LEVEL_FRACTION, "fraction": round(frac, 3),
+                    "max_abs_z": round(float(np.max(np.abs(row[ok]))), 2)})
+    return out
+
 
 def _level_statistics(mat: np.ndarray, smat: Optional[np.ndarray], weighting: str) -> Dict[str, np.ndarray]:
     """Mean, spread, standard error of the mean and effective number of profiles at each
@@ -563,6 +596,8 @@ def compare_profiles_on_body(
     vertical: str = "altitude",
     pressure_step_decades: float = 0.02,
     weighting: str = "equal",
+    outlier_z: Optional[float] = None,
+    drop_outliers: bool = False,
 ) -> Dict[str, Any]:
     """Cross-compare multi-mission profiles for a target planetary body.
 
@@ -694,6 +729,31 @@ def compare_profiles_on_body(
 
     mat = np.array(interpolated_matrix)  # shape: (n_profiles, n_grid)
     smat = np.array(sigma_matrix)
+    # Outlier screen: flag profiles far from the others (robust z per level); they are
+    # left out of the composites only when asked, and are always reported
+    screen = None
+    if outlier_z:
+        # against the profile's own group when grouped (a climatology mixes latitudes or
+        # seasons that differ for real), else against all profiles
+        flags = screen_outliers(mat, outlier_z)
+        if group_by:
+            keys = [_group_key(s_, group_by, group_width) for s_ in profile_summaries]
+            for key in {k for k in keys if k is not None}:
+                idx = [i for i, k in enumerate(keys) if k == key]
+                for i, fl in zip(idx, screen_outliers(mat[idx], outlier_z)):
+                    flags[i] = fl
+        for s_, fl in zip(profile_summaries, flags):
+            s_["outlier"] = fl
+        flagged = [s_["observation_id"] for s_, fl in zip(profile_summaries, flags) if fl["flagged"]]
+        screen = {"z": outlier_z, "level_fraction": OUTLIER_LEVEL_FRACTION, "min_profiles": OUTLIER_MIN_PROFILES,
+                  "against": "own group" if group_by else "all profiles",
+                  "flagged": flagged, "left_out": bool(drop_outliers and flagged)}
+        if drop_outliers and flagged and len(flagged) < len(profile_summaries):
+            keep = [i for i, fl in enumerate(flags) if not fl["flagged"]]
+            screen["left_out_profiles"] = [profile_summaries[i] for i, fl in enumerate(flags) if fl["flagged"]]
+            mat, smat = mat[keep], smat[keep]
+            profile_summaries = [profile_summaries[i] for i in keep]
+            interpolated_matrix = [interpolated_matrix[i] for i in keep]
     if weighting == "inverse_variance" and not np.isfinite(smat).any():
         return {**_empty_comparison(body, variable_name),
                 "error": "None of these profiles has an uncertainty for this variable; use equal weights."}
@@ -712,7 +772,11 @@ def compare_profiles_on_body(
         mean_v, std_v, sem_v = mean_f, std_f, sem_f
         lo_v, hi_v = mean_f - std_f, mean_f + std_f
         sem_lo, sem_hi = mean_f - sem_f, mean_f + sem_f
-    for s in profile_summaries:
+    left_out = (screen or {}).get("left_out_profiles") or []
+    if log_like:
+        for s in left_out:
+            s["interpolated_series"] = np.exp(s["interpolated_series"])
+    for s in profile_summaries + left_out:
         s["interpolated_series"] = [None if not np.isfinite(x) else float(f"{x:.6g}")
                                     for x in s["interpolated_series"]]
     sig = (lambda x: None if not np.isfinite(x) else float(f"{x:.6g}"))
@@ -746,6 +810,7 @@ def compare_profiles_on_body(
         # standard error of the mean (a factor in log space for log-averaged variables:
         # see the plus/minus values) and the effective number of profiles at each level
         "weighting": weighting,
+        "outlier_screen": screen,
         "composite_sem": [sig(x) for x in sem_v],
         "composite_plus_sem": [sig(x) if n >= mean_min else None for x, n in zip(sem_hi, n_per_level)],
         "composite_minus_sem": [sig(x) if n >= mean_min else None for x, n in zip(sem_lo, n_per_level)],
@@ -952,6 +1017,12 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
             *(_csv_num((p.get("diagnostics") or {}).get(k)) for k in diag_keys), p.get("altitude_reference") or "")))
     for g in groups:
         lines.append(f"# group {_csv_field(g['label'])}: n={g['n']}, profiles={' '.join(g['observation_ids'])}")
+    scr = comparison.get("outlier_screen")
+    if scr:
+        lines.append(f"# outlier screen: robust z > {scr['z']:g} on at least {100 * scr['level_fraction']:g} % of a profile's levels"
+                     f" (levels with {scr['min_profiles']} or more profiles); flagged: {' '.join(scr['flagged']) or 'none'}"
+                     + ("; left out of the composites and of the columns below" if scr.get("left_out") else
+                        "; kept in the composites"))
 
     header = ["pressure_hpa" if by_pressure else "altitude_km", f"composite_mean_{var_name}", "composite_std", "plus_1sigma",
               "minus_1sigma", "composite_sem", "plus_sem", "minus_sem", "ci95_low", "ci95_high", "profiles_at_level",

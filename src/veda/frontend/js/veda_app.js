@@ -36,6 +36,8 @@ export const vedaState = {
   compareVertical: 'altitude',   // altitude | pressure (grid uniform in log p)
   compareWeighting: 'equal',     // equal | inverse_variance (composite weights 1/sigma^2)
   compareMeanBand: 'sem',        // sem | ci95 (band around the composite mean)
+  compareOutlierZ: '',           // '' (off) or the robust z threshold of the outlier screen
+  compareDropOutliers: false,    // leave flagged profiles out of the composites
   compareShowAs: 'values',  // values | deviation
   lastComparisonData: null,
   bodySubtab: 'soundings', // 'soundings' | 'map'
@@ -640,6 +642,8 @@ function currentComparisonRequest() {
     altitude_step_km: Number(vedaState.compareAltitudeStep) || undefined,
     vertical: vedaState.compareVertical === 'pressure' ? 'pressure' : undefined,
     weighting: vedaState.compareWeighting === 'inverse_variance' ? 'inverse_variance' : undefined,
+    outlier_z: Number(vedaState.compareOutlierZ) || undefined,
+    drop_outliers: Number(vedaState.compareOutlierZ) && vedaState.compareDropOutliers ? true : undefined,
   };
 }
 
@@ -752,7 +756,7 @@ const COMPARE_OPTIONS = [
   ['veda-compare-group-by', 'compareGroupBy'], ['veda-compare-group-width', 'compareGroupWidth'],
   ['veda-compare-altitude-step', 'compareAltitudeStep'], ['veda-compare-vertical', 'compareVertical'],
   ['veda-compare-show-as', 'compareShowAs'], ['veda-compare-weighting', 'compareWeighting'],
-  ['veda-compare-mean-band', 'compareMeanBand'],
+  ['veda-compare-mean-band', 'compareMeanBand'], ['veda-compare-outlier-z', 'compareOutlierZ'],
 ];
 
 function saveCompareForm() {
@@ -823,6 +827,10 @@ function setupBodyModeControls() {
   vertSel?.addEventListener('change', () => { vedaState.compareVertical = vertSel.value; updateComparison(); });
   const weightSel = document.getElementById('veda-compare-weighting');
   weightSel?.addEventListener('change', () => { vedaState.compareWeighting = weightSel.value; updateComparison(); });
+  const outSel = document.getElementById('veda-compare-outlier-z');
+  outSel?.addEventListener('change', () => { vedaState.compareOutlierZ = outSel.value; updateComparison(); });
+  const dropBox = document.getElementById('veda-compare-drop-outliers');
+  dropBox?.addEventListener('change', () => { vedaState.compareDropOutliers = dropBox.checked; if (vedaState.compareOutlierZ) updateComparison(); });
   const bandSel = document.getElementById('veda-compare-mean-band');
   bandSel?.addEventListener('change', () => { vedaState.compareMeanBand = bandSel.value; renderComparisonPlot(); });
   const altStep = document.getElementById('veda-compare-altitude-step');
@@ -1070,6 +1078,10 @@ async function openComparisonRecipe(csvText) {
   vedaState.compareAltitudeStep = r.altitude_step_km || '';
   vedaState.compareVertical = r.vertical === 'pressure' ? 'pressure' : 'altitude';
   vedaState.compareWeighting = r.weighting === 'inverse_variance' ? 'inverse_variance' : 'equal';
+  vedaState.compareOutlierZ = r.outlier_z ? String(r.outlier_z) : '';
+  vedaState.compareDropOutliers = !!r.drop_outliers;
+  const dropBox = document.getElementById('veda-compare-drop-outliers');
+  if (dropBox) dropBox.checked = vedaState.compareDropOutliers;
   const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
   setVal('veda-compare-variable-select', vedaState.selectedCompareVariable);
   setVal('veda-compare-group-by', vedaState.compareGroupBy);
@@ -1077,6 +1089,7 @@ async function openComparisonRecipe(csvText) {
   setVal('veda-compare-altitude-step', vedaState.compareAltitudeStep);
   setVal('veda-compare-vertical', vedaState.compareVertical);
   setVal('veda-compare-weighting', vedaState.compareWeighting);
+  setVal('veda-compare-outlier-z', vedaState.compareOutlierZ);
   syncUnitButtons();
   switchMode('body');
   await loadAndRenderCelestialBody(r.body_id);
@@ -1137,7 +1150,11 @@ async function updateComparison() {
 
     if (statusEl) {
       const nMissions = new Set((compData.profiles || []).map(p => p.mission_id)).size;
-      statusEl.textContent = `Aggregated ${compData.profile_count} sounding${compData.profile_count === 1 ? "" : "s"} from ${nMissions} mission${nMissions === 1 ? "" : "s"}${compData.averaging ? `; ${compData.averaging}; the spread is shown where at least two profiles overlap` : ""}.${compData.vertical_reference_warning ? ` Note: ${compData.vertical_reference_warning}` : ""}`;
+      const scr = compData.outlier_screen;
+      const outlierText = !scr ? '' : !scr.flagged.length ? ` Outlier screen (|z| > ${scr.z}): none flagged.`
+        : ` Outlier screen (|z| > ${scr.z}): ${scr.flagged.length} flagged (${scr.flagged.join(', ')}), `
+          + (scr.left_out ? 'left out of the composites.' : 'drawn dashed and kept in the composites.');
+      statusEl.textContent = `Aggregated ${compData.profile_count} sounding${compData.profile_count === 1 ? "" : "s"} from ${nMissions} mission${nMissions === 1 ? "" : "s"}${compData.averaging ? `; ${compData.averaging}; the spread is shown where at least two profiles overlap` : ""}.${compData.vertical_reference_warning ? ` Note: ${compData.vertical_reference_warning}` : ""}${outlierText}`;
     }
   } catch (err) {
     if (seq !== comparisonSeq) return;
@@ -1561,7 +1578,9 @@ function renderComparisonPlot() {
     // Each profile's own 1-sigma (archived or propagated) when few profiles are drawn
     const ownSigma = !view.deviation && !view.groups.length && profs.length <= 8 ? p.interpolated_sigma : null;
     if (ownSigma) traces.push(...sigmaBand(p.interpolated_series, zGrid, ownSigma, color, `${who} ${when || p.observation_id}`));
-    const styled = styleTrace(t, i, { color, sigma: ownSigma });
+    const flagged = p.outlier && p.outlier.flagged;
+    if (flagged) t.name += ' (flagged outlier)';
+    const styled = styleTrace(t, i, { color, sigma: ownSigma, dash: flagged ? 'dash' : undefined });
     if (view.groups.length) { styled.opacity = 0.3; styled.showlegend = false; }   // grouped: the group means stand out
     traces.push(styled);
   });
