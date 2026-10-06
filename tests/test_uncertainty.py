@@ -210,3 +210,38 @@ def test_noise_level_of_the_hydrostatic_check():
     assert levels[0.01][0] == pytest.approx(0.67, rel=0.25)
     assert levels[0.001][0] == pytest.approx(levels[0.01][0] / 10, rel=0.1)
     assert 1.5 < levels[0.01][1] < 6.0
+
+
+def test_layer_mean_sigma_counts_the_correlation_made_by_interpolation():
+    """Grid values interpolated between the same two levels share their errors: the
+    comparison gives each profile a correlation length so that the 1-sigma of a layer
+    mean (Altitude cut) matches the exact propagation A C A^T."""
+    mars = get_body("mars")
+    z = np.arange(0.0, 40.0 + 1e-9, 2.0)
+    s = 0.5 + 0.05 * z
+    prof = ObservationProfile(observation_id="c", mission_id="mex", body_id="mars", instrument="MaRS",
+                              time_utc="2005-01-01T00:00:00", latitude=0.0, longitude=0.0, altitude_km=z,
+                              temperature_k=200.0 - z, uncertainty={"temperature_k": s})
+    comp = compare_profiles_on_body([prof], mars, altitude_step_km=0.25, variable_name="temperature_k")
+    p = comp["profiles"][0]
+    big_l = p["sigma_correlation_km"]
+    assert big_l == pytest.approx(2.0 / np.sqrt(3.0), rel=1e-3)
+    grid = np.asarray(comp["grid_km"], dtype=float)
+    sg = np.array([np.nan if v is None else v for v in p["interpolated_sigma"]])
+    k = np.clip(np.searchsorted(z, grid, side="right") - 1, 0, z.size - 2)
+    w = (grid - z[k]) / (z[k + 1] - z[k])
+    a = np.zeros((grid.size, z.size))
+    a[np.arange(grid.size), k] = 1 - w
+    a[np.arange(grid.size), k + 1] = w
+    exact_cov = a @ np.diag(s ** 2) @ a.T
+    assert np.allclose(sg, np.sqrt(np.diag(exact_cov)), rtol=1e-3)      # midway: s / sqrt(2), not s
+    for lo, hi in ((10.0, 15.0), (20.0, 30.0)):
+        sl = (grid >= lo) & (grid <= hi)
+        m = sl.sum()
+        exact = np.sqrt(exact_cov[np.ix_(sl, sl)].sum()) / m
+        gz, ss = grid[sl], sg[sl]
+        r = np.exp(-(gz[:, None] - gz[None, :]) ** 2 / (2 * big_l ** 2))
+        model = np.sqrt(ss @ r @ ss) / m                     # what the Altitude cut computes
+        independent = np.sqrt(np.sum(ss ** 2)) / m
+        assert model == pytest.approx(exact, rel=0.15)
+        assert independent < 0.6 * exact

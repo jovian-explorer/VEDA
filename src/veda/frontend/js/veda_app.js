@@ -1378,18 +1378,34 @@ function renderAltitudeCut() {
   (data.groups || []).filter(g => !g.ungrouped).forEach((g, gi) => g.observation_ids.forEach(id => { groupOf[id] = { gi, label: g.label }; }));
 
   // Each point's own 1-sigma (error bars, weighted fits): at one level, the profile's 1-sigma
-  // there; a layer mean, sqrt(sum sigma^2) / m over its levels (relative errors for a
-  // geometric mean); a layer minimum or maximum, the 1-sigma at that level.
+  // there; a layer mean, sqrt(sum_ij sigma_i sigma_j r_ij) / m over its levels (relative
+  // errors for a geometric mean), with r_ij = exp(-dz^2 / (2 L^2)) and L the profile's
+  // sigma_correlation_km (its errors' correlation length and that made by interpolating
+  // its levels onto the grid; 0: independent); a layer minimum or maximum, the 1-sigma at
+  // that level.
   const sOf = (p) => {
     const sg = p.interpolated_sigma;
     if (isDiag || isAlt || !sg) return null;
     if (!isLayer) return sg[k];
     const s = p.interpolated_series;
-    let sum = 0, best = null, bestK = -1;
+    const L = p.sigma_correlation_km || 0;
+    const rel = [];
+    let best = null, bestK = -1;
     for (let i = kLo; i <= kHi; i++) {
       if (sg[i] == null || s[i] == null) return null;
-      sum += logMean ? (sg[i] / s[i]) ** 2 : sg[i] ** 2;
+      rel.push(logMean ? sg[i] / s[i] : sg[i]);
       if (best == null || (yKey.startsWith('layer_max') ? s[i] > best : s[i] < best)) { best = s[i]; bestK = i; }
+    }
+    let sum = 0;
+    for (let i = 0; i < rel.length; i++) {
+      sum += rel[i] * rel[i];
+      if (L > 0) {
+        for (let j = i + 1; j < rel.length; j++) {
+          const r = Math.exp(-((grid[kLo + i] - grid[kLo + j]) ** 2) / (2 * L * L));
+          if (r < 1e-6) break;
+          sum += 2 * rel[i] * rel[j] * r;
+        }
+      }
     }
     const m = kHi - kLo + 1;
     if (yKey === 'layer_mean') { const y = yOf(p); return logMean ? (y == null ? null : y * Math.sqrt(sum) / m) : Math.sqrt(sum) / m; }
