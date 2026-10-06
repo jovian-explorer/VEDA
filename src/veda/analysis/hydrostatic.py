@@ -99,6 +99,58 @@ def temperature_from_density(z_km, rho, g_ms2, r_spec: float, rho_sigma=None,
 
 
 
+def temperature_from_density_draws(z_km, rho_draws, g_ms2, r_spec: float, rho_sigma=None) -> Dict[str, np.ndarray]:
+    """temperature_from_density for many redrawn density profiles at once (rows of
+    ``rho_draws``, all positive where the first row is), for Monte Carlo uncertainties:
+    the same levels, top fit (weighted by ``rho_sigma`` as there) and integration.
+    Returns (draws, n) arrays of temperature (K) and pressure (Pa), NaN where a draw
+    gives none."""
+    z = np.asarray(z_km, dtype=float)
+    rd = np.atleast_2d(np.asarray(rho_draws, dtype=float))
+    g = np.broadcast_to(np.asarray(g_ms2, dtype=float), z.shape)
+    d, n = rd.shape
+    t_out = np.full((d, n), np.nan)
+    p_out = np.full((d, n), np.nan)
+    with np.errstate(invalid="ignore"):
+        ok = np.isfinite(z) & np.all(np.isfinite(rd) & (rd > 0), axis=0) & np.isfinite(g)
+    if ok.sum() < TOP_FIT_MIN_POINTS:
+        return {"temperature_k": t_out, "pressure_pa": p_out}
+    idx = np.where(ok)[0]
+    idx = idx[np.argsort(z[idx], kind="stable")]
+    zs, rs, gs = z[idx] * 1000.0, rd[:, idx], g[idx]
+    span = zs[-1] - zs[0]
+    top = zs >= zs[-1] - TOP_FIT_FRACTION * span
+    if top.sum() < TOP_FIT_MIN_POINTS:
+        top = np.zeros(zs.size, dtype=bool)
+        top[-TOP_FIT_MIN_POINTS:] = True
+    w = np.ones(int(top.sum()))
+    if rho_sigma is not None:
+        sg = np.asarray(rho_sigma, dtype=float)[idx][top]
+        with np.errstate(divide="ignore", invalid="ignore"):
+            ww = np.where(np.isfinite(sg) & (sg > 0), rd[0, idx][top] / sg, np.nan)
+        if np.isfinite(ww).all():
+            w = ww
+    phi = np.concatenate([[0.0], np.cumsum(0.5 * (gs[1:] + gs[:-1]) * np.diff(zs))])[top]
+    wt = w * w                                     # polyfit's w multiplies the residuals
+    pm = np.sum(wt * phi) / np.sum(wt)
+    y = np.log(rs[:, top])
+    ym = (y * wt).sum(axis=1, keepdims=True) / np.sum(wt)
+    slope = ((y - ym) * (wt * (phi - pm))).sum(axis=1) / np.sum(wt * (phi - pm) ** 2)
+    good = np.isfinite(slope) & (slope < 0)
+    t_top = np.where(good, -1.0 / np.where(good, slope, -1.0) / r_spec, np.nan)
+    dz = np.diff(zs)
+    r1, r2 = rs[:, :-1], rs[:, 1:]
+    with np.errstate(divide="ignore", invalid="ignore"):
+        ratio = np.log(r1 / r2)
+        expo = np.where(np.abs(ratio) > 1e-9, (r1 - r2) / ratio, 0.5 * (r1 + r2))
+    layers = expo * dz * 0.5 * (gs[:-1] + gs[1:])
+    p_top = rs[:, -1] * r_spec * t_top
+    pres = p_top[:, None] + np.concatenate([np.cumsum(layers[:, ::-1], axis=1)[:, ::-1], np.zeros((d, 1))], axis=1)
+    t_out[:, idx] = pres / (rs * r_spec)
+    p_out[:, idx] = pres
+    return {"temperature_k": t_out, "pressure_pa": p_out}
+
+
 def hydrostatic_consistency(z_km, p_hpa, t_k, g_ms2, r_spec: float) -> Dict[str, Optional[float]]:
     """How far a profile's pressure is from hydrostatic balance with its temperature:
     the pressure integrated with the profile's temperature (module docstring) against the

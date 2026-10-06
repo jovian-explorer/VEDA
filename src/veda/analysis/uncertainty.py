@@ -14,7 +14,8 @@ pressure, densities) at each level.  They are carried into the derived quantitie
   boundary is fitted): the profile is redrawn ``MC_DRAWS`` times with Gaussian errors of
   the archived size, everything is recomputed, and the standard deviation of the
   results is the uncertainty.  Lapse rate, N^2, d(theta)/dz, and temperature and
-  pressure from density are done this way.
+  pressure from density are done this way (densities are redrawn log-normally, with
+  their relative error, so that they stay positive).
 
 Errors at different levels are taken as independent, since no archive VEDA reads says
 how they are correlated; a data set can give a correlation length (``Dataset.
@@ -116,7 +117,6 @@ def propagate(profile, body, derived: Dict[str, np.ndarray], gz: Optional[np.nda
               corr_km: float = 0.0) -> Dict[str, np.ndarray]:
     """1-sigma uncertainties of ``derived`` (from compute_atmospheric_diagnostics) from the
     profile's archived uncertainties; also stored in ``profile.uncertainty``."""
-    from .atmospheric import _hydrostatic_retrieval
     from .thermo import heat_capacity
     z = np.asarray(profile.altitude_km, dtype=float)
     out: Dict[str, np.ndarray] = {}
@@ -173,15 +173,14 @@ def propagate(profile, body, derived: Dict[str, np.ndarray], gz: Optional[np.nda
     if "temperature_from_density" in derived:
         rho, s_rho = _density_and_sigma(profile, body, z.shape)
         if rho is not None and s_rho is not None:
-            rho_draws = rho + _draws(s_rho, z, corr_km, rng)
-            rho_draws[rho_draws <= 0] = np.nan
-            res_t, res_p = [], []
-            for i in range(MC_DRAWS):
-                r = _hydrostatic_retrieval(profile, body, z, rho_draws[i], None)
-                res_t.append(np.full(z.size, np.nan) if r is None else r["temperature_k"])
-                res_p.append(np.full(z.size, np.nan) if r is None else r["pressure_pa"] / 100.0)
-            out["temperature_from_density"] = _std(np.array(res_t))
-            out["pressure_from_density"] = _std(np.array(res_p))
+            from .hydrostatic import temperature_from_density_draws
+            # log-normal draws (relative error sigma / rho): densities stay positive
+            with np.errstate(invalid="ignore", divide="ignore"):
+                rel = np.where(np.isfinite(s_rho) & (rho > 0), s_rho / rho, np.nan)
+            rho_draws = rho * np.exp(_draws(rel, z, corr_km, rng))
+            r = temperature_from_density_draws(z, rho_draws, gz, body.gas_constant_r, s_rho)
+            out["temperature_from_density"] = _std(r["temperature_k"])
+            out["pressure_from_density"] = _std(r["pressure_pa"] / 100.0)
 
     out = {k: v for k, v in out.items() if v is not None and np.any(np.isfinite(v))}
     profile.uncertainty.update(out)

@@ -221,6 +221,12 @@
               <option value="inverse_variance">Inverse variance (1/σ²)</option>
             </select>
           </label>
+          <label title="The darker band around the composite mean: its standard error (spread / √n_eff), or the 95 % interval of the mean from resampling the profiles (bootstrap, 1000 resamples), which needs no normal distribution.">Band around the mean
+            <select id="veda-compare-mean-band">
+              <option value="sem">Standard error</option>
+              <option value="ci95">95 % interval (bootstrap)</option>
+            </select>
+          </label>
           <label>Show
             <select id="veda-compare-show-as">
               <option value="values">Values</option>

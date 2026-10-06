@@ -432,7 +432,46 @@ def _level_statistics(mat: np.ndarray, smat: Optional[np.ndarray], weighting: st
             std = np.where(n >= 2, std, np.nan)
             n_eff = n.astype(float)
         sem = std / np.sqrt(n_eff)
-    return {"n": n, "mean": mean, "std": std, "sem": sem, "n_eff": n_eff}
+    lo, hi = _bootstrap_mean_interval(mat, smat if weighting == "inverse_variance" else None)
+    return {"n": n, "mean": mean, "std": std, "sem": sem, "n_eff": n_eff, "ci_lo": lo, "ci_hi": hi}
+
+
+BOOTSTRAP_DRAWS = 1000
+_BOOTSTRAP_SEED = 20261006
+
+
+def _bootstrap_mean_interval(mat: np.ndarray, smat: Optional[np.ndarray],
+                             level: float = 0.95) -> Tuple[np.ndarray, np.ndarray]:
+    """Percentile bootstrap interval of the (weighted) mean at each level: the profiles are
+    resampled with replacement BOOTSTRAP_DRAWS times (fewer for very large comparisons,
+    at least 200), the mean recomputed with the same weights, and the 2.5 and 97.5
+    percentiles of the resampled means taken (NaN where fewer than half the resamples
+    have a value, or with fewer than two profiles).  Unlike mean +- 2 SEM it needs no
+    normal distribution of the profiles, so it shows skewed or bimodal samples."""
+    import warnings
+    n_prof, n_lev = mat.shape
+    nan = np.full(n_lev, np.nan)
+    if n_prof < 2:
+        return nan, nan.copy()
+    draws = int(max(200, min(BOOTSTRAP_DRAWS, 2e9 / max(1, n_prof * n_lev))))
+    rng = np.random.default_rng(_BOOTSTRAP_SEED)
+    counts = rng.multinomial(n_prof, np.full(n_prof, 1.0 / n_prof), size=draws).astype(float)
+    finite = np.isfinite(mat)
+    if smat is not None:
+        usable = finite & np.isfinite(smat) & (smat > 1e-6 * np.maximum(np.abs(mat), 1e-300))
+        w = np.where(usable, 1.0 / np.where(usable, smat, 1.0) ** 2, 0.0)
+    else:
+        w = finite.astype(float)
+    x = np.where(w > 0, mat, 0.0)
+    with np.errstate(invalid="ignore", divide="ignore"), warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        den = counts @ w
+        means = np.where(den > 0, (counts @ (w * x)) / den, np.nan)
+        enough = np.isfinite(means).sum(axis=0) >= draws // 2
+        a = 100.0 * (1.0 - level) / 2.0
+        lo, hi = np.nanpercentile(means, [a, 100.0 - a], axis=0)
+    two = np.sum(w > 0, axis=0) >= 2
+    return np.where(enough & two, lo, np.nan), np.where(enough & two, hi, np.nan)
 
 
 def _group_composites(mat: np.ndarray, summaries: List[Dict[str, Any]], log_like: bool, by: str,
@@ -453,6 +492,8 @@ def _group_composites(mat: np.ndarray, summaries: List[Dict[str, Any]], log_like
                     "mean": [sig(x) for x in tr(m)], "plus_1sigma": [sig(x) for x in tr(m + s)],
                     "minus_1sigma": [sig(x) for x in tr(m - s)],
                     "plus_sem": [sig(x) for x in tr(m + e)], "minus_sem": [sig(x) for x in tr(m - e)],
+                    "ci95_low": [sig(x) for x in tr(np.where(np.isfinite(m), st["ci_lo"], np.nan))],
+                    "ci95_high": [sig(x) for x in tr(np.where(np.isfinite(m), st["ci_hi"], np.nan))],
                     "n_effective": [None if not np.isfinite(x) else round(float(x), 2) for x in st["n_eff"]],
                     "profiles_per_level": [int(x) for x in n]})
     unknown = sum(1 for k in keys if k is None)
@@ -705,6 +746,11 @@ def compare_profiles_on_body(
         "composite_plus_sem": [sig(x) if n >= mean_min else None for x, n in zip(sem_hi, n_per_level)],
         "composite_minus_sem": [sig(x) if n >= mean_min else None for x, n in zip(sem_lo, n_per_level)],
         "n_effective": [None if not np.isfinite(x) else round(float(x), 2) for x in stats["n_eff"]],
+        # 95 % percentile bootstrap interval of the mean (resampling the profiles)
+        "composite_ci95_low": [sig(x) if n >= mean_min else None
+                               for x, n in zip(np.exp(stats["ci_lo"]) if log_like else stats["ci_lo"], n_per_level)],
+        "composite_ci95_high": [sig(x) if n >= mean_min else None
+                                for x, n in zip(np.exp(stats["ci_hi"]) if log_like else stats["ci_hi"], n_per_level)],
         "profile_count": len(profile_summaries),
         "profiles": profile_summaries,
         # label and unit of each per-profile diagnostic at least one profile has
@@ -877,7 +923,8 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
     lines = [
         f"# VEDA comparison: body={body_name}, variable={var_name}" + (f" [{units}]" if units else ""),
         f"# profiles={len(profiles)}, averaging={comparison.get('averaging', '')}"
-        + ("; sem = spread / sqrt(n_effective)" if comparison.get("composite_plus_sem") else "")
+        + ("; sem = spread / sqrt(n_effective); ci95 = 95 % bootstrap interval of the mean (profiles resampled)"
+           if comparison.get("composite_plus_sem") else "")
         + (f", grouped by {comparison.get('group_by')}" if groups else ""),
         "# Profiles from the official mission archives (see each product for its source); means and spreads computed by VEDA.",
         (f"# Common grid uniform in log pressure, every {comparison.get('pressure_step_decades'):g} decades."
@@ -903,10 +950,12 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
         lines.append(f"# group {_csv_field(g['label'])}: n={g['n']}, profiles={' '.join(g['observation_ids'])}")
 
     header = ["pressure_hpa" if by_pressure else "altitude_km", f"composite_mean_{var_name}", "composite_std", "plus_1sigma",
-              "minus_1sigma", "composite_sem", "plus_sem", "minus_sem", "profiles_at_level", "n_effective"]
+              "minus_1sigma", "composite_sem", "plus_sem", "minus_sem", "ci95_low", "ci95_high", "profiles_at_level",
+              "n_effective"]
     for g in groups:
         header += [f"{g['label']} mean", f"{g['label']} plus_1sigma", f"{g['label']} minus_1sigma",
-                   f"{g['label']} plus_sem", f"{g['label']} minus_sem", f"{g['label']} n_effective"]
+                   f"{g['label']} plus_sem", f"{g['label']} minus_sem", f"{g['label']} ci95_low",
+                   f"{g['label']} ci95_high", f"{g['label']} n_effective"]
     header += cols
     with_sigma = [(c, p) for c, p in zip(cols, profiles) if p.get("interpolated_sigma")]
     header += [f"sigma_{c}" for c, _ in with_sigma]
@@ -920,12 +969,14 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
     for i, z in enumerate(grid):
         row = [f"{z:.6g}" if by_pressure else f"{z:.3f}"] + [_csv_num(at(comparison.get(k), i)) for k in
                               ("composite_mean", "composite_std", "composite_plus_1sigma", "composite_minus_1sigma",
-                               "composite_sem", "composite_plus_sem", "composite_minus_sem")]
+                               "composite_sem", "composite_plus_sem", "composite_minus_sem",
+                               "composite_ci95_low", "composite_ci95_high")]
         row.append(str(at(n_level, i)) if at(n_level, i) is not None else "")
         row.append(_csv_num(at(comparison.get("n_effective"), i)))
         for g in groups:
             row += [_csv_num(at(g["mean"], i)), _csv_num(at(g["plus_1sigma"], i)), _csv_num(at(g["minus_1sigma"], i)),
                     _csv_num(at(g.get("plus_sem"), i)), _csv_num(at(g.get("minus_sem"), i)),
+                    _csv_num(at(g.get("ci95_low"), i)), _csv_num(at(g.get("ci95_high"), i)),
                     _csv_num(at(g.get("n_effective"), i))]
         row += [_csv_num(at(p.get("interpolated_series"), i)) for p in profiles]
         row += [_csv_num(at(p.get("interpolated_sigma"), i)) for _, p in with_sigma]

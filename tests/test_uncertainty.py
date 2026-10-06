@@ -152,3 +152,47 @@ def test_inverse_variance_in_log_space_uses_relative_errors():
     w = np.array([1 / 0.01 ** 2, 1 / 0.10 ** 2])
     expected = np.exp((w[0] * np.log(6.0) + w[1] * np.log(7.0)) / w.sum())
     assert comp["composite_mean"][0] == pytest.approx(expected, rel=1e-5)
+
+
+def test_bootstrap_interval_of_the_mean():
+    """For many profiles drawn from a normal distribution the 95 % bootstrap interval is
+    close to mean +- 1.96 SEM; it is reproducible, and it follows the weights."""
+    mars = get_body("mars")
+    rng = np.random.default_rng(3)
+    temps = rng.normal(200.0, 10.0, 80)
+    profs = [_flat(f"p{i}", t, 1.0) for i, t in enumerate(temps)]
+    comp = compare_profiles_on_body(profs, mars, altitude_step_km=1.0)
+    m, sem = comp["composite_mean"][5], comp["composite_sem"][5]
+    assert comp["composite_ci95_low"][5] == pytest.approx(m - 1.96 * sem, abs=0.35 * sem)
+    assert comp["composite_ci95_high"][5] == pytest.approx(m + 1.96 * sem, abs=0.35 * sem)
+    again = compare_profiles_on_body(profs, mars, altitude_step_km=1.0)
+    assert again["composite_ci95_low"] == comp["composite_ci95_low"]
+    assert "ci95_low" in export_comparison_to_csv(comp)
+
+
+def test_bootstrap_interval_of_group_means_and_skewed_samples():
+    mars = get_body("mars")
+    temps = [200.0] * 9 + [260.0]                  # one warm outlier: the interval is skewed
+    profs = [_flat(f"p{i}", t, 1.0) for i, t in enumerate(temps)]
+    for i, pr in enumerate(profs):
+        pr.latitude = 10.0 if i < 5 else 50.0
+    comp = compare_profiles_on_body(profs, mars, altitude_step_km=1.0, group_by="latitude", group_width=30.0)
+    m = comp["composite_mean"][5]
+    assert comp["composite_ci95_high"][5] - m > m - comp["composite_ci95_low"][5]
+    g = [x for x in comp["groups"] if not x.get("ungrouped")]
+    assert g[0]["ci95_low"][5] == pytest.approx(200.0) and g[0]["ci95_high"][5] == pytest.approx(200.0)
+    assert g[1]["ci95_high"][5] > g[1]["ci95_low"][5]
+
+
+def test_batched_density_retrieval_equals_the_single_one():
+    from veda.analysis.hydrostatic import temperature_from_density, temperature_from_density_draws
+    rng = np.random.default_rng(5)
+    z = np.arange(90.0, 160.0, 0.5)
+    rho = 1e-7 * np.exp(-(z - 90.0) / 8.0) * (1 + 0.05 * rng.standard_normal(z.size))
+    g = 3.7 * (3389.5 / (3389.5 + z)) ** 2
+    sig = 0.03 * rho
+    one = temperature_from_density(z, rho, g, 191.2, rho_sigma=sig)
+    many = temperature_from_density_draws(z, np.vstack([rho, rho * 1.01]), g, 191.2, rho_sigma=sig)
+    np.testing.assert_allclose(many["temperature_k"][0], one["temperature_k"], rtol=1e-9)
+    np.testing.assert_allclose(many["pressure_pa"][0], one["pressure_pa"], rtol=1e-9)
+    np.testing.assert_allclose(many["temperature_k"][1], one["temperature_k"], rtol=1e-9)   # a constant factor cancels

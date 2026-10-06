@@ -35,6 +35,7 @@ export const vedaState = {
   compareAltitudeStep: '',
   compareVertical: 'altitude',   // altitude | pressure (grid uniform in log p)
   compareWeighting: 'equal',     // equal | inverse_variance (composite weights 1/sigma^2)
+  compareMeanBand: 'sem',        // sem | ci95 (band around the composite mean)
   compareShowAs: 'values',  // values | deviation
   lastComparisonData: null,
   bodySubtab: 'soundings', // 'soundings' | 'map'
@@ -719,6 +720,7 @@ const COMPARE_OPTIONS = [
   ['veda-compare-group-by', 'compareGroupBy'], ['veda-compare-group-width', 'compareGroupWidth'],
   ['veda-compare-altitude-step', 'compareAltitudeStep'], ['veda-compare-vertical', 'compareVertical'],
   ['veda-compare-show-as', 'compareShowAs'], ['veda-compare-weighting', 'compareWeighting'],
+  ['veda-compare-mean-band', 'compareMeanBand'],
 ];
 
 function saveCompareForm() {
@@ -789,6 +791,8 @@ function setupBodyModeControls() {
   vertSel?.addEventListener('change', () => { vedaState.compareVertical = vertSel.value; updateComparison(); });
   const weightSel = document.getElementById('veda-compare-weighting');
   weightSel?.addEventListener('change', () => { vedaState.compareWeighting = weightSel.value; updateComparison(); });
+  const bandSel = document.getElementById('veda-compare-mean-band');
+  bandSel?.addEventListener('change', () => { vedaState.compareMeanBand = bandSel.value; renderComparisonPlot(); });
   const altStep = document.getElementById('veda-compare-altitude-step');
   altStep?.addEventListener('change', () => {
     const v = altStep.value === '' ? '' : Number(altStep.value);
@@ -1401,6 +1405,8 @@ function renderComparisonPlot() {
     composite_minus_1sigma: sc(raw.composite_minus_1sigma),
     composite_plus_sem: sc(raw.composite_plus_sem),
     composite_minus_sem: sc(raw.composite_minus_sem),
+    composite_ci95_low: sc(raw.composite_ci95_low),
+    composite_ci95_high: sc(raw.composite_ci95_high),
     profiles: (raw.profiles || []).map(pr => ({ ...pr, interpolated_series: sc(pr.interpolated_series),
                                                 interpolated_sigma: sc(pr.interpolated_sigma) })),
     groups: (raw.groups || []).map(g => ({ ...g, mean: sc(g.mean), plus_1sigma: sc(g.plus_1sigma), minus_1sigma: sc(g.minus_1sigma) })),
@@ -1476,14 +1482,18 @@ function renderComparisonPlot() {
       hovertemplate: `<b>${escHtml(g.label)}</b> (n = ${g.n})<br>%{x:.4g}, %{y:.4g}<extra></extra>` });
   });
 
-  // 3. Composite mean, with its standard error as a darker band
+  // 3. Composite mean, with its standard error or 95 % bootstrap interval as a darker band
+  const ci = vedaState.compareMeanBand === 'ci95';
+  const bandLo = ci ? data.composite_ci95_low : data.composite_minus_sem;
+  const bandHi = ci ? data.composite_ci95_high : data.composite_plus_sem;
   if (vedaState.compareShowMean !== false && vedaState.compareShowSpread !== false && !view.deviation
-      && data.composite_plus_sem && data.composite_plus_sem.some(v => v !== null)) {
-    traces.push({ ...orient(data.composite_minus_sem, zGrid), type: 'scatter', mode: 'lines',
+      && bandHi && bandHi.some(v => v !== null)) {
+    traces.push({ ...orient(bandLo, zGrid), type: 'scatter', mode: 'lines',
       line: { width: 0, color: 'transparent' }, showlegend: false, hoverinfo: 'skip' });
-    traces.push({ ...orient(data.composite_plus_sem, zGrid), type: 'scatter', mode: 'lines',
+    traces.push({ ...orient(bandHi, zGrid), type: 'scatter', mode: 'lines',
       fill: plotStyle.swapAxes ? 'tonexty' : 'tonextx', fillcolor: 'rgba(100, 116, 139, 0.45)',
-      line: { width: 0, color: 'transparent' }, name: 'Standard error of the mean', hoverinfo: 'skip' });
+      line: { width: 0, color: 'transparent' }, name: ci ? '95 % interval of the mean (bootstrap)' : 'Standard error of the mean',
+      hoverinfo: 'skip' });
   }
   if (vedaState.compareShowMean !== false && data.composite_mean && data.composite_mean.some(v => v !== null)) {
     traces.push({ ...orient(data.composite_mean, zGrid), type: 'scatter', mode: 'lines',
