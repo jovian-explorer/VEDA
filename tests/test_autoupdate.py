@@ -271,6 +271,13 @@ def test_weekly_check_downloads_verifies_and_stages(installed, monkeypatch):
     assert autoupdate.check_and_stage(release=_release(data))["result"] == "already staged"
     # nothing newer: nothing downloaded
     assert autoupdate.check_and_stage(force=True, release=_release(data, tag="v0.2.0-build.41"))["result"] == "latest"
+    # a release whose files are not all uploaded yet: tried again at the next hourly look
+    st = autoupdate.load_state()
+    st["last_check"] -= autoupdate.CHECK_EVERY_S + 1
+    autoupdate.save_state(st)
+    partial = _release(data, tag="v0.2.0-build.43")
+    partial["assets"] = []
+    assert autoupdate.check_and_stage(release=partial)["result"] == "error" and autoupdate.due()
     # off: no check
     SETTINGS.auto_update = False
     assert not autoupdate.due()

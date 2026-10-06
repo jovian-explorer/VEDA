@@ -254,8 +254,8 @@ def check_and_stage(force: bool = False, release: Optional[Dict[str, Any]] = Non
         return {"result": "already staged", "tag": tag}
     asset = pick_asset(rel)
     if asset is None:
-        save_state(st)
-        return {"result": "error", "reason": f"release {tag} has no download for {platform_tag()}"}
+        # (not counted as a check: a release is listed before all its files are uploaded)
+        return {"result": "error", "reason": f"release {tag} has no download for {platform_tag()} yet"}
     UPDATES_DIR.mkdir(parents=True, exist_ok=True)
     part = UPDATES_DIR / (asset["name"] + ".part")
     from .archives import net
