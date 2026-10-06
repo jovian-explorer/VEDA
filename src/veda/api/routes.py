@@ -315,6 +315,8 @@ class HarmonicFitRequest(BaseModel):
     period: float = Field(24.0, gt=0.0, le=100000.0)       # 24 h (local time), 360 deg (longitude)
     harmonics: int = Field(2, ge=1, le=6)
     log: bool = False                                        # fit ln y (densities, pressure)
+    y_sigma: Optional[List[Optional[float]]] = Field(None, max_length=100000)   # 1-sigma of each y: weighted fit
+    bootstrap: bool = True                                   # 95 % bootstrap intervals
 
 
 @router.post("/analysis/harmonic-fit")
@@ -326,8 +328,9 @@ def harmonic_fit_of_points(req: HarmonicFitRequest) -> dict:
         raise HTTPException(status_code=400, detail="x and y must have the same length")
     nan = float("nan")
     try:
+        sig = None if req.y_sigma is None else [nan if v is None else v for v in req.y_sigma]
         return harmonic_fit([nan if v is None else v for v in req.x], [nan if v is None else v for v in req.y],
-                            req.period, req.harmonics, req.log)
+                            req.period, req.harmonics, req.log, y_sigma=sig, bootstrap=req.bootstrap)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
 

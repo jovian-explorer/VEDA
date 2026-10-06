@@ -1241,7 +1241,9 @@ function renderAltitudeCut() {
   const groupOf = {};
   (data.groups || []).filter(g => !g.ungrouped).forEach((g, gi) => g.observation_ids.forEach(id => { groupOf[id] = { gi, label: g.label }; }));
 
-  const withY = profiles.map(p => ({ p, x: xOf(p), y: yOf(p) })).filter(o => o.y != null);
+  // each point's own 1-sigma where it is the variable at one level (for a weighted fit)
+  const sOf = (p) => (!isLayer && !isDiag && p.interpolated_sigma ? p.interpolated_sigma[k] : null);
+  const withY = profiles.map(p => ({ p, x: xOf(p), y: yOf(p), s: sOf(p) })).filter(o => o.y != null);
   const pts = withY.filter(o => o.x != null);
   const missing = withY.length - pts.length;
   const atEdge = isAlt ? withY.filter(o => o.y === grid[kLo] || o.y === grid[kHi]).length : 0;
@@ -1345,7 +1347,10 @@ async function fitAltitudeCut(plotDiv, pts, yScale, period, nHarm, logFit, xKey,
   fitStatus.textContent = 'Fitting...';
   let fit;
   try {
-    fit = await api.vedaHarmonicFit({ x: pts.map(o => o.x), y: pts.map(o => o.y * yScale), period, harmonics: nHarm, log: logFit });
+    // weighted by each point's 1-sigma when every point has one
+    const allSigma = pts.every(o => o.s != null && o.s > 0);
+    fit = await api.vedaHarmonicFit({ x: pts.map(o => o.x), y: pts.map(o => o.y * yScale), period, harmonics: nHarm, log: logFit,
+                                      y_sigma: allSigma ? pts.map(o => o.s * yScale) : undefined });
   } catch (err) {
     if (token === altitudeCutRenders) fitStatus.textContent = `Fit: ${err.message}`;
     return;
@@ -1362,12 +1367,16 @@ async function fitAltitudeCut(plotDiv, pts, yScale, period, nHarm, logFit, xKey,
   const xUnit = { lst: ' h', longitude: '°', ls: '°' }[xKey];
   const ampUnit = fit.log ? ' %' : (unit ? ` ${unit}` : '');
   const fmt = (v) => (v == null || !isFinite(v) ? '?' : Math.abs(v) >= 100 ? v.toFixed(0) : v.toPrecision(3));
-  const parts = fit.components.map(c => `${c.n}: ${fmt(c.amplitude)} ± ${fmt(c.amplitude_sigma)}${ampUnit}, maximum at `
-    + `${fmt(c.x_of_max)} ± ${fmt(c.x_of_max_sigma)}${xUnit}` + (fit.max_gap > period / (2 * c.n) ? ' (not resolved: gap)' : ''));
-  fitStatus.textContent = `Fit (${fit.n_points} points): mean ${fmt(fit.mean)}${fit.log ? '' : ampUnit}; harmonic `
+  const ci = (r, u) => (r ? ` [95 %: ${fmt(r[0])} to ${fmt(r[1])}${u}]` : '');
+  const parts = fit.components.map(c => `${c.n}: ${fmt(c.amplitude)} ± ${fmt(c.amplitude_sigma)}${ampUnit}${ci(c.amplitude_ci95, ampUnit)}, maximum at `
+    + `${fmt(c.x_of_max)} ± ${fmt(c.x_of_max_sigma)}${xUnit}${ci(c.x_of_max_ci95, xUnit)}`
+    + (fit.max_gap > period / (2 * c.n) ? ' (not resolved: gap)' : ''));
+  fitStatus.textContent = `Fit (${fit.n_points} points${fit.weighted ? `, weighted by their uncertainties, reduced χ² ${fmt(fit.reduced_chi_square)}` : ''}): `
+    + `mean ${fmt(fit.mean)}${fit.log ? '' : ampUnit}; harmonic `
     + parts.join('; ') + `. Residual rms ${fmt(fit.residual_rms)}${ampUnit}`
     + (fit.r_squared != null ? `, R² ${fit.r_squared.toFixed(2)}` : '')
-    + `; widest gap without data ${fmt(fit.max_gap)}${xUnit}.`;
+    + `; widest gap without data ${fmt(fit.max_gap)}${xUnit}`
+    + (fit.bootstrap_draws ? `. ±: 1σ from the fit; brackets: bootstrap over the points (${fit.bootstrap_draws} resamples).` : '.');
 }
 
 function renderComparisonPlot() {

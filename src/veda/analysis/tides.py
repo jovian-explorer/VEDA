@@ -13,6 +13,14 @@ covariance of the fit, s^2 (X^T X)^-1 with s^2 the residual variance, propagated
 A_n and x_n to first order.  For quantities spanning orders of magnitude (densities,
 pressure) the fit is to ln y, and A_n is given in percent of the mean (100 A_n, the
 first-order relative amplitude).
+
+With the 1-sigma of each point (``y_sigma``) the fit is weighted, w = 1 / sigma^2
+(relative errors sigma / y for ln y), and the covariance is (X^T W X)^-1 times the
+reduced chi-square when that exceeds 1 (the points scatter more than their errors: the
+scatter, not the errors, then sets the uncertainty).  95 % percentile bootstrap
+intervals of each amplitude and position of the maximum come from refitting the points
+resampled with replacement (BOOTSTRAP_DRAWS times); positions are taken around the
+circle, relative to the fitted one, so they are not split at 0 / P.
 """
 from __future__ import annotations
 
@@ -20,9 +28,12 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 
+BOOTSTRAP_DRAWS = 1000
+_SEED = 20261006
+
 
 def harmonic_fit(x, y, period: float, harmonics: int = 2, log: bool = False,
-                 samples: int = 97) -> Dict[str, Any]:
+                 samples: int = 97, y_sigma=None, bootstrap: bool = True) -> Dict[str, Any]:
     """Least-squares fit of ``harmonics`` harmonics of ``period`` to y(x) (module docstring).
 
     Points without a finite x or y (or y <= 0 when ``log``) are left out.  At least one
@@ -42,6 +53,15 @@ def harmonic_fit(x, y, period: float, harmonics: int = 2, log: bool = False,
         ok = np.isfinite(x) & np.isfinite(y) & ((y > 0) if log else True)
         yy = np.log(y[ok]) if log else y[ok]
     xx = np.mod(x[ok], period)
+    sw = None                                   # 1 / sigma of each point (weights sqrt)
+    if y_sigma is not None:
+        s = np.asarray(y_sigma, dtype=float).ravel()
+        if s.shape != y.shape:
+            raise ValueError("y_sigma must have the same length as y")
+        with np.errstate(invalid="ignore", divide="ignore"):
+            s = s[ok] / y[ok] if log else s[ok]
+        if s.size and np.all(np.isfinite(s) & (s > 0)):
+            sw = 1.0 / s
     n_par = 2 * harmonics + 1
     if xx.size < n_par + 1:
         raise ValueError(f"{harmonics} harmonic(s) need at least {n_par + 1} points with values; there are {xx.size}")
@@ -54,16 +74,21 @@ def harmonic_fit(x, y, period: float, harmonics: int = 2, log: bool = False,
         return np.column_stack(cols)
 
     X = design(xx)
-    coef, *_ = np.linalg.lstsq(X, yy, rcond=None)
+    wv = np.ones(xx.size) if sw is None else sw
+    coef, *_ = np.linalg.lstsq(X * wv[:, None], yy * wv, rcond=None)
     resid = yy - X @ coef
     dof = xx.size - n_par
-    s2 = float(resid @ resid) / dof
+    chi2_red = float(((resid * wv) ** 2).sum()) / dof
+    xtwx = (X * (wv ** 2)[:, None]).T @ X
     try:
-        cov = s2 * np.linalg.inv(X.T @ X)
+        inv = np.linalg.inv(xtwx)
     except np.linalg.LinAlgError:
         raise ValueError("the points do not constrain these harmonics (too few distinct x)")
-    if not np.all(np.isfinite(cov)) or np.linalg.cond(X.T @ X) > 1e12:
+    # unweighted: s^2 (X^T X)^-1; weighted: (X^T W X)^-1, scaled up by chi2 when the points scatter more
+    cov = inv * (chi2_red if sw is None else max(1.0, chi2_red))
+    if not np.all(np.isfinite(cov)) or np.linalg.cond(xtwx) > 1e12:
         raise ValueError("the points do not constrain these harmonics (too few distinct x)")
+    boot = _bootstrap(xx, yy, wv, design, coef, harmonics, w) if bootstrap else None
 
     scale = 100.0 if log else 1.0
     comps: List[Dict[str, Optional[float]]] = []
@@ -78,8 +103,16 @@ def harmonic_fit(x, y, period: float, harmonics: int = 2, log: bool = False,
         else:
             s_amp, s_ph = float(np.sqrt(va)), float("nan")
         x_max = float(np.mod(np.arctan2(b, a) / (n * w), period / n))
-        comps.append({"n": n, "amplitude": amp * scale, "amplitude_sigma": s_amp * scale,
-                      "x_of_max": x_max, "x_of_max_sigma": s_ph / (n * w) if np.isfinite(s_ph) else None})
+        comp = {"n": n, "amplitude": amp * scale, "amplitude_sigma": s_amp * scale,
+                "x_of_max": x_max, "x_of_max_sigma": s_ph / (n * w) if np.isfinite(s_ph) else None}
+        if boot is not None:
+            amps, xms = boot[n]
+            if amps.size >= BOOTSTRAP_DRAWS // 2:
+                comp["amplitude_ci95"] = [float(v) * scale for v in np.percentile(amps, [2.5, 97.5])]
+                half = period / n / 2.0
+                d = np.mod(xms - x_max + half, period / n) - half
+                comp["x_of_max_ci95"] = [x_max + float(v) for v in np.percentile(d, [2.5, 97.5])]
+        comps.append(comp)
     srt = np.sort(xx)
     gaps = np.diff(np.concatenate([srt, [srt[0] + period]]))
     ss_tot = float(((yy - yy.mean()) ** 2).sum())
@@ -87,6 +120,9 @@ def harmonic_fit(x, y, period: float, harmonics: int = 2, log: bool = False,
     curve = design(xs) @ coef
     return {
         "period": float(period), "harmonics": harmonics, "log": bool(log), "n_points": int(xx.size),
+        "weighted": sw is not None,
+        "reduced_chi_square": chi2_red if sw is not None else None,
+        "bootstrap_draws": None if boot is None else int(boot["draws"]),
         "mean": float(np.exp(coef[0]) if log else coef[0]),
         "components": comps,
         "residual_rms": float(np.sqrt(resid @ resid / xx.size)) * scale,
@@ -95,3 +131,29 @@ def harmonic_fit(x, y, period: float, harmonics: int = 2, log: bool = False,
         "curve_x": xs.tolist(),
         "curve_y": (np.exp(curve) if log else curve).tolist(),
     }
+
+
+def _bootstrap(xx, yy, wv, design, coef, harmonics: int, w: float):
+    """Amplitudes and positions of the maxima of each harmonic in fits to the points
+    resampled with replacement (draws whose points cannot constrain the fit are skipped)."""
+    rng = np.random.default_rng(_SEED)
+    n_pts = xx.size
+    out = {n: ([], []) for n in range(1, harmonics + 1)}
+    used = 0
+    X = design(xx)
+    for _ in range(BOOTSTRAP_DRAWS):
+        i = rng.integers(0, n_pts, n_pts)
+        if np.unique(xx[i]).size < 2 * harmonics + 1:
+            continue
+        Xi = X[i] * wv[i, None]
+        if np.linalg.cond(Xi.T @ Xi) > 1e12:
+            continue
+        c, *_ = np.linalg.lstsq(Xi, yy[i] * wv[i], rcond=None)
+        used += 1
+        for n in range(1, harmonics + 1):
+            a, b = c[2 * n - 1], c[2 * n]
+            out[n][0].append(np.hypot(a, b))
+            out[n][1].append(np.arctan2(b, a) / (n * w))
+    res = {n: (np.array(v[0]), np.array(v[1])) for n, v in out.items()}
+    res["draws"] = used
+    return res

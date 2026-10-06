@@ -30,7 +30,7 @@ def test_uncertainties_match_the_scatter_of_noisy_fits():
     rng = np.random.default_rng(3)
     x = rng.uniform(0, 360, 30)
     truth = 1.0 + 0.3 * np.cos(np.radians(3 * (x - 40.0)))          # wave-3 in longitude
-    fits = [harmonic_fit(x, truth + 0.1 * rng.standard_normal(x.size), 360.0, 3) for _ in range(400)]
+    fits = [harmonic_fit(x, truth + 0.1 * rng.standard_normal(x.size), 360.0, 3, bootstrap=False) for _ in range(400)]
     amps = np.array([f["components"][2]["amplitude"] for f in fits])
     maxima = np.array([f["components"][2]["x_of_max"] for f in fits])
     assert amps.mean() == pytest.approx(0.3, abs=0.01)
@@ -74,3 +74,36 @@ def test_harmonic_fit_endpoint():
     bad = client.post("/api/veda/analysis/harmonic-fit", json={"x": [1, 2, 3], "y": [1, 2, 3], "period": 24, "harmonics": 1})
     assert bad.status_code == 400 and "points" in bad.json()["detail"]
     assert client.post("/api/veda/analysis/harmonic-fit", json={"x": [1], "y": [1, 2]}).status_code == 400
+
+
+def test_weighted_fit_with_point_uncertainties():
+    """Points with known 1-sigma: the weighted fit trusts the precise ones; when the scatter
+    matches the errors the reduced chi-square is about 1 and the amplitude uncertainty is
+    the one from the errors alone."""
+    rng = np.random.default_rng(7)
+    t = rng.uniform(0, 24, 60)
+    sig = np.where(np.arange(60) % 2 == 0, 0.5, 5.0)
+    y = 200.0 + 8.0 * np.cos(2 * np.pi / 24 * (t - 14.0)) + sig * rng.standard_normal(60)
+    r = harmonic_fit(t, y, 24.0, 1, y_sigma=sig, bootstrap=False)
+    assert r["weighted"] and 0.6 < r["reduced_chi_square"] < 1.5
+    d = r["components"][0]
+    assert d["amplitude"] == pytest.approx(8.0, abs=0.5)
+    precise = harmonic_fit(t[::2], y[::2], 24.0, 1, y_sigma=sig[::2], bootstrap=False)["components"][0]
+    assert d["amplitude_sigma"] < precise["amplitude_sigma"] * 1.05            # the noisy points add a little
+    unweighted = harmonic_fit(t, y, 24.0, 1, bootstrap=False)["components"][0]
+    assert d["amplitude_sigma"] < 0.5 * unweighted["amplitude_sigma"]
+
+
+def test_bootstrap_intervals_of_amplitude_and_phase():
+    rng = np.random.default_rng(11)
+    t = rng.uniform(0, 24, 80)
+    y = 180.0 + 10.0 * np.cos(2 * np.pi / 24 * (t - 0.5)) + 2.0 * rng.standard_normal(80)   # maximum near midnight
+    r = harmonic_fit(t, y, 24.0, 1)
+    d = r["components"][0]
+    lo, hi = d["amplitude_ci95"]
+    assert lo < d["amplitude"] < hi
+    assert (hi - lo) / 2 == pytest.approx(1.96 * d["amplitude_sigma"], rel=0.3)
+    xlo, xhi = d["x_of_max_ci95"]                     # around the circle: not split at 0 / 24 h
+    assert xlo < xhi and xhi - xlo < 2.0
+    assert (xhi - xlo) / 2 == pytest.approx(1.96 * d["x_of_max_sigma"], rel=0.3)
+    assert r["bootstrap_draws"] > 900
