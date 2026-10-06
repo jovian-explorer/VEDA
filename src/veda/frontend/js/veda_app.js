@@ -656,7 +656,7 @@ function currentComparisonRequest() {
 }
 
 // Bodies with a published reference atmosphere in VEDA (analysis/reference.py)
-const REFERENCE_BODIES = new Set(['venus']);
+const REFERENCE_BODIES = new Set(['venus', 'mars']);
 
 // Variables averaged in log space (their deviations are shown in percent)
 const LOG_COMPARE_VARIABLES = new Set(['pressure_hpa', 'density', 'density_measured', 'number_density_m3', 'electron_density_cm3',
@@ -1213,7 +1213,7 @@ async function updateComparison() {
       const outlierText = !scr ? '' : !scr.flagged.length ? ` Outlier screen (|z| > ${scr.z}): none flagged.`
         : ` Outlier screen (|z| > ${scr.z}): ${scr.flagged.length} flagged (${scr.flagged.join(', ')}), `
           + (scr.left_out ? 'left out of the composites.' : 'drawn dashed and kept in the composites.');
-      statusEl.textContent = `Aggregated ${compData.profile_count} sounding${compData.profile_count === 1 ? "" : "s"} from ${nMissions} mission${nMissions === 1 ? "" : "s"}${compData.averaging ? `; ${compData.averaging}; the spread is shown where at least two profiles overlap` : ""}.${compData.vertical_reference_warning ? ` Note: ${compData.vertical_reference_warning}` : ""}${outlierText}`;
+      statusEl.textContent = `Aggregated ${compData.profile_count} sounding${compData.profile_count === 1 ? "" : "s"} from ${nMissions} mission${nMissions === 1 ? "" : "s"}${compData.averaging ? `; ${compData.averaging}; the spread is shown where at least two profiles overlap` : ""}.${compData.vertical_reference_warning ? ` Note: ${compData.vertical_reference_warning}` : ""}${outlierText}${compData.reference && compData.reference.altitude_note && compData.vertical !== 'pressure' ? ` Reference atmosphere: ${compData.reference.altitude_note}` : ''}`;
     }
   } catch (err) {
     if (seq !== comparisonSeq) return;

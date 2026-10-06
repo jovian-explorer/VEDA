@@ -11,6 +11,21 @@ commit 897eee5, Apache License 2.0, copyright United States of America as repres
 by the Administrator of NASA).  It is independent of latitude, season and local time:
 VIRA's own latitude dependence above 33 km is not in it.
 
+Mars: the global-average profile of the NASA Mars Global Reference Atmospheric Model
+(Mars-GRAM 2024, GRAM Suite 2.1; NASA/TM-20240012934), extracted by NASA Glenn Research
+Center for Aviary (aviary/subsystems/atmosphere/data/MarsReference2024.py, commit
+fe9a988, same licence), "global average conditions, independent of year, season, or time
+of day", checked by NASA Ames against Mars global climate model annual averages; dust
+optical depth 0.3, -8 to 80 km.  Its altitudes are above the MOLA areoid (the table's
+own docstring says geopotential, but its pressures are hydrostatic for geometric heights
+with g falling as 1/r^2: within 3 % up to 80 km, against 20 % off with constant g).  The
+areoid lies up to about 7 km above (equator) and 13 km below (poles) the 3389.5 km
+sphere VEDA's Mars profiles are referred to, so on altitude levels the comparison is
+only approximate; on pressure levels it is not affected.  The Mars Climate Database is
+not used: its terms (www-mars.lmd.jussieu.fr/mars/access.html) allow scientific use but
+no commercial use without authorisation, which VEDA's MIT licence could not pass on, and
+the full version is given out on registration.
+
 Between the tabulated levels temperature is interpolated linearly and pressure and
 density in log space.
 """
@@ -51,6 +66,40 @@ VENUS_GRAM_2021 = (
     (150, 194.22, 9.55e-08, 1.61e-10),
 )
 
+# altitude above the MOLA areoid (km), temperature (K), pressure (mbar = hPa), density (kg/m^3)
+MARS_GRAM_2024 = (
+    (-8, 214.0, 1.31E+01, 3.21E-02),
+    (-7, 214.0, 1.20E+01, 2.94E-02),
+    (-6.1151, 214.0, 1.10E+01, 2.71E-02),
+    (-6.1051, 214.0, 1.10E+01, 2.71E-02),
+    (-6, 214.0, 1.09E+01, 2.68E-02),
+    (-5, 214.0, 1.00E+01, 2.45E-02),
+    (-4, 214.0, 9.16E+00, 2.24E-02),
+    (-3, 214.0, 8.36E+00, 2.04E-02),
+    (-2, 214.0, 7.63E+00, 1.87E-02),
+    (-1, 214.0, 6.96E+00, 1.70E-02),
+    (0, 214.0, 6.36E+00, 1.55E-02),
+    (1, 213.9, 5.80E+00, 1.42E-02),
+    (2, 213.8, 5.30E+00, 1.30E-02),
+    (3, 213.6, 4.84E+00, 1.18E-02),
+    (4, 213.4, 4.41E+00, 1.08E-02),
+    (5, 212.9, 4.03E+00, 9.90E-03),
+    (6, 212.4, 3.68E+00, 9.06E-03),
+    (7, 210.8, 3.35E+00, 8.32E-03),
+    (8, 209.2, 3.06E+00, 7.65E-03),
+    (9, 207.1, 2.79E+00, 7.04E-03),
+    (10, 205.0, 2.54E+00, 6.47E-03),
+    (15, 196.2, 1.56E+00, 4.17E-03),
+    (20, 188.3, 9.47E-01, 2.63E-03),
+    (25, 181.2, 5.62E-01, 1.62E-03),
+    (30, 175.0, 3.28E-01, 9.80E-04),
+    (40, 162.4, 1.06E-01, 3.40E-04),
+    (50, 152.2, 3.15E-02, 1.08E-04),
+    (60, 144.2, 8.78E-03, 3.18E-05),
+    (70, 139.5, 2.33E-03, 8.73E-06),
+    (80, 139.0, 6.08E-04, 2.29E-06),
+)
+
 REFERENCES: Dict[str, Dict[str, object]] = {
     "venus": {
         "name": "Venus-GRAM 2021 global average (VIRA below 100 km)",
@@ -59,6 +108,15 @@ REFERENCES: Dict[str, Dict[str, object]] = {
                      "Models of the structure of the atmosphere of Venus from the surface to 100 km altitude. "
                      "Adv. Space Res. 5(11), 3-58. Table from the NASA Aviary project (Apache License 2.0)."),
         "table": VENUS_GRAM_2021,
+    },
+    "mars": {
+        "name": "Mars-GRAM 2024 global average",
+        "citation": ("Justh, H. L., et al. (2024). Mars Global Reference Atmospheric Model (Mars-GRAM) 2024: User "
+                     "Guide. NASA/TM-20240012934. Global average conditions (dust optical depth 0.3). Table from the "
+                     "NASA Aviary project (Apache License 2.0)."),
+        "note": ("Altitudes above the MOLA areoid, up to about 7 km above (equator) and 13 km below (poles) the "
+                 "3389.5 km sphere of VEDA's Mars profiles: compare on pressure levels (Vertical: Pressure)."),
+        "table": MARS_GRAM_2024,
     },
 }
 
@@ -108,4 +166,5 @@ def reference_on_pressure(body_id: str, variable: str, p_hpa, body=None) -> Opti
 def reference_info(body_id: str) -> Optional[Dict[str, object]]:
     ref = REFERENCES.get(body_id)
     return None if ref is None else {"name": ref["name"], "citation": ref["citation"],
-                                      "altitude_range_km": [ref["table"][0][0], ref["table"][-1][0]]}
+                                      "altitude_range_km": [ref["table"][0][0], ref["table"][-1][0]],
+                                      **({"altitude_note": ref["note"]} if ref.get("note") else {})}

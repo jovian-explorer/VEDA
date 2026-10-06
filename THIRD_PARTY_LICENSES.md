@@ -25,6 +25,7 @@ VEDA (Visualization, Exploration, and Data Analysis) bundles or depends on the t
 | **SpiceyPy** | Backend (Python) | MIT License | Python interface to the NAIF CSPICE toolkit |
 | **NAIF CSPICE** | Backend (C library, via SpiceyPy) | NAIF rules (free to use) | Ephemerides, frames, light time and illumination angles for observation geometry |
 | **Venus-GRAM 2021 reference profile (via NASA Aviary)** | Data table (Python) | Apache 2.0 | Venus reference atmosphere drawn on comparisons (`analysis/reference.py`) |
+| **Mars-GRAM 2024 reference profile (via NASA Aviary)** | Data table (Python) | Apache 2.0 | Mars reference atmosphere drawn on comparisons (`analysis/reference.py`) |
 
 ---
 
@@ -192,3 +193,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 The Venus reference atmosphere table in `src/veda/analysis/reference.py` (altitude, temperature, pressure and density, 0 to 150 km) is taken from `aviary/subsystems/atmosphere/data/VenusReference2021.py` of the Aviary project (https://github.com/OpenMDAO/Aviary, commit 897eee5), where it was extracted from the NASA Venus Global Reference Atmospheric Model (Venus-GRAM 2021, GRAM Suite 2.1; Justh et al. 2021, NASA/TM-20210022168), itself based below 100 km on the Venus International Reference Atmosphere (Seiff et al. 1985).
 
 Copyright 2023, United States of America as Represented by the Administrator of National Aeronautics and Space Administration. Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0). Distributed on an "AS IS" basis, without warranties or conditions of any kind. VEDA reformatted the table (one tuple per level); the values are unchanged.
+
+## Mars-GRAM 2024 reference profile (NASA Aviary)
+
+The Mars reference atmosphere table in `src/veda/analysis/reference.py` (altitude above the MOLA areoid, temperature, pressure and density, -8 to 80 km) is taken from `aviary/subsystems/atmosphere/data/MarsReference2024.py` of the Aviary project (https://github.com/OpenMDAO/Aviary, commit fe9a988), where it was extracted from the NASA Mars Global Reference Atmospheric Model (Mars-GRAM 2024, GRAM Suite 2.1; NASA/TM-20240012934) by NASA Glenn Research Center, as global average conditions.
+
+Copyright 2023, United States of America as Represented by the Administrator of National Aeronautics and Space Administration. Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0). Distributed on an "AS IS" basis, without warranties or conditions of any kind. VEDA reformatted the table (one tuple per level, altitudes in km); the values are unchanged.
