@@ -405,6 +405,19 @@ WEIGHTINGS = ("equal", "inverse_variance")
 MAX_CROSS_SECTION_CELLS = 400000
 
 
+def _reference_series(body: BodyInfo, variable_name: str, z_grid: np.ndarray, by_pressure: bool) -> Optional[Dict[str, Any]]:
+    """The body's reference atmosphere (analysis/reference.py) on the comparison grid."""
+    from .reference import reference_info, reference_on_pressure, reference_profile
+    info = reference_info(body.id)
+    if info is None:
+        return None
+    v = (reference_on_pressure(body.id, variable_name, 10.0 ** -z_grid, body) if by_pressure
+         else reference_profile(body.id, variable_name, z_grid, body))
+    if v is None:
+        return {**info, "series": None, "note": f"The reference atmosphere has no {variable_name}."}
+    return {**info, "series": [None if not np.isfinite(x) else float(f"{x:.6g}") for x in v]}
+
+
 def latitude_cross_section(mat: np.ndarray, smat: Optional[np.ndarray], latitudes: List[Optional[float]],
                            width: float, log_like: bool, weighting: str = "equal") -> Dict[str, Any]:
     """Zonal mean in latitude bands of ``width`` degrees (from -90) at each level of the
@@ -632,6 +645,7 @@ def compare_profiles_on_body(
     outlier_z: Optional[float] = None,
     drop_outliers: bool = False,
     cross_section_width: Optional[float] = None,
+    reference: bool = False,
 ) -> Dict[str, Any]:
     """Cross-compare multi-mission profiles for a target planetary body.
 
@@ -845,6 +859,7 @@ def compare_profiles_on_body(
         # see the plus/minus values) and the effective number of profiles at each level
         "weighting": weighting,
         "outlier_screen": screen,
+        "reference": _reference_series(body, variable_name, z_grid, by_pressure) if reference else None,
         # zonal mean in latitude bands (latitude-altitude cross section), when asked
         "cross_section": (None if not cross_section_width else
                           {"error": "Too many levels for a cross section; choose a coarser grid step."}
@@ -1071,6 +1086,10 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
         header += [f"{g['label']} mean", f"{g['label']} plus_1sigma", f"{g['label']} minus_1sigma",
                    f"{g['label']} plus_sem", f"{g['label']} minus_sem", f"{g['label']} ci95_low",
                    f"{g['label']} ci95_high", f"{g['label']} n_effective"]
+    ref = (comparison.get("reference") or {}).get("series")
+    if ref:
+        lines.append(f"# reference: {comparison['reference']['name']}; {comparison['reference']['citation']}")
+        header.append(f"reference_{var_name}")
     header += cols
     with_sigma = [(c, p) for c, p in zip(cols, profiles) if p.get("interpolated_sigma")]
     header += [f"sigma_{c}" for c, _ in with_sigma]
@@ -1093,6 +1112,8 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
                     _csv_num(at(g.get("plus_sem"), i)), _csv_num(at(g.get("minus_sem"), i)),
                     _csv_num(at(g.get("ci95_low"), i)), _csv_num(at(g.get("ci95_high"), i)),
                     _csv_num(at(g.get("n_effective"), i))]
+        if ref:
+            row.append(_csv_num(at(ref, i)))
         row += [_csv_num(at(p.get("interpolated_series"), i)) for p in profiles]
         row += [_csv_num(at(p.get("interpolated_sigma"), i)) for _, p in with_sigma]
         lines.append(",".join(row))

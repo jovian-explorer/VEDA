@@ -555,6 +555,10 @@ export async function loadAndRenderCelestialBody(bodyId) {
   vedaState.activeBodyId = bodyId;
   fillCompareVariableOptions();
   fillCompareDatasetOptions(bodyId);
+  const refLabel = document.getElementById('veda-compare-reference-label');
+  if (refLabel) refLabel.style.display = REFERENCE_BODIES.has(bodyId) ? '' : 'none';
+  const refOpt = document.querySelector('#veda-compare-show-as option[value="reference"]');
+  if (refOpt) refOpt.hidden = !REFERENCE_BODIES.has(bodyId);
   const bodyDetails = await api.vedaBodyDetails(bodyId);
   vedaState.activeBody = bodyDetails;
 
@@ -645,9 +649,14 @@ function currentComparisonRequest() {
     weighting: vedaState.compareWeighting === 'inverse_variance' ? 'inverse_variance' : undefined,
     outlier_z: Number(vedaState.compareOutlierZ) || undefined,
     cross_section_width: vedaState.bodySubtab === 'cross' ? (Number(vedaState.crossWidth) || 10) : undefined,
+    reference: REFERENCE_BODIES.has(vedaState.activeBodyId) && (vedaState.compareReference || vedaState.compareShowAs === 'reference')
+      ? true : undefined,
     drop_outliers: Number(vedaState.compareOutlierZ) && vedaState.compareDropOutliers ? true : undefined,
   };
 }
+
+// Bodies with a published reference atmosphere in VEDA (analysis/reference.py)
+const REFERENCE_BODIES = new Set(['venus']);
 
 // Variables averaged in log space (their deviations are shown in percent)
 const LOG_COMPARE_VARIABLES = new Set(['pressure_hpa', 'density', 'density_measured', 'number_density_m3', 'electron_density_cm3',
@@ -660,6 +669,20 @@ const LOG_COMPARE_VARIABLES = new Set(['pressure_hpa', 'density', 'density_measu
  */
 function comparisonView(data) {
   const groups = (data.groups || []).filter(g => !g.ungrouped && g.mean && g.mean.length);
+  if (vedaState.compareShowAs === 'reference' && data.reference && data.reference.series) {
+    // each profile, the means and the spread minus the reference (percent for log-averaged variables)
+    const ref = data.reference.series;
+    const logVar = LOG_COMPARE_VARIABLES.has(vedaState.selectedCompareVariable);
+    const dev = (series) => (series || []).map((v, k) => (v == null || ref[k] == null || (logVar && !ref[k])
+      ? null : (logVar ? 100 * (v / ref[k] - 1) : v - ref[k])));
+    return {
+      deviation: true, logVar, fromReference: true,
+      data: { ...data, profiles: (data.profiles || []).map(p => ({ ...p, interpolated_series: dev(p.interpolated_series), interpolated_sigma: null })),
+              composite_mean: dev(data.composite_mean), composite_plus_1sigma: dev(data.composite_plus_1sigma),
+              composite_minus_1sigma: dev(data.composite_minus_1sigma), reference: { ...data.reference, series: ref.map(v => (v == null ? null : 0)) } },
+      groups: groups.map(g => ({ ...g, mean: dev(g.mean), plus_1sigma: dev(g.plus_1sigma), minus_1sigma: dev(g.minus_1sigma) })),
+    };
+  }
   if (vedaState.compareShowAs !== 'deviation') return { data, groups, deviation: false };
   const logVar = LOG_COMPARE_VARIABLES.has(vedaState.selectedCompareVariable);
   const overall = data.composite_mean || [];
@@ -842,7 +865,16 @@ function setupBodyModeControls() {
     vedaState.compareAltitudeStep = v;
     updateComparison();
   });
-  showAs?.addEventListener('change', () => { vedaState.compareShowAs = showAs.value; renderComparisonPlot(); });
+  showAs?.addEventListener('change', () => {
+    const needRef = showAs.value === 'reference' && !(vedaState.lastComparisonData || {}).reference;
+    vedaState.compareShowAs = showAs.value;
+    if (needRef) updateComparison(); else renderComparisonPlot();
+  });
+  const refBox = document.getElementById('veda-compare-reference');
+  refBox?.addEventListener('change', () => {
+    vedaState.compareReference = refBox.checked;
+    if (refBox.checked && !(vedaState.lastComparisonData || {}).reference) updateComparison(); else renderComparisonPlot();
+  });
   COMPARE_OPTIONS.forEach(([id]) => document.getElementById(id)?.addEventListener('change', saveCompareForm));
   const varSelect = document.getElementById('veda-compare-variable-select');
   if (varSelect) {
@@ -1680,6 +1712,13 @@ function renderComparisonPlot() {
       name: 'Composite mean', hovertemplate: `<b>Composite mean</b><br>%{x:.4g}, %{y:.4g}<extra></extra>` });
   }
 
+  // 4. Reference atmosphere (dotted)
+  if (data.reference && data.reference.series && (vedaState.compareReference || view.fromReference)) {
+    traces.push({ ...orient(data.reference.series, zGrid), type: 'scatter', mode: 'lines',
+      line: { color: plotStyle.template === 'journal' ? '#000000' : ink, width: plotStyle.lineWidth + 1, dash: 'dot' },
+      name: `Reference: ${data.reference.name}`, hovertemplate: `<b>${escHtml(data.reference.name)}</b><br>%{x:.4g}, %{y:.4g}<extra></extra>` });
+  }
+
   // Colour bar for the continuous colourings
   if (numericKey && vals.length) {
     const fmt = colorBy === 'time' ? (v => new Date(v).toISOString().slice(0, 10)) : (v => `${v.toFixed(0)}°`);
@@ -1698,7 +1737,7 @@ function renderComparisonPlot() {
     margin: { l: 70, r: 25, t: 56, b: 60 },
   }, { xLog: !!varCfg.logScale && !view.deviation,
        varTitle: view.deviation
-         ? `Deviation from the ${view.groups.length ? 'group' : 'composite'} mean (${view.logVar ? '%' : cleanPlotlyMath(varCfg.units || '')})`
+         ? `Deviation from the ${view.fromReference ? 'reference atmosphere' : view.groups.length ? 'group mean' : 'composite mean'} (${view.logVar ? '%' : cleanPlotlyMath(varCfg.units || '')})`
          : cleanPlotlyMath(varCfg.axis),
        coordTitle: byPressure ? 'Pressure (hPa)' : altitudeAxisTitle((data.profiles || []).map(p => p.altitude_reference)) });
   plotStyle.vertical = savedVertical;

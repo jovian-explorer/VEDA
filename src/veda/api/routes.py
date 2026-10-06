@@ -280,6 +280,8 @@ class CrossCompareRequest(BaseModel):
     drop_outliers: bool = False
     # latitude band width of the zonal-mean cross section (None: not computed)
     cross_section_width: Optional[float] = Field(None, ge=1.0, le=90.0)
+    # draw the body's published reference atmosphere (Venus: Venus-GRAM 2021 / VIRA)
+    reference: bool = False
 
 
 @router.post("/compare/body/{body_id}")
@@ -313,7 +315,8 @@ def _compare_or_404(body_id: str, req: "CrossCompareRequest") -> dict:
         body_id, req.observations, mission_ids=req.missions, variable_name=req.variable, selection=sel,
         group_by=req.group_by or "", group_width=req.group_width, altitude_step_km=req.altitude_step_km,
         vertical=req.vertical, pressure_step_decades=req.pressure_step_decades, weighting=req.weighting,
-        outlier_z=req.outlier_z, drop_outliers=req.drop_outliers, cross_section_width=req.cross_section_width)
+        outlier_z=req.outlier_z, drop_outliers=req.drop_outliers, cross_section_width=req.cross_section_width,
+        reference=req.reference)
     if isinstance(comp, dict) and comp.get("error"):
         raise HTTPException(status_code=400, detail=comp["error"])
     return comp
@@ -557,7 +560,7 @@ def comparison_recipe(body_id: str, req: "CrossCompareRequest", comp: dict) -> d
             "altitude_step_km": req.altitude_step_km, "vertical": req.vertical,
             "pressure_step_decades": req.pressure_step_decades, "weighting": req.weighting,
             "outlier_z": req.outlier_z, "drop_outliers": req.drop_outliers,
-            "cross_section_width": req.cross_section_width,
+            "cross_section_width": req.cross_section_width, "reference": req.reference,
             # the filter that chose the profiles, for the record (the profiles are listed below)
             **({"filter": req.filter.model_dump(exclude_none=True)} if req.filter else {}),
             "observations": [{"mission_id": p["mission_id"], "observation_id": p["observation_id"]}

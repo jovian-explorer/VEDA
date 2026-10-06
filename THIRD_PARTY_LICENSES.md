@@ -24,6 +24,7 @@ VEDA (Visualization, Exploration, and Data Analysis) bundles or depends on the t
 | **Pillow** | Backend (Python) | MIT-CMU (HPND) | Image rendering and PNG thumbnails |
 | **SpiceyPy** | Backend (Python) | MIT License | Python interface to the NAIF CSPICE toolkit |
 | **NAIF CSPICE** | Backend (C library, via SpiceyPy) | NAIF rules (free to use) | Ephemerides, frames, light time and illumination angles for observation geometry |
+| **Venus-GRAM 2021 reference profile (via NASA Aviary)** | Data table (Python) | Apache 2.0 | Venus reference atmosphere drawn on comparisons (`analysis/reference.py`) |
 
 ---
 
@@ -183,3 +184,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 * **License**: Public domain
 * **Source**: https://www.naturalearthdata.com/
 * **Use**: the Plotly map outline files in `src/veda/frontend/vendor/topojson` are derived from Natural Earth 1:110m and 1:50m data. Natural Earth asks for, but does not require, the credit "Made with Natural Earth".
+
+---
+
+## Venus-GRAM 2021 reference profile (NASA Aviary)
+
+The Venus reference atmosphere table in `src/veda/analysis/reference.py` (altitude, temperature, pressure and density, 0 to 150 km) is taken from `aviary/subsystems/atmosphere/data/VenusReference2021.py` of the Aviary project (https://github.com/OpenMDAO/Aviary, commit 897eee5), where it was extracted from the NASA Venus Global Reference Atmospheric Model (Venus-GRAM 2021, GRAM Suite 2.1; Justh et al. 2021, NASA/TM-20210022168), itself based below 100 km on the Venus International Reference Atmosphere (Seiff et al. 1985).
+
+Copyright 2023, United States of America as Represented by the Administrator of National Aeronautics and Space Administration. Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0). Distributed on an "AS IS" basis, without warranties or conditions of any kind. VEDA reformatted the table (one tuple per level); the values are unchanged.

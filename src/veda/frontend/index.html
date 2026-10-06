@@ -251,8 +251,10 @@
             <select id="veda-compare-show-as">
               <option value="values">Values</option>
               <option value="deviation">Deviation from the mean (group mean when grouped)</option>
+              <option value="reference">Deviation from the reference atmosphere</option>
             </select>
           </label>
+          <label class="inline" id="veda-compare-reference-label" style="display: none;" title="The published reference atmosphere of this body (Venus: the Venus-GRAM 2021 global average, VIRA below 100 km), as a dotted line; with Show: Deviation, each profile minus the reference"><input type="checkbox" id="veda-compare-reference" /> Reference atmosphere</label>
           <label class="inline"><input type="checkbox" id="veda-compare-show-mean" checked /> Composite mean</label>
           <label class="inline"><input type="checkbox" id="veda-compare-show-spread" checked /> ±1σ spread</label>
           <div class="compare-plot-buttons">
