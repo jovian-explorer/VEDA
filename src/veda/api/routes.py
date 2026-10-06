@@ -304,6 +304,24 @@ def _compare_or_404(body_id: str, req: "CrossCompareRequest") -> dict:
     return comp
 
 
+class PointStatisticsRequest(BaseModel):
+    """One value per profile (an altitude cut, a layer statistic, a diagnostic)."""
+    values: List[Optional[float]] = Field(..., max_length=100000)
+    log: bool = False                                        # statistics of ln y (densities, pressure)
+    groups: Optional[List[str]] = Field(None, max_length=100000)
+
+
+@router.post("/analysis/point-statistics")
+def point_statistics(req: PointStatisticsRequest) -> dict:
+    """Mean, standard error and 95 % bootstrap intervals of the mean and median of the
+    points, overall and per group (analysis/resampling.py)."""
+    from ..analysis.resampling import bootstrap_statistics
+    try:
+        return bootstrap_statistics([float("nan") if v is None else v for v in req.values], req.log, req.groups)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
 # ---------------------------------------------------------------------------
 # Harmonic fits of altitude cuts (thermal tides, waves)
 # ---------------------------------------------------------------------------

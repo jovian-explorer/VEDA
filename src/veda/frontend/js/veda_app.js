@@ -1144,6 +1144,8 @@ function renderAltitudeCut() {
     if (plotDiv.data) Plotly.purge(plotDiv);
     plotDiv.innerHTML = '<div class="empty-state">No profiles to cut. Compare some profiles first.</div>';
     if (status) status.textContent = '';
+    const stats = document.getElementById('veda-cut-stats');
+    if (stats) stats.textContent = '';
     return;
   }
   const counts = data.profiles_per_level || grid.map((_, k) => profiles.filter(p => p.interpolated_series[k] != null).length);
@@ -1241,8 +1243,24 @@ function renderAltitudeCut() {
   const groupOf = {};
   (data.groups || []).filter(g => !g.ungrouped).forEach((g, gi) => g.observation_ids.forEach(id => { groupOf[id] = { gi, label: g.label }; }));
 
-  // each point's own 1-sigma where it is the variable at one level (for a weighted fit)
-  const sOf = (p) => (!isLayer && !isDiag && p.interpolated_sigma ? p.interpolated_sigma[k] : null);
+  // Each point's own 1-sigma (error bars, weighted fits): at one level, the profile's 1-sigma
+  // there; a layer mean, sqrt(sum sigma^2) / m over its levels (relative errors for a
+  // geometric mean); a layer minimum or maximum, the 1-sigma at that level.
+  const sOf = (p) => {
+    const sg = p.interpolated_sigma;
+    if (isDiag || isAlt || !sg) return null;
+    if (!isLayer) return sg[k];
+    const s = p.interpolated_series;
+    let sum = 0, best = null, bestK = -1;
+    for (let i = kLo; i <= kHi; i++) {
+      if (sg[i] == null || s[i] == null) return null;
+      sum += logMean ? (sg[i] / s[i]) ** 2 : sg[i] ** 2;
+      if (best == null || (yKey.startsWith('layer_max') ? s[i] > best : s[i] < best)) { best = s[i]; bestK = i; }
+    }
+    const m = kHi - kLo + 1;
+    if (yKey === 'layer_mean') { const y = yOf(p); return logMean ? (y == null ? null : y * Math.sqrt(sum) / m) : Math.sqrt(sum) / m; }
+    return sg[bestK];
+  };
   const withY = profiles.map(p => ({ p, x: xOf(p), y: yOf(p), s: sOf(p) })).filter(o => o.y != null);
   const pts = withY.filter(o => o.x != null);
   const missing = withY.length - pts.length;
@@ -1256,7 +1274,10 @@ function renderAltitudeCut() {
   const addTrace = (name, list, marker) => traces.push({
     type: 'scatter', mode: 'markers', name, x: list.map(o => o.x), y: list.map(o => o.y * yScale),
     text: list.map(hover), hovertemplate: '%{text}<extra></extra>',
-    marker: { size: 8, line: { width: 0.5, color: 'rgba(0,0,0,0.4)' }, ...marker } });
+    marker: { size: 8, line: { width: 0.5, color: 'rgba(0,0,0,0.4)' }, ...marker },
+    ...(plotStyle.uncertainty !== 'none' && list.some(o => o.s != null)
+      ? { error_y: { type: 'data', array: list.map(o => (o.s == null ? 0 : o.s * yScale)), visible: true, thickness: 1, width: 0,
+                     color: typeof marker.color === 'string' ? marker.color : '#64748b' } } : {}) });
   if (colorKey === 'latitude' || colorKey === 'lst') {
     const vals = pts.map(o => o.p[colorKey]);
     addTrace(colorKey === 'lst' ? 'Local time' : 'Latitude', pts, {
@@ -1306,6 +1327,8 @@ function renderAltitudeCut() {
     const fitStatus = document.getElementById('veda-cut-fit-status');
     if (fitStatus) fitStatus.textContent = '';
   }
+  cutPointStatistics(pts, yScale, layout.yaxis.type === 'log', colorKey, groupOf,
+                     diag ? diag[1] : (isAlt ? 'km' : (pScale === 1 ? cfg.units : pUnit)), cutToken);
   if (status) {
     status.textContent = (isDiag ? `${withY.length} of ${profiles.length} profiles have this quantity`
       : isLayer ? `${withY.length} of ${profiles.length} profiles cover ${layerText}`
@@ -1324,6 +1347,41 @@ function renderAltitudeCut() {
 }
 
 let altitudeCutRenders = 0;
+
+/** Mean of the altitude-cut points with its standard error and 95 % bootstrap intervals
+ *  of the mean and the median (analysis/resampling.py), overall and per colour group. */
+async function cutPointStatistics(pts, yScale, logStats, colorKey, groupOf, unit, token) {
+  const plotDiv = document.getElementById('veda-cut-plot');
+  let el = document.getElementById('veda-cut-stats');
+  if (!el && plotDiv) {
+    el = document.createElement('div');
+    el.id = 'veda-cut-stats';
+    el.className = 'hint';
+    plotDiv.parentElement.insertBefore(el, plotDiv.nextSibling);
+  }
+  if (!el) return;
+  if (pts.length < 2) { el.textContent = ''; return; }
+  const keyOf = colorKey === 'group' ? (o => (groupOf[o.p.observation_id] ? groupOf[o.p.observation_id].label : 'Not grouped'))
+    : colorKey === 'mission' ? (o => (o.p.mission_label || o.p.mission_id).toUpperCase()) : null;
+  let st;
+  try {
+    st = await api.vedaPointStatistics({ values: pts.map(o => o.y * yScale), log: logStats,
+                                         groups: keyOf ? pts.map(keyOf) : undefined });
+  } catch (err) {
+    if (token === altitudeCutRenders) el.textContent = `Statistics: ${err.message}`;
+    return;
+  }
+  if (token !== altitudeCutRenders) return;
+  const u = unit ? ` ${unit}` : '';
+  const fmt = (v) => (v == null || !isFinite(v) ? '?' : Math.abs(v) >= 100 ? v.toFixed(1) : v.toPrecision(4));
+  const one = (s) => (s.mean == null ? `n = ${s.n}` : `n = ${s.n}: ${logStats ? 'geometric mean' : 'mean'} ${fmt(s.mean)}${u}`
+    + (s.sem != null ? ` ± ${fmt(s.sem)}${logStats ? ' %' : u}` : '')
+    + (s.mean_ci95 ? ` [95 %: ${fmt(s.mean_ci95[0])} to ${fmt(s.mean_ci95[1])}]` : '')
+    + `, median ${fmt(s.median)}${u}` + (s.median_ci95 ? ` [95 %: ${fmt(s.median_ci95[0])} to ${fmt(s.median_ci95[1])}]` : ''));
+  const groups = (st.groups || []).filter(g => g.n >= 2 && (st.groups || []).length > 1);
+  el.textContent = `Points ${one(st)}` + (groups.length ? `. ${groups.map(g => `${g.label} ${one(g)}`).join('; ')}` : '')
+    + '. ±: standard error; brackets: bootstrap over the points (1000 resamples).';
+}
 
 /** Harmonic fit of the altitude cut against local time, longitude or Ls (thermal tides,
  *  waves; analysis/tides.py): the fitted curve over the points and the amplitude and
