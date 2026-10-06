@@ -266,6 +266,8 @@ class CrossCompareRequest(BaseModel):
     # vertical coordinate of the common grid: altitude, or pressure (uniform in log p)
     vertical: str = Field("altitude", pattern="^(altitude|pressure)$")
     pressure_step_decades: float = Field(0.02, ge=0.001, le=1.0)
+    # composite weights: equal, or 1/sigma^2 from each profile's uncertainty
+    weighting: str = Field("equal", pattern="^(equal|inverse_variance)$")
 
 
 @router.post("/compare/body/{body_id}")
@@ -296,7 +298,7 @@ def _compare_or_404(body_id: str, req: "CrossCompareRequest") -> dict:
     comp = get_mission_manager().compare_on_body(
         body_id, req.observations, mission_ids=req.missions, variable_name=req.variable, selection=sel,
         group_by=req.group_by or "", group_width=req.group_width, altitude_step_km=req.altitude_step_km,
-        vertical=req.vertical, pressure_step_decades=req.pressure_step_decades)
+        vertical=req.vertical, pressure_step_decades=req.pressure_step_decades, weighting=req.weighting)
     if isinstance(comp, dict) and comp.get("error"):
         raise HTTPException(status_code=400, detail=comp["error"])
     return comp
@@ -517,7 +519,7 @@ def comparison_recipe(body_id: str, req: "CrossCompareRequest", comp: dict) -> d
     return {"veda_recipe": 1, "veda_version": __version__, "body_id": body_id, "variable": req.variable,
             "group_by": req.group_by or None, "group_width": req.group_width,
             "altitude_step_km": req.altitude_step_km, "vertical": req.vertical,
-            "pressure_step_decades": req.pressure_step_decades,
+            "pressure_step_decades": req.pressure_step_decades, "weighting": req.weighting,
             "observations": [{"mission_id": p["mission_id"], "observation_id": p["observation_id"]}
                              for p in comp.get("profiles", [])]}
 
@@ -691,8 +693,11 @@ def _publication_figure(b, comp: dict, variable: str, dpi: int, fmt: str) -> Res
             ax.fill_betweenx(grid, nan(g["minus_1sigma"]), nan(g["plus_1sigma"]), color=c, alpha=0.15, linewidth=0)
         ax.plot(nan(g["mean"]), grid, color=c, linewidth=2.6, label=f"{g['label']} (n = {g['n']})")
 
-    # 3. Composite mean
+    # 3. Composite mean, with its standard error as a darker band
     mean_v = nan(comp.get("composite_mean", []))
+    if not groups and comp.get("composite_plus_sem"):
+        ax.fill_betweenx(grid, nan(comp.get("composite_minus_sem", [])), nan(comp["composite_plus_sem"]),
+                         color="#0f172a", alpha=0.18, linewidth=0, label="Standard error of the mean")
     ax.plot(mean_v, grid, label=r"Composite Mean $\mu(z)$", color="#0f172a", linewidth=2.8 if not groups else 1.6,
             linestyle="-" if not groups else "--")
 

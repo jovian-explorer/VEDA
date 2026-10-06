@@ -34,6 +34,7 @@ export const vedaState = {
   compareGroupWidth: '',
   compareAltitudeStep: '',
   compareVertical: 'altitude',   // altitude | pressure (grid uniform in log p)
+  compareWeighting: 'equal',     // equal | inverse_variance (composite weights 1/sigma^2)
   compareShowAs: 'values',  // values | deviation
   lastComparisonData: null,
   bodySubtab: 'soundings', // 'soundings' | 'map'
@@ -636,6 +637,7 @@ function currentComparisonRequest() {
     group_width: Number(vedaState.compareGroupWidth) || 0,
     altitude_step_km: Number(vedaState.compareAltitudeStep) || undefined,
     vertical: vedaState.compareVertical === 'pressure' ? 'pressure' : undefined,
+    weighting: vedaState.compareWeighting === 'inverse_variance' ? 'inverse_variance' : undefined,
   };
 }
 
@@ -716,7 +718,7 @@ const COMPARE_FORM_KEY = 'veda.compare.form';
 const COMPARE_OPTIONS = [
   ['veda-compare-group-by', 'compareGroupBy'], ['veda-compare-group-width', 'compareGroupWidth'],
   ['veda-compare-altitude-step', 'compareAltitudeStep'], ['veda-compare-vertical', 'compareVertical'],
-  ['veda-compare-show-as', 'compareShowAs'],
+  ['veda-compare-show-as', 'compareShowAs'], ['veda-compare-weighting', 'compareWeighting'],
 ];
 
 function saveCompareForm() {
@@ -785,6 +787,8 @@ function setupBodyModeControls() {
   groupWidth?.addEventListener('change', () => { vedaState.compareGroupWidth = groupWidth.value; if (vedaState.compareGroupBy) updateComparison(); });
   const vertSel = document.getElementById('veda-compare-vertical');
   vertSel?.addEventListener('change', () => { vedaState.compareVertical = vertSel.value; updateComparison(); });
+  const weightSel = document.getElementById('veda-compare-weighting');
+  weightSel?.addEventListener('change', () => { vedaState.compareWeighting = weightSel.value; updateComparison(); });
   const altStep = document.getElementById('veda-compare-altitude-step');
   altStep?.addEventListener('change', () => {
     const v = altStep.value === '' ? '' : Number(altStep.value);
@@ -1029,12 +1033,14 @@ async function openComparisonRecipe(csvText) {
   vedaState.compareGroupWidth = r.group_width ? String(r.group_width) : '';
   vedaState.compareAltitudeStep = r.altitude_step_km || '';
   vedaState.compareVertical = r.vertical === 'pressure' ? 'pressure' : 'altitude';
+  vedaState.compareWeighting = r.weighting === 'inverse_variance' ? 'inverse_variance' : 'equal';
   const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
   setVal('veda-compare-variable-select', vedaState.selectedCompareVariable);
   setVal('veda-compare-group-by', vedaState.compareGroupBy);
   setVal('veda-compare-group-width', vedaState.compareGroupWidth);
   setVal('veda-compare-altitude-step', vedaState.compareAltitudeStep);
   setVal('veda-compare-vertical', vedaState.compareVertical);
+  setVal('veda-compare-weighting', vedaState.compareWeighting);
   syncUnitButtons();
   switchMode('body');
   await loadAndRenderCelestialBody(r.body_id);
@@ -1393,6 +1399,8 @@ function renderComparisonPlot() {
     composite_mean: sc(raw.composite_mean),
     composite_plus_1sigma: sc(raw.composite_plus_1sigma),
     composite_minus_1sigma: sc(raw.composite_minus_1sigma),
+    composite_plus_sem: sc(raw.composite_plus_sem),
+    composite_minus_sem: sc(raw.composite_minus_sem),
     profiles: (raw.profiles || []).map(pr => ({ ...pr, interpolated_series: sc(pr.interpolated_series),
                                                 interpolated_sigma: sc(pr.interpolated_sigma) })),
     groups: (raw.groups || []).map(g => ({ ...g, mean: sc(g.mean), plus_1sigma: sc(g.plus_1sigma), minus_1sigma: sc(g.minus_1sigma) })),
@@ -1468,7 +1476,15 @@ function renderComparisonPlot() {
       hovertemplate: `<b>${escHtml(g.label)}</b> (n = ${g.n})<br>%{x:.4g}, %{y:.4g}<extra></extra>` });
   });
 
-  // 3. Composite mean
+  // 3. Composite mean, with its standard error as a darker band
+  if (vedaState.compareShowMean !== false && vedaState.compareShowSpread !== false && !view.deviation
+      && data.composite_plus_sem && data.composite_plus_sem.some(v => v !== null)) {
+    traces.push({ ...orient(data.composite_minus_sem, zGrid), type: 'scatter', mode: 'lines',
+      line: { width: 0, color: 'transparent' }, showlegend: false, hoverinfo: 'skip' });
+    traces.push({ ...orient(data.composite_plus_sem, zGrid), type: 'scatter', mode: 'lines',
+      fill: plotStyle.swapAxes ? 'tonexty' : 'tonextx', fillcolor: 'rgba(100, 116, 139, 0.45)',
+      line: { width: 0, color: 'transparent' }, name: 'Standard error of the mean', hoverinfo: 'skip' });
+  }
   if (vedaState.compareShowMean !== false && data.composite_mean && data.composite_mean.some(v => v !== null)) {
     traces.push({ ...orient(data.composite_mean, zGrid), type: 'scatter', mode: 'lines',
       line: { color: plotStyle.template === 'journal' ? '#000000' : ink, width: plotStyle.lineWidth + 1.5 },

@@ -215,6 +215,12 @@
               <option value="pressure">Pressure</option>
             </select>
           </label>
+          <label title="Equal weights, or weights 1/σ² from each profile's uncertainty at each level (profiles without one are left out there). The darker band around the mean is its standard error, the spread divided by the square root of the effective number of profiles.">Weighting
+            <select id="veda-compare-weighting">
+              <option value="equal">Equal</option>
+              <option value="inverse_variance">Inverse variance (1/σ²)</option>
+            </select>
+          </label>
           <label>Show
             <select id="veda-compare-show-as">
               <option value="values">Values</option>

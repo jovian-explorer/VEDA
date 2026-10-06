@@ -396,31 +396,65 @@ def _group_key(s: Dict[str, Any], by: str, width: float):
     return None
 
 
+WEIGHTINGS = ("equal", "inverse_variance")
+
+
+def _level_statistics(mat: np.ndarray, smat: Optional[np.ndarray], weighting: str) -> Dict[str, np.ndarray]:
+    """Mean, spread, standard error of the mean and effective number of profiles at each
+    level of ``mat`` (profiles x levels, already in log space for log-averaged variables;
+    ``smat`` the 1-sigma of each value in the same space, or None).
+
+    Equal weights: mean, sample standard deviation s, n_eff = n, SEM = s / sqrt(n).
+    Inverse variance: w = 1 / sigma^2 for the values that have an uncertainty (the others,
+    and uncertainties under a millionth of the value, are left out at that level), mean = sum(w x) / sum(w), spread
+    s^2 = sum(w (x - mean)^2) / (V1 - V2 / V1) with V1 = sum(w), V2 = sum(w^2), effective
+    number n_eff = V1^2 / V2 (Kish) and SEM = s / sqrt(n_eff).  The SEM includes the
+    natural variability between profiles, not only their measurement errors."""
+    import warnings
+    with np.errstate(invalid="ignore", divide="ignore"), warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        if weighting == "inverse_variance" and smat is not None:
+            # an uncertainty under a millionth of the value is no uncertainty (archives write
+            # 0 or 1e-13 for values they assume, such as a retrieval's boundary temperature)
+            usable = np.isfinite(mat) & np.isfinite(smat) & (smat > 1e-6 * np.maximum(np.abs(mat), 1e-300))
+            w = np.where(usable, 1.0 / np.where(usable, smat, 1.0) ** 2, 0.0)
+            x = np.where(w > 0, mat, 0.0)
+            n = np.sum(w > 0, axis=0)
+            v1, v2 = np.sum(w, axis=0), np.sum(w * w, axis=0)
+            mean = np.where(v1 > 0, np.sum(w * x, axis=0) / v1, np.nan)
+            var = np.sum(w * (x - mean) ** 2, axis=0) / (v1 - v2 / v1)
+            std = np.where(n >= 2, np.sqrt(var), np.nan)
+            n_eff = np.where(v2 > 0, v1 * v1 / v2, 0.0)
+        else:
+            n = np.sum(np.isfinite(mat), axis=0)
+            mean = np.nanmean(mat, axis=0)
+            std = np.nanstd(mat, axis=0, ddof=1) if mat.shape[0] > 1 else np.full(mat.shape[1], np.nan)
+            std = np.where(n >= 2, std, np.nan)
+            n_eff = n.astype(float)
+        sem = std / np.sqrt(n_eff)
+    return {"n": n, "mean": mean, "std": std, "sem": sem, "n_eff": n_eff}
+
+
 def _group_composites(mat: np.ndarray, summaries: List[Dict[str, Any]], log_like: bool, by: str,
-                      width: float, sig) -> List[Dict[str, Any]]:
+                      width: float, sig, smat: Optional[np.ndarray] = None,
+                      weighting: str = "equal") -> List[Dict[str, Any]]:
     """Composite mean and spread of each group of profiles (climatology bins).  Same rules
     as the overall composite: the spread where two or more of the group's profiles
     overlap, the mean where at least half of them (and at least one) do."""
-    import warnings
     keys = [_group_key(s, by, width) for s in summaries]
     out = []
     for key in sorted({k for k in keys if k is not None}, key=lambda k: k[0]):
         idx = [i for i, k in enumerate(keys) if k == key]
-        sub = mat[idx]
-        n = np.sum(np.isfinite(sub), axis=0)
-        with np.errstate(invalid="ignore"), warnings.catch_warnings():
-            warnings.simplefilter("ignore", RuntimeWarning)
-            m = np.nanmean(sub, axis=0)
-            s = np.nanstd(sub, axis=0, ddof=1) if len(idx) > 1 else np.full(sub.shape[1], np.nan)
-        s = np.where(n >= 2, s, np.nan)
-        m = np.where(n >= max(1, int(np.ceil(0.5 * len(idx)))), m, np.nan)
-        if log_like:
-            mean, lo, hi = np.exp(m), np.exp(m - s), np.exp(m + s)
-        else:
-            mean, lo, hi = m, m - s, m + s
+        st = _level_statistics(mat[idx], None if smat is None else smat[idx], weighting)
+        n, s, e = st["n"], st["std"], st["sem"]
+        m = np.where(n >= max(1, int(np.ceil(0.5 * len(idx)))), st["mean"], np.nan)
+        tr = np.exp if log_like else (lambda a: a)
         out.append({"label": key[1], "n": len(idx), "observation_ids": [summaries[i]["observation_id"] for i in idx],
-                    "mean": [sig(x) for x in mean], "plus_1sigma": [sig(x) for x in hi],
-                    "minus_1sigma": [sig(x) for x in lo], "profiles_per_level": [int(x) for x in n]})
+                    "mean": [sig(x) for x in tr(m)], "plus_1sigma": [sig(x) for x in tr(m + s)],
+                    "minus_1sigma": [sig(x) for x in tr(m - s)],
+                    "plus_sem": [sig(x) for x in tr(m + e)], "minus_sem": [sig(x) for x in tr(m - e)],
+                    "n_effective": [None if not np.isfinite(x) else round(float(x), 2) for x in st["n_eff"]],
+                    "profiles_per_level": [int(x) for x in n]})
     unknown = sum(1 for k in keys if k is None)
     if unknown:
         out.append({"label": f"{unknown} profile{'s' if unknown > 1 else ''} without {by}", "n": unknown,
@@ -483,6 +517,7 @@ def compare_profiles_on_body(
     group_width: float = 0.0,
     vertical: str = "altitude",
     pressure_step_decades: float = 0.02,
+    weighting: str = "equal",
 ) -> Dict[str, Any]:
     """Cross-compare multi-mission profiles for a target planetary body.
 
@@ -495,6 +530,8 @@ def compare_profiles_on_body(
     """
     if vertical not in VERTICALS:
         raise ValueError(f"vertical must be one of: {', '.join(VERTICALS)}")
+    if weighting not in WEIGHTINGS:
+        raise ValueError(f"weighting must be one of: {', '.join(WEIGHTINGS)}")
     by_pressure = vertical == "pressure"
     if not profiles:
         return _empty_comparison(body, variable_name)
@@ -535,6 +572,7 @@ def compare_profiles_on_body(
     z_grid = np.round(grid_lo + step * np.arange(max(num_steps, 2)), 6)
 
     interpolated_matrix = []
+    sigma_matrix = []           # each value's 1-sigma, in log space (relative) for log-averaged variables
     profile_summaries = []
     # Quantities that vary exponentially with height are interpolated and averaged in
     # log space (geometric mean, spread as a factor) when every value of every profile
@@ -580,6 +618,9 @@ def compare_profiles_on_body(
                 good = np.isfinite(s_clean)
                 s_interp = np.interp(z_grid, z_clean[good], s_clean[good], left=np.nan, right=np.nan)
                 s_interp[~np.isfinite(v_interp)] = np.nan
+        with np.errstate(invalid="ignore", divide="ignore"):
+            sigma_matrix.append(np.full(z_grid.size, np.nan) if s_interp is None else
+                                (s_interp / np.exp(v_interp) if log_like else s_interp))
 
         profile_summaries.append({
             "observation_id": p.observation_id,
@@ -607,34 +648,38 @@ def compare_profiles_on_body(
         return _empty_comparison(body, variable_name, [] if by_pressure else [round(float(z), 4) for z in z_grid])
 
     mat = np.array(interpolated_matrix)  # shape: (n_profiles, n_grid)
-    n_per_level = np.sum(np.isfinite(mat), axis=0)
+    smat = np.array(sigma_matrix)
+    if weighting == "inverse_variance" and not np.isfinite(smat).any():
+        return {**_empty_comparison(body, variable_name),
+                "error": "None of these profiles has an uncertainty for this variable; use equal weights."}
+    stats = _level_statistics(mat, smat, weighting)        # no spread from a single profile
+    n_per_level = stats["n"]
     mean_min = max(2, int(np.ceil(0.5 * len(interpolated_matrix))))
-    with np.errstate(invalid="ignore", divide="ignore"):
-        import warnings
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", RuntimeWarning)
-            mean_f = np.nanmean(mat, axis=0)
-            std_f = np.nanstd(mat, axis=0, ddof=1) if mat.shape[0] > 1 else np.full(mat.shape[1], np.nan)
-    std_f = np.where(n_per_level >= 2, std_f, np.nan)        # no spread from a single profile
+    mean_f, std_f, sem_f = stats["mean"], stats["std"], stats["sem"]
     if log_like:
         mean_v, lo_v, hi_v = np.exp(mean_f), np.exp(mean_f - std_f), np.exp(mean_f + std_f)
         std_v = np.full_like(mean_v, np.nan)                  # spread is a factor, see lo/hi
+        sem_v = np.full_like(mean_v, np.nan)
+        sem_lo, sem_hi = np.exp(mean_f - sem_f), np.exp(mean_f + sem_f)
         for s in profile_summaries:
             s["interpolated_series"] = np.exp(s["interpolated_series"])
     else:
-        mean_v, std_v = mean_f, std_f
+        mean_v, std_v, sem_v = mean_f, std_f, sem_f
         lo_v, hi_v = mean_f - std_f, mean_f + std_f
+        sem_lo, sem_hi = mean_f - sem_f, mean_f + sem_f
     for s in profile_summaries:
         s["interpolated_series"] = [None if not np.isfinite(x) else float(f"{x:.6g}")
                                     for x in s["interpolated_series"]]
     sig = (lambda x: None if not np.isfinite(x) else float(f"{x:.6g}"))
-    groups = _group_composites(mat, profile_summaries, log_like, group_by, group_width, sig) if group_by else []
+    groups = _group_composites(mat, profile_summaries, log_like, group_by, group_width, sig,
+                               smat, weighting) if group_by else []
 
     return {
         "group_by": group_by or "",
         "group_width": group_width,
         "groups": groups,
-        "averaging": "geometric mean and 1-sigma factor (log space)" if log_like else "arithmetic mean and 1-sigma (sample)",
+        "averaging": ("geometric mean and 1-sigma factor (log space)" if log_like else "arithmetic mean and 1-sigma (sample)")
+                     + ("; inverse-variance weights" if weighting == "inverse_variance" else ""),
         "profiles_per_level": [int(n) for n in n_per_level],
         # (levels of equal pressure need no common altitude reference)
         "vertical_reference_warning": "" if by_pressure else _vertical_reference_warning(profile_summaries),
@@ -653,6 +698,13 @@ def compare_profiles_on_body(
         "composite_std": [sig(x) for x in std_v],
         "composite_plus_1sigma": [sig(x) for x in hi_v],
         "composite_minus_1sigma": [sig(x) for x in lo_v],
+        # standard error of the mean (a factor in log space for log-averaged variables:
+        # see the plus/minus values) and the effective number of profiles at each level
+        "weighting": weighting,
+        "composite_sem": [sig(x) for x in sem_v],
+        "composite_plus_sem": [sig(x) if n >= mean_min else None for x, n in zip(sem_hi, n_per_level)],
+        "composite_minus_sem": [sig(x) if n >= mean_min else None for x, n in zip(sem_lo, n_per_level)],
+        "n_effective": [None if not np.isfinite(x) else round(float(x), 2) for x in stats["n_eff"]],
         "profile_count": len(profile_summaries),
         "profiles": profile_summaries,
         # label and unit of each per-profile diagnostic at least one profile has
@@ -825,6 +877,7 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
     lines = [
         f"# VEDA comparison: body={body_name}, variable={var_name}" + (f" [{units}]" if units else ""),
         f"# profiles={len(profiles)}, averaging={comparison.get('averaging', '')}"
+        + ("; sem = spread / sqrt(n_effective)" if comparison.get("composite_plus_sem") else "")
         + (f", grouped by {comparison.get('group_by')}" if groups else ""),
         "# Profiles from the official mission archives (see each product for its source); means and spreads computed by VEDA.",
         (f"# Common grid uniform in log pressure, every {comparison.get('pressure_step_decades'):g} decades."
@@ -849,9 +902,11 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
     for g in groups:
         lines.append(f"# group {_csv_field(g['label'])}: n={g['n']}, profiles={' '.join(g['observation_ids'])}")
 
-    header = ["pressure_hpa" if by_pressure else "altitude_km", f"composite_mean_{var_name}", "composite_std", "plus_1sigma", "minus_1sigma", "profiles_at_level"]
+    header = ["pressure_hpa" if by_pressure else "altitude_km", f"composite_mean_{var_name}", "composite_std", "plus_1sigma",
+              "minus_1sigma", "composite_sem", "plus_sem", "minus_sem", "profiles_at_level", "n_effective"]
     for g in groups:
-        header += [f"{g['label']} mean", f"{g['label']} plus_1sigma", f"{g['label']} minus_1sigma"]
+        header += [f"{g['label']} mean", f"{g['label']} plus_1sigma", f"{g['label']} minus_1sigma",
+                   f"{g['label']} plus_sem", f"{g['label']} minus_sem", f"{g['label']} n_effective"]
     header += cols
     with_sigma = [(c, p) for c, p in zip(cols, profiles) if p.get("interpolated_sigma")]
     header += [f"sigma_{c}" for c, _ in with_sigma]
@@ -864,10 +919,14 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
     n_level = comparison.get("profiles_per_level") or []
     for i, z in enumerate(grid):
         row = [f"{z:.6g}" if by_pressure else f"{z:.3f}"] + [_csv_num(at(comparison.get(k), i)) for k in
-                              ("composite_mean", "composite_std", "composite_plus_1sigma", "composite_minus_1sigma")]
+                              ("composite_mean", "composite_std", "composite_plus_1sigma", "composite_minus_1sigma",
+                               "composite_sem", "composite_plus_sem", "composite_minus_sem")]
         row.append(str(at(n_level, i)) if at(n_level, i) is not None else "")
+        row.append(_csv_num(at(comparison.get("n_effective"), i)))
         for g in groups:
-            row += [_csv_num(at(g["mean"], i)), _csv_num(at(g["plus_1sigma"], i)), _csv_num(at(g["minus_1sigma"], i))]
+            row += [_csv_num(at(g["mean"], i)), _csv_num(at(g["plus_1sigma"], i)), _csv_num(at(g["minus_1sigma"], i)),
+                    _csv_num(at(g.get("plus_sem"), i)), _csv_num(at(g.get("minus_sem"), i)),
+                    _csv_num(at(g.get("n_effective"), i))]
         row += [_csv_num(at(p.get("interpolated_series"), i)) for p in profiles]
         row += [_csv_num(at(p.get("interpolated_sigma"), i)) for _, p in with_sigma]
         lines.append(",".join(row))

@@ -162,6 +162,7 @@ class MissionManager:
         altitude_step_km: Optional[float] = None,
         vertical: str = "altitude",
         pressure_step_decades: float = 0.02,
+        weighting: str = "equal",
     ) -> Dict[str, Any]:
         """Load multiple profiles across missions and compute cross-mission comparison.
 
@@ -186,6 +187,7 @@ class MissionManager:
             group_width=group_width,
             vertical=vertical,
             pressure_step_decades=pressure_step_decades,
+            weighting=weighting,
         )
         if report is not None and isinstance(out, dict):
             out["selection"] = report

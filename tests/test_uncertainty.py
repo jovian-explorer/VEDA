@@ -101,3 +101,54 @@ def test_profiles_without_uncertainties_get_none():
     prof.uncertainty = {}
     prof.derived = compute_atmospheric_diagnostics(prof, mars)
     assert prof.uncertainty == {}
+
+
+def _flat(oid, t0, sigma, n=41):
+    z = np.arange(0.0, n * 1.0, 1.0)
+    return ObservationProfile(observation_id=oid, mission_id="mex", body_id="mars", instrument="MaRS",
+                              time_utc="2005-01-01T00:00:00", latitude=0.0, longitude=0.0, altitude_km=z,
+                              temperature_k=np.full(n, t0), uncertainty={"temperature_k": np.full(n, sigma)})
+
+
+def test_composite_standard_error_and_effective_number():
+    mars = get_body("mars")
+    profs = [_flat("a", 200.0, 1.0), _flat("b", 210.0, 1.0), _flat("c", 220.0, 1.0), _flat("d", 230.0, 1.0)]
+    comp = compare_profiles_on_body(profs, mars, altitude_step_km=1.0)
+    s = np.std([200, 210, 220, 230], ddof=1)
+    assert comp["composite_sem"][5] == pytest.approx(s / 2.0, rel=1e-5)
+    assert comp["n_effective"][5] == 4.0
+    assert comp["composite_plus_sem"][5] == pytest.approx(215.0 + s / 2.0, rel=1e-6)
+    assert comp["weighting"] == "equal"
+
+
+def test_inverse_variance_weighting():
+    """Weights 1/sigma^2: 200 +- 1 and 230 +- 3 give (200 + 230 / 9) / (1 + 1 / 9) = 203 K;
+    n_eff = (1 + 1/9)^2 / (1 + 1/81) = 1.22."""
+    mars = get_body("mars")
+    profs = [_flat("a", 200.0, 1.0), _flat("b", 230.0, 3.0)]
+    comp = compare_profiles_on_body(profs, mars, altitude_step_km=1.0, weighting="inverse_variance")
+    assert comp["composite_mean"][3] == pytest.approx(203.0, rel=1e-6)
+    assert comp["n_effective"][3] == pytest.approx((1 + 1 / 9) ** 2 / (1 + 1 / 81), abs=0.01)
+    assert "inverse-variance" in comp["averaging"]
+    text = export_comparison_to_csv(comp)
+    assert "composite_sem" in text and "n_effective" in text
+    nosig = [_flat("a", 200.0, 1.0), _flat("b", 230.0, 3.0)]
+    for pr in nosig:
+        pr.uncertainty = {}
+    assert "error" in compare_profiles_on_body(nosig, mars, altitude_step_km=1.0, weighting="inverse_variance")
+
+
+def test_inverse_variance_in_log_space_uses_relative_errors():
+    mars = get_body("mars")
+    z = np.arange(0.0, 20.0, 1.0)
+    profs = []
+    for oid, p0, rel in (("a", 6.0, 0.01), ("b", 7.0, 0.10)):
+        p = p0 * np.exp(-z / 11.0)
+        profs.append(ObservationProfile(observation_id=oid, mission_id="mex", body_id="mars", instrument="MaRS",
+                                        time_utc="2005-01-01T00:00:00", latitude=0.0, longitude=0.0, altitude_km=z,
+                                        pressure_hpa=p, uncertainty={"pressure_hpa": rel * p}))
+    comp = compare_profiles_on_body(profs, mars, altitude_step_km=1.0, variable_name="pressure_hpa",
+                                    weighting="inverse_variance")
+    w = np.array([1 / 0.01 ** 2, 1 / 0.10 ** 2])
+    expected = np.exp((w[0] * np.log(6.0) + w[1] * np.log(7.0)) / w.sum())
+    assert comp["composite_mean"][0] == pytest.approx(expected, rel=1e-5)
