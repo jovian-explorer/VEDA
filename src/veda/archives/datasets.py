@@ -86,7 +86,7 @@ class Dataset:
     # Factor turning the archive's error column into 1 sigma (0.5 for a full error-bar width)
     sigma_factor: Dict[str, float] = field(default_factory=dict)
     # Vertical correlation length (km) of the archived 1-sigma errors, where the archive
-    # documents one; 0: independent between levels (analysis/uncertainty.py)
+    # documents one; 0: the shortest length that each profile's own scatter allows (analysis/uncertainty.py)
     uncertainty_correlation_km: float = 0.0
     # Factor for an extra variable (and its uncertainty) whose label unit is wrong: the
     # Odyssey accelerometer densities are labelled kg/m^3 but are in kg/km^3 (1e-9)

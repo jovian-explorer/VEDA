@@ -17,12 +17,21 @@ pressure, densities) at each level.  They are carried into the derived quantitie
   pressure from density are done this way (densities are redrawn log-normally, with
   their relative error, so that they stay positive).
 
-Errors at different levels are taken as independent, since no archive VEDA reads says
-how they are correlated; a data set can give a correlation length (``Dataset.
-uncertainty_correlation_km``), and the draws then have a Gaussian correlation
-exp(-dz^2 / (2 L^2)) between levels dz apart.  Independent errors make vertical
-derivatives of finely sampled profiles very uncertain, as they are: the difference of two
-noisy values over a short distance.
+How the errors of different levels are correlated, no archive VEDA reads says.  It is
+estimated from each profile itself (``error_correlation_from_scatter``): independent
+errors of the archived size would make the second differences of neighbouring values
+scatter with a known variance; where the profile's own second differences scatter much
+less (Mars Express MaRS temperatures: median 5 % of that variance in 38 profiles; SOIR:
+0.1 % in 60), its errors cannot be independent, and the draws get the Gaussian
+correlation exp(-dz^2 / (2 L^2)) with the shortest L that their scatter allows (the
+atmosphere's own structure adds scatter, so this is a lower bound on L).  A data set can
+instead give a correlation length (``Dataset.uncertainty_correlation_km``).
+
+Correlation between levels makes the 1-sigma of a difference of levels smaller (lapse
+rate, N^2, d(theta)/dz, the temperature retrieved from density and the noise level of
+the hydrostatic check) and that of a sum of levels larger (layer means, the pressure
+integrated from density); taking the errors as independent overstated the first and
+understated the second.
 
 The draws use a fixed seed, so the same profile always gets the same uncertainties.
 """
@@ -61,6 +70,57 @@ def _draws(sigma: np.ndarray, z_km: np.ndarray, corr_km: float, rng: np.random.G
         kern = sparse.csr_matrix((np.concatenate(vals), (np.concatenate(rows), np.concatenate(cols))), shape=(n, n))
         eps = (kern @ eps.T).T
     return eps * s
+
+
+def error_correlation_from_scatter(z_km, values, sigma, log: bool = False, min_levels: int = 10) -> float:
+    """Shortest Gaussian correlation length L (km) of a profile's errors that is consistent
+    with the scatter of its own values (0: independent errors are consistent with it).
+
+    With errors e_i of 1-sigma s_i and correlation r(dz) = exp(-dz^2 / (2 L^2)), the second
+    difference d_i = v_{i-1} - 2 v_i + v_{i+1} has variance
+        s^2 (6 - 8 r(D) + 2 r(2 D))            (even spacing D, equal s)
+    or 6 s^2 when the errors are independent.  The ratio of the observed variance of d_i
+    / sqrt(s_{i-1}^2 + 4 s_i^2 + s_{i+1}^2) (robust, from the median absolute deviation) to
+    1 is solved for L.  The profile's own structure only adds to the observed variance,
+    so the L found is a lower bound.  ``log``: relative errors of a positive quantity."""
+    z = np.asarray(z_km, dtype=float)
+    v = np.asarray(values, dtype=float)
+    s = np.asarray(sigma, dtype=float)
+    if z.shape != v.shape or z.shape != s.shape:
+        return 0.0
+    ok = np.isfinite(z) & np.isfinite(v) & np.isfinite(s) & (s > 0)
+    if log:
+        ok &= v > 0
+    if ok.sum() < min_levels + 2:
+        return 0.0
+    order = np.argsort(z[ok])
+    z, v, s = z[ok][order], v[ok][order], s[ok][order]
+    if log:
+        s, v = s / v, np.log(v)
+    keep = np.r_[True, np.diff(z) > 0]
+    z, v, s = z[keep], v[keep], s[keep]
+    if z.size < min_levels + 2:
+        return 0.0
+    e = (v[:-2] - 2.0 * v[1:-1] + v[2:]) / np.sqrt(s[:-2] ** 2 + 4.0 * s[1:-1] ** 2 + s[2:] ** 2)
+    ratio = (1.4826 * np.median(np.abs(e - np.median(e)))) ** 2
+    if not np.isfinite(ratio) or ratio >= 1.0:
+        return 0.0
+    spacing = float(np.median(np.diff(z)))
+    longest = float(z[-1] - z[0])
+
+    def var_ratio(length):
+        a = spacing * spacing / (2.0 * length * length)
+        return (6.0 - 8.0 * np.exp(-a) + 2.0 * np.exp(-4.0 * a)) / 6.0
+    if var_ratio(longest) >= ratio:
+        return round(longest, 4)
+    lo, hi = 1e-3 * spacing, longest              # var_ratio falls as L grows
+    for _ in range(60):
+        mid = np.sqrt(lo * hi)
+        if var_ratio(mid) > ratio:
+            lo = mid
+        else:
+            hi = mid
+    return round(float(hi), 4)
 
 
 def gradient_operator(z_km: np.ndarray, ok: np.ndarray):
@@ -116,7 +176,9 @@ def _sigma_of(profile, key: str, shape) -> Optional[np.ndarray]:
 def propagate(profile, body, derived: Dict[str, np.ndarray], gz: Optional[np.ndarray],
               corr_km: float = 0.0) -> Dict[str, np.ndarray]:
     """1-sigma uncertainties of ``derived`` (from compute_atmospheric_diagnostics) from the
-    profile's archived uncertainties; also stored in ``profile.uncertainty``."""
+    profile's archived uncertainties; also stored in ``profile.uncertainty``.  ``corr_km``:
+    the data set's correlation length of the errors; 0: estimated from each variable's own
+    scatter (error_correlation_from_scatter), noted in ``profile.raw_attributes``."""
     from .thermo import heat_capacity
     z = np.asarray(profile.altitude_km, dtype=float)
     out: Dict[str, np.ndarray] = {}
@@ -139,10 +201,19 @@ def propagate(profile, body, derived: Dict[str, np.ndarray], gz: Optional[np.nda
             kappa = r_spec / body.isobaric_heat_capacity_cp
             out["potential_temperature"] = np.abs(derived["potential_temperature"]) * np.sqrt(rt ** 2 + (kappa * rp) ** 2)
 
+    attrs = profile.raw_attributes if profile.raw_attributes is not None else {}
+
+    def corr_of(key, values, sigma, log=False):
+        length = corr_km if corr_km and corr_km > 0 else error_correlation_from_scatter(z, values, sigma, log)
+        attrs[f"error_correlation_{key}_km"] = length
+        return length
+    l_t = corr_of("temperature", t, s_t) if s_t is not None else 0.0
+    l_p = corr_of("pressure", p, s_p, log=True) if s_p is not None else 0.0
+
     rng = np.random.default_rng(_SEED)
     t_draws = None
     if s_t is not None:
-        t_draws = t + _draws(s_t, z, corr_km, rng)
+        t_draws = t + _draws(s_t, z, l_t, rng)
         t_draws[t_draws <= 0] = np.nan
     ok_t = np.isfinite(z) & np.isfinite(t) if t is not None else None
     if t_draws is not None and gz is not None and ok_t.sum() >= 2:
@@ -160,7 +231,7 @@ def propagate(profile, body, derived: Dict[str, np.ndarray], gz: Optional[np.nda
         kappa = r_spec / body.isobaric_heat_capacity_cp
         p_ref = body.reference_pressure_hpa
         tt = t_draws if t_draws is not None else np.broadcast_to(t, (MC_DRAWS, z.size))
-        pp = p + _draws(s_p, z, corr_km, rng) if s_p is not None else np.broadcast_to(p, (MC_DRAWS, z.size))
+        pp = p + _draws(s_p, z, l_p, rng) if s_p is not None else np.broadcast_to(p, (MC_DRAWS, z.size))
         with np.errstate(invalid="ignore", divide="ignore"):
             theta = tt * (p_ref / np.where(pp > 0, pp, np.nan)) ** kappa
         ok_th = np.isfinite(z) & np.isfinite(derived["potential_temperature"])
@@ -175,7 +246,7 @@ def propagate(profile, body, derived: Dict[str, np.ndarray], gz: Optional[np.nda
             and (s_t is not None or s_p is not None) and gz is not None:
         from .hydrostatic import hydrostatic_uncertainty
         tt = t_draws if t_draws is not None else np.broadcast_to(t, (MC_DRAWS, z.size))
-        pp = p + _draws(s_p, z, corr_km, rng) if s_p is not None else np.broadcast_to(p, (MC_DRAWS, z.size))
+        pp = p + _draws(s_p, z, l_p, rng) if s_p is not None else np.broadcast_to(p, (MC_DRAWS, z.size))
         profile.raw_attributes.update(hydrostatic_uncertainty(z, p, t, gz, r_spec, np.where(pp > 0, pp, np.nan), tt))
 
     if "temperature_from_density" in derived:
@@ -185,7 +256,7 @@ def propagate(profile, body, derived: Dict[str, np.ndarray], gz: Optional[np.nda
             # log-normal draws (relative error sigma / rho): densities stay positive
             with np.errstate(invalid="ignore", divide="ignore"):
                 rel = np.where(np.isfinite(s_rho) & (rho > 0), s_rho / rho, np.nan)
-            rho_draws = rho * np.exp(_draws(rel, z, corr_km, rng))
+            rho_draws = rho * np.exp(_draws(rel, z, corr_of("density", rho, s_rho, log=True), rng))
             r = temperature_from_density_draws(z, rho_draws, gz, body.gas_constant_r, s_rho)
             out["temperature_from_density"] = _std(r["temperature_k"])
             out["pressure_from_density"] = _std(r["pressure_pa"] / 100.0)

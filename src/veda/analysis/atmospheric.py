@@ -16,6 +16,7 @@ import numpy as np
 from .. import __version__
 from ..core.models import BodyInfo, ObservationProfile
 from ..core.registry import get_body
+from .uncertainty import error_correlation_from_scatter
 
 
 # Vertical derivatives (lapse rate, N^2, d(theta)/dz) are central differences over at
@@ -150,19 +151,18 @@ def _interpolated_sigma(z_grid: np.ndarray, z: np.ndarray, s: np.ndarray, corr_k
     return out
 
 
-def _grid_error_correlation_km(profile: ObservationProfile, z_levels: np.ndarray) -> float:
+def _grid_error_correlation_km(corr_levels_km: float, z_levels: np.ndarray) -> float:
     """Length L (km) of a Gaussian correlation exp(-dz^2 / (2 L^2)) between the errors of
-    a profile's values on a comparison grid: that of the archived errors (the data set's
-    correlation length) and that made by interpolating between its levels,
-    L = sqrt(L_data^2 + dz_levels^2 / 3) (the variance-matched width of the linear
-    interpolation kernel).  Used for the 1-sigma of a layer mean; on real Mars Express
-    profiles it gives that of the exact propagation (A C A^T, A the interpolation
-    weights) within 15 % on 0.1-2 km grids and 2-10 km layers, where treating the grid
-    values as independent gave 0.2-1 times it."""
+    a profile's values on a comparison grid: that of the errors at its levels and that
+    made by interpolating between them, L = sqrt(L_levels^2 + dz_levels^2 / 3) (the
+    variance-matched width of the linear interpolation kernel).  Used for the 1-sigma of a
+    layer mean; on real Mars Express profiles it gives that of the exact propagation
+    (A C A^T, A the interpolation weights) within 15 % on 0.1-1 km grids and 2-10 km
+    layers, where treating the grid values as independent gave 0.2-1 times it."""
     dz = np.diff(np.asarray(z_levels, dtype=float))
     dz = dz[np.isfinite(dz) & (dz > 0)]
     spacing = float(np.median(dz)) if dz.size else 0.0
-    return round(float(np.hypot(_correlation_km(profile), spacing / np.sqrt(3.0))), 4)
+    return round(float(np.hypot(corr_levels_km, spacing / np.sqrt(3.0))), 4)
 
 
 def _diagnostics(profile: ObservationProfile, body: BodyInfo) -> Dict[str, np.ndarray]:
@@ -779,11 +779,16 @@ def compare_profiles_on_body(
         # the profile's own 1-sigma on the grid (in the variable's units), where it has one
         sig_p = _compared_sigma(p, variable_name)
         s_interp = None
+        corr_levels = 0.0
         if sig_p is not None and sig_p.shape == z_p.shape:
             s_clean = sig_p[ok][sort_idx]
             if np.isfinite(s_clean).any():
                 good = np.isfinite(s_clean)
-                s_interp = _interpolated_sigma(z_grid, z_clean[good], s_clean[good], _correlation_km(p))
+                # correlation length of the errors: the data set's, or the shortest the
+                # profile's own scatter allows (uncertainty.error_correlation_from_scatter)
+                corr_levels = _correlation_km(p) or error_correlation_from_scatter(
+                    z_clean, v_clean, s_clean, log=log_like)
+                s_interp = _interpolated_sigma(z_grid, z_clean[good], s_clean[good], corr_levels)
                 s_interp[~np.isfinite(v_interp)] = np.nan
         with np.errstate(invalid="ignore", divide="ignore"):
             sigma_matrix.append(np.full(z_grid.size, np.nan) if s_interp is None else
@@ -809,7 +814,7 @@ def compare_profiles_on_body(
             "interpolated_series": v_interp,
             **({"interpolated_sigma": [None if not np.isfinite(x) else float(f"{x:.4g}") for x in s_interp]}
                if s_interp is not None else {}),
-            **({"sigma_correlation_km": _grid_error_correlation_km(p, z_clean)}
+            **({"sigma_correlation_km": _grid_error_correlation_km(corr_levels, z_clean)}
                if s_interp is not None and vertical != "pressure" else {}),
         })
 

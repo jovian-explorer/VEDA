@@ -11,12 +11,15 @@ from veda.core.models import ObservationProfile
 from veda.core.registry import get_body
 
 
-def _mars_profile(dz=0.5, sigma_t=1.0, sigma_p_rel=0.01, oid="p1"):
+def _mars_profile(dz=0.5, sigma_t=1.0, sigma_p_rel=0.01, oid="p1", seed=7):
+    """A smooth profile plus independent errors of the stated size (as a profile whose
+    errors are independent looks: the scatter between levels matches the 1-sigma)."""
     mars = get_body("mars")
+    rng = np.random.default_rng(seed)
     z = np.arange(0.0, 40.0 + 1e-9, dz)
-    t = 210.0 - 1.5 * z + 3.0 * np.sin(z / 3.0)
+    t = 210.0 - 1.5 * z + 3.0 * np.sin(z / 3.0) + rng.normal(0.0, sigma_t, z.size)
     h = mars.gas_constant_r * 200.0 / mars.surface_gravity / 1000.0
-    p = 6.1 * np.exp(-z / h)
+    p = 6.1 * np.exp(-z / h) * (1.0 + rng.normal(0.0, sigma_p_rel, z.size))
     prof = ObservationProfile(observation_id=oid, mission_id="mex", body_id="mars", instrument="MaRS",
                               time_utc="2005-01-01T00:00:00", latitude=10.0, longitude=20.0,
                               altitude_km=z, temperature_k=t, pressure_hpa=p,
@@ -70,7 +73,7 @@ def test_temperature_from_density_uncertainty():
     top, where T is the boundary temperature fitted to the top 20 % of the levels."""
     mars = get_body("mars")
     z = np.arange(90.0, 160.0, 0.5)
-    rho = 1e-7 * np.exp(-(z - 90.0) / 8.0)
+    rho = 1e-7 * np.exp(-(z - 90.0) / 8.0) * np.exp(np.random.default_rng(3).normal(0.0, 0.02, z.size))
     prof = ObservationProfile(observation_id="acc", mission_id="mro", body_id="mars", instrument="ACC",
                               time_utc="2006-05-01T00:00:00", latitude=0.0, longitude=0.0, altitude_km=z,
                               uncertainty={"density_measured": 0.02 * rho})
@@ -221,11 +224,14 @@ def test_layer_mean_sigma_counts_the_correlation_made_by_interpolation():
     s = 0.5 + 0.05 * z
     prof = ObservationProfile(observation_id="c", mission_id="mex", body_id="mars", instrument="MaRS",
                               time_utc="2005-01-01T00:00:00", latitude=0.0, longitude=0.0, altitude_km=z,
-                              temperature_k=200.0 - z, uncertainty={"temperature_k": s})
+                              temperature_k=200.0 - z + np.random.default_rng(5).normal(0.0, s),
+                              uncertainty={"temperature_k": s})
     comp = compare_profiles_on_body([prof], mars, altitude_step_km=0.25, variable_name="temperature_k")
     p = comp["profiles"][0]
     big_l = p["sigma_correlation_km"]
-    assert big_l == pytest.approx(2.0 / np.sqrt(3.0), rel=1e-3)
+    l_levels = unc.error_correlation_from_scatter(z, prof.temperature_k, s)
+    assert l_levels < 1.0                                   # independent errors: about none
+    assert big_l == pytest.approx(np.hypot(l_levels, 2.0 / np.sqrt(3.0)), rel=1e-3)
     grid = np.asarray(comp["grid_km"], dtype=float)
     sg = np.array([np.nan if v is None else v for v in p["interpolated_sigma"]])
     k = np.clip(np.searchsorted(z, grid, side="right") - 1, 0, z.size - 2)
@@ -233,7 +239,7 @@ def test_layer_mean_sigma_counts_the_correlation_made_by_interpolation():
     a = np.zeros((grid.size, z.size))
     a[np.arange(grid.size), k] = 1 - w
     a[np.arange(grid.size), k + 1] = w
-    exact_cov = a @ np.diag(s ** 2) @ a.T
+    exact_cov = a @ (np.outer(s, s) * np.exp(-(z[:, None] - z[None, :]) ** 2 / (2 * max(l_levels, 1e-9) ** 2))) @ a.T
     assert np.allclose(sg, np.sqrt(np.diag(exact_cov)), rtol=1e-3)      # midway: s / sqrt(2), not s
     for lo, hi in ((10.0, 15.0), (20.0, 30.0)):
         sl = (grid >= lo) & (grid <= hi)
@@ -245,3 +251,55 @@ def test_layer_mean_sigma_counts_the_correlation_made_by_interpolation():
         independent = np.sqrt(np.sum(ss ** 2)) / m
         assert model == pytest.approx(exact, rel=0.15)
         assert independent < 0.6 * exact
+
+
+def _correlated_noise(z, length, sigma, seed):
+    rng = np.random.default_rng(seed)
+    c = np.exp(-(z[:, None] - z[None, :]) ** 2 / (2 * length ** 2)) + 1e-10 * np.eye(z.size)
+    return np.linalg.cholesky(c) @ rng.standard_normal(z.size) * sigma
+
+
+def test_error_correlation_found_from_the_scatter_of_the_values():
+    """Independent errors: no correlation length; Gaussian-correlated errors: their length;
+    a smooth profile with large error bars: errors that cannot be independent."""
+    z = np.arange(0.0, 60.0, 0.25)
+    s = np.full(z.size, 2.0)
+    smooth = 200.0 - z
+    found_indep = [unc.error_correlation_from_scatter(z, smooth + np.random.default_rng(k).normal(0, 2.0, z.size), s)
+                   for k in range(10)]
+    assert np.median(found_indep) < 0.25 * 0.5                # below half the spacing: no effect
+    for length in (0.5, 1.0, 2.0):
+        found = [unc.error_correlation_from_scatter(z, smooth + _correlated_noise(z, length, 2.0, k), s)
+                 for k in range(10)]
+        assert np.median(found) == pytest.approx(length, rel=0.2)
+    assert unc.error_correlation_from_scatter(z, smooth, s) > 10.0
+    assert unc.error_correlation_from_scatter(z[:8], smooth[:8], s[:8]) == 0.0     # too few levels to say
+
+
+def test_correlation_lowers_the_sigma_of_differences_and_raises_that_of_sums():
+    """The same profile with its errors correlated over 3 km (scatter smaller than the error
+    bars): lapse rate and the temperature from density get smaller, the pressure integrated
+    from density larger than with independent errors."""
+    mars = get_body("mars")
+    z = np.arange(90.0, 160.0, 0.5)
+    base = 1e-7 * np.exp(-(z - 90.0) / 8.0)
+    out = {}
+    for name, noise in (("indep", np.random.default_rng(3).normal(0.0, 0.02, z.size)),
+                        ("corr", _correlated_noise(z, 3.0, 0.02, 3))):
+        prof = ObservationProfile(observation_id=name, mission_id="mro", body_id="mars", instrument="ACC",
+                                  time_utc="2006-05-01T00:00:00", latitude=0.0, longitude=0.0, altitude_km=z,
+                                  uncertainty={"density_measured": 0.02 * base})
+        prof.derived["density_measured"] = base * np.exp(noise)
+        prof.derived.update(compute_atmospheric_diagnostics(prof, mars))
+        out[name] = (prof.uncertainty, prof.raw_attributes["error_correlation_density_km"])
+    assert out["indep"][1] < 0.5 and out["corr"][1] == pytest.approx(3.0, rel=0.3)
+    mid = slice(20, 100)
+    assert np.median(out["corr"][0]["temperature_from_density"][mid]) < 0.9 * np.median(out["indep"][0]["temperature_from_density"][mid])
+    assert np.median(out["corr"][0]["pressure_from_density"][mid] / out["indep"][0]["pressure_from_density"][mid]) > 1.3
+
+    t_ind, _ = _mars_profile(dz=0.5, sigma_t=1.0, oid="i")
+    t_cor, _ = _mars_profile(dz=0.5, sigma_t=1e-9, oid="c")
+    t_cor.temperature_k = t_cor.temperature_k + _correlated_noise(t_cor.altitude_km, 3.0, 1.0, 4)
+    t_cor.uncertainty = {"temperature_k": np.ones(t_cor.altitude_km.size), "pressure_hpa": t_cor.uncertainty["pressure_hpa"]}
+    t_cor.derived = compute_atmospheric_diagnostics(t_cor, mars)
+    assert np.median(t_cor.uncertainty["lapse_rate"]) < 0.3 * np.median(t_ind.uncertainty["lapse_rate"])
