@@ -8,7 +8,7 @@
 
 All data shown in VEDA come straight from the mission archives (NASA PDS, ESA PSA, JAXA DARTS, ISRO ISSDC, OPUS) and the instrument teams' research data repositories (Zenodo, BIRA-IASB). Nothing is simulated. Nearly every payload of every mission in VEDA can be searched by date and plotted; the few that cannot (no searchable archive route yet) are listed in DATA_POLICY.md.
 
-> **VEDA is public and updated continuously** (version 0.2.0; every tested change is published as the latest build). It is ready for use and for testing; please report problems, wrong results and suggestions through **Feedback** in the app or on the [issue tracker](https://github.com/jovian-explorer/VEDA/issues/new/choose).
+> **VEDA is public and updated continuously** (version 0.2.0; changes go to the main branch continuously, and a new build is released about once a month). It is ready for use and for testing; please report problems, wrong results and suggestions through **Feedback** in the app or on the [issue tracker](https://github.com/jovian-explorer/VEDA/issues/new/choose).
 
 ---
 
@@ -141,7 +141,7 @@ Open the [latest release](https://github.com/jovian-explorer/VEDA/releases/lates
 | macOS (Apple Silicon) | `VEDA-<version>-macos-arm64.zip` | unzip, open the folder, right-click `VEDA.app` > Open the first time (the app is not notarized) |
 | Linux (x86_64) | `VEDA-<version>-linux-x86_64.zip` | unzip, `cd VEDA-*; chmod +x VEDA && ./VEDA` |
 
-**Updates.** Every tested change to VEDA is built for all three systems and published as the latest release ("VEDA 0.2.0 build 42"), usually within half an hour. VEDA checks for a newer build when it starts and shows a notice with a download link; About > *Check for updates* checks on demand. A published build also updates itself: once a week it downloads the newest build for your system in the background (checked against the size and SHA-256 digest GitHub lists for it) and installs it the next time it starts, replacing only its own folder (the previous one is kept as `<folder>.previous` until the new build has started). Your data, downloads, settings and exports live in a separate folder (below) and are never touched; after an update VEDA shows what is new and any settings that were added or changed, keeping your values. *Settings > Network* turns the weekly update off and has *Check now*. To update by hand, download the new archive and replace the old VEDA folder.
+**Updates.** Changes go to VEDA's main branch continuously, tested on all three systems. About once a month they are built and published as a new release ("VEDA 0.2.0 build N"): the release workflow checks every week and publishes when there are new changes and the last release is at least 30 days old. Every release is archived on Zenodo with its own DOI. VEDA checks for a newer build when it starts and shows a notice with a download link; About > *Check for updates* checks on demand. A published build also updates itself: once a week it looks for a new release and downloads the build for your system in the background (checked against the size and SHA-256 digest GitHub lists for it) and installs it the next time it starts, replacing only its own folder (the previous one is kept as `<folder>.previous` until the new build has started). Your data, downloads, settings and exports live in a separate folder (below) and are never touched; after an update VEDA shows what is new and any settings that were added or changed, keeping your values. *Settings > Network* turns the weekly update off and has *Check now*. To update by hand, download the new archive and replace the old VEDA folder.
 
 
 ### Option B: install with pip (any OS, Python 3.10+)
@@ -194,7 +194,7 @@ pip install -e ".[build]"
 python scripts/build_exe.py            # dist/VEDA/VEDA.exe, dist/VEDA.app or dist/VEDA/VEDA
 python scripts/build_exe.py --archive  # also zips it with the licences and guides for distribution
 ```
-PyInstaller cannot cross-compile, so each OS builds its own binary. `.github/workflows/release.yml` builds all three after every push to `main` that passes CI (published as "VEDA 0.2.0 build N", with the commits since the previous build as release notes) and for every pushed version tag (`v1.2.3`).
+PyInstaller cannot cross-compile, so each OS builds its own binary. `.github/workflows/release.yml` builds all three and publishes them as "VEDA 0.2.0 build N", with the commits since the previous release as release notes, about once a month: a scheduled run every Monday publishes `main` when it has commits since the latest release, that release is at least 30 days old (repository variable `RELEASE_MIN_DAYS`) and CI passed on `main`'s head commit. It can also be run by hand (publishes `main`'s head if CI passed on it), and it publishes every pushed version tag (`v1.2.3`). Releases are never deleted: each is archived on Zenodo with its own DOI. Before publishing, each build's update swap is tested on its own system (`scripts/check_update_swap.py`).
 
 ## Platform notes
 

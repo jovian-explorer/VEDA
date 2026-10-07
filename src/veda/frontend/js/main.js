@@ -136,8 +136,8 @@ function appBuildLabel() {
 }
 
 /**
- * Tell the user when a newer build has been published (every tested change to VEDA
- * is published as the latest release).  One check per session; a dismissed build is
+ * Tell the user when a newer build has been published (a new build is released about
+ * once a month).  One check per session; a dismissed build is
  * not announced again.
  */
 async function checkForUpdate({ force = false, quiet = true } = {}) {

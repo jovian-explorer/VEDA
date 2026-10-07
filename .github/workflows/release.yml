@@ -1,30 +1,89 @@
 name: Release
 
-# Every push to main whose tests pass (the CI workflow) is built for Windows, macOS
-# and Linux and published as the latest release ("VEDA 0.2.0 build 42"), so testers
-# always download the newest version and the app can tell them a newer build exists.
-# A pushed version tag (v1.2.3) publishes a named version release the same way.
+# Commits go to main continuously (each one tested by the CI workflow), but a release
+# ("VEDA 0.2.0 build N", built for Windows, macOS and Linux) is published only about once
+# a month: every Monday the "decide" job checks that main has commits since the latest
+# release, that the latest release is at least RELEASE_MIN_DAYS old (repository variable,
+# default 30) and that CI passed on main's head, and publishes only then.  Running the
+# workflow by hand publishes main's head if CI passed on it; a pushed version tag (v1.2.3)
+# publishes that version.  Every release is archived on Zenodo with its own DOI, so old
+# releases are never deleted.  The app's weekly automatic update picks up a new release.
 
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
-    branches: [main]
+  schedule:
+    - cron: "0 6 * * 1"
   push:
     tags: ["v[0-9]+.[0-9]+.[0-9]+"]
   workflow_dispatch:
 
 permissions:
   contents: write
+  actions: read                 # the CI result of the commit to publish
 
 concurrency:
   group: release
-  cancel-in-progress: true      # a newer push supersedes a build still running
+  cancel-in-progress: false     # never stop a release half-way: it is archived on publication
 
 jobs:
+  decide:
+    name: decide whether to publish
+    runs-on: ubuntu-latest
+    outputs:
+      publish: ${{ steps.decide.outputs.publish }}
+      sha: ${{ steps.decide.outputs.sha }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      MIN_DAYS: ${{ vars.RELEASE_MIN_DAYS || '30' }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'push' && github.sha || 'main' }}
+          fetch-depth: 0          # history and tags: the commits since the latest release
+      - id: decide
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha=$(git rev-parse HEAD)
+          ci_passed() {         # a successful CI run on exactly this commit
+            [ "$(gh api "repos/${GH_REPO}/actions/workflows/ci.yml/runs?head_sha=$1&status=success&per_page=1" --jq .total_count)" -gt 0 ]
+          }
+          publish=false
+          case "${GITHUB_EVENT_NAME}" in
+            push)
+              publish=true
+              echo "Version tag ${GITHUB_REF#refs/tags/}: publishing ${sha}." ;;
+            workflow_dispatch)
+              if ci_passed "$sha"; then publish=true; echo "Run by hand: publishing main at ${sha} (CI passed on it)."
+              else echo "Run by hand, but CI has not passed on main's head ${sha}: not publishing."; fi ;;
+            schedule)
+              latest=$(gh release view --json tagName,publishedAt --jq '.tagName + " " + .publishedAt' 2>/dev/null || true)
+              if [ -z "$latest" ]; then
+                tag=""; age_days=999999; new=$(git rev-list --count HEAD)
+              else
+                tag=${latest%% *}
+                age_days=$(( ( $(date -u +%s) - $(date -u -d "${latest#* }" +%s) ) / 86400 ))
+                if git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
+                  new=$(git rev-list --count "${tag}..HEAD")
+                else
+                  new=1               # (the latest release's tag is not in this clone: assume changes)
+                fi
+              fi
+              echo "Latest release: ${tag:-none}, ${age_days} days old; ${new} commits on main since; minimum gap ${MIN_DAYS} days."
+              if [ "$new" -eq 0 ]; then echo "No commits since the latest release: not publishing."
+              elif [ "$age_days" -lt "$MIN_DAYS" ]; then echo "The latest release is under ${MIN_DAYS} days old: not publishing."
+              elif ! ci_passed "$sha"; then echo "CI has not passed on main's head ${sha}: not publishing."
+              else publish=true; echo "Publishing main at ${sha}."; fi ;;
+            *)
+              echo "Event ${GITHUB_EVENT_NAME}: not publishing." ;;
+          esac
+          echo "publish=${publish}" >> "$GITHUB_OUTPUT"
+          echo "sha=${sha}" >> "$GITHUB_OUTPUT"
+
   build:
     name: build (${{ matrix.os }})
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    needs: decide
+    if: needs.decide.outputs.publish == 'true'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 40
     strategy:
@@ -34,7 +93,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ needs.decide.outputs.sha }}
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
@@ -65,7 +124,8 @@ jobs:
           if-no-files-found: error
 
   release:
-    needs: build
+    needs: [decide, build]
+    if: needs.decide.outputs.publish == 'true'
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
@@ -73,7 +133,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ needs.decide.outputs.sha }}
           fetch-depth: 0          # history and tags, for the list of changes
       - uses: actions/download-artifact@v7
         with:
@@ -94,8 +154,8 @@ jobs:
       - name: Write the release notes
         shell: bash
         run: |
-          # The changes since the previous release (the latest build, or for a version tag
-          # the previous version), one line per commit, then where to read more.
+          # The changes since the previous release (the latest published build, or for a
+          # version tag the previous version), one line per commit, then where to read more.
           if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
             prev=$(git describe --tags --abbrev=0 --exclude '*-build.*' --match 'v[0-9]*' HEAD^ 2>/dev/null || true)
           else
@@ -123,16 +183,8 @@ jobs:
         with:
           tag_name: ${{ steps.name.outputs.tag }}
           name: ${{ steps.name.outputs.title }}
-          target_commitish: ${{ github.event.workflow_run.head_sha || github.sha }}
+          target_commitish: ${{ needs.decide.outputs.sha }}
           files: artifacts/*.zip
           body_path: release-notes.md
           prerelease: false
           make_latest: "true"
-      - name: Keep the 5 newest builds
-        shell: bash
-        run: |
-          gh release list --limit 200 --json tagName,createdAt \
-            --jq '[.[] | select(.tagName | test("-build\\."))] | sort_by(.createdAt) | reverse | .[5:] | .[].tagName' |
-          # (a run cancelled by a newer push can leave a release whose tag is already gone:
-          # failing on it marked a release that had been published as failed)
-          while read -r tag; do gh release delete "$tag" --yes --cleanup-tag || echo "::warning::could not delete $tag"; done

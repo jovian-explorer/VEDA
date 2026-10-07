@@ -1,8 +1,9 @@
 """Which build this is, and whether a newer one has been published.
 
-Every push to VEDA's main branch that passes the tests is built and published as
-the latest GitHub release, tagged ``v<version>-build.<n>`` (named versions are
-tagged ``v<version>``).  Release builds carry their number in ``veda/_build.py``,
+About once a month VEDA's main branch is built and published as the latest GitHub
+release, tagged ``v<version>-build.<n>`` (named versions are tagged ``v<version>``):
+the release workflow checks weekly and publishes when there are commits since the
+latest release, it is at least 30 days old and CI passed.  Release builds carry their number in ``veda/_build.py``,
 written by the release workflow; a copy run from source has no build number.
 
 The check makes one request to the GitHub API per session, and none when
