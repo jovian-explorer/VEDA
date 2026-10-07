@@ -213,7 +213,7 @@ def test_comparison_warns_when_vertical_references_differ():
     assert "1-bar" in _vertical_reference_warning([sphere, onebar])
 
 
-def test_pds4_header_table_fill_values_and_bracketing_uncertainty(tmp_path):
+def test_pds4_header_table_fill_values_and_bracketing_systematic_uncertainty(tmp_path):
     """PVO radio occultation layout: a one-row header table (location), then the profile
     with three retrievals (upper boundary 150/200/250 K); fills stated only in prose."""
     import dataclasses
@@ -246,8 +246,10 @@ def test_pds4_header_table_fill_values_and_bracketing_uncertainty(tmp_path):
     np.testing.assert_allclose(prof.altitude_km[:2], [6146.0 - 6051.8, 6110.0 - 6051.8])
     assert np.isnan(prof.altitude_km[2]) and np.isnan(prof.temperature_k[2])
     np.testing.assert_allclose(prof.temperature_k[:2], [200.0, 226.0])
-    np.testing.assert_allclose(prof.uncertainty["temperature_k"][:2], [50.0, 1.0])
-    np.testing.assert_allclose(prof.uncertainty["pressure_hpa"][1], 0.05, atol=1e-6)
+    # the spread of the three retrievals is a systematic uncertainty, not a random one
+    assert "temperature_k" not in prof.uncertainty
+    np.testing.assert_allclose(prof.systematic["temperature_k"][:2], [50.0, 1.0])
+    np.testing.assert_allclose(prof.systematic["pressure_hpa"][1], 0.05, atol=1e-6)
 
 
 def test_error_tables_in_supplemental_files_combine_in_quadrature(tmp_path):

@@ -740,16 +740,17 @@ DATASETS: List[Dataset] = [
                (r"graph_temp_k80", "Temperature vs pressure digitised from Kliore & Patel (1980), no altitude", "other"),
                (r"graph_eden", "Electron density digitised from published figures (observation time ambiguous)", "other"),
                (r"nssdc_freq", "Frequency residuals (NSSDC)", "other")),
-        # Temperature products give three retrievals (upper boundary 150, 200, 250 K); the
-        # 200 K one is used, as in Withers et al. (2020a), and half the 150-250 K spread is
-        # its uncertainty.  Altitudes are R - 6051.8 km throughout.
+        # Temperature products give three retrievals (upper boundary 150, 200, 250 K, on the
+        # same radii); the 200 K one is used, as in Withers et al. (2020a), and half the
+        # 150-250 K spread is its systematic uncertainty (the archive gives no random one).
+        # Altitudes are R - 6051.8 km throughout.
         profile_columns={"radius": ("R20016", "R15"), "altitude": "Z", "temperature": ("T20016", "TEMP"),
                          "pressure": ("P20016", "PRESS"), "electron_density": "EDEN15",
                          "latitude": ("LAT16_SPICE", "LAT15_SPICE", "LAT_SPICE"),
                          "longitude": ("LON16_SPICE", "LON15_SPICE", "LON_SPICE"),
                          "sza": ("SZA16_SPICE", "SZA15_SPICE", "SZA_SPICE"),
                          "lst": ("LST16_SPICE", "LST15_SPICE", "LST_SPICE")},
-        sigma_from_bracket={"temperature_k": ("T15016", "T25016"), "pressure_hpa": ("P15016", "P25016")},
+        systematic_from_bracket={"temperature_k": ("T15016", "T25016"), "pressure_hpa": ("P15016", "P25016")},
         altitude_reference_km=6051.8,          # Z = R - 6051.8 km (user guide, Sections 2 and 5)
         fill_values={"R15": (1e9,), "EDEN15": (1e9,), "Z15": (1e9,), "Z": (-9.0,), "TEMP": (0.0,), "PRESS": (-9.0,)},
         citation=("Withers, P., Hensley, K., Vogt, M. F., & Hermann, J. (2020). Recovery and validation of Venus "
