@@ -51,6 +51,13 @@ jobs:
           EOF
       - name: Build
         run: python scripts/build_exe.py --archive
+      - name: Check the automatic update's swap on the built app
+        # unpacks the zip as an installed copy and a staged update, runs the swap script
+        # for this system against them and checks the restart, its options and that the
+        # data folder is untouched (scripts/check_update_swap.py)
+        shell: bash
+        timeout-minutes: 10
+        run: python scripts/check_update_swap.py dist/*.zip
       - uses: actions/upload-artifact@v6
         with:
           name: veda-${{ matrix.os }}

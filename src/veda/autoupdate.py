@@ -381,10 +381,10 @@ Start-Veda
 
     def q(p):
         return "'" + str(p).replace("'", "'\\''") + "'"
-    if sys.platform == "darwin":
-        start = f"open -n {q(root / 'VEDA.app')}" + (" --args " + " ".join(q(a) for a in args) if args else "")
-    else:
-        start = f"nohup {q(root / 'VEDA')} {' '.join(q(a) for a in args)} >/dev/null 2>&1 &"
+    # the executable itself, not `open VEDA.app`: LaunchServices does not pass this
+    # process's environment on, so a VEDA_HOME data folder would be lost on macOS
+    exe = root / "VEDA.app" / "Contents" / "MacOS" / "VEDA" if sys.platform == "darwin" else root / "VEDA"
+    start = f"nohup {q(exe)} {' '.join(q(a) for a in args)} >/dev/null 2>&1 &"
     body = f"""#!/bin/sh
 log() {{ echo "[$(date '+%Y-%m-%dT%H:%M:%S')] $1" >> {q(log)}; }}
 start_veda() {{
