@@ -317,3 +317,25 @@ def test_monte_carlo_spread_is_not_swayed_by_a_few_far_draws():
     few = np.full((unc.MC_DRAWS, 1), np.nan)
     few[:10, 0] = 1.0
     assert np.isnan(unc._std(few)[0])
+
+
+def test_correlated_draws_have_the_stated_correlation_on_both_paths(monkeypatch):
+    """Draws with correlation length L: unit variance and correlation exp(-dz^2/(2L^2)),
+    from the sparse kernel and from the even-grid path used for densely sampled profiles."""
+    z = np.sort(np.random.default_rng(1).uniform(0.0, 20.0, 400))
+    big_l = 1.0
+    i, j = 200, int(np.argmin(np.abs(z - (z[200] + 1.0))))
+    expected = np.exp(-(z[j] - z[i]) ** 2 / 2.0)
+    for terms in (10 ** 9, 0):
+        monkeypatch.setattr(unc, "_MAX_KERNEL_TERMS", terms)
+        draws = np.concatenate([unc._draws(np.ones(z.size), z, big_l, np.random.default_rng(k)) for k in range(25)])
+        assert np.std(draws, axis=0).mean() == pytest.approx(1.0, abs=0.03)
+        assert np.corrcoef(draws[:, i], draws[:, j])[0, 1] == pytest.approx(expected, abs=0.05)
+
+
+def test_spread_matches_numpy_nanpercentile():
+    rng = np.random.default_rng(4)
+    a = rng.standard_t(3, (unc.MC_DRAWS, 50)) * rng.uniform(0.1, 10, 50)
+    a[rng.uniform(size=a.shape) < 0.2] = np.nan
+    lo, hi = np.nanpercentile(a, [15.865, 84.135], axis=0)
+    np.testing.assert_allclose(unc._std(a), (hi - lo) / 2, rtol=1e-12)

@@ -60,17 +60,47 @@ def _draws(sigma: np.ndarray, z_km: np.ndarray, corr_km: float, rng: np.random.G
         z = np.where(np.isfinite(z_km), z_km, 0.0)
         order = np.argsort(z)
         zs = z[order]
-        rows, cols, vals = [], [], []
-        for i in range(n):
-            j0, j1 = np.searchsorted(zs, [zs[i] - 4 * corr_km, zs[i] + 4 * corr_km])
-            w = np.exp(-((zs[j0:j1] - zs[i]) / corr_km) ** 2)
-            w /= np.sqrt(np.sum(w * w))
-            rows.append(np.full(j1 - j0, order[i]))
-            cols.append(order[j0:j1])
-            vals.append(w)
-        kern = sparse.csr_matrix((np.concatenate(vals), (np.concatenate(rows), np.concatenate(cols))), shape=(n, n))
+        # every level's neighbours within 4 L, built at once (a loop over levels took
+        # 10-20 s per variable for the 52,201-level MSL entry profile)
+        j0 = np.searchsorted(zs, zs - 4 * corr_km)
+        j1 = np.searchsorted(zs, zs + 4 * corr_km)
+        counts = j1 - j0
+        if counts.sum() > _MAX_KERNEL_TERMS:
+            return _draws_on_grid(z, corr_km, rng.standard_normal) * s
+        rows = np.repeat(np.arange(n), counts)
+        starts = np.repeat(np.cumsum(counts) - counts, counts)
+        cols = j0[rows] + (np.arange(rows.size) - starts)
+        w = np.exp(-((zs[cols] - zs[rows]) / corr_km) ** 2)
+        w /= np.sqrt(np.bincount(rows, weights=w * w, minlength=n))[rows]
+        kern = sparse.csr_matrix((w, (order[rows], order[cols])), shape=(n, n))
         eps = (kern @ eps.T).T
     return eps * s
+
+
+# Above this many kernel terms (densely sampled profiles with a long correlation length:
+# the Phoenix entry profile has 91,835 levels) the draws are made on an even grid instead
+_MAX_KERNEL_TERMS = 4_000_000
+
+
+def _draws_on_grid(z: np.ndarray, corr_km: float, normal) -> np.ndarray:
+    """(MC_DRAWS, n) unit-variance draws with correlation exp(-dz^2 / (2 L^2)) at heights
+    ``z``, made on an even grid of spacing L / 4 (white noise smoothed with the Gaussian
+    kernel of _draws) and interpolated linearly to the levels; each level is divided by
+    the standard deviation that the interpolation leaves (between 0.985 and 1)."""
+    step = corr_km / 4.0
+    lo, hi = float(np.min(z)) - 4 * corr_km, float(np.max(z)) + 4 * corr_km
+    grid = lo + step * np.arange(int(np.ceil((hi - lo) / step)) + 1)
+    half = int(np.ceil(4 * corr_km / step))
+    k = np.exp(-((np.arange(-half, half + 1) * step) / corr_km) ** 2)
+    k /= np.sqrt(np.sum(k * k))
+    from scipy.signal import fftconvolve
+    white = normal((MC_DRAWS, grid.size + 2 * half))
+    smooth = fftconvolve(white, k[None, :], mode="valid", axes=1)          # (MC_DRAWS, grid.size)
+    i = np.clip(np.searchsorted(grid, z, side="right") - 1, 0, grid.size - 2)
+    w = (z - grid[i]) / step
+    r = np.exp(-(step / corr_km) ** 2 / 2.0)
+    norm = np.sqrt((1 - w) ** 2 + w ** 2 + 2 * w * (1 - w) * r)
+    return (smooth[:, i] * (1 - w) + smooth[:, i + 1] * w) / norm
 
 
 def error_correlation_from_scatter(z_km, values, sigma, log: bool = False, min_levels: int = 10) -> float:
@@ -163,12 +193,22 @@ def _std(a: np.ndarray) -> np.ndarray:
     on the errors (SOIR temperature from density with 30-50 % density errors: up to
     50 times the half-width, thousands of kelvin); on normal results the two agree (Mars
     Express lapse rate: 0.98-0.99)."""
-    import warnings
+    a = np.asarray(a, dtype=float)
     ok = np.isfinite(a).sum(axis=0)
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", RuntimeWarning)
-        lo, hi = np.nanpercentile(a, [15.865, 84.135], axis=0)
-    return np.where(ok >= MC_DRAWS // 2, (hi - lo) / 2.0, np.nan)
+    srt = np.sort(np.where(np.isfinite(a), a, np.inf), axis=0)      # finite values first
+    # (np.nanpercentile, column by column, took 40 s for the 52,201 levels of the MSL profile;
+    # this is its 'linear' method, vectorised)
+
+    def quantile(q):
+        pos = np.maximum(ok - 1, 0) * q
+        i0 = np.floor(pos).astype(int)
+        i1 = np.minimum(i0 + 1, np.maximum(ok - 1, 0))
+        v0 = np.take_along_axis(srt, i0[None, :], axis=0)[0]
+        v1 = np.take_along_axis(srt, i1[None, :], axis=0)[0]
+        with np.errstate(invalid="ignore"):
+            return v0 + (pos - i0) * (v1 - v0)
+    spread = (quantile(0.84135) - quantile(0.15865)) / 2.0
+    return np.where(ok >= MC_DRAWS // 2, spread, np.nan)
 
 
 def _sigma_of(profile, key: str, shape) -> Optional[np.ndarray]:
