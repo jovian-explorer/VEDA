@@ -104,6 +104,16 @@ const MISSION_COLORS = {
   messenger: '#ffab40',
   maven: '#ff5252',
   mro: '#40c4ff',
+  // the other Mars missions: without their own colour they took the palette's first one
+  // (#38bdf8), which is almost MRO's, so MEX and MRO profiles looked the same
+  mex: '#ff9100',
+  mgs: '#b388ff',
+  ody: '#76ff03',
+  msl: '#f50057',
+  insight: '#d4a600',
+  phoenix: '#00bfa5',
+  mer: '#a1887f',
+  vega: '#00e676',
   juno: '#ff6e40',
   galileo: '#7c4dff',
   cassini: '#00e5ff',
@@ -111,7 +121,7 @@ const MISSION_COLORS = {
   lro: '#b0bec5',
   dawn: '#00b0ff',
   rosetta: '#1de9b6',
-  mom: '#ff3d00',
+  mom: '#ff80ab',                // (#ff3d00 was hard to tell from MAVEN's #ff5252 on Mars)
   chandrayaan2: '#00e676',
   user_imported: '#00e5ff',
 };
