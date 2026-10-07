@@ -1466,9 +1466,9 @@ function renderAltitudeCut() {
   if (xKey === 'value2') xTitles.value2 = `${varLabel} at ${grid[k2]} km`;
   if (xDiag) xTitles[xKey] = xDiag[1] ? `${xDiag[0]} (${xDiag[1]})` : xDiag[0];
   const layout = {
-    title: { text: `${what} (${pts.length} profile${pts.length === 1 ? '' : 's'})` },
+    title: { text: `${what} (${pts.length} profile${pts.length === 1 ? '' : 's'})`, ...TITLE_BELOW_MODEBAR },
     hovermode: 'closest',
-    margin: { l: 75, r: 25, t: 56, b: 60 },
+    margin: { l: 75, r: 25, t: 78, b: 60 },
     xaxis: { title: { text: xTitles[xKey] },
              type: xKey === 'time' ? 'date' : (xKey === 'value2' && cfg.logScale) || (xDiag && ['cm^-3', 'J/kg'].includes(xDiag[1])) ? 'log' : 'linear',
              ...(xKey === 'lst' ? { range: [0, 24], dtick: 3 } : {}), ...(xKey === 'latitude' ? { range: [-90, 90], dtick: 30 } : {}),
@@ -1530,6 +1530,10 @@ function renderAltitudeCut() {
 }
 
 let altitudeCutRenders = 0;
+
+// Titles of the cut, spectra and cross-section plots just above the plot area, below the
+// Plotly toolbar: centred at the top, the toolbar covered them in a narrow panel (1024 px).
+const TITLE_BELOW_MODEBAR = { y: 1, yref: 'paper', yanchor: 'bottom', pad: { b: 8 } };
 
 /** Mean of the altitude-cut points in bins of ``width`` along x, with 95 % bootstrap
  *  intervals (analysis/resampling.py binned_statistics), drawn over the points; circular
@@ -1664,8 +1668,8 @@ async function computeSpectra() {
       line: { width: 1.5, dash: 'dash', color: '#e11d48' }, hoverinfo: 'skip' });
   }
   const layout = {
-    title: { text: `Vertical wavenumber spectra, ${req.z_min} to ${req.z_max} km` },
-    margin: { l: 75, r: 25, t: 56, b: 60 },
+    title: { text: `Vertical wavenumber spectra, ${req.z_min} to ${req.z_max} km`, ...TITLE_BELOW_MODEBAR },
+    margin: { l: 75, r: 25, t: 78, b: 60 },
     xaxis: { title: { text: 'Vertical wavenumber m (cycles/km)' }, type: 'log' },
     yaxis: { title: { text: 'PSD of (T − T₀)/T₀ ((cycles/km)⁻¹)' }, type: 'log' },
     legend: { orientation: 'h', y: -0.18 },
@@ -1710,8 +1714,8 @@ function renderCrossSection() {
     colorscale: show === 'mean' ? 'RdBu' : 'Viridis', reversescale: show === 'mean', connectgaps: false,
     colorbar: { title: { text: title }, thickness: 12, len: 0.8 }, xgap: 1 };
   const layout = {
-    title: { text: `Zonal mean in ${xs.width}° bands (${data.profile_count} profiles)` },
-    margin: { l: 75, r: 25, t: 56, b: 60 },
+    title: { text: `Zonal mean in ${xs.width}° bands (${data.profile_count} profiles)`, ...TITLE_BELOW_MODEBAR },
+    margin: { l: 75, r: 25, t: 78, b: 60 },
     xaxis: { title: { text: 'Latitude (°)' }, range: [-90, 90], dtick: 30 },
     yaxis: byPressure ? { title: { text: 'Pressure (hPa)' }, type: 'log', autorange: 'reversed' }
       : { title: { text: altitudeAxisTitle((data.profiles || []).map(p => p.altitude_reference)) } },
