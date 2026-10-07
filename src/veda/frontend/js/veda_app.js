@@ -80,6 +80,8 @@ const VARIABLE_CONFIGS = {
   absorptivity_db_km: { label: 'Microwave absorptivity', units: 'dB/km', bodies: ['venus'], axis: 'Absorptivity (dB/km)', color: '#f97316' },
   density_measured: { label: 'Mass density (archive)', units: 'kg/m³', axis: 'Mass density ρ (kg/m³)', logScale: true, color: '#14b8a6' },
   number_density_m3: { label: 'Number density (archive)', units: 'm⁻³', axis: 'Number density (m⁻³)', logScale: true, color: '#22d3ee' },
+  // mean molar mass per level where the archive gives it (SOIR): used for density and scale height
+  molar_mass: { label: 'Mean molar mass (archive)', units: 'g/mol', bodies: ['venus'], axis: 'Mean molar mass (g/mol)', color: '#a3e635' },
   // Hydrostatic retrieval from a measured mass or number density profile (accelerometer, SOIR)
   temperature_from_density: { label: 'Temperature from density (hydrostatic)', units: 'K', axis: 'Temperature from density (K)', color: '#f43f5e' },
   pressure_from_density: { label: 'Pressure from density (hydrostatic)', units: 'hPa', axis: 'Pressure from density (hPa)', logScale: true, color: '#38bdf8' },
@@ -2435,6 +2437,7 @@ async function inspectProfileObservation(obs) {
       'absorptivity_db_km',
       'density_measured',
       'number_density_m3',
+      'molar_mass',
       'temperature_from_density', 'pressure_from_density',
       'dust_mixing_ratio', 'ice_mixing_ratio', 'dust_opacity_per_mbar', 'ice_opacity_per_mbar',
       'dust_effective_radius', 'ice_effective_radius',

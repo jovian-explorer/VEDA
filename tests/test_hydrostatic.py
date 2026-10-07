@@ -147,3 +147,48 @@ def test_temperature_from_the_density_of_one_gas_uses_its_molar_mass():
         prof.derived["number_density_m3"] = n
         t = compute_atmospheric_diagnostics(prof, saturn)["temperature_from_density"]
         assert np.nanmedian(t[:60]) == pytest.approx(expected, rel=0.01)
+
+
+def _venus_profile_with_changing_molar_mass(t_iso=180.0):
+    """An isothermal Venus thermosphere whose mean molar mass falls from 43.4 to 22 g/mol
+    above 120 km (as SOIR's total_molar_mass): number density and pressure integrated
+    hydrostatically with that molar mass."""
+    from veda.analysis.atmospheric import gravity_profile
+    venus = get_body("venus")
+    z = np.arange(90.0, 175.0, 1.0)
+    mu = np.where(z < 120, 43.44, 43.44 - (43.44 - 22.0) * (z - 120) / 55.0)
+    g, _ = gravity_profile(venus, z, 0.0, "")
+    r = 8314.46 / mu
+    f = g / (r * t_iso)                                                  # 1/m: d ln p / dz
+    lnp = np.concatenate([[0.0], np.cumsum(-0.5 * (f[1:] + f[:-1]) * np.diff(z) * 1000)])
+    p_pa = 1.0 * np.exp(lnp)
+    n = p_pa / (1.380649e-23 * t_iso)
+    return venus, z, mu, p_pa, n
+
+
+def test_molar_mass_per_level_from_the_archive():
+    """With the archive's molar mass per level (SOIR): the temperature from the total
+    number density, the mass density and the hydrostatic check use it; with Venus' bulk
+    molar mass the retrieved temperature at 160 km was far too high."""
+    from veda.analysis.atmospheric import compute_atmospheric_diagnostics
+    t_iso = 180.0
+    venus, z, mu, p_pa, n = _venus_profile_with_changing_molar_mass(t_iso)
+    def profile(with_mu):
+        prof = ObservationProfile(observation_id="s", mission_id="vex", body_id="venus", instrument="SOIR",
+                                  time_utc="2008-01-01T00:00:00", latitude=0.0, longitude=0.0, altitude_km=z,
+                                  temperature_k=np.full(z.size, t_iso), pressure_hpa=p_pa / 100.0)
+        prof.derived["number_density_m3"] = n
+        if with_mu:
+            prof.derived["molar_mass"] = mu
+        prof.derived.update(compute_atmospheric_diagnostics(prof, venus))
+        return prof
+    good, bulk = profile(True), profile(False)
+    k = int(np.argmin(np.abs(z - 160.0)))
+    assert good.derived["temperature_from_density"][k] == pytest.approx(t_iso, rel=0.02)
+    assert bulk.derived["temperature_from_density"][k] > 1.25 * t_iso
+    rho = n * mu / 6.02214076e23 / 1000.0
+    np.testing.assert_allclose(good.derived["density"], rho, rtol=1e-6)
+    assert bulk.derived["density"][-1] / rho[-1] == pytest.approx(43.44 / mu[-1], rel=1e-3)
+    assert good.raw_attributes["hydrostatic_max_pct"] < 0.5 < 10 < bulk.raw_attributes["hydrostatic_max_pct"]
+    h = good.derived["scale_height"][k]
+    assert h == pytest.approx(8314.46 / mu[k] * t_iso / (8.87 * (6051.8 / (6051.8 + z[k])) ** 2) / 1000, rel=1e-3)

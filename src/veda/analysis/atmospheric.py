@@ -134,7 +134,8 @@ def _systematic(profile: ObservationProfile, body: BodyInfo, derived: Dict[str, 
     for i in (0, 1):
         alt = copy.copy(profile)
         alt.raw_attributes = dict(profile.raw_attributes or {})
-        alt.derived = {k: v for k, v in profile.derived.items() if k in ("number_density_m3", "density_measured")}
+        alt.derived = {k: v for k, v in profile.derived.items()
+                       if k in ("number_density_m3", "density_measured", "molar_mass")}
         alt.uncertainty, alt.systematic, alt.alternatives = {}, {}, {}
         for key, pair in profile.alternatives.items():
             v = np.asarray(pair[i], dtype=float)
@@ -239,7 +240,7 @@ def _diagnostics(profile: ObservationProfile, body: BodyInfo) -> Dict[str, np.nd
 
     # 3. Scale height H = R_spec T / g(z) (km) and speed of sound with cp(T)
     from .thermo import cp_model, heat_capacity
-    r_spec = body.gas_constant_r
+    r_spec = gas_constant_levels(profile, body)       # per level where the archive gives the molar mass
     cp_t = heat_capacity(body, t_k)                 # J/(kg K), temperature dependent for CO2/N2 atmospheres
     profile.raw_attributes["cp_model"] = cp_model(body)
     with np.errstate(invalid="ignore", divide="ignore"):
@@ -329,11 +330,29 @@ def _hydrostatic_temperature(profile: ObservationProfile, body: BodyInfo, z: np.
     profile.raw_attributes["hydrostatic_top_km"] = round(r["top_km"], 2)
 
 
-def density_gas_constant(profile: ObservationProfile, body: BodyInfo) -> float:
+def gas_constant_levels(profile: ObservationProfile, body: BodyInfo):
+    """Specific gas constant (J/(kg K)) of the atmosphere at the profile's levels: from the
+    mean molar mass the archive gives at each level (``derived["molar_mass"]``, g/mol;
+    SOIR: falling from 43.4 g/mol below 120 km to about 20 at 175 km as CO2 gives way to O
+    and CO), where it gives one, otherwise the body's bulk value."""
+    mu = (profile.derived or {}).get("molar_mass")
+    z = np.asarray(profile.altitude_km, dtype=float)
+    if mu is None or np.shape(mu) != z.shape:
+        return body.gas_constant_r
+    mu = np.asarray(mu, dtype=float)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        return np.where(np.isfinite(mu) & (mu > 0), 8314.46 / mu, body.gas_constant_r)
+
+
+def density_gas_constant(profile: ObservationProfile, body: BodyInfo):
     """Specific gas constant (J/(kg K)) for the hydrostatic retrieval from the profile's
-    density: the body's mean one, or that of the one gas the density is of, where the data
+    density: the archive's mean molar mass per level where it gives one
+    (gas_constant_levels), else that of the one gas the density is of, where the data
     set says so (DENSITY_MOLAR_MASS; Cassini UVIS: molecular hydrogen in Saturn's
-    thermosphere, where the bulk molar mass 2.30 g/mol made the temperatures 14 % too high)."""
+    thermosphere, where the bulk molar mass 2.30 g/mol made the temperatures 14 % too high),
+    else the body's mean one."""
+    if (profile.derived or {}).get("molar_mass") is not None:
+        return gas_constant_levels(profile, body)
     mu = (profile.raw_attributes or {}).get("DENSITY_MOLAR_MASS")
     try:
         mu = float(mu)
@@ -1111,7 +1130,7 @@ def export_profiles_long_csv(profiles: List[ObservationProfile], body: Optional[
         f"# Processed with VEDA {__version__} (https://github.com/jovian-explorer/VEDA, doi:10.5281/zenodo.23215291), MIT License",
     ]
     from ..core.registry import get_variable_info
-    extra_units = {"dtheta_dz": "K/km", "number_density_m3": "m^-3"}
+    extra_units = {"dtheta_dz": "K/km", "number_density_m3": "m^-3", "molar_mass": "g/mol"}
     unit_of = (lambda k: (get_variable_info(k) or {}).get("units") or extra_units.get(k))
     units = [f"{k}={unit_of(k)}" for k in var_cols if unit_of(k)]
     if units:

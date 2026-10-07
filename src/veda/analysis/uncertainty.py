@@ -232,7 +232,8 @@ def propagate(profile, body, derived: Dict[str, np.ndarray], gz: Optional[np.nda
     s_t = _sigma_of(profile, "temperature_k", z.shape) if t is not None else None
     p = profile.pressure_hpa
     s_p = _sigma_of(profile, "pressure_hpa", z.shape) if p is not None and np.shape(p) == z.shape else None
-    r_spec = body.gas_constant_r
+    from .atmospheric import gas_constant_levels
+    r_spec = gas_constant_levels(profile, body)
     with np.errstate(invalid="ignore", divide="ignore"):
         rel_t = s_t / t if s_t is not None else None
         rel_p = s_p / p if s_p is not None else None
