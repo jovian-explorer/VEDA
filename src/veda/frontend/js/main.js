@@ -124,6 +124,8 @@ function wireChrome() {
 }
 
 const REPO_URL = 'https://github.com/jovian-explorer/VEDA';
+// Zenodo concept DOI: every archived release; resolves to the newest one
+const VEDA_DOI = '10.5281/zenodo.23215291';
 
 function appVersion() {
   return (state.meta && state.meta.app && state.meta.app.version) || '';
@@ -176,6 +178,7 @@ function vedaBibtex() {
   title     = {{VEDA: Visualization, Exploration, and Data Analysis - A Multi-Mission Planetary Science Data Laboratory}},
   year      = {${new Date().getFullYear()}},
   version   = {${appVersion()}},
+  doi       = {${VEDA_DOI}},
   url       = {${REPO_URL}},
   address   = {Thiruvananthapuram, Kerala, India}
 }`;
@@ -788,7 +791,7 @@ function aboutBody() {
     <p class="about-missions" id="about-datasets">Loading&hellip;</p>
 
     <h3>How to cite</h3>
-    <p>Cite the data set and the instrument team's reference publication (listed in <strong>Data &amp; Licenses</strong>), the archive, and VEDA:</p>
+    <p>Cite the data set and the instrument team's reference publication (listed in <strong>Data &amp; Licenses</strong>), the archive, and VEDA (DOI <a href="https://doi.org/${VEDA_DOI}" target="_blank" rel="noopener">${VEDA_DOI}</a>, all versions):</p>
     <pre class="about-bibtex">${vedaBibtex()}</pre>
     <button type="button" class="ghost small" id="btn-copy-bibtex">Copy citation</button>
 

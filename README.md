@@ -4,6 +4,8 @@
 
 # VEDA: Visualization, Exploration, and Data Analysis
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23215291.svg)](https://doi.org/10.5281/zenodo.23215291)
+
 **VEDA** is a desktop laboratory for planetary atmosphere and ionosphere data. Pick a planet or moon and a date range, and VEDA finds every product the official archives hold for it across all connected missions. You can then download the products, plot them, derive physical parameters, compare observations and compute the observation geometry with SPICE.
 
 All data shown in VEDA come straight from the mission archives (NASA PDS, ESA PSA, JAXA DARTS, ISRO ISSDC, OPUS) and the instrument teams' research data repositories (Zenodo, BIRA-IASB). Nothing is simulated. Nearly every payload of every mission in VEDA can be searched by date and plotted; the few that cannot (no searchable archive route yet) are listed in DATA_POLICY.md.
@@ -214,9 +216,12 @@ VEDA does not own or host any data. Each archive's terms apply to the data you d
   title        = {{VEDA: Visualization, Exploration, and Data Analysis - A Multi-Mission Planetary Science Data Laboratory}},
   year         = {2026},
   version      = {0.2.0},
+  doi          = {10.5281/zenodo.23215291},
   url          = {https://github.com/jovian-explorer/VEDA}
 }
 ```
+
+The DOI is Zenodo's concept DOI for VEDA: it covers every archived release and always resolves to the newest one; each release also has its own version DOI, listed on the [Zenodo record](https://doi.org/10.5281/zenodo.23215291).
 
 * **License**: [MIT](LICENSE). Copyright (c) 2026 Keshav Aggarwal.
 * **Terms of use**: [TERMS.md](TERMS.md). VEDA is provided without warranty, has no accounts, analytics or telemetry, and contacts only the archives you search.

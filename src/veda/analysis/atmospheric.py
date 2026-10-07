@@ -1011,7 +1011,7 @@ def export_profile_to_csv(profile: ObservationProfile) -> str:
         lines.append(f"# Source file: {profile.provenance.original_file} ({profile.provenance.product_level})")
         lines.append(f"# Citation: {profile.provenance.doi_or_citation}")
     lines.append("# Archived columns are as published, converted to the units in the header; other columns are derived by VEDA.")
-    lines.append(f"# Processed with VEDA {__version__} (https://github.com/jovian-explorer/VEDA), MIT License")
+    lines.append(f"# Processed with VEDA {__version__} (https://github.com/jovian-explorer/VEDA, doi:10.5281/zenodo.23215291), MIT License")
 
     cols = ["altitude_km"]
     data_arrays = [profile.altitude_km]
@@ -1108,7 +1108,7 @@ def export_profiles_long_csv(profiles: List[ObservationProfile], body: Optional[
         "# altitude_km is above each profile's altitude reference, given with its source below (most data sets: the",
         "# body's reference radius); profile_* columns are each profile's header values,",
         "# level_* columns the position of each level along the ray path where the archive gives it.",
-        f"# Processed with VEDA {__version__} (https://github.com/jovian-explorer/VEDA), MIT License",
+        f"# Processed with VEDA {__version__} (https://github.com/jovian-explorer/VEDA, doi:10.5281/zenodo.23215291), MIT License",
     ]
     from ..core.registry import get_variable_info
     extra_units = {"dtheta_dz": "K/km", "number_density_m3": "m^-3"}
@@ -1185,7 +1185,7 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
          _altitude_note(profiles)
          + (f", common grid every {comparison['altitude_step_km']:g} km." if comparison.get("altitude_step_km") else "."))
         + (f" Note: {comparison['vertical_reference_warning']}" if comparison.get("vertical_reference_warning") else ""),
-        f"# Processed with VEDA {__version__} (https://github.com/jovian-explorer/VEDA), MIT License",
+        f"# Processed with VEDA {__version__} (https://github.com/jovian-explorer/VEDA, doi:10.5281/zenodo.23215291), MIT License",
     ]
     diag_keys = list(comparison.get("diagnostic_labels") or {})
     lines.append("# column, mission, instrument, observation, time_utc, latitude_deg, longitude_deg, lst_h, sza_deg, ls_deg"
@@ -1272,7 +1272,7 @@ def export_cross_section_to_csv(comparison: Dict[str, Any]) -> str:
         + (f" ({xs['without_latitude']} without latitude left out)" if xs.get("without_latitude") else "")
         + f"; {comparison.get('averaging', '')}; sem = spread / sqrt(n_effective)"
         + (" in percent of the mean" if xs.get("sem_unit") == "%" else ""),
-        f"# Processed with VEDA {__version__} (https://github.com/jovian-explorer/VEDA), MIT License",
+        f"# Processed with VEDA {__version__} (https://github.com/jovian-explorer/VEDA, doi:10.5281/zenodo.23215291), MIT License",
         ",".join(["latitude_center_deg", "pressure_hpa" if by_pressure else "altitude_km", f"mean_{var_name}",
                   "sem_pct" if xs.get("sem_unit") == "%" else "sem", "profiles"]),
     ]

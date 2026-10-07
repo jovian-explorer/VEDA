@@ -7,6 +7,15 @@ authors:
     given-names: Keshav
     email: keshavaggarwal2310@gmail.com
 version: 0.2.0
+# Concept DOI on Zenodo: all versions, always resolves to the newest release
+doi: 10.5281/zenodo.23215291
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.23215291
+    description: "Concept DOI (all versions; resolves to the newest release)"
+  - type: url
+    value: "https://zenodo.org/records/23215292"
+    description: "Zenodo record of the first archived release (v0.2.0-build.144)"
 date-released: 2026-10-02
 license: MIT
 abstract: >-

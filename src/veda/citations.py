@@ -16,6 +16,8 @@ from . import __version__
 from .archives.datasets import get_dataset
 
 REPO_URL = "https://github.com/jovian-explorer/VEDA"
+# Zenodo concept DOI: every archived release; resolves to the newest one
+VEDA_DOI = "10.5281/zenodo.23215291"
 
 # Acknowledgements the archives ask for (wording kept short and factual)
 ARCHIVE_NOTES = {
@@ -122,6 +124,7 @@ def veda_bibtex() -> str:
     return ("@software{Aggarwal_VEDA_2026,\n  author    = {Keshav Aggarwal},\n"
             "  title     = {{VEDA: Visualization, Exploration, and Data Analysis - A Multi-Mission Planetary Science Data Laboratory}},\n"
             f"  year      = {{2026}},\n  version   = {{{__version__}}},\n"
+            f"  doi       = {{{VEDA_DOI}}},\n"
             f"  url       = {{{REPO_URL}}}\n}}")
 
 
@@ -188,7 +191,7 @@ def build(dataset_ids: Iterable[str], features: Iterable[str],
     bib = [veda_bibtex()] + [ref_bibtex(r) for r in used_refs.values()]
     return {
         "veda": {"text": f"Aggarwal, K. (2026). VEDA: Visualization, Exploration, and Data Analysis (version "
-                         f"{__version__}). {REPO_URL}",
+                         f"{__version__}). Zenodo. https://doi.org/{VEDA_DOI}",
                  "bibtex": veda_bibtex()},
         "data": data_items, "acknowledgements": acks,
         "features": [{"title": t, "items": items} for t, items in feature_sections.items()],

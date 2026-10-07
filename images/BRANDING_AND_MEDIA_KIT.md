@@ -74,6 +74,7 @@ When utilizing these logos or scientific software outputs in publications or pos
   title = {{VEDA: Visualization, Exploration, and Data Analysis for Planetary Science and Comparative Atmospheric Profiling}},
   year = {2026},
   address = {Thiruvananthapuram, Kerala, India},
+  doi = {10.5281/zenodo.23215291},
   url = {https://github.com/jovian-explorer/VEDA}
 }
 ```

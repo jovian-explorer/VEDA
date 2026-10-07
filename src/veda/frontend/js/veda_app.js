@@ -2623,7 +2623,7 @@ function exportLocalProfileCsv(prof) {
     `# Target Body: ${prof.body_id || 'Unknown'}`,
     `# Instrument: ${prof.instrument || 'Unknown'}`,
     `# Sounding Points: ${n}`,
-    '# Software: VEDA (Keshav Aggarwal, 2026), https://github.com/jovian-explorer/VEDA',
+    '# Software: VEDA (Keshav Aggarwal, 2026), https://github.com/jovian-explorer/VEDA, doi:10.5281/zenodo.23215291',
     'altitude_km,temperature_k,pressure_hpa,electron_density_cm3,potential_temp_k,lapse_rate_k_per_km,buoyancy_freq_sq'
   ];
   const t = prof.temperature_k || [];

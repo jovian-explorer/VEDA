@@ -87,6 +87,23 @@ def test_data_policy_archives_and_bibtex():
     assert "Aggarwal_VEDA_2026" in policy_text
 
 
+def test_concept_doi_is_the_same_everywhere():
+    """VEDA's Zenodo concept DOI (all versions) in CITATION.cff, the README badge and
+    BibTeX, the data policy, the app's citations and the in-app BibTeX."""
+    import re
+    from veda.citations import VEDA_DOI, veda_bibtex
+    assert re.fullmatch(r"10\.5281/zenodo\.\d+", VEDA_DOI)
+    cff = (ROOT_DIR / "CITATION.cff").read_text(encoding="utf-8")
+    assert f"doi: {VEDA_DOI}" in cff and f"value: {VEDA_DOI}" in cff
+    readme = (ROOT_DIR / "README.md").read_text(encoding="utf-8")
+    assert f"https://zenodo.org/badge/DOI/{VEDA_DOI}.svg" in readme and f"doi          = {{{VEDA_DOI}}}" in readme
+    assert f"doi          = {{{VEDA_DOI}}}" in (ROOT_DIR / "DATA_POLICY.md").read_text(encoding="utf-8")
+    assert f"doi       = {{{VEDA_DOI}}}" in veda_bibtex()
+    main_js = (ROOT_DIR / "src" / "veda" / "frontend" / "js" / "main.js").read_text(encoding="utf-8")
+    assert f"const VEDA_DOI = '{VEDA_DOI}';" in main_js
+    assert VEDA_DOI in (ROOT_DIR / "src" / "veda" / "frontend" / "index.html").read_text(encoding="utf-8")
+
+
 # ===========================================================================
 # 3. OFFLINE ASSETS & ZERO-CDN VERIFICATION
 # ===========================================================================

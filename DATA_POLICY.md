@@ -247,6 +247,7 @@ When you publish figures, tables or values produced with VEDA, please cite:
   title        = {{VEDA: Visualization, Exploration, and Data Analysis - A Multi-Mission Planetary Science Data Laboratory}},
   year         = {2026},
   version      = {0.2.0},
+  doi          = {10.5281/zenodo.23215291},
   url          = {https://github.com/jovian-explorer/VEDA},
   address      = {Thiruvananthapuram, Kerala, India}
 }
