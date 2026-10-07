@@ -125,3 +125,25 @@ def test_profiles_with_temperature_and_pressure_report_their_hydrostatic_balance
     prof.derived.update(compute_atmospheric_diagnostics(prof, mars))
     d = profile_diagnostics(prof)
     assert d["hydrostatic_max_pct"] < 1e-6 and d["hydrostatic_median_pct"] < 1e-6
+
+
+def test_temperature_from_the_density_of_one_gas_uses_its_molar_mass():
+    """Cassini UVIS gives the H2 density of Saturn's thermosphere: an isothermal 450 K H2
+    profile must come back at 450 K, not 14 % higher with the bulk molar mass."""
+    from veda.analysis.atmospheric import compute_atmospheric_diagnostics, gravity_profile
+    from veda.core.models import ObservationProfile
+    from veda.core.registry import get_body
+    saturn = get_body("saturn")
+    z = np.arange(800.0, 2000.0, 10.0)
+    ref = "the 1-bar level of Saturn along the surface normal"
+    g, _ = gravity_profile(saturn, z, 0.0, ref)
+    r_h2 = 8314.46 / 2.01588
+    h = r_h2 * 450.0 / g                                     # m, local scale height
+    n = 1e17 * np.exp(-np.concatenate([[0.0], np.cumsum(np.diff(z) * 1000 / (0.5 * (h[1:] + h[:-1])))]))
+    for mu, expected in ((2.01588, 450.0), (None, 450.0 * 8314.46 / saturn.gas_constant_r / 2.01588)):
+        prof = ObservationProfile(observation_id="u", mission_id="cassini", body_id="saturn", instrument="UVIS",
+                                  time_utc="2017-07-14T00:00:00", latitude=0.0, longitude=0.0, altitude_km=z,
+                                  raw_attributes={"ALTITUDE_REFERENCE": ref, **({"DENSITY_MOLAR_MASS": mu} if mu else {})})
+        prof.derived["number_density_m3"] = n
+        t = compute_atmospheric_diagnostics(prof, saturn)["temperature_from_density"]
+        assert np.nanmedian(t[:60]) == pytest.approx(expected, rel=0.01)

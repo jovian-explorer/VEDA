@@ -408,6 +408,7 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
             retrieval_method=prod["product_type"],
         ),
         raw_attributes={**tbl.metadata, "DATASET_ID": ds.id, "VOLUME": prod["volume"], "ALTITUDE_REFERENCE": z_ref,
+                        **({"DENSITY_MOLAR_MASS": ds.density_molar_mass} if ds.density_molar_mass else {}),
                         **({"LST": header["lst"]} if "lst" in header else {}),
                         **({"SZA": header["sza"]} if "sza" in header else {})},
         uncertainty=unc,

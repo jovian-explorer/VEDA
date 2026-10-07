@@ -88,6 +88,9 @@ class Dataset:
     # derived quantities get half the difference of their values from A and B
     # (radio occultations: the lower and upper boundary temperature at the top)
     systematic_from_bracket: Dict[str, Tuple[str, str]] = field(default_factory=dict)
+    # Molar mass (g/mol) of the one gas a number density column is of, where it is not the
+    # whole atmosphere (Cassini UVIS: H2): used for the hydrostatic temperature from it
+    density_molar_mass: Optional[float] = None
     # Factor turning the archive's error column into 1 sigma (0.5 for a full error-bar width)
     sigma_factor: Dict[str, float] = field(default_factory=dict)
     # Vertical correlation length (km) of the archived 1-sigma errors, where the archive
@@ -817,6 +820,8 @@ DATASETS: List[Dataset] = [
         profile_columns={"altitude": "Altitude", "temperature": "Temperature", "temperature_sigma": "Temperature error",
                          "number_density": "Number density", "latitude": "Latitude", "longitude": "Longitude"},
         altitude_reference="the 1-bar level of Saturn along the surface normal (Koskinen et al. 2015)",
+        # "Direct retrieval (inversion) molecular hydrogen number density" (the labels)
+        density_molar_mass=2.01588,
         citation=("Koskinen, T. T., et al. (2015). Saturn's variable thermosphere from Cassini/UVIS occultations. "
                   "Icarus, 260, 174-189. Data: doi:10.17189/518e-p721."),
         doi="10.1016/j.icarus.2015.07.008",

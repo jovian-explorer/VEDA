@@ -303,7 +303,8 @@ def propagate(profile, body, derived: Dict[str, np.ndarray], gz: Optional[np.nda
             with np.errstate(invalid="ignore", divide="ignore"):
                 rel = np.where(np.isfinite(s_rho) & (rho > 0), s_rho / rho, np.nan)
             rho_draws = rho * np.exp(_draws(rel, z, corr_of("density", rho, s_rho, log=True), rng))
-            r = temperature_from_density_draws(z, rho_draws, gz, body.gas_constant_r, s_rho)
+            from .atmospheric import density_gas_constant
+            r = temperature_from_density_draws(z, rho_draws, gz, density_gas_constant(profile, body), s_rho)
             out["temperature_from_density"] = _std(r["temperature_k"])
             out["pressure_from_density"] = _std(r["pressure_pa"] / 100.0)
 
@@ -317,9 +318,11 @@ def _density_and_sigma(profile, body, shape):
     rho = profile.derived.get("density_measured")
     s = _sigma_of(profile, "density_measured", shape)
     if rho is None and profile.derived.get("number_density_m3") is not None:
-        rho = np.asarray(profile.derived["number_density_m3"], dtype=float) * K_BOLTZMANN / body.gas_constant_r
+        from .atmospheric import density_gas_constant
+        r_gas = density_gas_constant(profile, body)
+        rho = np.asarray(profile.derived["number_density_m3"], dtype=float) * K_BOLTZMANN / r_gas
         sn = _sigma_of(profile, "number_density_m3", shape)
-        s = None if sn is None else sn * K_BOLTZMANN / body.gas_constant_r
+        s = None if sn is None else sn * K_BOLTZMANN / r_gas
     if rho is None or np.shape(rho) != shape:
         return None, None
     return np.asarray(rho, dtype=float), s

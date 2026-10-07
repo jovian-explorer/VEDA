@@ -312,9 +312,10 @@ def _hydrostatic_temperature(profile: ObservationProfile, body: BodyInfo, z: np.
     rho = profile.derived.get("density_measured")
     sigma = (profile.uncertainty or {}).get("density_measured")
     if rho is None and profile.derived.get("number_density_m3") is not None:
-        rho = np.asarray(profile.derived["number_density_m3"], dtype=float) * K_BOLTZMANN / body.gas_constant_r
+        r_gas = density_gas_constant(profile, body)
+        rho = np.asarray(profile.derived["number_density_m3"], dtype=float) * K_BOLTZMANN / r_gas
         s = (profile.uncertainty or {}).get("number_density_m3")
-        sigma = None if s is None else np.asarray(s, dtype=float) * K_BOLTZMANN / body.gas_constant_r
+        sigma = None if s is None else np.asarray(s, dtype=float) * K_BOLTZMANN / r_gas
     if rho is None or np.shape(rho) != np.shape(z):
         return
     if sigma is not None and np.shape(sigma) != np.shape(z):
@@ -328,12 +329,25 @@ def _hydrostatic_temperature(profile: ObservationProfile, body: BodyInfo, z: np.
     profile.raw_attributes["hydrostatic_top_km"] = round(r["top_km"], 2)
 
 
+def density_gas_constant(profile: ObservationProfile, body: BodyInfo) -> float:
+    """Specific gas constant (J/(kg K)) for the hydrostatic retrieval from the profile's
+    density: the body's mean one, or that of the one gas the density is of, where the data
+    set says so (DENSITY_MOLAR_MASS; Cassini UVIS: molecular hydrogen in Saturn's
+    thermosphere, where the bulk molar mass 2.30 g/mol made the temperatures 14 % too high)."""
+    mu = (profile.raw_attributes or {}).get("DENSITY_MOLAR_MASS")
+    try:
+        mu = float(mu)
+    except (TypeError, ValueError):
+        return body.gas_constant_r
+    return 8314.46 / mu if mu > 0 else body.gas_constant_r
+
+
 def _hydrostatic_retrieval(profile: ObservationProfile, body: BodyInfo, z: np.ndarray, rho: np.ndarray,
                            sigma: Optional[np.ndarray]) -> Optional[Dict[str, Any]]:
     """temperature_from_density at the profile's gravity, or None when it gives nothing."""
     from .hydrostatic import temperature_from_density
     g, _ = gravity_profile(body, z, profile.latitude, (profile.raw_attributes or {}).get("ALTITUDE_REFERENCE", ""))
-    r = temperature_from_density(z, rho, g, body.gas_constant_r, rho_sigma=sigma)
+    r = temperature_from_density(z, rho, g, density_gas_constant(profile, body), rho_sigma=sigma)
     return None if r["top_temperature_k"] is None else r
 
 
