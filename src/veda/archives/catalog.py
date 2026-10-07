@@ -121,9 +121,21 @@ def _seed(conn: sqlite3.Connection) -> None:
                      (ds_id, stem, vol, path, t0, "", target, ptype, kind, '{"BUNDLED": "yes"}'))
 
 
+class _ClosingConnection(sqlite3.Connection):
+    """A connection that ``with`` also closes: sqlite3's own context manager only commits
+    or rolls back, so every ``with _connect() as conn`` left a connection open until the
+    garbage collector found it (ResourceWarning: unclosed database)."""
+
+    def __exit__(self, exc_type, exc, tb):
+        try:
+            return super().__exit__(exc_type, exc, tb)
+        finally:
+            self.close()
+
+
 def _connect() -> sqlite3.Connection:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(DB_PATH), timeout=30)
+    conn = sqlite3.connect(str(DB_PATH), timeout=30, factory=_ClosingConnection)
     conn.row_factory = sqlite3.Row
     # WAL lets searches read while a background job is indexing.
     conn.execute("PRAGMA journal_mode=WAL")
@@ -580,10 +592,8 @@ def _has_downloads(dataset_id: str) -> bool:
         # The bundled samples are copied in on the first catalogue connection; without
         # this, a search before any other catalogue use (first start) missed them.
         with _db_lock:
-            conn = _connect()
-            with conn:        # (commits the sample rows)
+            with _connect():          # (commits the sample rows, closes)
                 pass
-            conn.close()
     root = PRODUCT_ROOT / dataset_id
     try:
         return root.is_dir() and any(root.iterdir())

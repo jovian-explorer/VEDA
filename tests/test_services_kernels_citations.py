@@ -34,7 +34,8 @@ def test_live_window_cache(tmp_path, monkeypatch):
     db = tmp_path / "c.sqlite"
 
     def connect():
-        c = sqlite3.connect(db)
+        from veda.archives.catalog import _ClosingConnection
+        c = sqlite3.connect(db, factory=_ClosingConnection)
         c.execute("CREATE TABLE IF NOT EXISTS products (dataset_id, product_id, volume, path, start_time, "
                   "stop_time, target, product_type, kind, extra, PRIMARY KEY (dataset_id, product_id))")
         return c
@@ -410,6 +411,7 @@ def test_broken_downloads_are_continued_where_they_stopped(tmp_path, monkeypatch
         assert out.read_bytes() == data
     finally:
         srv.shutdown()
+        srv.server_close()
     srv = _flaky_server(data, 300_000, ranges=False)      # a server that cannot resume
     try:
         with pytest.raises(net.ArchiveError):
@@ -417,3 +419,4 @@ def test_broken_downloads_are_continued_where_they_stopped(tmp_path, monkeypatch
         assert not (tmp_path / "g.zip").exists() and not list(tmp_path.glob("*.part*"))
     finally:
         srv.shutdown()
+        srv.server_close()
