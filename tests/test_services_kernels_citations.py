@@ -404,6 +404,7 @@ def _flaky_server(data: bytes, cut_every: int, ranges: bool = True):
 def test_broken_downloads_are_continued_where_they_stopped(tmp_path, monkeypatch):
     from veda.archives import net
     monkeypatch.setattr(net.time, "sleep", lambda s: None)
+    monkeypatch.setattr(net, "_session", None)            # an own session, closed below (its pooled sockets)
     data = bytes(range(256)) * 4000                       # 1 MB, cut every 300 kB
     srv = _flaky_server(data, 300_000)
     try:
@@ -420,3 +421,4 @@ def test_broken_downloads_are_continued_where_they_stopped(tmp_path, monkeypatch
     finally:
         srv.shutdown()
         srv.server_close()
+        net.session().close()

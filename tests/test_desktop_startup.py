@@ -51,6 +51,7 @@ def test_startup_wait_ignores_another_program_on_the_port():
         assert desktop._wait_until_up(url, "someone-else", alive, timeout=5)
     finally:
         srv.shutdown()
+        srv.server_close()                 # (its listening socket: ResourceWarning otherwise)
 
 
 def test_health_reports_the_launch_id(monkeypatch):
