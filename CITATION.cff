@@ -9,6 +9,14 @@ authors:
 version: 0.2.0
 date-released: 2026-10-02
 license: MIT
+abstract: >-
+  VEDA is a desktop laboratory for planetary atmosphere and ionosphere profiles. It
+  searches the official archives (NASA PDS, ESA PSA, JAXA DARTS, ISRO ISSDC) and the
+  instrument teams' research data repositories by body, mission and date, reads PDS3 and
+  PDS4 products, derives thermodynamic quantities with propagated random and systematic
+  uncertainties, compares and averages profiles of several missions with standard errors
+  and bootstrap intervals, and computes observation geometry with SPICE. Builds for
+  Windows, macOS and Linux.
 repository-code: "https://github.com/jovian-explorer/VEDA"
 keywords:
   - planetary science
