@@ -389,6 +389,28 @@ def correlation_of_points(req: CorrelationRequest) -> dict:
         raise HTTPException(status_code=400, detail=str(exc))
 
 
+class BinnedStatisticsRequest(BaseModel):
+    """Points of an altitude cut to average in bins along x."""
+    x: List[Optional[float]] = Field(..., max_length=100000)
+    y: List[Optional[float]] = Field(..., max_length=100000)
+    width: float = Field(..., gt=0.0, le=1e9)
+    period: Optional[float] = Field(None, gt=0.0, le=100000.0)     # 24 h (local time), 360 deg (Ls, longitude)
+    log: bool = False
+
+
+@router.post("/analysis/binned-statistics")
+def binned_statistics_of_points(req: BinnedStatisticsRequest) -> dict:
+    """Mean, standard error and 95 % bootstrap intervals of the points in bins along x
+    (seasonal, local-time or latitude binning; analysis/resampling.py)."""
+    from ..analysis.resampling import binned_statistics
+    nan = float("nan")
+    try:
+        return binned_statistics([nan if v is None else v for v in req.x], [nan if v is None else v for v in req.y],
+                                 req.width, req.period, req.log)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+
 class PointStatisticsRequest(BaseModel):
     """One value per profile (an altitude cut, a layer statistic, a diagnostic)."""
     values: List[Optional[float]] = Field(..., max_length=100000)

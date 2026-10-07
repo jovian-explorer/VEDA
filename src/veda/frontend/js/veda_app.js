@@ -1082,7 +1082,7 @@ function setupBodyModeControls() {
   btnCross?.addEventListener('click', () => exportComparison(btnCross, 'cross-section',
     `veda_cross_section_${vedaState.activeBodyId}_${vedaState.selectedCompareVariable}.csv`));
   SUBTABS.forEach(t => document.getElementById(`btn-subtab-${t}`)?.addEventListener('click', () => showSubtab(t)));
-  ['veda-cut-x', 'veda-cut-color', 'veda-cut-y', 'veda-cut-fit', 'veda-cut-regress', 'veda-cut-x-alt'].forEach(id => document.getElementById(id)?.addEventListener('change', renderAltitudeCut));
+  ['veda-cut-x', 'veda-cut-color', 'veda-cut-y', 'veda-cut-fit', 'veda-cut-regress', 'veda-cut-x-alt', 'veda-cut-bin'].forEach(id => document.getElementById(id)?.addEventListener('change', renderAltitudeCut));
   document.getElementById('veda-cut-altitude')?.addEventListener('change', (e) => {
     vedaState.cutAltitude = e.target.value === '' ? null : Number(e.target.value);
     renderAltitudeCut();
@@ -1499,6 +1499,17 @@ function renderAltitudeCut() {
     const fitStatus = document.getElementById('veda-cut-fit-status');
     if (fitStatus) fitStatus.textContent = '';
   }
+  // Binned means along x (numeric x only): seasonal, local-time or latitude climatologies
+  const binLabel = document.getElementById('veda-cut-bin-label');
+  if (binLabel) binLabel.style.display = xKey !== 'time' ? '' : 'none';
+  const binWidth = Number(document.getElementById('veda-cut-bin')?.value || 0);
+  if (xKey !== 'time' && binWidth > 0) {
+    binAltitudeCut(plotDiv, pts, yScale, binWidth, period, layout.yaxis.type === 'log', xTitles[xKey],
+                   diag ? diag[1] : (isAlt ? 'km' : (pScale === 1 ? cfg.units : pUnit)), cutToken);
+  } else {
+    const el = document.getElementById('veda-cut-bins');
+    if (el) el.textContent = '';
+  }
   cutPointStatistics(pts, yScale, layout.yaxis.type === 'log', colorKey, groupOf,
                      diag ? diag[1] : (isAlt ? 'km' : (pScale === 1 ? cfg.units : pUnit)), cutToken);
   if (status) {
@@ -1519,6 +1530,48 @@ function renderAltitudeCut() {
 }
 
 let altitudeCutRenders = 0;
+
+/** Mean of the altitude-cut points in bins of ``width`` along x, with 95 % bootstrap
+ *  intervals (analysis/resampling.py binned_statistics), drawn over the points; circular
+ *  bins for local time, longitude and Ls. */
+async function binAltitudeCut(plotDiv, pts, yScale, width, period, logY, xTitle, unit, token) {
+  let el = document.getElementById('veda-cut-bins');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'veda-cut-bins';
+    el.className = 'hint';
+    plotDiv.parentElement.insertBefore(el, plotDiv);
+  }
+  const list = pts.filter(o => typeof o.x === 'number');
+  let r;
+  try {
+    r = await api.vedaBinnedStatistics({ x: list.map(o => o.x), y: list.map(o => o.y * yScale), width,
+                                          period: period || null, log: logY });
+  } catch (err) {
+    if (token === altitudeCutRenders) el.textContent = `Bins: ${err.message}`;
+    return;
+  }
+  if (token !== altitudeCutRenders) return;
+  const bins = (r.bins || []).filter(b => b.mean != null);
+  const ci = (b, i) => (b.mean_ci95 ? b.mean_ci95[i] : b.mean);
+  // each bin's mean is drawn at the mean x of its points (they can sit at one side of the bin)
+  Plotly.addTraces(plotDiv, {
+    type: 'scatter', mode: 'lines+markers', x: bins.map(b => b.x_mean), y: bins.map(b => b.mean),
+    name: `Mean in bins of ${width} (95 % interval)`,
+    marker: { symbol: 'diamond', size: 11, color: plotColors().ink },
+    line: { color: plotColors().ink, width: 1.5, dash: 'dot' },
+    error_y: { type: 'data', symmetric: false, visible: true, thickness: 2, width: 6, color: plotColors().ink,
+               array: bins.map(b => ci(b, 1) - b.mean), arrayminus: bins.map(b => b.mean - ci(b, 0)) },
+    text: bins.map(b => `bin ${+b.x_low.toFixed(4)} to ${+b.x_high.toFixed(4)}: n = ${b.n}`),
+    hovertemplate: '%{text}<br>mean %{y:.4g}<extra></extra>',
+  });
+  const f = (v) => (v == null || !isFinite(v) ? '?' : Math.abs(v) >= 100 ? v.toFixed(1) : v.toPrecision(4));
+  const u = unit ? ` ${unit}` : '';
+  el.textContent = `Bins of ${width} along x (${xTitle}${period ? ', circular' : ''}): `
+    + (r.bins || []).map(b => `${+b.x_low.toFixed(4)} to ${+b.x_high.toFixed(4)}: ${b.mean == null ? 'none' : `${f(b.mean)}${u}`}`
+      + `${b.mean_ci95 ? ` [${f(b.mean_ci95[0])}, ${f(b.mean_ci95[1])}]` : ''} (n ${b.n})`).join('; ')
+    + '. Brackets: 95 % bootstrap interval of the mean; bins with one point have none.';
+}
 
 /** Correlation and regression of the altitude-cut points on their x quantity
  *  (analysis/resampling.py): the line over the points and r, rho and the slope with 95 % intervals. */

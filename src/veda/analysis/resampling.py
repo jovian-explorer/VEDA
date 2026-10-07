@@ -53,6 +53,48 @@ def _stats(v: np.ndarray, log: bool) -> Dict[str, Any]:
     return res
 
 
+def binned_statistics(x, y, width: float, period: Optional[float] = None, log: bool = False) -> Dict[str, Any]:
+    """The points in bins of ``width`` along x (Ls, local time, latitude, ...): for each bin
+    its range, centre, the mean x of its points, the number of points and the statistics of _stats (mean, standard
+    error, 95 % bootstrap intervals of the mean and the median).  With ``period`` (24 h,
+    360 deg) x is taken modulo the period and the bins start at 0, so the last one closes
+    the circle; otherwise they start at a multiple of the width below the smallest x."""
+    xv = np.asarray(x, dtype=float).ravel()
+    yv = np.asarray(y, dtype=float).ravel()
+    if xv.size != yv.size:
+        raise ValueError("x and y must have one value per profile")
+    if not (np.isfinite(width) and width > 0):
+        raise ValueError("the bin width must be positive")
+    ok = np.isfinite(xv) & np.isfinite(yv)
+    xv, yv = xv[ok], yv[ok]
+    if period:
+        xv = np.mod(xv, period)
+        if width > period:
+            raise ValueError("the bin width must not exceed the period")
+        start, stop = 0.0, float(period)
+    else:
+        if xv.size == 0:
+            return {"width": width, "period": period, "bins": []}
+        start = float(np.floor(xv.min() / width) * width)
+        stop = float(xv.max())
+    n_bins = max(1, int(np.ceil((stop - start) / width - 1e-9)))
+    if n_bins > 1000:
+        raise ValueError("more than 1000 bins: choose a wider bin")
+    idx = np.clip(np.floor((xv - start) / width).astype(int), 0, n_bins - 1)
+    bins = []
+    for b in range(n_bins):
+        in_bin = idx == b
+        sel = yv[in_bin]
+        if sel.size == 0:
+            continue
+        lo = start + b * width
+        hi = min(lo + width, stop) if period else lo + width
+        # (x_mean: where the points of the bin are; they may sit at one side of it)
+        bins.append({"x_low": lo, "x_high": hi, "x_center": (lo + hi) / 2.0, "x_mean": float(xv[in_bin].mean()),
+                     **_stats(sel, log)})
+    return {"width": width, "period": period, "bins": bins}
+
+
 def correlation(x, y, log_x: bool = False, log_y: bool = False) -> Dict[str, Any]:
     """Correlation and least-squares regression of y on x across profiles (one pair per
     profile; pairs with a non-finite value, or a non-positive one on a log axis, left out;

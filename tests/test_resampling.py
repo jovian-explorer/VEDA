@@ -65,3 +65,26 @@ def test_correlation_on_log_axes_and_refusals():
         correlation([1, 2, 3], [1, 2, 3])
     with pytest.raises(ValueError):
         correlation([1, 1, 1, 1, 1], [1, 2, 3, 4, 5])
+
+
+def test_binned_statistics_along_x():
+    """Means in bins along x with bootstrap intervals; circular x (local time) wraps."""
+    from veda.analysis.resampling import binned_statistics
+    rng = np.random.default_rng(2)
+    x = rng.uniform(0, 24, 400)
+    y = 200 + 10 * np.cos(2 * np.pi * x / 24) + rng.normal(0, 2, 400)
+    r = binned_statistics(np.r_[x, 24.5], np.r_[y, 1000.0], 3.0, period=24.0)
+    assert [b["x_low"] for b in r["bins"]] == [0, 3, 6, 9, 12, 15, 18, 21]
+    first = r["bins"][0]
+    sel = np.r_[y[(x >= 0) & (x < 3)], 1000.0]                     # 24.5 h is 0.5 h
+    assert first["n"] == sel.size and first["mean"] == pytest.approx(sel.mean())
+    assert first["x_mean"] == pytest.approx(np.r_[x[x < 3], 0.5].mean())
+    b = r["bins"][4]
+    assert b["mean_ci95"][0] < b["mean"] < b["mean_ci95"][1]
+    assert b["mean"] == pytest.approx(200 + 10 * np.cos(2 * np.pi * 13.5 / 24), abs=1.5)
+    lat = binned_statistics([-75, -10, 5, 44, 46], [1, 2, 3, 4, 5], 30.0)
+
+    assert [(b["x_low"], b["n"]) for b in lat["bins"]] == [(-90.0, 1), (-30.0, 1), (0.0, 1), (30.0, 2)]
+    assert lat["bins"][0]["mean_ci95"] is None
+    with pytest.raises(ValueError):
+        binned_statistics([1, 2], [1], 1.0)
