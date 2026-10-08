@@ -13,7 +13,7 @@ This guide provides operational workflows, scientific methodologies, and usage i
 * **GUI Runtime**: WebView2 on Windows (preinstalled), WebKit on macOS (built in), GTK or Qt on Linux. Without a webview runtime VEDA opens in the default browser.
 
 ### Standalone App
-Download the archive for your OS from the [Releases page](https://github.com/jovian-explorer/VEDA/releases), unzip it and run `VEDA.exe` (Windows), `VEDA.app` (macOS) or `./VEDA` (Linux). No Python installation is needed.
+Download the archive for your OS from the [Releases page](https://github.com/jovian-explorer/VEDA/releases) (the latest and the previous release; every earlier one is archived on [Zenodo](https://doi.org/10.5281/zenodo.23215291)), unzip it and run `VEDA.exe` (Windows), `VEDA.app` (macOS) or `./VEDA` (Linux). No Python installation is needed.
 
 ### Python Installation
 ```bash

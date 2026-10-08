@@ -6,8 +6,11 @@ name: Release
 # release, that the latest release is at least RELEASE_MIN_DAYS old (repository variable,
 # default 30) and that CI passed on main's head, and publishes only then.  Running the
 # workflow by hand publishes main's head if CI passed on it; a pushed version tag (v1.2.3)
-# publishes that version.  Every release is archived on Zenodo with its own DOI, so old
-# releases are never deleted.  The app's weekly automatic update picks up a new release.
+# publishes that version.  Only the latest and the previous release stay downloadable on
+# GitHub: after publishing, older releases are deleted, but their tags are kept (Zenodo's
+# records and the app's "all changes since" links point at them).  Every release stays
+# archived on Zenodo with its own DOI under VEDA's concept DOI.  The app's weekly automatic
+# update installs the latest release, however many it missed.
 
 on:
   schedule:
@@ -188,3 +191,16 @@ jobs:
           body_path: release-notes.md
           prerelease: false
           make_latest: "true"
+      - name: Keep the latest two releases downloadable
+        # Every release but the two newest (published, by publish date) is deleted from
+        # GitHub; the tags stay (no --cleanup-tag): Zenodo's records point at them and the
+        # app links to the changes between an old tag and the new one.  Each release stays
+        # archived on Zenodo.
+        shell: bash
+        run: |
+          gh release list --limit 1000 --exclude-drafts --json tagName,publishedAt \
+            --jq 'sort_by(.publishedAt) | reverse | .[2:] | .[].tagName' |
+          while read -r tag; do
+            echo "Deleting release ${tag} (its tag is kept)"
+            gh release delete "$tag" --yes || echo "::warning::could not delete release ${tag}"
+          done
