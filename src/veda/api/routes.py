@@ -821,6 +821,7 @@ def _publication_figure(b, comp: dict, variable: str, dpi: int, fmt: str) -> Res
     counts = {m: sum(1 for p in profiles if mission_of(p) == m) for m in mission_order}
     group_of = {oid: gi for gi, g in enumerate(groups) for oid in g["observation_ids"]}
     labelled = set()
+    sys_labelled = False
     for p in profiles:
         mid = mission_of(p)
         series = nan(p.get("interpolated_series", []))
@@ -840,6 +841,14 @@ def _publication_figure(b, comp: dict, variable: str, dpi: int, fmt: str) -> Res
             v, e = np.array(series, dtype=float), np.array(nan(sig), dtype=float)
             ax.fill_betweenx(grid, v - e, v + e, color=colors[mission_order.index(mid) % len(colors)],
                              alpha=0.18, linewidth=0)
+        sysu = p.get("interpolated_systematic")
+        if sysu and len(profiles) <= 8:         # and its systematic uncertainty (boundary temperature), dotted
+            v, e = np.array(series, dtype=float), np.array(nan(sysu), dtype=float)
+            c = colors[mission_order.index(mid) % len(colors)]
+            ax.plot(v - e, grid, linestyle=":", linewidth=0.9, color=c,
+                    label=None if sys_labelled else "Systematic (boundary temperature)")
+            ax.plot(v + e, grid, linestyle=":", linewidth=0.9, color=c)
+            sys_labelled = True
     for gi, g in enumerate(groups):
         c = colors[gi % len(colors)]
         if any(x is not None for x in g["plus_1sigma"]):

@@ -566,6 +566,10 @@ def test_publication_figure_uses_the_compared_profiles(client):
     assert b"1 profile" in r.content and b"2004-04-02" in r.content        # title: count and date
     csv = client.post("/api/veda/export/compare/mars/csv", json={k: v for k, v in req.items() if k not in ("dpi", "fmt")})
     assert csv.status_code == 200 and "M32ICL2L04_AIX_040931105_60" in csv.text
+    # a temperature figure of a Mars Express profile draws its systematic uncertainty too
+    t = client.post("/api/veda/figure/publication?body_id=mars", json={**req, "variable": "temperature_k"})
+    assert t.status_code == 200 and b"Systematic (boundary temperature)" in t.content
+    assert b"Systematic" not in r.content or b"Systematic (boundary temperature)" in r.content
 
 
 def test_table_x_range_selects_rows_before_decimation(client):
