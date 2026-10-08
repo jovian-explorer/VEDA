@@ -94,6 +94,33 @@ def gravity_profile(body: BodyInfo, z_km: np.ndarray, latitude_deg: Optional[flo
     return g, f"g0 (R/(R+z))^2, g0 = {body.surface_gravity:g} m/s^2, R = {r_body:g} km"
 
 
+def hydrostatic_geopotential(profile: ObservationProfile, g) -> Optional[np.ndarray]:
+    """The geopotential (m^2/s^2) the archive gives at each level of the profile, for the
+    hydrostatic integrals (hydrostatic.py: d Phi instead of g dz), or None.  Read only for
+    data sets whose pressures are integrated in it (Dataset.hydrostatic_in_geopotential:
+    the MGS and MRO radio occultations).  None where it is missing at a level that has an
+    altitude, or where its vertical gradient is not within 10 % of the profile's gravity
+    ``g`` (a unit VEDA would misread)."""
+    phi = (profile.track or {}).get("geopotential")
+    z = np.asarray(profile.altitude_km, dtype=float)
+    if phi is None or np.shape(phi) != z.shape:
+        return None
+    phi = np.asarray(phi, dtype=float)
+    have = np.isfinite(z)
+    if have.sum() < 3 or not np.isfinite(phi[have]).all():
+        return None
+    o = np.argsort(z[have], kind="stable")
+    zz, pp = z[have][o] * 1000.0, phi[have][o]
+    gg = np.broadcast_to(np.asarray(g, dtype=float), z.shape)[have][o]
+    dz = np.diff(zz)
+    step = dz > 0
+    if step.sum() < 2:
+        return None
+    with np.errstate(invalid="ignore", divide="ignore"):
+        ratio = np.nanmedian((np.diff(pp)[step] / dz[step]) / (0.5 * (gg[1:] + gg[:-1]))[step])
+    return phi if 0.9 <= ratio <= 1.1 else None
+
+
 def compute_atmospheric_diagnostics(
     profile: ObservationProfile,
     body: Optional[BodyInfo] = None,
@@ -237,6 +264,9 @@ def _diagnostics(profile: ObservationProfile, body: BodyInfo) -> Dict[str, np.nd
     # Saturn the effective gravity at the profile's latitude (J2 and rotation)
     gz, profile.raw_attributes["gravity_model"] = gravity_profile(
         body, z, profile.latitude, (profile.raw_attributes or {}).get("ALTITUDE_REFERENCE", ""))
+    phi = hydrostatic_geopotential(profile, gz)
+    if phi is not None:
+        profile.raw_attributes["gravity_model"] += "; hydrostatic integrals in the archive's geopotential"
 
     # 3. Scale height H = R_spec T / g(z) (km) and speed of sound with cp(T)
     from .thermo import cp_model, heat_capacity
@@ -282,7 +312,7 @@ def _diagnostics(profile: ObservationProfile, body: BodyInfo) -> Dict[str, np.nd
 
         # How well the archived pressure, temperature and altitudes fit hydrostatic balance
         from .hydrostatic import hydrostatic_consistency
-        profile.raw_attributes.update(hydrostatic_consistency(z, p_hpa, t_k, gz, r_spec))
+        profile.raw_attributes.update(hydrostatic_consistency(z, p_hpa, t_k, gz, r_spec, phi))
 
         # CO2 atmospheres (Mars, Venus): the CO2 frost point and how close T comes to it
         from .condensation import co2_condensation_temperature, co2_volume_fraction
@@ -379,7 +409,8 @@ def _hydrostatic_retrieval(profile: ObservationProfile, body: BodyInfo, z: np.nd
     """temperature_from_density at the profile's gravity, or None when it gives nothing."""
     from .hydrostatic import temperature_from_density
     g, _ = gravity_profile(body, z, profile.latitude, (profile.raw_attributes or {}).get("ALTITUDE_REFERENCE", ""))
-    r = temperature_from_density(z, rho, g, density_gas_constant(profile, body), rho_sigma=sigma)
+    r = temperature_from_density(z, rho, g, density_gas_constant(profile, body), rho_sigma=sigma,
+                                 phi=hydrostatic_geopotential(profile, g))
     return None if r["top_temperature_k"] is None else r
 
 

@@ -38,6 +38,9 @@ def _col(tbl, name) -> Optional[np.ndarray]:
 
 _COLUMN_UNITS: Dict[str, str] = {}     # set per product from the data set's catalogue units
 
+# Units of a geopotential column VEDA reads (MGS and MRO labels: METER SQUARED PER SECOND SQUARED)
+_GEOPOTENTIAL_UNITS = {"METERSQUAREDPERSECONDSQUARED", "M**2/S**2", "M^2/S^2", "M2/S2", "M**2S**-2", "J/KG"}
+
 
 def _unit(tbl, name) -> str:
     key = _key(tbl, name)
@@ -383,6 +386,11 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
     if et is not None:
         track["et"] = et
         track["time_s"] = et - np.nanmin(et)
+    # The geopotential at each tangent point, in m^2/s^2 (not GEOPOTENTIAL HEIGHT in km),
+    # where the archive's pressures are integrated in it
+    phi = _col(tbl, cols.get("geopotential")) if ds.hydrostatic_in_geopotential else None
+    if phi is not None and _unit(tbl, cols.get("geopotential")).replace(" ", "") in _GEOPOTENTIAL_UNITS:
+        track["geopotential"] = phi
 
     lat = track.get("latitude")
     lon = track.get("longitude")

@@ -192,3 +192,75 @@ def test_molar_mass_per_level_from_the_archive():
     assert good.raw_attributes["hydrostatic_max_pct"] < 0.5 < 10 < bulk.raw_attributes["hydrostatic_max_pct"]
     h = good.derived["scale_height"][k]
     assert h == pytest.approx(8314.46 / mu[k] * t_iso / (8.87 * (6051.8 / (6051.8 + z[k])) ** 2) / 1000, rel=1e-3)
+
+
+def _drifting_tps_profile(tmp_path):
+    """An MGS-style TPS table (label + data) of an isothermal 190 K Mars atmosphere whose
+    tangent point drifts: the archive's GEOPOTENTIAL rises 2.2 % more slowly than g(z) dz
+    (MGS 9170R28A: d Phi / dr = 0.978 GM / r^2), and its pressures are integrated in it."""
+    mars = get_body("mars")
+    z = np.arange(5.0, 45.01, 0.5)
+    r_m = (mars.radius_km + z) * 1000.0
+    g = mars.surface_gravity * (mars.radius_km / (mars.radius_km + z)) ** 2
+    phi = 0.978 * np.concatenate([[0.0], np.cumsum(0.5 * (g[1:] + g[:-1]) * 500.0)])
+    t = 190.0
+    p_pa = 450.0 * np.exp(-phi / (mars.gas_constant_r * t))
+    n = p_pa / (1.380649e-23 * t)
+    lat = np.linspace(-21.46, -20.0, z.size)
+    cols = [("RADIUS", "METER", r_m, "{:12.1f}"), ("LATITUDE", "DEGREE", lat, "{:9.3f}"),
+            ("LONGITUDE", "DEGREE", np.full(z.size, 23.4), "{:9.3f}"),
+            ("GEOPOTENTIAL", "METER SQUARED PER SECOND SQUARED", phi, "{:12.3f}"),
+            ("PRESSURE", "PASCAL", p_pa, "{:14.7E}"), ("SIGMA PRESSURE", "PASCAL", 0.01 * p_pa, "{:10.3E}"),
+            ("TEMPERATURE", "KELVIN", np.full(z.size, t), "{:10.4f}"),
+            ("SIGMA TEMPERATURE", "KELVIN", np.full(z.size, 1.0), "{:8.3f}"),
+            ("NUMBER DENSITY", "PER CUBIC METER", n, "{:14.7E}"), ("SIGMA NUMBER DENSITY", "PER CUBIC METER", 0.01 * n, "{:10.3E}")]
+    rows = [",".join(fmt.format(c[3][i]) for _, _, c, fmt in [(a, b, (a, b, None, v), f) for a, b, v, f in cols])
+            for i in range(z.size)]
+    width = len(rows[0]) + 2
+    start, objs = 1, []
+    for k, (name, unit, values, fmt) in enumerate(cols):
+        size = len(fmt.format(values[0]))
+        objs.append(f'  OBJECT = COLUMN\n    NAME = "{name}"\n    DATA_TYPE = ASCII_REAL\n    START_BYTE = {start}\n'
+                    f'    BYTES = {size}\n    UNIT = "{unit}"\n  END_OBJECT = COLUMN\n')
+        start += size + 1
+    (tmp_path / "9170X99A.TPS").write_text("".join(row + "\r\n" for row in rows), newline="")
+    label = tmp_path / "9170X99A.LBL"
+    label.write_text(f'PDS_VERSION_ID = PDS3\nRECORD_TYPE = FIXED_LENGTH\nRECORD_BYTES = {width}\n'
+                     f'FILE_RECORDS = {z.size}\n^RSTP_TABLE = ("9170X99A.TPS", 1)\nTARGET_NAME = "MARS"\n'
+                     f'START_TIME = 1999-06-19T17:28:00Z\nOBJECT = RSTP_TABLE\n  ROWS = {z.size}\n  COLUMNS = {len(cols)}\n'
+                     f'  ROW_BYTES = {width}\n  INTERCHANGE_FORMAT = ASCII\n' + "".join(objs) + 'END_OBJECT = RSTP_TABLE\nEND\n')
+    return label, z, t
+
+
+def test_mgs_and_mro_integrate_in_the_archive_geopotential(tmp_path):
+    """MGS and MRO integrate their pressures in the GEOPOTENTIAL at each tangent point,
+    which drifts in latitude along the profile: VEDA's hydrostatic check and its
+    temperature from the density use the same, so a profile that is hydrostatic in it
+    shows no departure (with g(z) dz it showed several percent) and the isothermal
+    atmosphere comes back at its temperature.  Mars Express integrates with the local
+    gravity at the tangent point, so its GEOPOTENTIAL column is not used."""
+    from veda.archives.datasets import get_dataset
+    from veda.archives.profiles import profile_from_label
+    from veda.analysis.atmospheric import compute_atmospheric_diagnostics
+    label, z, t = _drifting_tps_profile(tmp_path)
+    prod = {"product_id": "9170X99A", "start_time": "1999-06-19T17:28:00", "volume": "mors_1101", "url": "",
+            "product_type": "Temperature-pressure profile"}
+    for ds_id in ("mgs-m-rss-5-sdp-v1.0", "mro-m-rss-5-tps-v1.0"):
+        prof = profile_from_label(get_dataset(ds_id), prod, label)
+        assert prof.track["geopotential"][0] == pytest.approx(0.0) and prof.track["geopotential"][-1] > 1.4e5
+        prof.derived.update(compute_atmospheric_diagnostics(prof))
+        assert prof.raw_attributes["hydrostatic_max_pct"] < 0.001
+        assert "geopotential" in prof.raw_attributes["gravity_model"]
+        np.testing.assert_allclose(prof.derived["temperature_from_density"], t, rtol=1e-4)
+        assert prof.raw_attributes["hydrostatic_noise_median_pct"] > 0          # Monte Carlo, in Phi too
+    # the Monte Carlo retrieval integrates in it as well
+    from veda.analysis.hydrostatic import temperature_from_density_draws
+    rho = prof.derived["number_density_m3"] * 1.380649e-23 / get_body("mars").gas_constant_r
+    g = get_body("mars").surface_gravity * (3389.5 / (3389.5 + z)) ** 2
+    draws = temperature_from_density_draws(z, np.vstack([rho, rho]), g, get_body("mars").gas_constant_r,
+                                           phi=prof.track["geopotential"])
+    np.testing.assert_allclose(draws["temperature_k"], t, rtol=1e-4)
+    mex = profile_from_label(get_dataset("mex-m-mrs-5-occ"), {**prod, "volume": "MEX-M-MRS-5-OCC-9101-V1.0"}, label)
+    assert "geopotential" not in mex.track
+    mex.derived.update(compute_atmospheric_diagnostics(mex))
+    assert mex.raw_attributes["hydrostatic_max_pct"] > 1.0          # g(z) dz: 2.2 % steeper than the archive's

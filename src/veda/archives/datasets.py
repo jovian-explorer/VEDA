@@ -91,6 +91,12 @@ class Dataset:
     # Molar mass (g/mol) of the one gas a number density column is of, where it is not the
     # whole atmosphere (Cassini UVIS: H2): used for the hydrostatic temperature from it
     density_molar_mass: Optional[float] = None
+    # The archive's pressures are integrated in its GEOPOTENTIAL column (m^2/s^2 at each
+    # tangent point, from a full gravity field with rotation), which VEDA then uses for its
+    # hydrostatic integrals instead of g dz (MGS and MRO, D. Hinson: the tangent point
+    # drifts in latitude along a profile).  Mars Express gives the column too but integrates
+    # with the local gravity at the tangent point; Akatsuki's is GM/r.
+    hydrostatic_in_geopotential: bool = False
     # Factor turning the archive's error column into 1 sigma (0.5 for a full error-bar width)
     sigma_factor: Dict[str, float] = field(default_factory=dict)
     # Vertical correlation length (km) of the archived 1-sigma errors, where the archive
@@ -206,6 +212,8 @@ RS_PROFILE_COLUMNS = {  # ESA/JAXA radio-science L4 layout (MaRS, VeRa heritage)
     "sza": "SOLAR ZENITH ANGLE",
     "lst": ("LOCAL SOLAR TIME", "LOCAL TRUE SOLAR TIME OF OCCULTATION"),   # the latter: MRO header
     "et": "EPHEMERIS SECONDS",
+    # m^2/s^2 at each tangent point; read where the data set integrates in it (hydrostatic_in_geopotential)
+    "geopotential": "GEOPOTENTIAL",
 }
 
 # Entry-accelerometer profiles (MER, Phoenix): RADIAL_DISTANCE in metres from the centre of Mars
@@ -421,6 +429,7 @@ DATASETS: List[Dataset] = [
             (r"(^|/)img/", "Gravity / topography map", "other"),
         ),
         profile_columns=RS_PROFILE_COLUMNS,
+        hydrostatic_in_geopotential=True,
         citation=MGS_CITATION,
     ),
     Dataset(
@@ -840,6 +849,7 @@ DATASETS: List[Dataset] = [
         volume_pattern=r"^mrors_2\d{3}$",
         rules=((r"(^|/)tps/", "Temperature-pressure profile", "profile"),),
         profile_columns=RS_PROFILE_COLUMNS,
+        hydrostatic_in_geopotential=True,
         citation=("Hinson, D. P., et al. (2008). Radio occultation measurements and MGCM simulations of Kelvin "
                   "waves on Mars. Icarus, 193, 125-138. Data: MRO-M-RSS-5-TPS-V1.0, NASA PDS Atmospheres Node."),
         doi="10.1016/j.icarus.2007.09.009",
