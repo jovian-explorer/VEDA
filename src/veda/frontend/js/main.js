@@ -332,7 +332,8 @@ async function showSettingsChanges() {
   if (!r || !r.show) return;
   const c = r.changes || {};
   const label = (k) => SETTING_LABELS[k] || k;
-  const fmtVal = (v) => (v === undefined || v === null ? 'none' : typeof v === 'object' ? JSON.stringify(v) : String(v));
+  const fmtVal = (v) => (v === undefined || v === null ? 'none' : v === true ? 'on' : v === false ? 'off'
+    : typeof v === 'object' ? JSON.stringify(v) : String(v));
   const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const body = el('div', { class: 'stack settings-changes' });
   const build = r.build ? `${r.version} build ${r.build}` : r.version;

@@ -445,7 +445,9 @@ def _finite(x: Any) -> Optional[float]:
 
 # Per-profile scalar diagnostics offered in comparisons (altitude cut, CSV export):
 # key -> (label, unit)
-PROFILE_DIAGNOSTICS: Dict[str, Tuple[str, str]] = {
+# key: (label, unit) or (label, unit, what the values mean); the unit is added to the label
+# in parentheses, so labels have none of their own
+PROFILE_DIAGNOSTICS: Dict[str, Tuple[str, ...]] = {
     "cpt_alt_km": ("Cold-point tropopause altitude", "km"),
     "cpt_temp_k": ("Cold-point tropopause temperature", "K"),
     "cpt_pressure_hpa": ("Cold-point tropopause pressure", "hPa"),
@@ -458,15 +460,17 @@ PROFILE_DIAGNOSTICS: Dict[str, Tuple[str, str]] = {
     "tec_tecu": ("Electron content of the profile", "TECU"),
     "gw_mean_ep_j_kg": ("Mean gravity-wave potential energy", "J/kg"),
     "gw_wavelength_km": ("Dominant vertical wavelength", "km"),
-    "hydrostatic_max_pct": ("Largest departure from hydrostatic balance (pressure)", "%"),
-    "hydrostatic_median_pct": ("Median departure from hydrostatic balance (pressure)", "%"),
+    "hydrostatic_max_pct": ("Largest departure of the pressure from hydrostatic balance", "%"),
+    "hydrostatic_median_pct": ("Median departure of the pressure from hydrostatic balance", "%"),
     "hydrostatic_max_km": ("Altitude of the largest departure from hydrostatic balance", "km"),
     "hydrostatic_noise_median_pct": ("Median departure expected from the profile's errors alone", "%"),
-    "hydrostatic_noise_max_pct": ("Largest departure expected from the errors alone (95th percentile)", "%"),
+    "hydrostatic_noise_max_pct": ("Largest departure expected from the errors alone, 95th percentile", "%"),
     "hydrostatic_top_temperature_k": ("Top temperature of the hydrostatic retrieval from density", "K"),
-    "co2_margin_min_k": ("Smallest T minus CO2 frost point (below 0: supersaturated)", "K"),
-    "co2_margin_min_km": ("Altitude of the smallest T minus CO2 frost point", "km"),
-    "co2_margin_min_sigma_k": ("1-sigma of the smallest T minus CO2 frost point", "K"),
+    "co2_margin_min_k": ("Smallest T minus CO₂ frost point", "K",
+                         "Below 0 K the temperature is under the CO₂ frost point somewhere in the profile: "
+                         "CO₂ can condense there (supersaturated)."),
+    "co2_margin_min_km": ("Altitude of the smallest T minus CO₂ frost point", "km"),
+    "co2_margin_min_sigma_k": ("1-sigma of the smallest T minus CO₂ frost point", "K"),
 }
 
 

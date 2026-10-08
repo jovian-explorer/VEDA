@@ -1290,16 +1290,16 @@ function renderAltitudeCut() {
   const diagKeys = Object.keys(diagLabels).join(',');
   if (diagGroup && diagGroup.dataset.keys !== diagKeys) {
     diagGroup.innerHTML = '';
-    Object.entries(diagLabels).forEach(([key, [label, unit]]) =>
-      diagGroup.appendChild(new Option(unit ? `${label} (${unit})` : label, `diag:${key}`)));
+    Object.entries(diagLabels).forEach(([key, [label, unit, hint]]) =>
+      diagGroup.appendChild(Object.assign(new Option(unit ? `${label} (${unit})` : label, `diag:${key}`), { title: hint || '' })));
     diagGroup.dataset.keys = diagKeys;
     diagGroup.label = diagKeys ? 'From each whole profile' : 'From each whole profile (none for these profiles)';
   }
   const xDiagGroup = document.getElementById('veda-cut-xdiag-group');
   if (xDiagGroup && xDiagGroup.dataset.keys !== diagKeys) {
     xDiagGroup.innerHTML = '';
-    Object.entries(diagLabels).forEach(([key, [label, unit]]) =>
-      xDiagGroup.appendChild(new Option(unit ? `${label} (${unit})` : label, `xdiag:${key}`)));
+    Object.entries(diagLabels).forEach(([key, [label, unit, hint]]) =>
+      xDiagGroup.appendChild(Object.assign(new Option(unit ? `${label} (${unit})` : label, `xdiag:${key}`), { title: hint || '' })));
     xDiagGroup.dataset.keys = diagKeys;
     xDiagGroup.label = diagKeys ? 'From each whole profile' : 'From each whole profile (none for these profiles)';
   }
@@ -1528,7 +1528,8 @@ function renderAltitudeCut() {
         + (isAlt && atEdge ? ` (${atEdge} with the ${yKey.startsWith('layer_max') ? 'maximum' : 'minimum'} at an edge of the layer: none inside it)` : '')
       : `${counts[k]} of ${profiles.length} profiles reach ${grid[k]} km`)
       + (missing > 0 ? `; ${missing} without ${xTitles[xKey].toLowerCase()} not shown` : '')
-      + '. Click a point to open the profile.';
+      + '.' + (diag && diag[2] ? ` ${diag[2]}` : '') + (xDiag && xDiag[2] && xDiag !== diag ? ` ${xDiag[2]}` : '')
+      + ' Click a point to open the profile.';
   }
   plotDiv.removeAllListeners?.('plotly_click');
   plotDiv.on?.('plotly_click', (ev) => {
@@ -2566,7 +2567,7 @@ async function inspectProfileObservation(obs) {
     }).join('');
 
     const missionTag = (prof.mission_id || 'LOCAL').toUpperCase();
-    const bodyTag = (prof.body_id || 'PLANET').toUpperCase();
+    const bodyName = (vedaState.bodies || []).find(b => b.id === prof.body_id)?.name || prof.body_id || '';
     const instTag = prof.instrument || 'Sounder';
     const timeTag = prof.time_utc || 'N/A';
     const latStr = prof.latitude != null ? `${prof.latitude.toFixed(2)}°` : 'N/A';
@@ -2576,7 +2577,7 @@ async function inspectProfileObservation(obs) {
       <div class="profile-viewer-wrap">
         <div class="viewer-toolbar">
           <div class="viewer-title">
-            <h3>Observation: <code>${prof.observation_id}</code> &bull; ${instTag} (${bodyTag})</h3>
+            <h3>Observation: <code>${prof.observation_id}</code> &bull; <span class="as-written">${escHtml(instTag)}, ${escHtml(bodyName)}</span></h3>
           </div>
           <div class="toolbar-actions">
             <button type="button" class="btn small ghost" id="btn-plot-style" title="Lines, colours, uncertainty, axes, fonts, journal templates">🎨 Plot style</button>

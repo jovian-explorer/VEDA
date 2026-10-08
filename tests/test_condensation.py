@@ -62,3 +62,14 @@ def test_no_frost_point_without_co2_or_pressure():
     prof.pressure_hpa = None
     prof.derived = compute_atmospheric_diagnostics(prof, get_body("mars"))
     assert "t_minus_co2_condensation" not in prof.derived
+
+
+def test_diagnostic_labels_leave_the_parentheses_to_the_unit():
+    """The altitude cut writes each per-profile quantity as "label (unit)": the frost-point
+    margin read "Smallest T minus CO2 frost point (below 0: supersaturated) (K)".  Labels
+    carry no parentheses of their own; what a value means goes in a third element, shown
+    as the option's tooltip and in the cut's status line."""
+    from veda.analysis.atmospheric import PROFILE_DIAGNOSTICS
+    for key, (label, unit, *hint) in PROFILE_DIAGNOSTICS.items():
+        assert "(" not in label and ")" not in label, key
+    assert "condense" in PROFILE_DIAGNOSTICS["co2_margin_min_k"][2]

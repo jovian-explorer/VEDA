@@ -100,7 +100,7 @@ h1 { font-size: calc(18px * var(--font-scale, 1.0)); margin: 0; letter-spacing: 
 h2 { font-size: calc(14.5px * var(--font-scale, 1.0)); margin: 0 0 10px; letter-spacing: 0.01em; font-weight: 650; }
 h3 { font-size: calc(13px * var(--font-scale, 1.0)); margin: 14px 0 6px; color: var(--ink-soft); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
 /* product ids and file names keep their case */
-h3 code { text-transform: none; }
+h3 code, h3 .as-written { text-transform: none; }
 p { margin: 0 0 8px; font-size: inherit; }
 code, pre { font-family: var(--mono); font-size: calc(12px * var(--font-scale, 1.0)); }
 hr { border: 0; border-top: 1px solid var(--line); margin: 16px 0; }
