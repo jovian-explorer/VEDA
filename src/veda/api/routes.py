@@ -274,7 +274,7 @@ class CrossCompareRequest(BaseModel):
     vertical: str = Field("altitude", pattern="^(altitude|pressure)$")
     pressure_step_decades: float = Field(0.02, ge=0.001, le=1.0)
     # composite weights: equal, or 1/sigma^2 from each profile's uncertainty
-    weighting: str = Field("equal", pattern="^(equal|inverse_variance)$")
+    weighting: str = Field("equal", pattern="^(equal|inverse_variance|inverse_variance_total)$")
     # outlier screen: robust z threshold (None: off); leave flagged profiles out of the composites
     outlier_z: Optional[float] = Field(None, ge=1.0, le=20.0)
     drop_outliers: bool = False

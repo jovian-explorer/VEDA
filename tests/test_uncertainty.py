@@ -141,6 +141,24 @@ def test_inverse_variance_weighting():
     assert "error" in compare_profiles_on_body(nosig, mars, altitude_step_km=1.0, weighting="inverse_variance")
 
 
+def test_inverse_variance_with_the_systematic_uncertainty_added():
+    """1/(sigma^2 + s^2): 200 K (sigma 1, systematic 3) and 230 K (sigma 2, none) weigh
+    1/10 and 1/4, giving 221.43 K; a profile with only a systematic uncertainty is left out."""
+    mars = get_body("mars")
+    a, b = _flat("a", 200.0, 1.0), _flat("b", 230.0, 2.0)
+    a.systematic = {"temperature_k": np.full(41, 3.0)}
+    only_sys = _flat("c", 400.0, 1.0)
+    only_sys.uncertainty = {}
+    only_sys.systematic = {"temperature_k": np.full(41, 0.05)}       # (Akatsuki: no random 1-sigma)
+    plain = compare_profiles_on_body([a, b, only_sys], mars, altitude_step_km=1.0, weighting="inverse_variance")
+    total = compare_profiles_on_body([a, b, only_sys], mars, altitude_step_km=1.0,
+                                     weighting="inverse_variance_total")
+    assert plain["composite_mean"][3] == pytest.approx((200 + 230 / 4) / (1 + 1 / 4), rel=1e-6)
+    assert total["composite_mean"][3] == pytest.approx((200 / 10 + 230 / 4) / (1 / 10 + 1 / 4), rel=1e-5)
+    assert total["weighting"] == "inverse_variance_total" and "systematic" in total["averaging"]
+    assert total["n_effective"][3] == pytest.approx((1 / 10 + 1 / 4) ** 2 / (1 / 100 + 1 / 16), abs=0.01)
+
+
 def test_inverse_variance_in_log_space_uses_relative_errors():
     mars = get_body("mars")
     z = np.arange(0.0, 20.0, 1.0)

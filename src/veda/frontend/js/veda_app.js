@@ -34,7 +34,7 @@ export const vedaState = {
   compareGroupWidth: '',
   compareAltitudeStep: '',
   compareVertical: 'altitude',   // altitude | pressure (grid uniform in log p)
-  compareWeighting: 'equal',     // equal | inverse_variance (composite weights 1/sigma^2)
+  compareWeighting: 'equal',     // equal | inverse_variance (1/sigma^2) | inverse_variance_total (1/(sigma^2 + s^2))
   compareMeanBand: 'sem',        // sem | ci95 (band around the composite mean)
   compareOutlierZ: '',           // '' (off) or the robust z threshold of the outlier screen
   compareDropOutliers: false,    // leave flagged profiles out of the composites
@@ -661,7 +661,7 @@ function currentComparisonRequest() {
     group_width: Number(vedaState.compareGroupWidth) || 0,
     altitude_step_km: Number(vedaState.compareAltitudeStep) || undefined,
     vertical: vedaState.compareVertical === 'pressure' ? 'pressure' : undefined,
-    weighting: vedaState.compareWeighting === 'inverse_variance' ? 'inverse_variance' : undefined,
+    weighting: ['inverse_variance', 'inverse_variance_total'].includes(vedaState.compareWeighting) ? vedaState.compareWeighting : undefined,
     outlier_z: Number(vedaState.compareOutlierZ) || undefined,
     cross_section_width: vedaState.bodySubtab === 'cross' ? (Number(vedaState.crossWidth) || 10) : undefined,
     reference: REFERENCE_BODIES.has(vedaState.activeBodyId) && (vedaState.compareReference || vedaState.compareShowAs === 'reference')
@@ -1151,7 +1151,7 @@ async function openComparisonRecipe(csvText) {
   vedaState.compareGroupWidth = r.group_width ? String(r.group_width) : '';
   vedaState.compareAltitudeStep = r.altitude_step_km || '';
   vedaState.compareVertical = r.vertical === 'pressure' ? 'pressure' : 'altitude';
-  vedaState.compareWeighting = r.weighting === 'inverse_variance' ? 'inverse_variance' : 'equal';
+  vedaState.compareWeighting = ['inverse_variance', 'inverse_variance_total'].includes(r.weighting) ? r.weighting : 'equal';
   vedaState.compareOutlierZ = r.outlier_z ? String(r.outlier_z) : '';
   vedaState.compareDropOutliers = !!r.drop_outliers;
   const dropBox = document.getElementById('veda-compare-drop-outliers');

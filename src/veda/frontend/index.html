@@ -230,6 +230,7 @@
             <select id="veda-compare-weighting">
               <option value="equal">Equal</option>
               <option value="inverse_variance">Inverse variance (1/σ²)</option>
+              <option value="inverse_variance_total" title="1/(σ² + s²): the random 1-sigma with the systematic uncertainty (boundary temperature of Mars Express retrievals) added where a profile has one. Profiles without a random 1-sigma (Akatsuki, Pioneer Venus) are left out, as with 1/σ².">Inverse variance, random + systematic</option>
             </select>
           </label>
           <label title="The darker band around the composite mean: its standard error (spread / √n_eff), or the 95 % interval of the mean from resampling the profiles (bootstrap, 1000 resamples), which needs no normal distribution.">Band around the mean

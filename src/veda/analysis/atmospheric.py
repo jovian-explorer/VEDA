@@ -535,7 +535,13 @@ def _group_key(s: Dict[str, Any], by: str, width: float):
     return None
 
 
-WEIGHTINGS = ("equal", "inverse_variance")
+# inverse_variance: weights 1/sigma^2 from the random 1-sigma; inverse_variance_total:
+# 1/(sigma^2 + s^2) with the systematic uncertainty s added where the profile has one (across
+# profiles their boundary temperatures are independent, so s acts as a random error of the
+# composite).  Both need the random 1-sigma: a profile with only a systematic uncertainty
+# (Akatsuki, Pioneer Venus) has an incomplete error budget, and weighting it by s alone,
+# below 0.1 K at Akatsuki's lower levels, would let it outweigh every other profile.
+WEIGHTINGS = ("equal", "inverse_variance", "inverse_variance_total")
 
 MAX_CROSS_SECTION_CELLS = 400000
 
@@ -836,6 +842,7 @@ def compare_profiles_on_body(
 
     interpolated_matrix = []
     sigma_matrix = []           # each value's 1-sigma, in log space (relative) for log-averaged variables
+    systematic_matrix = []      # each value's systematic uncertainty, the same way
     profile_summaries = []
     # Quantities that vary exponentially with height are interpolated and averaged in
     # log space (geometric mean, spread as a factor) when every value of every profile
@@ -899,6 +906,8 @@ def compare_profiles_on_body(
         with np.errstate(invalid="ignore", divide="ignore"):
             sigma_matrix.append(np.full(z_grid.size, np.nan) if s_interp is None else
                                 (s_interp / np.exp(v_interp) if log_like else s_interp))
+            systematic_matrix.append(np.full(z_grid.size, np.nan) if sys_interp is None else
+                                     (sys_interp / np.exp(v_interp) if log_like else sys_interp))
 
         profile_summaries.append({
             "observation_id": p.observation_id,
@@ -931,6 +940,12 @@ def compare_profiles_on_body(
 
     mat = np.array(interpolated_matrix)  # shape: (n_profiles, n_grid)
     smat = np.array(sigma_matrix)
+    if weighting == "inverse_variance_total":
+        # the random 1-sigma with the systematic uncertainty added in quadrature where given
+        sysm = np.array(systematic_matrix)
+        with np.errstate(invalid="ignore"):
+            smat = np.where(np.isfinite(smat), np.sqrt(smat ** 2 + np.nan_to_num(sysm) ** 2), np.nan)
+    stat_weighting = "inverse_variance" if weighting.startswith("inverse_variance") else weighting
     # Outlier screen: flag profiles far from the others (robust z per level); they are
     # left out of the composites only when asked, and are always reported
     screen = None
@@ -956,10 +971,10 @@ def compare_profiles_on_body(
             mat, smat = mat[keep], smat[keep]
             profile_summaries = [profile_summaries[i] for i in keep]
             interpolated_matrix = [interpolated_matrix[i] for i in keep]
-    if weighting == "inverse_variance" and not np.isfinite(smat).any():
+    if stat_weighting == "inverse_variance" and not np.isfinite(smat).any():
         return {**_empty_comparison(body, variable_name),
                 "error": "None of these profiles has an uncertainty for this variable; use equal weights."}
-    stats = _level_statistics(mat, smat, weighting)        # no spread from a single profile
+    stats = _level_statistics(mat, smat, stat_weighting)   # no spread from a single profile
     n_per_level = stats["n"]
     mean_min = max(2, int(np.ceil(0.5 * len(interpolated_matrix))))
     mean_f, std_f, sem_f = stats["mean"], stats["std"], stats["sem"]
@@ -983,14 +998,16 @@ def compare_profiles_on_body(
                                     for x in s["interpolated_series"]]
     sig = (lambda x: None if not np.isfinite(x) else float(f"{x:.6g}"))
     groups = _group_composites(mat, profile_summaries, log_like, group_by, group_width, sig,
-                               smat, weighting) if group_by else []
+                               smat, stat_weighting) if group_by else []
 
     return {
         "group_by": group_by or "",
         "group_width": group_width,
         "groups": groups,
         "averaging": ("geometric mean and 1-sigma factor (log space)" if log_like else "arithmetic mean and 1-sigma (sample)")
-                     + ("; inverse-variance weights" if weighting == "inverse_variance" else ""),
+                     + ("; inverse-variance weights" if weighting == "inverse_variance" else
+                        "; inverse-variance weights (random and systematic uncertainty)"
+                        if weighting == "inverse_variance_total" else ""),
         "profiles_per_level": [int(n) for n in n_per_level],
         # (levels of equal pressure need no common altitude reference)
         "vertical_reference_warning": "" if by_pressure else _vertical_reference_warning(profile_summaries),
@@ -1019,7 +1036,7 @@ def compare_profiles_on_body(
                           {"error": "Too many levels for a cross section; choose a coarser grid step."}
                           if mat.shape[1] * int(np.ceil(180.0 / cross_section_width)) > MAX_CROSS_SECTION_CELLS else
                           latitude_cross_section(mat, smat, [s_["latitude"] for s_ in profile_summaries],
-                                                 cross_section_width, log_like, weighting)),
+                                                 cross_section_width, log_like, stat_weighting)),
         "composite_sem": [sig(x) for x in sem_v],
         "composite_plus_sem": [sig(x) if n >= mean_min else None for x, n in zip(sem_hi, n_per_level)],
         "composite_minus_sem": [sig(x) if n >= mean_min else None for x, n in zip(sem_lo, n_per_level)],
