@@ -668,6 +668,8 @@
         <div class="guide-formula-box">
           <strong>1. Altitude-Dependent Planetary Gravity:</strong>
           <p>$$g(z) = g_0 \left(\frac{R_p}{R_p + z}\right)^2$$</p>
+          On Jupiter and Saturn, the effective gravity with $J_2$ and rotation at the profile's latitude; the MGS and MRO
+          radio occultations are integrated in the geopotential their archives give.
         </div>
 
         <div class="guide-formula-box">
@@ -693,6 +695,13 @@
           <p>$$\text{VTEC} = 10^{-7} \int_{z_{base}}^{z_{top}} N_e(z)\,dz \quad [\text{TECU}]$$</p>
           integrating radio occultation electron density profiles (e.g. Mars Express MaRS, Mars Global Surveyor, Cassini RSS at Titan).
         </div>
+
+        <div class="guide-formula-box">
+          <strong>6. CO$_2$ Frost Point (Mars and Venus):</strong>
+          <p>$$T_{CO_2} = \frac{3182.48\ \text{K}}{23.3494 - \ln(x_{CO_2}\,p / 1\ \text{hPa})}$$</p>
+          (James et al. 1992, as written by Greve et al. 2010), with $x_{CO_2}$ the CO$_2$ volume fraction (Mars 0.951, Venus 0.965).
+          Where $T - T_{CO_2} \le 0$, CO$_2$ can condense: polar-night snowfall on Mars, the cold layer near 125 km at the Venus terminator.
+        </div>
       </div>
       <div class="guide-actions-bar">
         <button class="guide-action-btn" data-guide-action="inspect-active-profile">📈 Plot Profile and Diagnostics</button>
@@ -717,9 +726,11 @@
         <ul>
           <li><strong>Which profiles:</strong> choose them by date, latitude, local time, solar zenith angle or Mars season (Ls) and the number per mission; VEDA searches the whole archive and reports why profiles were left out.</li>
           <li><strong>Common grid:</strong> profiles are interpolated (never extrapolated) onto altitude levels (default 0.5 km on Venus, Mars and Pluto, 2 km elsewhere; set <em>Grid step</em>) or onto pressure levels uniform in log pressure.</li>
-          <li><strong>Composite mean $\mu(z)$ and spread ($\pm 1\sigma$):</strong> arithmetic for temperature-like quantities, geometric (in log space) for pressure and densities; per group for climatologies by latitude, local time, zenith angle, Ls, year, month, month of the year or mission, and as deviations from the mean.</li>
-          <li><strong>Altitude cut:</strong> one point per profile at a fixed altitude, a layer statistic or a whole-profile diagnostic, against time, latitude, local time, zenith angle, Ls, longitude or day of year, with tide and wave fits.</li>
-          <li><strong>Any variable:</strong> temperature, pressure, densities, potential temperature, $N^2$, lapse rate, temperature from density and more, in the units you choose.</li>
+          <li><strong>Composite mean $\mu(z)$ and spread ($\pm 1\sigma$):</strong> arithmetic for temperature-like quantities, geometric (in log space) for pressure and densities; per group for climatologies by latitude, local time, zenith angle, Ls, year, month, month of the year or mission, as deviations from the mean, and as differences between groups with 95&nbsp;% bootstrap intervals.</li>
+          <li><strong>Uncertainties:</strong> each profile's 1&sigma; (archived or propagated) and, for Mars Express, Akatsuki and Pioneer Venus, the systematic uncertainty from the temperature assumed at the top of the retrieval; the mean with its standard error or 95&nbsp;% bootstrap interval, optionally weighted by 1/&sigma;&sup2;.</li>
+          <li><strong>Reference atmospheres:</strong> Venus-GRAM 2021 / VIRA on Venus and Mars-GRAM 2024 on Mars, as a line or as each profile's deviation from it.</li>
+          <li><strong>Altitude cut:</strong> one point per profile at a fixed altitude, a layer statistic or a whole-profile diagnostic, against time, latitude, local time, zenith angle, Ls, longitude or day of year, with tide and wave fits and means in bins (seasonal or latitude climatologies) with bootstrap intervals.</li>
+          <li><strong>Any variable:</strong> temperature, pressure, densities, potential temperature, $N^2$, lapse rate, temperature from density, the margin above the CO$_2$ frost point and more, in the units you choose.</li>
         </ul>
       </div>
       <div class="guide-actions-bar">
