@@ -1507,10 +1507,15 @@ function renderAltitudeCut() {
   // Binned means along x (numeric x only): seasonal, local-time or latitude climatologies
   const binLabel = document.getElementById('veda-cut-bin-label');
   if (binLabel) binLabel.style.display = xKey !== 'time' ? '' : 'none';
+  const binUnit = { latitude: '°', lst: 'h', sza: '°', ls: '°', longitude: '°', season: 'days' }[xKey]
+    ?? (xDiag ? xDiag[1] : xKey === 'value2' ? cleanPlotlyMath(pScale === 1 ? (cfg.units || '') : pUnit) : '');
+  const binUnitEl = document.getElementById('veda-cut-bin-unit');
+  if (binUnitEl) binUnitEl.textContent = binUnit ? ` (${binUnit})` : '';
   const binWidth = Number(document.getElementById('veda-cut-bin')?.value || 0);
   if (xKey !== 'time' && binWidth > 0) {
     binAltitudeCut(plotDiv, pts, yScale, binWidth, period, layout.yaxis.type === 'log', xTitles[xKey],
-                   diag ? diag[1] : (isAlt ? 'km' : (pScale === 1 ? cfg.units : pUnit)), cutToken);
+                   diag ? diag[1] : (isAlt ? 'km' : (pScale === 1 ? cfg.units : pUnit)), cutToken,
+                   { latitude: [-90, 90], sza: [0, 180] }[xKey], binUnit);
   } else {
     const el = document.getElementById('veda-cut-bins');
     if (el) el.textContent = '';
@@ -1540,10 +1545,22 @@ let altitudeCutRenders = 0;
 // Plotly toolbar: centred at the top, the toolbar covered them in a narrow panel (1024 px).
 const TITLE_BELOW_MODEBAR = { y: 1, yref: 'paper', yanchor: 'bottom', pad: { b: 8 } };
 
+/** A number to the precision its uncertainty ``u`` supports: the uncertainty to two
+ *  significant digits and the value to the same decimal place ("177.5 ± 3.5", not
+ *  "177.5 K ± 3.538 K"); without one, four significant digits. */
+function fmtTo(v, u) {
+  if (v == null || !isFinite(v)) return '?';
+  if (!(u > 0 && isFinite(u))) return Math.abs(v) >= 100 ? v.toFixed(1) : String(+v.toPrecision(4));
+  const d = 1 - Math.floor(Math.log10(u));                  // decimal place of u's second digit
+  if (Math.abs(v) < 1e7 && d >= 0 && d <= 6) return v.toFixed(d);
+  if (Math.abs(v) < 1e7 && d < 0) return String(Math.round(v / 10 ** -d) * 10 ** -d);
+  return v.toPrecision(Math.min(10, Math.max(2, Math.floor(Math.log10(Math.abs(v) || u)) + d + 1)));
+}
+
 /** Mean of the altitude-cut points in bins of ``width`` along x, with 95 % bootstrap
  *  intervals (analysis/resampling.py binned_statistics), drawn over the points; circular
  *  bins for local time, longitude and Ls. */
-async function binAltitudeCut(plotDiv, pts, yScale, width, period, logY, xTitle, unit, token) {
+async function binAltitudeCut(plotDiv, pts, yScale, width, period, logY, xTitle, unit, token, domain, xUnit = '') {
   let el = document.getElementById('veda-cut-bins');
   if (!el) {
     el = document.createElement('div');
@@ -1561,12 +1578,16 @@ async function binAltitudeCut(plotDiv, pts, yScale, width, period, logY, xTitle,
     return;
   }
   if (token !== altitudeCutRenders) return;
+  // bin edges within the axis' range (latitude -90 to 90: not "-120 to -60")
+  (r.bins || []).forEach(b => {
+    if (domain) { b.x_low = Math.max(domain[0], b.x_low); b.x_high = Math.min(domain[1], b.x_high); }
+  });
   const bins = (r.bins || []).filter(b => b.mean != null);
   const ci = (b, i) => (b.mean_ci95 ? b.mean_ci95[i] : b.mean);
   // each bin's mean is drawn at the mean x of its points (they can sit at one side of the bin)
   Plotly.addTraces(plotDiv, {
     type: 'scatter', mode: 'lines+markers', x: bins.map(b => b.x_mean), y: bins.map(b => b.mean),
-    name: `Mean in bins of ${width} (95 % interval)`,
+    name: `Mean in bins of ${width}${xUnit === '°' ? '°' : xUnit ? ` ${xUnit}` : ''} (95 % interval)`,
     marker: { symbol: 'diamond', size: 11, color: plotColors().ink },
     line: { color: plotColors().ink, width: 1.5, dash: 'dot' },
     error_y: { type: 'data', symmetric: false, visible: true, thickness: 2, width: 6, color: plotColors().ink,
@@ -1574,11 +1595,16 @@ async function binAltitudeCut(plotDiv, pts, yScale, width, period, logY, xTitle,
     text: bins.map(b => `bin ${+b.x_low.toFixed(4)} to ${+b.x_high.toFixed(4)}: n = ${b.n}`),
     hovertemplate: '%{text}<br>mean %{y:.4g}<extra></extra>',
   });
-  const f = (v) => (v == null || !isFinite(v) ? '?' : Math.abs(v) >= 100 ? v.toFixed(1) : v.toPrecision(4));
   const u = unit ? ` ${unit}` : '';
-  el.textContent = `Bins of ${width} along x (${xTitle}${period ? ', circular' : ''}): `
-    + (r.bins || []).map(b => `${+b.x_low.toFixed(4)} to ${+b.x_high.toFixed(4)}: ${b.mean == null ? 'none' : `${f(b.mean)}${u}`}`
-      + `${b.mean_ci95 ? ` [${f(b.mean_ci95[0])}, ${f(b.mean_ci95[1])}]` : ''} (n ${b.n})`).join('; ')
+  const xu = xUnit === '°' ? '°' : xUnit ? ` ${xUnit}` : '';
+  // each bin's numbers to the precision of its interval (half its width / 1.96 ~ one standard error)
+  const one = (b) => {
+    const s = b.mean_ci95 ? (b.mean_ci95[1] - b.mean_ci95[0]) / 3.92 : null;
+    return `${+b.x_low.toFixed(4)} to ${+b.x_high.toFixed(4)}${xu}: ${b.mean == null ? 'none' : `${fmtTo(b.mean, s)}${u}`}`
+      + `${b.mean_ci95 ? ` [${fmtTo(b.mean_ci95[0], s)}, ${fmtTo(b.mean_ci95[1], s)}]` : ''}, ${b.n} profile${b.n === 1 ? '' : 's'}`;
+  };
+  el.textContent = `Means in bins of ${width}${xu} along ${xTitle.replace(/ \([^)]*\)$/, '')}${period ? ` (bins wrap at ${period}${xu})` : ''}: `
+    + (r.bins || []).map(one).join('; ')
     + '. Brackets: 95 % bootstrap interval of the mean; bins with one point have none.';
 }
 
@@ -1756,11 +1782,16 @@ async function cutPointStatistics(pts, yScale, logStats, colorKey, groupOf, unit
   }
   if (token !== altitudeCutRenders) return;
   const u = unit ? ` ${unit}` : '';
-  const fmt = (v) => (v == null || !isFinite(v) ? '?' : Math.abs(v) >= 100 ? v.toFixed(1) : v.toPrecision(4));
-  const one = (s) => (s.mean == null ? `n = ${s.n}` : `n = ${s.n}: ${logStats ? 'geometric mean' : 'mean'} ${fmt(s.mean)}${u}`
-    + (s.sem != null ? ` ± ${fmt(s.sem)}${logStats ? ' %' : u}` : '')
-    + (s.mean_ci95 ? ` [95 %: ${fmt(s.mean_ci95[0])} to ${fmt(s.mean_ci95[1])}]` : '')
-    + `, median ${fmt(s.median)}${u}` + (s.median_ci95 ? ` [95 %: ${fmt(s.median_ci95[0])} to ${fmt(s.median_ci95[1])}]` : ''));
+  const one = (s) => {
+    if (s.mean == null) return `n = ${s.n}`;
+    // the numbers to the precision of the standard error (in % of the geometric mean on log axes)
+    const e = s.sem == null ? null : logStats ? Math.abs(s.mean) * s.sem / 100 : s.sem;
+    const fmt = (v) => fmtTo(v, e);
+    return `n = ${s.n}: ${logStats ? 'geometric mean' : 'mean'} ${fmt(s.mean)}`
+      + (s.sem != null ? ` ± ${fmtTo(s.sem, s.sem)}${logStats ? ' %' : ''}` : '') + u
+      + (s.mean_ci95 ? ` [95 %: ${fmt(s.mean_ci95[0])} to ${fmt(s.mean_ci95[1])}]` : '')
+      + `, median ${fmt(s.median)}${u}` + (s.median_ci95 ? ` [95 %: ${fmt(s.median_ci95[0])} to ${fmt(s.median_ci95[1])}]` : '');
+  };
   const groups = (st.groups || []).filter(g => g.n >= 2 && (st.groups || []).length > 1);
   el.textContent = `Points ${one(st)}` + (groups.length ? `. ${groups.map(g => `${g.label} ${one(g)}`).join('; ')}` : '')
     + '. ±: standard error; brackets: bootstrap over the points (1000 resamples).';
@@ -1808,9 +1839,10 @@ async function fitAltitudeCut(plotDiv, pts, yScale, period, nHarm, logFit, xKey,
   const xUnit = { lst: ' h', longitude: '°', ls: '°' }[xKey];
   const ampUnit = fit.log ? ' %' : (unit ? ` ${unit}` : '');
   const fmt = (v) => (v == null || !isFinite(v) ? '?' : Math.abs(v) >= 100 ? v.toFixed(0) : v.toPrecision(3));
-  const ci = (r, u) => (r ? ` [95 %: ${fmt(r[0])} to ${fmt(r[1])}${u}]` : '');
-  const parts = fit.components.map(c => `${c.n}: ${fmt(c.amplitude)} ± ${fmt(c.amplitude_sigma)}${ampUnit}${ci(c.amplitude_ci95, ampUnit)}, maximum at `
-    + `${fmt(c.x_of_max)} ± ${fmt(c.x_of_max_sigma)}${xUnit}${ci(c.x_of_max_ci95, xUnit)}`
+  const ci = (r, u, s) => (r ? ` [95 %: ${fmtTo(r[0], s)} to ${fmtTo(r[1], s)}${u}]` : '');
+  const pm = (v, s, u) => `${fmtTo(v, s)}${s != null ? ` ± ${fmtTo(s, s)}` : ''}${u}`;
+  const parts = fit.components.map(c => `${c.n}: ${pm(c.amplitude, c.amplitude_sigma, ampUnit)}${ci(c.amplitude_ci95, ampUnit, c.amplitude_sigma)}, maximum at `
+    + `${pm(c.x_of_max, c.x_of_max_sigma, xUnit)}${ci(c.x_of_max_ci95, xUnit, c.x_of_max_sigma)}`
     + (fit.max_gap > period / (2 * c.n) ? ' (not resolved: gap)' : ''));
   fitStatus.textContent = `Fit (${fit.n_points} points${fit.weighted ? `, weighted by their uncertainties, reduced χ² ${fmt(fit.reduced_chi_square)}` : ''}): `
     + `mean ${fmt(fit.mean)}${fit.log ? '' : ampUnit}; harmonic `

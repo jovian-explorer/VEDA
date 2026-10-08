@@ -480,6 +480,7 @@ body.no-curious [data-curious] { display: none; }
 }
 .cut-controls { gap: 12px; align-items: flex-end; flex-wrap: wrap; margin: 6px 0 4px; }
 .cut-controls label { display: flex; flex-direction: column; gap: 4px; margin: 0; }
+.cut-controls label.inline { flex-direction: row; align-items: center; gap: 6px; padding-bottom: 9px; }
 .cut-controls .hint { flex: 1 1 220px; }
 .banner.update { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .banner.update a { font-weight: 600; }
