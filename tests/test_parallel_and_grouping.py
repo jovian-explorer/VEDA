@@ -186,3 +186,44 @@ def test_hand_picked_comparison_reads_archive_products_together(monkeypatch):
     got = mgr._load_hand_picked([{"mission_id": "mex", "observation_id": o} for o in ("C", "B", "A", "nope")])
     assert calls == [[("ds", "C"), ("ds", "B"), ("ds", "A")]]          # one batch
     assert [p.observation_id for p in got] == ["C", "A"]
+
+
+def _mission_profiles(mission, t0, n, seed, pressure=False):
+    rng = np.random.default_rng(seed)
+    z = np.arange(0.0, 30.0, 1.0)
+    out = []
+    for i in range(n):
+        t = t0 - 1.0 * z + rng.normal(0.0, 2.0)
+        out.append(ObservationProfile(observation_id=f"{mission}{i}", mission_id=mission, body_id="mars", instrument="RS",
+                                      time_utc="2005-01-01T00:00:00", latitude=0.0, longitude=0.0, altitude_km=z,
+                                      temperature_k=t, pressure_hpa=(6.0 if mission == "mex" else 6.6) * np.exp(-z / 10.0)
+                                      * np.exp(rng.normal(0.0, 0.02)) if pressure else None))
+    return out
+
+
+def test_difference_between_groups_with_its_interval():
+    """MGS 5 K warmer than MEX, 20 profiles each with 2 K scatter: the difference, its
+    standard error sqrt(s_a^2/n_a + s_b^2/n_b) and a 95 % bootstrap interval of about
+    +-1.96 of it; pressure 10 % higher, as a percentage."""
+    mars = get_body("mars")
+    profs = _mission_profiles("mex", 200.0, 20, 1, True) + _mission_profiles("mgs", 205.0, 20, 2, True)
+    comp = compare_profiles_on_body(profs, mars, altitude_step_km=1.0, group_by="mission")
+    d = comp["group_differences"]
+    assert len(d) == 1 and d[0]["label"] == "MGS minus MEX" and d[0]["n"] == 20
+    k = 10
+    a = np.array([p.temperature_k[k] for p in profs[:20]])
+    b = np.array([p.temperature_k[k] for p in profs[20:]])
+    se = np.sqrt(a.var(ddof=1) / 20 + b.var(ddof=1) / 20)
+    assert d[0]["difference"][k] == pytest.approx(b.mean() - a.mean(), rel=1e-4)
+    assert d[0]["se"][k] == pytest.approx(se, rel=1e-3)
+    lo, hi = d[0]["ci95_low"][k], d[0]["ci95_high"][k]
+    assert lo < d[0]["difference"][k] < hi and (hi - lo) / 2 == pytest.approx(1.96 * se, rel=0.25)
+    assert not d[0]["percent"]
+    p = compare_profiles_on_body(profs, mars, altitude_step_km=1.0, group_by="mission", variable_name="pressure_hpa")
+    dp = p["group_differences"][0]
+    assert dp["percent"] and dp["difference"][k] == pytest.approx(10.0, abs=2.0)
+    from veda.analysis.atmospheric import export_comparison_to_csv
+    text = export_comparison_to_csv(comp)
+    assert "MGS minus MEX difference" in text and "MGS minus MEX ci95_low" in text
+    one = compare_profiles_on_body(profs[:20], mars, altitude_step_km=1.0, group_by="mission")
+    assert one["group_differences"] == []

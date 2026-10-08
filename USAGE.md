@@ -108,6 +108,8 @@ On Mars it is the global-average profile of Mars-GRAM 2024 (GRAM Suite 2.1, NASA
 
 **Deviations.** *Show: Deviation from the mean* plots each profile minus its group's mean (or the composite mean when not grouped), and the group means minus the overall mean; for pressure and densities the deviation is in percent. This shows waves, tides and latitudinal structure that are invisible on a log axis spanning several decades.
 
+**Differences between groups.** With *Group composites by* set, *Show: Difference between groups* plots each group's composite mean minus the first group's at every level (missions in alphabetical order, latitude bands, seasons or years from the lowest), with its standard error $\sqrt{\mathrm{SEM}_a^2 + \mathrm{SEM}_b^2}$ and a 95 % percentile bootstrap interval: each group's profiles are resampled on their own 1000 times, the means recomputed with the same weights and the differences taken. Where the interval excludes zero the difference is larger than the sampling of the profiles explains. It is drawn only where both means are (half of each group's profiles reach the level); for pressure and densities it is in percent of the first group's geometric mean. The Comparison CSV gets `<group> minus <first group> difference`, `se`, `ci95_low` and `ci95_high` columns. Example: 169 Mars Express profiles in 45-degree latitude bands: at 15 km the band 0 to 45 deg N is 57.1 +- 1.9 K (95 %: 53.4 to 60.7) warmer than 90 to 45 deg S (44 and 15 profiles), the same difference and standard error as a direct two-sample (Welch) computation.
+
 Profiles read once are kept in memory for the session (the 512 most recent), so changing the variable, grouping or units does not read the files again.
 
 ### Live data sets

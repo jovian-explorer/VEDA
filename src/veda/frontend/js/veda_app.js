@@ -1847,6 +1847,10 @@ function renderComparisonPlot() {
     return;
   }
 
+  if (vedaState.compareShowAs === 'groupdiff') {
+    renderGroupDifferences(plotDiv, raw, varCfg);
+    return;
+  }
   const sc = a => (pScale === 1 || !Array.isArray(a)) ? a : a.map(v => (v === null ? v : v * pScale));
   const scaled = pScale === 1 ? raw : {
     ...raw,
@@ -1986,6 +1990,44 @@ function renderComparisonPlot() {
        coordTitle: byPressure ? 'Pressure (hPa)' : altitudeAxisTitle((data.profiles || []).map(p => p.altitude_reference)) });
   plotStyle.vertical = savedVertical;
 
+  window.Plotly.newPlot(plotDiv, traces, themedLayout(layout), { responsive: true, displayModeBar: true });
+}
+
+/** Each group's composite mean minus the first group's, with its 95 % bootstrap interval
+ *  (analysis/atmospheric.py _group_differences): differences between missions, seasons or
+ *  latitude bands and whether they exceed what the sampling of the profiles explains. */
+function renderGroupDifferences(plotDiv, data, varCfg) {
+  const diffs = data.group_differences || [];
+  if (!diffs.length) {
+    if (plotDiv.data) Plotly.purge(plotDiv);
+    plotDiv.innerHTML = '<div class="empty-state">Group the profiles (<em>Group composites by</em>) into two or more groups to see their differences.</div>';
+    return;
+  }
+  const byPressure = data.vertical === 'pressure';
+  const zGrid = byPressure ? data.grid_hpa : data.grid_km;
+  const traces = [];
+  diffs.forEach((d, i) => {
+    const c = paletteColor(i + 2);
+    traces.push({ ...orient(d.ci95_low, zGrid), type: 'scatter', mode: 'lines', line: { width: 0, color: 'transparent' },
+      showlegend: false, hoverinfo: 'skip', legendgroup: `d${i}` });
+    traces.push({ ...orient(d.ci95_high, zGrid), type: 'scatter', mode: 'lines', line: { width: 0, color: 'transparent' },
+      fill: plotStyle.swapAxes ? 'tonexty' : 'tonextx', fillcolor: c.startsWith('#') && c.length === 7 ? `${c}33` : 'rgba(128,128,128,0.2)',
+      name: `${d.label}: 95 % interval`, hoverinfo: 'skip', legendgroup: `d${i}` });
+    traces.push({ ...orient(d.difference, zGrid), type: 'scatter', mode: 'lines', line: { color: c, width: plotStyle.lineWidth + 1 },
+      name: `${d.label} (n = ${d.n})`, legendgroup: `d${i}`, customdata: d.se,
+      hovertemplate: `<b>${escHtml(d.label)}</b><br>%{x:.3g} ± %{customdata:.2g} (1σ)<br>%{y:.4g}<extra></extra>` });
+  });
+  traces.push({ ...orient(zGrid.map(() => 0), zGrid), type: 'scatter', mode: 'lines', line: { color: plotColors().ink, width: 1, dash: 'dash' },
+    hoverinfo: 'skip', showlegend: false });
+  const units = diffs[0].percent ? '%' : cleanPlotlyMath(varCfg.units || '');
+  const saved = plotStyle.vertical;
+  plotStyle.vertical = byPressure ? 'pressure' : 'altitude';
+  const layout = styleLayout({
+    title: { text: cleanPlotlyMath(`${(data.body_name || data.body_id || '').toUpperCase()} • ${varCfg.label}: difference from ${diffs[0].reference_group}`) },
+    hovermode: 'closest', margin: { l: 70, r: 25, t: 56, b: 60 },
+  }, { xLog: false, varTitle: `Difference from ${diffs[0].reference_group} (${units})`,
+       coordTitle: byPressure ? 'Pressure (hPa)' : altitudeAxisTitle((data.profiles || []).map(p => p.altitude_reference)) });
+  plotStyle.vertical = saved;
   window.Plotly.newPlot(plotDiv, traces, themedLayout(layout), { responsive: true, displayModeBar: true });
 }
 

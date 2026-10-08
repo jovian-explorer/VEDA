@@ -677,8 +677,25 @@ def _bootstrap_mean_interval(mat: np.ndarray, smat: Optional[np.ndarray],
     nan = np.full(n_lev, np.nan)
     if n_prof < 2:
         return nan, nan.copy()
-    draws = int(max(200, min(BOOTSTRAP_DRAWS, 2e9 / max(1, n_prof * n_lev))))
-    rng = np.random.default_rng(_BOOTSTRAP_SEED)
+    means, w = _bootstrap_means(mat, smat)
+    draws = means.shape[0]
+    with np.errstate(invalid="ignore", divide="ignore"), warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        enough = np.isfinite(means).sum(axis=0) >= draws // 2
+        a = 100.0 * (1.0 - level) / 2.0
+        lo, hi = np.nanpercentile(means, [a, 100.0 - a], axis=0)
+    two = np.sum(w > 0, axis=0) >= 2
+    return np.where(enough & two, lo, np.nan), np.where(enough & two, hi, np.nan)
+
+
+def _bootstrap_means(mat: np.ndarray, smat: Optional[np.ndarray], seed: int = _BOOTSTRAP_SEED,
+                     draws: Optional[int] = None) -> Tuple[np.ndarray, np.ndarray]:
+    """(draws x levels) means of the profiles resampled with replacement (the weights of
+    _level_statistics), and the weights used."""
+    n_prof, n_lev = mat.shape
+    if draws is None:
+        draws = int(max(200, min(BOOTSTRAP_DRAWS, 2e9 / max(1, n_prof * n_lev))))
+    rng = np.random.default_rng(seed)
     counts = rng.multinomial(n_prof, np.full(n_prof, 1.0 / n_prof), size=draws).astype(float)
     finite = np.isfinite(mat)
     if smat is not None:
@@ -687,15 +704,56 @@ def _bootstrap_mean_interval(mat: np.ndarray, smat: Optional[np.ndarray],
     else:
         w = finite.astype(float)
     x = np.where(w > 0, mat, 0.0)
-    with np.errstate(invalid="ignore", divide="ignore"), warnings.catch_warnings():
-        warnings.simplefilter("ignore", RuntimeWarning)
+    with np.errstate(invalid="ignore", divide="ignore"):
         den = counts @ w
-        means = np.where(den > 0, (counts @ (w * x)) / den, np.nan)
-        enough = np.isfinite(means).sum(axis=0) >= draws // 2
-        a = 100.0 * (1.0 - level) / 2.0
-        lo, hi = np.nanpercentile(means, [a, 100.0 - a], axis=0)
-    two = np.sum(w > 0, axis=0) >= 2
-    return np.where(enough & two, lo, np.nan), np.where(enough & two, hi, np.nan)
+        return np.where(den > 0, (counts @ (w * x)) / den, np.nan), w
+
+
+def _group_differences(mat: np.ndarray, summaries: List[Dict[str, Any]], log_like: bool, by: str, width: float,
+                       sig, smat: Optional[np.ndarray] = None, weighting: str = "equal",
+                       level: float = 0.95) -> List[Dict[str, Any]]:
+    """Each group's composite mean minus that of the first group, at every level, with the
+    standard error sqrt(SEM_a^2 + SEM_b^2) and a percentile bootstrap interval (each group
+    resampled on its own, the means recomputed with the same weights, their difference
+    taken).  Only where both means are given (half of each group's profiles reach the
+    level).  For log-averaged variables the difference is in percent of the first group's
+    (geometric) mean."""
+    import warnings
+    keys = [_group_key(s, by, width) for s in summaries]
+    order = sorted({k for k in keys if k is not None}, key=lambda k: k[0])
+    if len(order) < 2:
+        return []
+    groups = []
+    for gi, key in enumerate(order):
+        idx = [i for i, k in enumerate(keys) if k == key]
+        sm = None if smat is None else smat[idx]
+        st = _level_statistics(mat[idx], sm, weighting)
+        m = np.where(st["n"] >= max(1, int(np.ceil(0.5 * len(idx)))), st["mean"], np.nan)
+        boot = _bootstrap_means(mat[idx], sm if weighting == "inverse_variance" else None,
+                                seed=_BOOTSTRAP_SEED + 7919 * gi, draws=BOOTSTRAP_DRAWS)[0] if len(idx) >= 2 else None
+        groups.append((key[1], m, st["sem"], boot, len(idx)))
+    a_label, a_mean, a_sem, a_boot, _ = groups[0]
+    out = []
+    tr = (lambda d: 100.0 * (np.exp(d) - 1.0)) if log_like else (lambda d: d)
+    q = 100.0 * (1.0 - level) / 2.0
+    for label, m, sem, boot, n in groups[1:]:
+        with np.errstate(invalid="ignore"), warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            d = m - a_mean
+            se = np.sqrt(sem ** 2 + a_sem ** 2)
+            lo = hi = np.full(d.shape, np.nan)
+            if boot is not None and a_boot is not None:
+                diffs = boot - a_boot
+                ok = np.isfinite(diffs).sum(axis=0) >= diffs.shape[0] // 2
+                lo, hi = np.nanpercentile(diffs, [q, 100.0 - q], axis=0)
+                lo, hi = np.where(ok & np.isfinite(d), lo, np.nan), np.where(ok & np.isfinite(d), hi, np.nan)
+        out.append({"label": f"{label} minus {a_label}", "group": label, "reference_group": a_label, "n": n,
+                    "difference": [sig(x) for x in tr(d)],
+                    # (log-averaged variables: the standard error of the log-ratio, as percent)
+                    "se": [sig(x) for x in (100.0 * se if log_like else se)],
+                    "ci95_low": [sig(x) for x in tr(lo)], "ci95_high": [sig(x) for x in tr(hi)],
+                    "percent": bool(log_like)})
+    return out
 
 
 def _group_composites(mat: np.ndarray, summaries: List[Dict[str, Any]], log_like: bool, by: str,
@@ -999,11 +1057,15 @@ def compare_profiles_on_body(
     sig = (lambda x: None if not np.isfinite(x) else float(f"{x:.6g}"))
     groups = _group_composites(mat, profile_summaries, log_like, group_by, group_width, sig,
                                smat, stat_weighting) if group_by else []
+    group_differences = _group_differences(mat, profile_summaries, log_like, group_by, group_width, sig,
+                                           smat, stat_weighting) if group_by else []
 
     return {
         "group_by": group_by or "",
         "group_width": group_width,
         "groups": groups,
+        # each group minus the first, with standard error and bootstrap interval
+        "group_differences": group_differences,
         "averaging": ("geometric mean and 1-sigma factor (log space)" if log_like else "arithmetic mean and 1-sigma (sample)")
                      + ("; inverse-variance weights" if weighting == "inverse_variance" else
                         "; inverse-variance weights (random and systematic uncertainty)"
@@ -1271,6 +1333,14 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
         header += [f"{g['label']} mean", f"{g['label']} plus_1sigma", f"{g['label']} minus_1sigma",
                    f"{g['label']} plus_sem", f"{g['label']} minus_sem", f"{g['label']} ci95_low",
                    f"{g['label']} ci95_high", f"{g['label']} n_effective"]
+    diffs = comparison.get("group_differences") or []
+    for d in diffs:
+        header += [f"{d['label']} difference", f"{d['label']} se", f"{d['label']} ci95_low",
+                   f"{d['label']} ci95_high"]
+    if diffs:
+        lines.append("# '<group> minus <first group>' columns: difference of the composite means, its standard error "
+                     "and 95 % bootstrap interval (each group resampled on its own)"
+                     + ("; in percent of the first group's geometric mean." if diffs[0].get("percent") else "."))
     ref = (comparison.get("reference") or {}).get("series")
     if ref:
         lines.append(f"# reference: {comparison['reference']['name']}; {comparison['reference']['citation']}")
@@ -1302,6 +1372,9 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
                     _csv_num(at(g.get("plus_sem"), i)), _csv_num(at(g.get("minus_sem"), i)),
                     _csv_num(at(g.get("ci95_low"), i)), _csv_num(at(g.get("ci95_high"), i)),
                     _csv_num(at(g.get("n_effective"), i))]
+        for d in diffs:
+            row += [_csv_num(at(d["difference"], i)), _csv_num(at(d["se"], i)), _csv_num(at(d["ci95_low"], i)),
+                    _csv_num(at(d["ci95_high"], i))]
         if ref:
             row.append(_csv_num(at(ref, i)))
         row += [_csv_num(at(p.get("interpolated_series"), i)) for p in profiles]
