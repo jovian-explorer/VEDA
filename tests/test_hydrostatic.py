@@ -264,3 +264,25 @@ def test_mgs_and_mro_integrate_in_the_archive_geopotential(tmp_path):
     assert "geopotential" not in mex.track
     mex.derived.update(compute_atmospheric_diagnostics(mex))
     assert mex.raw_attributes["hydrostatic_max_pct"] > 1.0          # g(z) dz: 2.2 % steeper than the archive's
+
+
+def test_mars_gravity_with_j2_and_rotation():
+    """Mars gravity at a profile's latitude has the J2 term (MRO120D field) and the
+    centrifugal term: 3.722 m/s^2 at the equator and 3.706 at the poles on the 3389.5 km
+    sphere (one 3.72 before).  Mars Express integrates its pressures with this local
+    gravity (the archive's temperatures follow from its densities to 0.03 % with it,
+    0.3 % with the spherical one), so a profile hydrostatic in it shows no departure."""
+    from veda.analysis.atmospheric import compute_atmospheric_diagnostics, gravity_profile
+    mars = get_body("mars")
+    ref = "a sphere of radius 3389.5 km (from the radius column)"
+    assert gravity_profile(mars, np.array([0.0]), 0.0, ref)[0][0] == pytest.approx(3.7218, abs=3e-4)
+    assert gravity_profile(mars, np.array([0.0]), 90.0, ref)[0][0] == pytest.approx(3.7059, abs=3e-4)
+    z = np.arange(0.0, 40.01, 0.5)
+    g = gravity_profile(mars, z, 70.0, ref)[0]
+    p = 6.0 * np.exp(-np.concatenate([[0.0], np.cumsum(0.5 * (g[1:] + g[:-1]) * 500.0)]) / (mars.gas_constant_r * 180.0))
+    prof = ObservationProfile(observation_id="m", mission_id="mex", body_id="mars", instrument="MaRS",
+                              time_utc="2005-01-01T00:00:00", latitude=70.0, longitude=0.0, altitude_km=z,
+                              temperature_k=np.full(z.size, 180.0), pressure_hpa=p, raw_attributes={"ALTITUDE_REFERENCE": ref})
+    prof.derived.update(compute_atmospheric_diagnostics(prof, mars))
+    assert prof.raw_attributes["hydrostatic_max_pct"] < 1e-3
+    assert "J2" in prof.raw_attributes["gravity_model"]

@@ -50,6 +50,13 @@ BODIES: Dict[str, BodyInfo] = {
         supported_missions=["mex", "mgs", "maven", "mro", "ody", "mer", "phoenix", "msl", "insight", "mom"],
         mission_page_url="https://science.nasa.gov/mars/",
         data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Mars/mars.html",
+        # Gravity field MRO120D (Konopliv et al. 2016, Icarus 274, 253; PDS MRO-M-RSS-5-SDP-V1,
+        # jgmro_120d_sha.tab: GM of Mars 42828.3750 km^3/s^2, fully normalized C20
+        # -8.750220925e-4 at 3396.0 km, so J2 = -C20 sqrt(5) = 1.956608e-3), sidereal
+        # rotation 24.6229 h and radii (Archinal et al. 2018).  Mars Express integrates its
+        # pressures with this local gravity at each tangent point.
+        gm_km3_s2=42828.375, j2=1.956608e-3, j2_reference_radius_km=3396.0,
+        rotation_period_h=24.6229, equatorial_radius_km=3396.19, polar_radius_km=3376.20,
     ),
     "jupiter": BodyInfo(
         id="jupiter",

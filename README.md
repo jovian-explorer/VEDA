@@ -90,7 +90,7 @@ An opened profile shows every quantity in the product with the archived 1-sigma 
 * For profiles with temperature and pressure: their hydrostatic consistency (largest and median departure of the archived pressure from the hydrostatic one)
 * On Mars and Venus, the CO$_2$ frost point at each level and the margin of the temperature above it (at or below zero, CO$_2$ can condense), with the smallest margin of each profile
 
-Heat capacity depends on temperature for Venus, Mars, Titan and Pluto ($c_p(T)$ from JANAF tables), gravity on latitude for Jupiter and Saturn, and the body constants come from measured compositions; the [User Guide](USAGE.md#3-scientific-inversion-and-atmospheric-physics) gives every method with its checks against archive values.
+Heat capacity depends on temperature for Venus, Mars, Titan and Pluto ($c_p(T)$ from JANAF tables), gravity on latitude for Mars, Jupiter and Saturn, and the body constants come from measured compositions; the [User Guide](USAGE.md#3-scientific-inversion-and-atmospheric-physics) gives every method with its checks against archive values.
 
 ### Compare observations
 * **Choose the profiles** by date, latitude band, local solar time, solar zenith angle, Mars season (Ls) and number per mission: VEDA searches the whole archive catalogue, downloads what it needs and reports why profiles were left out. Or tick profiles in any search table.
