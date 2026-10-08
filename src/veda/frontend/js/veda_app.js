@@ -1898,7 +1898,14 @@ function renderComparisonPlot() {
     traces.push(lower, upper);
   }
 
-  // 2. Individual profiles
+  // 2. Individual profiles.  Many of them get one legend entry per mission (a click shows
+  // or hides them all; with a colour scale, none): a line per profile filled the plot
+  const condensed = profs.length > 12 && !view.groups.length;
+  const whoOf = (p) => (p.mission_label || p.mission_id).toUpperCase() + (p.mission_id === 'user_imported' ? ' (your file)' : '');
+  const perWho = {};
+  profs.forEach(p => { perWho[whoOf(p)] = (perWho[whoOf(p)] || 0) + 1; });
+  const missionOrder = Object.keys(perWho);
+  const listed = new Set();
   profs.forEach((p, i) => {
     const when = (p.time_utc || '').replace('T', ' ').slice(0, 16);
     let color;
@@ -1908,9 +1915,11 @@ function renderComparisonPlot() {
     } else if (view.groups.length && groupIndex[p.observation_id] != null) {
       color = groupColor(groupIndex[p.observation_id]);      // grouped: profiles take their group's colour
     } else {
-      color = plotStyle.palette === 'veda' ? (MISSION_COLORS[(p.mission_label || p.mission_id).toLowerCase()] || paletteColor(i)) : paletteColor(i);
+      // (many profiles: one colour per mission in any palette, as in the legend)
+      const k = condensed ? missionOrder.indexOf(whoOf(p)) : i;
+      color = plotStyle.palette === 'veda' ? (MISSION_COLORS[(p.mission_label || p.mission_id).toLowerCase()] || paletteColor(k)) : paletteColor(k);
     }
-    const who = (p.mission_label || p.mission_id).toUpperCase() + (p.mission_id === 'user_imported' ? ' (your file)' : '');
+    const who = whoOf(p);
     const t = { ...orient(p.interpolated_series, zGrid), type: 'scatter',
       name: `${who} ${when || p.observation_id}`,
       hovertemplate: `<b>${who}</b> ${when}<br>${p.observation_id}<br>Lat ${p.latitude != null ? p.latitude.toFixed(1) : '?'}°<br>%{x:.4g}, %{y:.4g}<extra></extra>` };
@@ -1923,6 +1932,12 @@ function renderComparisonPlot() {
     if (flagged) t.name += ' (flagged outlier)';
     const styled = styleTrace(t, i, { color, sigma: ownSigma, dash: flagged ? 'dash' : undefined });
     if (view.groups.length) { styled.opacity = 0.3; styled.showlegend = false; }   // grouped: the group means stand out
+    if (condensed) {
+      styled.legendgroup = `mission-${who}`;
+      styled.showlegend = !numericKey && !listed.has(who);
+      if (styled.showlegend) styled.name = `${who} (${perWho[who]} profiles)`;
+      listed.add(who);
+    }
     traces.push(styled);
   });
 
@@ -2006,18 +2021,22 @@ function renderGroupDifferences(plotDiv, data, varCfg) {
   const byPressure = data.vertical === 'pressure';
   const zGrid = byPressure ? data.grid_hpa : data.grid_km;
   const traces = [];
+  const nOf = Object.fromEntries((data.groups || []).map(g => [g.label, g.n]));
+  // the levels without a value are left out of the coordinate too, so the axis fits the differences
+  const at = (values) => orient(values, zGrid.map((zv, k) => (values[k] == null ? null : zv)));
   diffs.forEach((d, i) => {
     const c = paletteColor(i + 2);
-    traces.push({ ...orient(d.ci95_low, zGrid), type: 'scatter', mode: 'lines', line: { width: 0, color: 'transparent' },
+    traces.push({ ...at(d.ci95_low), type: 'scatter', mode: 'lines', line: { width: 0, color: 'transparent' },
       showlegend: false, hoverinfo: 'skip', legendgroup: `d${i}` });
-    traces.push({ ...orient(d.ci95_high, zGrid), type: 'scatter', mode: 'lines', line: { width: 0, color: 'transparent' },
+    traces.push({ ...at(d.ci95_high), type: 'scatter', mode: 'lines', line: { width: 0, color: 'transparent' },
       fill: plotStyle.swapAxes ? 'tonexty' : 'tonextx', fillcolor: c.startsWith('#') && c.length === 7 ? `${c}33` : 'rgba(128,128,128,0.2)',
       name: `${d.label}: 95 % interval`, hoverinfo: 'skip', legendgroup: `d${i}` });
-    traces.push({ ...orient(d.difference, zGrid), type: 'scatter', mode: 'lines', line: { color: c, width: plotStyle.lineWidth + 1 },
-      name: `${d.label} (n = ${d.n})`, legendgroup: `d${i}`, customdata: d.se,
+    traces.push({ ...at(d.difference), type: 'scatter', mode: 'lines', line: { color: c, width: plotStyle.lineWidth + 1 },
+      name: `${d.label} (${d.n} and ${nOf[d.reference_group] ?? '?'} profiles)`, legendgroup: `d${i}`, customdata: d.se,
       hovertemplate: `<b>${escHtml(d.label)}</b><br>%{x:.3g} ± %{customdata:.2g} (1σ)<br>%{y:.4g}<extra></extra>` });
   });
-  traces.push({ ...orient(zGrid.map(() => 0), zGrid), type: 'scatter', mode: 'lines', line: { color: plotColors().ink, width: 1, dash: 'dash' },
+  const zero = zGrid.map((_, k) => (diffs.some(d => d.difference[k] != null) ? 0 : null));
+  traces.push({ ...at(zero), type: 'scatter', mode: 'lines', line: { color: plotColors().ink, width: 1, dash: 'dash' },
     hoverinfo: 'skip', showlegend: false });
   const units = diffs[0].percent ? '%' : cleanPlotlyMath(varCfg.units || '');
   const saved = plotStyle.vertical;

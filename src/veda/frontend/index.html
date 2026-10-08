@@ -120,7 +120,7 @@
   </div>
 
   <!-- Multi-Mission Selection & Comparative Visualizer Grid -->
-  <div class="grid-2" style="grid-template-columns: 340px 1fr; gap: 14px;">
+  <div class="grid-2 compare-layout" style="grid-template-columns: 340px 1fr; gap: 14px;">
     <!-- Left Column: Multi-Mission Checkboxes & Controls -->
     <div class="card">
       <h2>2. Select Missions to Compare</h2>
@@ -275,7 +275,7 @@
     </div>
 
     <!-- Right Column: Interactive Plotly Comparison Chart & Planetary Map -->
-    <div class="card" style="min-height: 520px; display: flex; flex-direction: column;">
+    <div class="card compare-plot-card">
       <div class="view-subtabs">
         <button class="view-subtab-btn active" id="btn-subtab-soundings">📈 Soundings & Profiles</button>
         <button class="view-subtab-btn" id="btn-subtab-cut" title="One point per profile (the variable at one altitude, a layer statistic or a whole-profile quantity) against time, latitude, local time, zenith angle, Ls, longitude or day of year">📍 Altitude cut</button>
@@ -286,7 +286,7 @@
 
       <!-- Tab 1: Aligned Soundings & Composite Dispersion -->
       <div id="veda-subtab-soundings-panel" style="flex: 1; display: flex; flex-direction: column;">
-        <div id="veda-comparison-plot" style="flex: 1; min-height: 480px;"></div>
+        <div id="veda-comparison-plot" class="compare-main-plot"></div>
       </div>
 
       <!-- Tab 1b: one altitude level of every compared profile against time or geometry -->
@@ -352,7 +352,7 @@
           </label>
           <span class="hint" id="veda-cut-status"></span>
         </div>
-        <div id="veda-cut-plot" style="flex: 1; min-height: 440px; max-height: 760px;"></div>
+        <div id="veda-cut-plot" class="compare-tab-plot"></div>
       </div>
 
       <!-- Tab 1c: zonal-mean latitude-altitude cross section -->
@@ -371,7 +371,7 @@
           <button type="button" class="ghost small" id="veda-btn-export-cross">📥 Export cross section (CSV)</button>
           <span class="hint" id="veda-cross-status"></span>
         </div>
-        <div id="veda-cross-plot" style="flex: 1; min-height: 440px; max-height: 760px;"></div>
+        <div id="veda-cross-plot" class="compare-tab-plot"></div>
       </div>
 
       <!-- Tab 1d: vertical wavenumber spectra of temperature perturbations -->
@@ -383,7 +383,7 @@
           <button type="button" class="ghost small" id="veda-btn-export-spectra">📥 Export spectra (CSV)</button>
           <span class="hint" id="veda-spec-status">Temperature profiles of the comparison; choose a layer they cover and press Compute.</span>
         </div>
-        <div id="veda-spec-plot" style="flex: 1; min-height: 440px; max-height: 760px;"></div>
+        <div id="veda-spec-plot" class="compare-tab-plot"></div>
       </div>
 
       <!-- Tab 2: Planetary Spatial Footprints Map -->
@@ -395,7 +395,7 @@
             <button class="small ghost" id="btn-map-proj-3d">3D Orthographic</button>
           </div>
         </div>
-        <div id="veda-planetary-map" style="flex: 1; min-height: 460px;"></div>
+        <div id="veda-planetary-map" class="compare-tab-plot"></div>
       </div>
     </div>
   </div>

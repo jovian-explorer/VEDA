@@ -803,6 +803,23 @@ body.no-curious [data-curious] { display: none; }
 }
 .transect-panel h4 { margin: 0 0 4px; font-size: calc(13px * var(--font-scale, 1.0)); }
 
+/* Comparison: the plot card stays beside the long column of controls (it sticks below the
+   top bar while they scroll) and its plots fit the window.  Stretched to the controls'
+   height, the soundings plot was about 2,700 px tall at any window size, its x axis
+   three screens below its title. */
+.compare-layout { align-items: start; }
+.compare-plot-card {
+  position: sticky;
+  top: calc(var(--topbar-h, 66px) + 10px);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - var(--topbar-h, 66px) - 20px);
+  overflow-y: auto;
+}
+.compare-plot-card:hover { transform: none; }
+.compare-main-plot { height: max(440px, calc(100vh - var(--topbar-h, 66px) - 150px)); flex: none; }
+.compare-tab-plot { height: max(360px, calc(100vh - var(--topbar-h, 66px) - 320px)); max-height: 760px; flex: none; }
+
 /* Subtab Navigation (Plot vs Planetary Map) */
 .view-subtabs {
   display: flex;

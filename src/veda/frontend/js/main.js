@@ -942,10 +942,22 @@ function dataPolicyBody() {
   return container;
 }
 
+/** The top bar's height as --topbar-h (it wraps to two rows in narrow windows): the
+ *  comparison plot card sticks below it and sizes its plots to the rest of the window. */
+function trackTopbarHeight() {
+  const bar = document.querySelector('.topbar');
+  if (!bar) return;
+  const set = () => document.documentElement.style.setProperty('--topbar-h', `${bar.offsetHeight}px`);
+  set();
+  if (window.ResizeObserver) new ResizeObserver(set).observe(bar);
+  else window.addEventListener('resize', set);
+}
+
 async function boot() {
   // Wire chrome and event listeners immediately
   wireChrome();
   installPlotJanitor();
+  trackTopbarHeight();
 
   try {
     state.meta = await api.meta();
