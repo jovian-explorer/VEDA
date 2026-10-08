@@ -331,3 +331,74 @@ def test_install_on_start_hands_over_to_the_swap_script(installed, monkeypatch):
     st = autoupdate.load_state()
     assert "staged" not in st and st["installed"]["build"] == 42 and not previous.exists()
     assert autoupdate.installed_notes(42)["notes"] == "n"
+
+
+class _GitHub:
+    """GitHub as the updater sees it after months offline: only the latest two releases
+    (150 and 151) are listed, older ones are deleted (their tags may stay)."""
+
+    def __init__(self, data, tags=("v0.2.0-build.151", "v0.2.0-build.150", "v0.2.0-build.144")):
+        self.data, self.tags, self.urls = data, list(tags), []
+
+    def get(self, url, **k):
+        self.urls.append(url)
+        if url.endswith("/releases/latest"):
+            return _Json(_release(self.data, tag="v0.2.0-build.151"))
+        if "/releases/download/" in url or url.startswith("https://x/"):
+            return _Resp(self.data)
+        if "/tags" in url:
+            return _Json([{"name": t} for t in self.tags])
+        return _Json({"message": "Not Found"}, status=404)
+
+
+class _Json:
+    def __init__(self, payload, status=200):
+        self.payload, self.status_code = payload, status
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            import requests
+            raise requests.HTTPError(f"{self.status_code}")
+
+    def json(self):
+        return self.payload
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+
+def test_a_copy_that_missed_releases_goes_straight_to_the_latest(installed, monkeypatch):
+    """Installed build 144 (its release deleted from GitHub); GitHub lists only 150 and 151:
+    151 is staged, from /releases/latest, without asking for anything about 144 or 150."""
+    from veda.archives import net
+    monkeypatch.setitem(autoupdate.BUILD, "number", 144)
+    gh = _GitHub(_release_zip())
+    monkeypatch.setattr(net, "session", lambda: gh)
+    res = autoupdate.check_and_stage(force=True)
+    assert res == {"result": "staged", "tag": "v0.2.0-build.151"}
+    assert autoupdate.load_state()["staged"]["build"] == 151
+    assert gh.urls[0].endswith("/releases/latest")
+    assert not any("build.144" in u or "build.150" in u for u in gh.urls)
+
+
+def test_the_installed_release_missing_from_github_breaks_nothing(installed, monkeypatch, fresh_settings):
+    """Build 144's release is gone from GitHub: the update notice, the weekly check and the
+    settings panel still work."""
+    from veda import updates
+    from veda.archives import net
+    monkeypatch.setitem(autoupdate.BUILD, "number", 144)
+    monkeypatch.setitem(updates.BUILD, "number", 144)
+    gh = _GitHub(_release_zip(), tags=("v0.2.0-build.151", "v0.2.0-build.150"))   # tag 144 gone too
+    monkeypatch.setattr(net, "session", lambda: gh)
+    updates._cache.clear()
+    try:
+        r = updates.check(force=True)
+        assert r["checked"] and r["newer"] and r["latest"]["tag"] == "v0.2.0-build.151"
+    finally:
+        updates._cache.clear()
+    assert autoupdate.check_and_stage(force=True)["result"] == "staged"
+    fresh_settings(config.Settings().to_dict())
+    assert sm.pending() == {"show": False}
