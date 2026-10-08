@@ -284,6 +284,19 @@ def _diagnostics(profile: ObservationProfile, body: BodyInfo) -> Dict[str, np.nd
         from .hydrostatic import hydrostatic_consistency
         profile.raw_attributes.update(hydrostatic_consistency(z, p_hpa, t_k, gz, r_spec))
 
+        # CO2 atmospheres (Mars, Venus): the CO2 frost point and how close T comes to it
+        from .condensation import co2_condensation_temperature, co2_volume_fraction
+        x_co2 = co2_volume_fraction(body)
+        if x_co2:
+            t_co2 = co2_condensation_temperature(p_hpa, x_co2)
+            margin = t_k - t_co2
+            if np.isfinite(margin).any():
+                derived["co2_condensation_temperature"] = t_co2
+                derived["t_minus_co2_condensation"] = margin
+                k = int(np.nanargmin(margin))
+                profile.raw_attributes["co2_margin_min_k"] = round(float(margin[k]), 2)
+                profile.raw_attributes["co2_margin_min_km"] = round(float(z[k]), 2)
+
     # 6. Cold-point tropopause (where the body has one) and gravity waves
     try:
         from .wave_and_stability import extract_gravity_wave_activity, tropopause_for_body
@@ -420,6 +433,9 @@ PROFILE_DIAGNOSTICS: Dict[str, Tuple[str, str]] = {
     "hydrostatic_noise_median_pct": ("Median departure expected from the profile's errors alone", "%"),
     "hydrostatic_noise_max_pct": ("Largest departure expected from the errors alone (95th percentile)", "%"),
     "hydrostatic_top_temperature_k": ("Top temperature of the hydrostatic retrieval from density", "K"),
+    "co2_margin_min_k": ("Smallest T minus CO2 frost point (below 0: supersaturated)", "K"),
+    "co2_margin_min_km": ("Altitude of the smallest T minus CO2 frost point", "km"),
+    "co2_margin_min_sigma_k": ("1-sigma of the smallest T minus CO2 frost point", "K"),
 }
 
 
@@ -447,6 +463,9 @@ def profile_diagnostics(profile: ObservationProfile) -> Dict[str, Optional[float
         "hydrostatic_noise_median_pct": _finite(a.get("hydrostatic_noise_median_pct")),
         "hydrostatic_noise_max_pct": _finite(a.get("hydrostatic_noise_max_pct")),
         "hydrostatic_top_temperature_k": _finite(a.get("hydrostatic_top_temperature_k")),
+        "co2_margin_min_k": _finite(a.get("co2_margin_min_k")),
+        "co2_margin_min_km": _finite(a.get("co2_margin_min_km")),
+        "co2_margin_min_sigma_k": _finite(a.get("co2_margin_min_sigma_k")),
     }
     return out
 
@@ -1130,7 +1149,8 @@ def export_profiles_long_csv(profiles: List[ObservationProfile], body: Optional[
         f"# Processed with VEDA {__version__} (https://github.com/jovian-explorer/VEDA, doi:10.5281/zenodo.23215291), MIT License",
     ]
     from ..core.registry import get_variable_info
-    extra_units = {"dtheta_dz": "K/km", "number_density_m3": "m^-3", "molar_mass": "g/mol"}
+    extra_units = {"dtheta_dz": "K/km", "number_density_m3": "m^-3", "molar_mass": "g/mol",
+                   "co2_condensation_temperature": "K", "t_minus_co2_condensation": "K"}
     unit_of = (lambda k: (get_variable_info(k) or {}).get("units") or extra_units.get(k))
     units = [f"{k}={unit_of(k)}" for k in var_cols if unit_of(k)]
     if units:

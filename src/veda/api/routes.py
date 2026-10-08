@@ -795,6 +795,9 @@ def _publication_figure(b, comp: dict, variable: str, dpi: int, fmt: str) -> Res
         "refractivity": "Radio Refractivity $N$",
         "temperature_from_density": "Temperature from density (hydrostatic) $T$ (K)",
         "pressure_from_density": "Pressure from density (hydrostatic) $P$ (hPa)",
+        "co2_condensation_temperature": r"CO$_2$ frost-point temperature $T_{\mathrm{CO_2}}$ (K)",
+        "t_minus_co2_condensation": r"$T - T_{\mathrm{CO_2}}$ (K)",
+        "molar_mass": r"Mean molar mass $\bar{m}$ (g/mol)",
     }
     xlabel = var_labels.get(variable, variable)
 

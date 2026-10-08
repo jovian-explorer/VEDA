@@ -247,6 +247,19 @@ def propagate(profile, body, derived: Dict[str, np.ndarray], gz: Optional[np.nda
             out["density"] = np.abs(derived["density"]) * np.sqrt(rt ** 2 + rp ** 2)
             kappa = r_spec / body.isobaric_heat_capacity_cp
             out["potential_temperature"] = np.abs(derived["potential_temperature"]) * np.sqrt(rt ** 2 + (kappa * rp) ** 2)
+        if "t_minus_co2_condensation" in derived and (s_t is not None or s_p is not None):
+            from .condensation import co2_condensation_sigma
+            s_tc = (co2_condensation_sigma(derived["co2_condensation_temperature"], p, s_p) if s_p is not None
+                    else 0.0)
+            if s_p is not None:
+                out["co2_condensation_temperature"] = s_tc
+            out["t_minus_co2_condensation"] = np.sqrt((s_t if s_t is not None else 0.0) ** 2 + s_tc ** 2)
+            margin = np.asarray(derived["t_minus_co2_condensation"], dtype=float)
+            if np.isfinite(margin).any():           # the 1-sigma where T comes closest to the frost point
+                s_min = out["t_minus_co2_condensation"][int(np.nanargmin(margin))]
+                if np.isfinite(s_min):
+                    if profile.raw_attributes is not None:
+                        profile.raw_attributes["co2_margin_min_sigma_k"] = round(float(s_min), 2)
 
     attrs = profile.raw_attributes if profile.raw_attributes is not None else {}
 

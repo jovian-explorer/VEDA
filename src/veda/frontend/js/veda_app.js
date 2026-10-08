@@ -80,6 +80,9 @@ const VARIABLE_CONFIGS = {
   absorptivity_db_km: { label: 'Microwave absorptivity', units: 'dB/km', bodies: ['venus'], axis: 'Absorptivity (dB/km)', color: '#f97316' },
   density_measured: { label: 'Mass density (archive)', units: 'kg/m³', axis: 'Mass density ρ (kg/m³)', logScale: true, color: '#14b8a6' },
   number_density_m3: { label: 'Number density (archive)', units: 'm⁻³', axis: 'Number density (m⁻³)', logScale: true, color: '#22d3ee' },
+  // CO2 frost point (James et al. 1992) and the margin above it: <= 0 is saturated (CO2 ice clouds)
+  co2_condensation_temperature: { label: 'CO₂ frost point', units: 'K', bodies: ['mars', 'venus'], axis: 'CO₂ frost-point temperature (K)', color: '#93c5fd' },
+  t_minus_co2_condensation: { label: 'T minus CO₂ frost point', units: 'K', bodies: ['mars', 'venus'], axis: 'T − T(CO₂ frost) (K)', color: '#0ea5e9' },
   // mean molar mass per level where the archive gives it (SOIR): used for density and scale height
   molar_mass: { label: 'Mean molar mass (archive)', units: 'g/mol', bodies: ['venus'], axis: 'Mean molar mass (g/mol)', color: '#a3e635' },
   // Hydrostatic retrieval from a measured mass or number density profile (accelerometer, SOIR)
@@ -2438,6 +2441,7 @@ async function inspectProfileObservation(obs) {
       'density_measured',
       'number_density_m3',
       'molar_mass',
+      'co2_condensation_temperature', 't_minus_co2_condensation',
       'temperature_from_density', 'pressure_from_density',
       'dust_mixing_ratio', 'ice_mixing_ratio', 'dust_opacity_per_mbar', 'ice_opacity_per_mbar',
       'dust_effective_radius', 'ice_effective_radius',
