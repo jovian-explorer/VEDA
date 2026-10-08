@@ -340,7 +340,20 @@ async function showSettingsChanges() {
   body.append(el('p', {}, `This is VEDA ${build}${prev && prev !== build ? ` (before: ${prev})` : ''}. `
     + 'Your settings are kept as they were; check the ones listed below.'));
   if (r.whats_new) {
-    body.append(el('h3', {}, `What's new in ${r.whats_new.name || r.whats_new.tag}`), notesNode(r.whats_new.notes));
+    body.append(el('h3', {}, `What's new in ${r.whats_new.name || r.whats_new.tag}`));
+    // The notes list only the changes since the release before this one: a copy that
+    // skipped releases also gets the full comparison (where its tag still exists) and the CHANGELOG.
+    const bh = r.whats_new.behind;
+    if (bh && (bh.releases == null || bh.releases > 1)) {
+      const link = (href, text) => el('a', { href, target: '_blank', rel: 'noopener' }, text);
+      const line = el('p', { class: 'whats-new-behind' },
+        bh.releases == null ? `All changes since your previous build (${bh.from_build}): `
+          : `You were ${bh.releases} releases behind (build ${bh.from_build} → ${bh.to_build}); all changes: `);
+      if (bh.compare_url) line.append(link(bh.compare_url, `${bh.from_tag}...${bh.to_tag}`), ' and ');
+      line.append(link(bh.changelog_url, 'the CHANGELOG'), '.');
+      body.append(line);
+    }
+    body.append(notesNode(r.whats_new.notes));
     if (r.whats_new.url) body.append(el('p', {}, el('a', { href: r.whats_new.url, target: '_blank', rel: 'noopener' }, 'Release page')));
   }
   const rows = [];

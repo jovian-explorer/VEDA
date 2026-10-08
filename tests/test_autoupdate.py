@@ -402,3 +402,53 @@ def test_the_installed_release_missing_from_github_breaks_nothing(installed, mon
     assert autoupdate.check_and_stage(force=True)["result"] == "staged"
     fresh_settings(config.Settings().to_dict())
     assert sm.pending() == {"show": False}
+
+
+def test_how_many_releases_a_copy_skipped(monkeypatch):
+    """The new release's notes list only the changes since the release before it: a copy
+    that skipped releases is told how many and gets the comparison from its own tag
+    (when that tag still exists) and the CHANGELOG."""
+    monkeypatch.setitem(autoupdate.BUILD, "number", 144)
+    tags = ["v0.2.0-build.151", "v0.2.0-build.150", "v0.2.0-build.147", "v0.2.0-build.144", "v0.2.0-build.143",
+            "v0.1.0", "v0.0.1"]
+    b = autoupdate.releases_behind("v0.2.0-build.151", tags)
+    assert b["releases"] == 3 and b["from_build"] == 144 and b["to_build"] == 151
+    assert b["compare_url"] == "https://github.com/jovian-explorer/VEDA/compare/v0.2.0-build.144...v0.2.0-build.151"
+    assert b["changelog_url"].endswith("/blob/main/CHANGELOG.md")
+    # directly after the release installed: one release, no extra line needed
+    assert autoupdate.releases_behind("v0.2.0-build.147", tags)["releases"] == 1
+    monkeypatch.setitem(autoupdate.BUILD, "number", 150)
+    assert autoupdate.releases_behind("v0.2.0-build.151", tags)["releases"] == 1
+    # a build whose tag was deleted by the old workflow (137 and older): no comparison link
+    monkeypatch.setitem(autoupdate.BUILD, "number", 129)
+    b = autoupdate.releases_behind("v0.2.0-build.151", tags)
+    assert b["releases"] == 5 and b["compare_url"] is None and b["changelog_url"]
+    # the tags cannot be read: unknown count, the CHANGELOG link only
+    from veda.archives import net
+
+    class Down:
+        def get(self, *a, **k):
+            raise OSError("offline")
+    monkeypatch.setattr(net, "session", lambda: Down())
+    b = autoupdate.releases_behind("v0.2.0-build.151")
+    assert b["releases"] is None and b["compare_url"] is None and b["changelog_url"]
+    monkeypatch.setitem(autoupdate.BUILD, "number", None)
+    assert autoupdate.releases_behind("v0.2.0-build.151", tags) is None
+
+
+def test_whats_new_tells_a_copy_that_skipped_releases(installed, monkeypatch, fresh_settings):
+    """Build 144 updated to 151 (150 in between): the staged notes carry how far behind it
+    was; after the swap the settings panel's What's new has it."""
+    from veda.archives import net
+    monkeypatch.setitem(autoupdate.BUILD, "number", 144)
+    gh = _GitHub(_release_zip())
+    monkeypatch.setattr(net, "session", lambda: gh)
+    assert autoupdate.check_and_stage(force=True)["result"] == "staged"
+    behind = autoupdate.load_state()["staged"]["behind"]
+    assert behind["releases"] == 2 and "compare/v0.2.0-build.144...v0.2.0-build.151" in behind["compare_url"]
+    fresh_settings(config.Settings().to_dict())
+    sm.MARKER_PATH.write_text(json.dumps({"version": "0.2.0", "build": 144, "schema": sm.current_schema()}))
+    monkeypatch.setitem(autoupdate.BUILD, "number", 151)              # the new build has started
+    autoupdate.finish_install()
+    r = sm.pending()
+    assert r["show"] and r["whats_new"]["behind"]["releases"] == 2 and r["previous"]["build"] == 144

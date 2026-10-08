@@ -29,7 +29,7 @@ import threading
 import time
 import zipfile
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from . import __version__
 from .config import DATA_ROOT, SETTINGS
@@ -39,6 +39,8 @@ UPDATES_DIR = DATA_ROOT / "updates"
 STATE_PATH = UPDATES_DIR / "state.json"
 CHECK_EVERY_S = 7 * 24 * 3600
 _API_LATEST = f"https://api.github.com/repos/{REPO}/releases/latest"
+_API_TAGS = f"https://api.github.com/repos/{REPO}/tags"
+CHANGELOG_URL = f"https://github.com/{REPO}/blob/main/CHANGELOG.md"
 
 _lock = threading.Lock()
 _job: Dict[str, Any] = {"running": False, "message": "", "done": 0, "total": 0, "error": None}
@@ -64,12 +66,63 @@ def save_state(state: Dict[str, Any]) -> None:
 
 
 def installed_notes(build: Optional[int]) -> Optional[Dict[str, Any]]:
-    """Release notes of this build, when it was installed by the updater."""
+    """Release notes of this build, when it was installed by the updater, and how many
+    releases the copy it replaced was behind (``behind``, see releases_behind)."""
     inst = load_state().get("installed") or {}
     if build is not None and inst.get("build") == build:
         return {"tag": inst.get("tag"), "name": inst.get("name"), "notes": inst.get("notes") or "",
-                "url": inst.get("url")}
+                "url": inst.get("url"), "behind": inst.get("behind")}
     return None
+
+
+def _tag_key(tag: str):
+    version, build = parse_tag(tag)
+    return (version, build) if version else None
+
+
+def release_tags() -> List[str]:
+    """Names of the repository's tags: every release keeps its tag on GitHub after the
+    release itself is deleted (only the latest two stay downloadable)."""
+    from .archives import net
+    names: List[str] = []
+    for page in range(1, 11):
+        r = net.session().get(_API_TAGS, params={"per_page": 100, "page": page}, timeout=SETTINGS.network_timeout_s,
+                              headers={"Accept": "application/vnd.github+json"})
+        r.raise_for_status()
+        batch = [t.get("name", "") for t in r.json() if isinstance(t, dict)]
+        names += batch
+        if len(batch) < 100:
+            break
+    return names
+
+
+def releases_behind(new_tag: str, tags: Optional[List[str]] = None) -> Optional[Dict[str, Any]]:
+    """How far this copy is from release ``new_tag``: the number of releases newer than it
+    up to that one (``releases``: 1 when the new release directly follows; None when the
+    tags could not be read), the GitHub comparison of this build's tag with the new one
+    (``compare_url``, None when this build's tag no longer exists: the per-push builds up
+    to 137 lost theirs), and the CHANGELOG.  The new release's notes list only the changes
+    since the release before it, so a copy that skipped releases needs the rest."""
+    build = BUILD.get("number")
+    if build is None:
+        return None
+    from .updates import _version_tuple
+    old_tag = f"v{__version__}-build.{build}"
+    out: Dict[str, Any] = {"from_build": build, "from_tag": old_tag, "to_tag": new_tag,
+                           "to_build": parse_tag(new_tag)[1] or None, "changelog_url": CHANGELOG_URL,
+                           "releases": None, "compare_url": None}
+    if tags is None:
+        try:
+            tags = release_tags()
+        except Exception:  # noqa: BLE001 - offline or rate limited: the CHANGELOG link only
+            return out
+    new_key, old_key = _tag_key(new_tag), (_version_tuple(__version__), build)
+    if new_key is None:
+        return out
+    out["releases"] = max(1, sum(1 for t in tags if (k := _tag_key(t)) is not None and old_key < k <= new_key))
+    if old_tag in tags and new_tag in tags:
+        out["compare_url"] = f"https://github.com/{REPO}/compare/{old_tag}...{new_tag}"
+    return out
 
 
 # ---------------------------------------------------------------- this installation
@@ -284,7 +337,7 @@ def check_and_stage(force: bool = False, release: Optional[Dict[str, Any]] = Non
     _, build = parse_tag(tag)
     st["staged"] = {"tag": tag, "name": rel.get("name") or tag, "build": build, "notes": rel.get("body") or "",
                     "url": rel.get("html_url"), "path": str(target), "sha256": (asset.get("digest") or "").partition(":")[2],
-                    "size": asset.get("size"), "staged_at": time.time()}
+                    "size": asset.get("size"), "staged_at": time.time(), "behind": releases_behind(tag)}
     save_state(st)
     return {"result": "staged", "tag": tag}
 
@@ -338,7 +391,7 @@ def finish_install() -> None:
     if not staged or build is None or staged.get("build") != build:
         return
     root = install_root()
-    st["installed"] = {k: staged.get(k) for k in ("tag", "name", "build", "notes", "url")}
+    st["installed"] = {k: staged.get(k) for k in ("tag", "name", "build", "notes", "url", "behind")}
     st["installed"]["installed_at"] = time.time()
     st.pop("staged", None)
     save_state(st)
