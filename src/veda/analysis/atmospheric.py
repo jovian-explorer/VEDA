@@ -594,6 +594,62 @@ def _reference_series(body: BodyInfo, variable_name: str, z_grid: np.ndarray, by
     return {**info, "series": [None if not np.isfinite(x) else float(f"{x:.6g}") for x in v]}
 
 
+def uncertainty_budget(mat: np.ndarray, rand_s: np.ndarray, sys_s: np.ndarray,
+                       weighting: str = "equal") -> Dict[str, np.ndarray]:
+    """What makes up the spread of the compared profiles and the uncertainty of their mean,
+    at each level of ``mat`` (profiles x levels, in log space for log-averaged variables,
+    whose 1-sigma ``rand_s`` and systematic uncertainty ``sys_s`` are then relative).
+
+    Over the values that have a random 1-sigma at a level, with errors independent of the
+    atmosphere and between profiles,
+
+        spread^2 = variability^2 + <sigma^2>,
+
+    spread the sample standard deviation of those values: the natural variability between
+    the profiles is sqrt(max(0, spread^2 - <sigma^2>)), and random_fraction = <sigma^2> /
+    spread^2 the share of the variance the random errors explain (above 1: the archived
+    errors are larger than the scatter they would cause).  The random error of the mean is
+    sqrt(sum sigma^2) / n (inverse-variance weights: 1 / sqrt(sum 1/sigma^2)).  The
+    systematic uncertainty s (the boundary temperature of radio occultation retrievals) of
+    the mean is sqrt(sum s^2) / n where it is independent between profiles (each retrieval
+    starts from its own unknown top temperature) and mean(s) where all of them share it."""
+    import warnings
+    out: Dict[str, np.ndarray] = {}
+    with np.errstate(invalid="ignore", divide="ignore"), warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        has = np.isfinite(mat) & np.isfinite(rand_s) & (rand_s > 1e-6 * np.maximum(np.abs(mat), 1e-300))
+        n = has.sum(axis=0)
+        x = np.where(has, mat, np.nan)
+        spread = np.where(n >= 2, np.nanstd(x, axis=0, ddof=1), np.nan)
+        s2 = np.where(has, rand_s, np.nan) ** 2
+        noise2 = np.where(n >= 2, np.nanmean(s2, axis=0), np.nan)
+        out["profiles_with_sigma"] = n.astype(float)
+        out["spread"] = spread
+        out["random_rms"] = np.sqrt(noise2)
+        out["variability"] = np.sqrt(np.maximum(spread ** 2 - noise2, 0.0))
+        out["random_fraction"] = noise2 / spread ** 2
+        w = np.where(has, 1.0 / np.where(has, rand_s, 1.0) ** 2, 0.0)
+        if weighting == "inverse_variance":
+            out["mean_random"] = np.where(n >= 2, 1.0 / np.sqrt(w.sum(axis=0)), np.nan)
+        else:
+            out["mean_random"] = np.where(n >= 2, np.sqrt(np.nansum(s2, axis=0)) / n, np.nan)
+        # systematic: over the values with a value there (weights as for the mean)
+        hs = np.isfinite(mat) & np.isfinite(sys_s) & (sys_s > 0)
+        ns = hs.sum(axis=0)
+        sv = np.where(hs, sys_s, np.nan)
+        out["systematic_rms"] = np.where(ns >= 1, np.sqrt(np.nanmean(sv ** 2, axis=0)), np.nan)
+        if weighting == "inverse_variance":
+            ww = np.where(hs & has, w, 0.0)
+            sw = ww.sum(axis=0)
+            out["mean_systematic_independent"] = np.where(sw > 0, np.sqrt(np.nansum(ww ** 2 * np.nan_to_num(sv) ** 2, axis=0)) / sw, np.nan)
+            out["mean_systematic_correlated"] = np.where(sw > 0, np.nansum(ww * np.nan_to_num(sv), axis=0) / sw, np.nan)
+        else:
+            nall = np.isfinite(mat).sum(axis=0)
+            out["mean_systematic_independent"] = np.where(ns >= 1, np.sqrt(np.nansum(sv ** 2, axis=0)) / nall, np.nan)
+            out["mean_systematic_correlated"] = np.where(ns >= 1, np.nansum(sv, axis=0) / nall, np.nan)
+    return out
+
+
 def latitude_cross_section(mat: np.ndarray, smat: Optional[np.ndarray], latitudes: List[Optional[float]],
                            width: float, log_like: bool, weighting: str = "equal") -> Dict[str, Any]:
     """Zonal mean in latitude bands of ``width`` degrees (from -90) at each level of the
@@ -1033,6 +1089,7 @@ def compare_profiles_on_body(
 
     mat = np.array(interpolated_matrix)  # shape: (n_profiles, n_grid)
     smat = np.array(sigma_matrix)
+    rand_s, sys_s = np.array(sigma_matrix), np.array(systematic_matrix)   # for the uncertainty budget
     if weighting == "inverse_variance_total":
         # the random 1-sigma with the systematic uncertainty added in quadrature where given
         sysm = np.array(systematic_matrix)
@@ -1062,6 +1119,7 @@ def compare_profiles_on_body(
             keep = [i for i, fl in enumerate(flags) if not fl["flagged"]]
             screen["left_out_profiles"] = [profile_summaries[i] for i, fl in enumerate(flags) if fl["flagged"]]
             mat, smat = mat[keep], smat[keep]
+            rand_s, sys_s = rand_s[keep], sys_s[keep]
             profile_summaries = [profile_summaries[i] for i in keep]
             interpolated_matrix = [interpolated_matrix[i] for i in keep]
     if stat_weighting == "inverse_variance" and not np.isfinite(smat).any():
@@ -1094,6 +1152,8 @@ def compare_profiles_on_body(
                                smat, stat_weighting) if group_by else []
     group_differences = _group_differences(mat, profile_summaries, log_like, group_by, group_width, sig,
                                            smat, stat_weighting) if group_by else []
+    budget = uncertainty_budget(mat, rand_s, sys_s, stat_weighting)
+    pct = (lambda a: 100.0 * a) if log_like else (lambda a: a)       # log space: relative, in percent
 
     return {
         "group_by": group_by or "",
@@ -1145,6 +1205,12 @@ def compare_profiles_on_body(
                                 for x, n in zip(np.exp(stats["ci_hi"]) if log_like else stats["ci_hi"], n_per_level)],
         "profile_count": len(profile_summaries),
         "profiles": profile_summaries,
+        # spread = natural variability (+) random errors; random and systematic errors of the mean
+        # (log-averaged variables: 100 x the 1-sigma of ln(value), the percent of the value while small)
+        "uncertainty_budget": {
+            "percent": bool(log_like),
+            **{k: [sig(x) for x in (budget[k] if k in ("random_fraction", "profiles_with_sigma") else pct(budget[k]))]
+               for k in budget}},
         # label and unit of each per-profile diagnostic at least one profile has
         "diagnostic_labels": {k: list(PROFILE_DIAGNOSTICS[k]) for k in PROFILE_DIAGNOSTICS
                               if any(k in s["diagnostics"] for s in profile_summaries)},
@@ -1312,6 +1378,10 @@ def _altitude_note(profiles: List[Dict[str, Any]]) -> str:
     return "# Altitude above the body's reference radius (km)"
 
 
+_BUDGET_COLUMNS = ("profiles_with_sigma", "spread", "random_rms", "variability", "random_fraction", "systematic_rms",
+                   "mean_random", "mean_systematic_independent", "mean_systematic_correlated")
+
+
 def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
     """The comparison as on screen: gridded composite, group composites and every
     profile, with a header describing each profile (time, position, geometry)."""
@@ -1376,6 +1446,16 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
         lines.append("# '<group> minus <first group>' columns: difference of the composite means, its standard error "
                      "and 95 % bootstrap interval (each group resampled on its own)"
                      + ("; in percent of the first group's geometric mean." if diffs[0].get("percent") else "."))
+    budget = comparison.get("uncertainty_budget") or {}
+    bkeys = [k for k in _BUDGET_COLUMNS if any(v is not None for v in budget.get(k) or [])]
+    if bkeys:
+        header += [f"budget_{k}" for k in bkeys]
+        lines.append("# budget_* columns (uncertainty budget, equal weights unless inverse-variance weighting; "
+                     + ("as 100 x the 1-sigma of ln(value), the percent of the value while small; " if budget.get("percent") else "")
+                     + "over the profiles with a 1-sigma at the level): spread^2 = variability^2 + random_rms^2; "
+                     "random_fraction = random_rms^2 / spread^2; mean_random = random error of the mean; "
+                     "mean_systematic_independent / _correlated = systematic uncertainty of the mean when the profiles' "
+                     "systematic errors are independent / shared.")
     ref = (comparison.get("reference") or {}).get("series")
     if ref:
         lines.append(f"# reference: {comparison['reference']['name']}; {comparison['reference']['citation']}")
@@ -1410,6 +1490,7 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
         for d in diffs:
             row += [_csv_num(at(d["difference"], i)), _csv_num(at(d["se"], i)), _csv_num(at(d["ci95_low"], i)),
                     _csv_num(at(d["ci95_high"], i))]
+        row += [_csv_num(at(budget.get(k), i)) for k in bkeys]
         if ref:
             row.append(_csv_num(at(ref, i)))
         row += [_csv_num(at(p.get("interpolated_series"), i)) for p in profiles]

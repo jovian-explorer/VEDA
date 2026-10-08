@@ -357,3 +357,47 @@ def test_spread_matches_numpy_nanpercentile():
     a[rng.uniform(size=a.shape) < 0.2] = np.nan
     lo, hi = np.nanpercentile(a, [15.865, 84.135], axis=0)
     np.testing.assert_allclose(unc._std(a), (hi - lo) / 2, rtol=1e-12)
+
+
+def test_uncertainty_budget_separates_natural_variability_from_random_errors():
+    """Profiles that differ by 5 K (natural variability) measured with 3 K random errors
+    scatter by sqrt(5^2 + 3^2) = 5.83 K: the budget gives the 3 K random part, the 5 K
+    variability and 9/34 of the variance from the errors; the random error of the mean is
+    3 / sqrt(n), the systematic one 2 / sqrt(n) when independent between profiles, 2 K
+    when shared."""
+    from veda.analysis.atmospheric import uncertainty_budget
+    rng = np.random.default_rng(20261009)
+    n = 4000
+    truth = 200.0 + 5.0 * rng.standard_normal((n, 3))
+    sig = np.full((n, 3), 3.0)
+    obs = truth + sig * rng.standard_normal((n, 3))
+    b = uncertainty_budget(obs, sig, np.full((n, 3), 2.0))
+    np.testing.assert_allclose(b["random_rms"], 3.0)
+    np.testing.assert_allclose(b["variability"], 5.0, rtol=0.04)
+    np.testing.assert_allclose(b["spread"], np.sqrt(34.0), rtol=0.03)
+    np.testing.assert_allclose(b["random_fraction"], 9.0 / 34.0, atol=0.02)
+    np.testing.assert_allclose(b["mean_random"], 3.0 / np.sqrt(n))
+    np.testing.assert_allclose(b["mean_systematic_independent"], 2.0 / np.sqrt(n))
+    np.testing.assert_allclose(b["mean_systematic_correlated"], 2.0)
+    # errors larger than the scatter they would cause: no variability left, fraction above 1
+    calm = uncertainty_budget(200.0 + 1.0 * rng.standard_normal((n, 1)), np.full((n, 1), 3.0), np.full((n, 1), np.nan))
+    assert calm["variability"][0] == 0.0 and calm["random_fraction"][0] > 5
+
+
+def test_comparison_reports_and_exports_its_uncertainty_budget():
+    mars = get_body("mars")
+    profs = [_flat("a", 200.0, 1.0), _flat("b", 210.0, 2.0), _flat("c", 220.0, 2.0), _flat("d", 230.0, 1.0)]
+    profs[0].systematic = {"temperature_k": np.full(41, 4.0)}
+    comp = compare_profiles_on_body(profs, mars, altitude_step_km=1.0)
+    b = comp["uncertainty_budget"]
+    s = np.std([200, 210, 220, 230], ddof=1)
+    assert b["spread"][5] == pytest.approx(s, rel=1e-5)
+    assert b["random_rms"][5] == pytest.approx(np.sqrt((1 + 4 + 4 + 1) / 4), rel=1e-5)
+    assert b["variability"][5] == pytest.approx(np.sqrt(s ** 2 - 2.5), rel=1e-5)
+    assert b["mean_random"][5] == pytest.approx(np.sqrt(10) / 4, rel=1e-5)
+    assert b["mean_systematic_correlated"][5] == pytest.approx(1.0, rel=1e-5)      # 4 K on one of four
+    assert b["percent"] is False
+    text = export_comparison_to_csv(comp)
+    header = next(line for line in text.splitlines() if line.startswith("altitude_km,"))
+    assert "budget_variability" in header and "budget_mean_systematic_correlated" in header
+    assert "# budget_* columns" in text

@@ -1884,6 +1884,10 @@ function renderComparisonPlot() {
     renderGroupDifferences(plotDiv, raw, varCfg);
     return;
   }
+  if (vedaState.compareShowAs === 'budget') {
+    renderUncertaintyBudget(plotDiv, raw, varCfg);
+    return;
+  }
   const sc = a => (pScale === 1 || !Array.isArray(a)) ? a : a.map(v => (v === null ? v : v * pScale));
   const scaled = pScale === 1 ? raw : {
     ...raw,
@@ -2038,6 +2042,58 @@ function renderComparisonPlot() {
        coordTitle: byPressure ? 'Pressure (hPa)' : altitudeAxisTitle((data.profiles || []).map(p => p.altitude_reference)) });
   plotStyle.vertical = savedVertical;
 
+  window.Plotly.newPlot(plotDiv, traces, themedLayout(layout), { responsive: true, displayModeBar: true });
+}
+
+/** What makes up the spread of the compared profiles and the uncertainty of their mean at
+ *  each level (analysis/atmospheric.py uncertainty_budget): the spread, the part the random
+ *  errors explain and the natural variability left, the systematic uncertainty, and the
+ *  standard error of the mean against its random and systematic errors. */
+function renderUncertaintyBudget(plotDiv, data, varCfg) {
+  const b = data.uncertainty_budget || {};
+  if (!(b.spread || []).some(v => v != null)) {
+    if (plotDiv.data) Plotly.purge(plotDiv);
+    plotDiv.innerHTML = '<div class="empty-state">The budget needs a 1σ uncertainty: fewer than two of these profiles have one for this variable at any level.</div>';
+    return;
+  }
+  const byPressure = data.vertical === 'pressure';
+  const zGrid = byPressure ? data.grid_hpa : data.grid_km;
+  const at = (values) => orient(values, zGrid.map((zv, k) => (values[k] == null ? null : zv)));
+  // log-averaged variables: everything as 100 x the 1-sigma of ln(value) (the percent of the value
+  // while it is small), in which the variances add; the standard error of the mean likewise
+  const sem = b.percent
+    ? (data.composite_plus_sem || []).map((v, k) => (v == null || !data.composite_mean[k] ? null : 100 * Math.log(v / data.composite_mean[k])))
+    : (data.composite_sem || []).map((v, k) => (data.composite_mean[k] == null ? null : v));
+  const units = b.percent ? '%' : cleanPlotlyMath(varCfg.units || '');
+  const pal = (i) => paletteColor(i);
+  const line = (values, name, color, dash = 'solid', width = plotStyle.lineWidth + 1, extra = {}) => ({
+    ...at(values), type: 'scatter', mode: 'lines', name, line: { color, width, dash },
+    hovertemplate: `<b>${escHtml(name)}</b><br>%{x:.3g} ${escHtml(units)}<br>%{y:.4g}<extra></extra>`, ...extra });
+  const traces = [];
+  if ((b.mean_systematic_correlated || []).some(v => v != null)) {
+    // systematic error of the mean: from independent (lower) to shared by all profiles (upper)
+    traces.push({ ...at(b.mean_systematic_independent), type: 'scatter', mode: 'lines', line: { width: 0, color: 'transparent' },
+      showlegend: false, hoverinfo: 'skip', legendgroup: 'sysmean' });
+    traces.push({ ...at(b.mean_systematic_correlated), type: 'scatter', mode: 'lines', line: { width: 0, color: 'transparent' },
+      fill: plotStyle.swapAxes ? 'tonexty' : 'tonextx', fillcolor: 'rgba(148, 163, 184, 0.28)', hoverinfo: 'skip',
+      name: 'Systematic error of the mean (independent to shared)', legendgroup: 'sysmean' });
+  }
+  traces.push(line(b.spread, 'Spread between the profiles (1σ)', plotColors().ink));
+  traces.push(line(b.variability, 'Natural variability (spread without the random errors)', pal(2)));
+  traces.push(line(b.random_rms, 'Random errors of the profiles (rms 1σ)', pal(3), 'dash'));
+  if ((b.systematic_rms || []).some(v => v != null)) traces.push(line(b.systematic_rms, 'Systematic uncertainty of the profiles (rms)', pal(4), 'dot'));
+  traces.push(line(sem, 'Standard error of the mean', pal(5), 'solid', plotStyle.lineWidth + 2));
+  traces.push(line(b.mean_random, 'Random error of the mean', pal(6), 'dashdot', plotStyle.lineWidth));
+  const saved = plotStyle.vertical;
+  plotStyle.vertical = byPressure ? 'pressure' : 'altitude';
+  const layout = styleLayout({
+    title: { text: cleanPlotlyMath(`${(data.body_name || data.body_id || '').toUpperCase()} • ${varCfg.label}: uncertainty budget (${data.profile_count} profiles)`) },
+    hovermode: 'closest', margin: { l: 70, r: 25, t: 56, b: 60 },
+  }, { xLog: false, varTitle: b.percent ? '1σ (%: 100 × the 1σ of ln of the value)' : `1σ (${units})`,
+       coordTitle: byPressure ? 'Pressure (hPa)' : altitudeAxisTitle((data.profiles || []).map(p => p.altitude_reference)) });
+  plotStyle.vertical = saved;
+  const valueAxis = plotStyle.swapAxes ? 'yaxis' : 'xaxis';            // uncertainties start at zero
+  layout[valueAxis] = { ...(layout[valueAxis] || {}), rangemode: 'tozero' };
   window.Plotly.newPlot(plotDiv, traces, themedLayout(layout), { responsive: true, displayModeBar: true });
 }
 
