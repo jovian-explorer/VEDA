@@ -248,3 +248,21 @@ def test_group_by_mission_and_instrument():
     d = comp["group_differences"][0]
     assert d["label"] == "MRO RSS (Radio Science) minus MRO MCS (Mars Climate Sounder)"
     assert d["difference"][10] == pytest.approx(-3.0)
+
+
+def test_comparison_grid_spans_the_levels_with_values():
+    """Profiles whose levels run far beyond their values (MAVEN ROSE electron densities to
+    2500 km, cut at the noise) stretched the grid and the plot to all their levels."""
+    z = np.arange(0.0, 60.0, 1.0)
+
+    def prof(oid, t0):
+        t = t0 - 1.0 * z
+        t[z > 30.0] = np.nan                     # values only up to 30 km
+        return ObservationProfile(observation_id=oid, mission_id="vex", body_id="venus", instrument="VeRa",
+                                  time_utc="2010-03-05T00:00:00", latitude=0.0, longitude=0.0, altitude_km=z,
+                                  temperature_k=t)
+    comp = compare_profiles_on_body([prof("a", 300.0), prof("b", 305.0)], get_body("venus"), altitude_step_km=1.0)
+    assert comp["grid_km"][0] == 0.0 and comp["grid_km"][-1] == 30.0
+    none = compare_profiles_on_body([prof("a", 300.0)], get_body("venus"), altitude_step_km=1.0,
+                                    variable_name="electron_density_cm3")
+    assert none["grid_km"] and none["profile_count"] == 0           # still a grid: "none of them has it"

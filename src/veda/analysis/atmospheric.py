@@ -1016,6 +1016,19 @@ def compare_profiles_on_body(
     all_z = [c for c in (_vertical_coordinate(p, vertical) for p in valid_profiles) if c is not None and c.size > 0]
     if not all_z:
         return _empty_comparison(body, variable_name)
+    # The grid spans the levels where the compared variable has values (profiles whose
+    # archive levels run far beyond them, MAVEN ROSE to 2500 km, no longer stretch it);
+    # the full levels when no profile has the variable, so that this can be said.
+    covered = []
+    for p in valid_profiles:
+        zc, vc = _vertical_coordinate(p, vertical), _compared_variable(p, variable_name)
+        if zc is not None and vc is not None and zc.shape == vc.shape:
+            with np.errstate(invalid="ignore"):
+                zc = zc[np.isfinite(vc) & np.isfinite(zc)]
+            if zc.size:
+                covered.append(zc)
+    if covered:
+        all_z = covered
 
     z_mins = [float(np.nanmin(z)) for z in all_z if np.isfinite(z).any()]
     z_maxs = [float(np.nanmax(z)) for z in all_z if np.isfinite(z).any()]
