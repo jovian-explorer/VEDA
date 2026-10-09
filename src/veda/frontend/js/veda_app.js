@@ -660,6 +660,7 @@ function currentComparisonRequest() {
     group_by: vedaState.compareGroupBy || undefined,
     group_width: Number(vedaState.compareGroupWidth) || 0,
     altitude_step_km: Number(vedaState.compareAltitudeStep) || undefined,
+    smoothing_km: Number(vedaState.compareSmoothing) > 0 ? Number(vedaState.compareSmoothing) : undefined,
     vertical: vedaState.compareVertical === 'pressure' ? 'pressure' : undefined,
     weighting: ['inverse_variance', 'inverse_variance_total'].includes(vedaState.compareWeighting) ? vedaState.compareWeighting : undefined,
     outlier_z: Number(vedaState.compareOutlierZ) || undefined,
@@ -795,6 +796,7 @@ const COMPARE_FORM_KEY = 'veda.compare.form';
 const COMPARE_OPTIONS = [
   ['veda-compare-group-by', 'compareGroupBy'], ['veda-compare-group-width', 'compareGroupWidth'],
   ['veda-compare-altitude-step', 'compareAltitudeStep'], ['veda-compare-vertical', 'compareVertical'],
+  ['veda-compare-smoothing', 'compareSmoothing'],
   ['veda-compare-show-as', 'compareShowAs'], ['veda-compare-weighting', 'compareWeighting'],
   ['veda-compare-mean-band', 'compareMeanBand'], ['veda-compare-outlier-z', 'compareOutlierZ'],
 ];
@@ -878,6 +880,13 @@ function setupBodyModeControls() {
     const v = altStep.value === '' ? '' : Number(altStep.value);
     if (v !== '' && !(v >= 0.01 && v <= 100)) { altStep.value = vedaState.compareAltitudeStep; return toast('Grid step must be between 0.01 and 100 km', 'bad'); }
     vedaState.compareAltitudeStep = v;
+    updateComparison();
+  });
+  const smoothBox = document.getElementById('veda-compare-smoothing');
+  smoothBox?.addEventListener('change', () => {
+    const v = smoothBox.value === '' ? '' : Number(smoothBox.value);
+    if (v !== '' && !(v > 0 && v <= 100)) { smoothBox.value = vedaState.compareSmoothing || ''; return toast('Smoothing must be between 0 and 100 km', 'bad'); }
+    vedaState.compareSmoothing = v;
     updateComparison();
   });
   showAs?.addEventListener('change', () => {
@@ -1150,6 +1159,7 @@ async function openComparisonRecipe(csvText) {
   vedaState.compareGroupBy = r.group_by || '';
   vedaState.compareGroupWidth = r.group_width ? String(r.group_width) : '';
   vedaState.compareAltitudeStep = r.altitude_step_km || '';
+  vedaState.compareSmoothing = r.smoothing_km || '';
   vedaState.compareVertical = r.vertical === 'pressure' ? 'pressure' : 'altitude';
   vedaState.compareWeighting = ['inverse_variance', 'inverse_variance_total'].includes(r.weighting) ? r.weighting : 'equal';
   vedaState.compareOutlierZ = r.outlier_z ? String(r.outlier_z) : '';
@@ -1161,6 +1171,7 @@ async function openComparisonRecipe(csvText) {
   setVal('veda-compare-group-by', vedaState.compareGroupBy);
   setVal('veda-compare-group-width', vedaState.compareGroupWidth);
   setVal('veda-compare-altitude-step', vedaState.compareAltitudeStep);
+  setVal('veda-compare-smoothing', vedaState.compareSmoothing);
   setVal('veda-compare-vertical', vedaState.compareVertical);
   setVal('veda-compare-weighting', vedaState.compareWeighting);
   setVal('veda-compare-outlier-z', vedaState.compareOutlierZ);

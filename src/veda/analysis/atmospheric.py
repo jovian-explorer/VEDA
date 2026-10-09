@@ -936,6 +936,7 @@ def compare_profiles_on_body(
     drop_outliers: bool = False,
     cross_section_width: Optional[float] = None,
     reference: bool = False,
+    smoothing_km: Optional[float] = None,
 ) -> Dict[str, Any]:
     """Cross-compare multi-mission profiles for a target planetary body.
 
@@ -944,7 +945,9 @@ def compare_profiles_on_body(
     ``vertical="pressure"`` uses a grid uniform in log10(pressure) instead of altitude
     (``pressure_step_decades`` apart): profiles measured from different altitude
     references (the 1-bar level, an ellipsoid, a landing site) then line up, and
-    profiles without a pressure column are left out.
+    profiles without a pressure column are left out.  ``smoothing_km``: each profile is
+    first smoothed on the grid to this vertical resolution (Gaussian FWHM, error-weighted;
+    analysis/smoothing.py), with its 1-sigma propagated.
     """
     if vertical not in VERTICALS:
         raise ValueError(f"vertical must be one of: {', '.join(VERTICALS)}")
@@ -957,6 +960,17 @@ def compare_profiles_on_body(
         return {**_empty_comparison(body, variable_name),
                 "error": "Pressure is the vertical coordinate here; compare another variable, or use altitude."}
     step = pressure_step_decades if by_pressure else altitude_step_km
+    unsmoothed_note = ""
+    if smoothing_km and by_pressure:
+        # (a resolution in km has no fixed width in log pressure)
+        smoothing_km, unsmoothed_note = None, "; not smoothed (smoothing works on altitude levels)"
+    if smoothing_km:
+        from .smoothing import MAX_HALF_WINDOW, WINDOW_FWHM, half_window
+        if half_window(step, smoothing_km) > MAX_HALF_WINDOW:
+            return {**_empty_comparison(body, variable_name),
+                    "error": (f"Smoothing to {smoothing_km:g} km spans more than {2 * MAX_HALF_WINDOW + 1} levels of the "
+                              f"{step:g} km grid; choose a grid step of at least "
+                              f"{WINDOW_FWHM * smoothing_km / MAX_HALF_WINDOW:.2g} km.")}
 
     # Determine altitude span covering the observations
     valid_profiles = [p for p in profiles if p is not None]
@@ -1027,7 +1041,6 @@ def compare_profiles_on_body(
             if typical > 0:
                 for gap_lo, gap_hi in zip(z_clean[:-1][dz > 5 * typical], z_clean[1:][dz > 5 * typical]):
                     v_interp[(z_grid > gap_lo) & (z_grid < gap_hi)] = np.nan
-        interpolated_matrix.append(v_interp)
         # the profile's own 1-sigma on the grid (in the variable's units), where it has one
         sig_p = _compared_sigma(p, variable_name)
         s_interp = None
@@ -1052,6 +1065,27 @@ def compare_profiles_on_body(
             if good_sys.sum() >= 2:
                 sys_interp = np.interp(z_grid, z_clean[good_sys], y_sys[good_sys], left=np.nan, right=np.nan)
                 sys_interp[~np.isfinite(v_interp)] = np.nan
+        grid_corr = _grid_error_correlation_km(corr_levels, z_clean) if s_interp is not None else 0.0
+        if smoothing_km:
+            # to the chosen vertical resolution, weights 1/sigma^2, 1-sigma propagated with
+            # the errors' correlation on the grid; the systematic part with the same weights
+            from .smoothing import apply_weights, matched_correlation_km, smooth_on_grid
+            with np.errstate(invalid="ignore", divide="ignore"):
+                s_f = None if s_interp is None else (s_interp / np.exp(v_interp) if log_like else s_interp)
+                sys_f = None if sys_interp is None else (sys_interp / np.exp(v_interp) if log_like else sys_interp)
+                if s_f is not None:
+                    # the errors' correlation at the scale of the window, from the profile's own
+                    # residual about its smoothed version (the level-to-level one is shorter)
+                    grid_corr = matched_correlation_km(v_interp, s_f, step, smoothing_km, grid_corr)
+                sm = smooth_on_grid(v_interp, s_f, step, smoothing_km, grid_corr)
+                v_interp = sm["values"]
+                if s_interp is not None:
+                    s_interp = sm["sigma"] * np.exp(v_interp) if log_like else sm["sigma"]
+                if sys_interp is not None:
+                    sys_f = apply_weights(sys_f, sm["weights"], sm["offsets"])
+                    sys_interp = sys_f * np.exp(v_interp) if log_like else sys_f
+            grid_corr = sm["correlation_km"]
+        interpolated_matrix.append(v_interp)
         with np.errstate(invalid="ignore", divide="ignore"):
             sigma_matrix.append(np.full(z_grid.size, np.nan) if s_interp is None else
                                 (s_interp / np.exp(v_interp) if log_like else s_interp))
@@ -1080,7 +1114,7 @@ def compare_profiles_on_body(
                if s_interp is not None else {}),
             **({"interpolated_systematic": [None if not np.isfinite(x) else float(f"{x:.4g}") for x in sys_interp]}
                if sys_interp is not None else {}),
-            **({"sigma_correlation_km": _grid_error_correlation_km(corr_levels, z_clean)}
+            **({"sigma_correlation_km": round(float(grid_corr), 4)}
                if s_interp is not None and vertical != "pressure" else {}),
         })
 
@@ -1164,7 +1198,10 @@ def compare_profiles_on_body(
         "averaging": ("geometric mean and 1-sigma factor (log space)" if log_like else "arithmetic mean and 1-sigma (sample)")
                      + ("; inverse-variance weights" if weighting == "inverse_variance" else
                         "; inverse-variance weights (random and systematic uncertainty)"
-                        if weighting == "inverse_variance_total" else ""),
+                        if weighting == "inverse_variance_total" else "")
+                     + (f"; each profile smoothed to {smoothing_km:g} km (Gaussian FWHM, weights 1/sigma^2 where it has a 1-sigma)"
+                        if smoothing_km else unsmoothed_note),
+        "smoothing_km": smoothing_km or None,
         "profiles_per_level": [int(n) for n in n_per_level],
         # (levels of equal pressure need no common altitude reference)
         "vertical_reference_warning": "" if by_pressure else _vertical_reference_warning(profile_summaries),
@@ -1424,6 +1461,10 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
             *(_csv_num((p.get("diagnostics") or {}).get(k)) for k in diag_keys), p.get("altitude_reference") or "")))
     for g in groups:
         lines.append(f"# group {_csv_field(g['label'])}: n={g['n']}, profiles={' '.join(g['observation_ids'])}")
+    if comparison.get("smoothing_km"):
+        lines.append(f"# each profile smoothed to {comparison['smoothing_km']:g} km before averaging: Gaussian of that full "
+                     "width at half maximum, cut at +-1.5 times it, weights 1/sigma^2 where the profile has a 1-sigma "
+                     "(analysis/smoothing.py); sigma_* are the smoothed values' 1-sigma, error correlation counted.")
     scr = comparison.get("outlier_screen")
     if scr:
         lines.append(f"# outlier screen: robust z > {scr['z']:g} on at least {100 * scr['level_fraction']:g} % of a profile's levels"

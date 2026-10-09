@@ -167,6 +167,7 @@ class MissionManager:
         drop_outliers: bool = False,
         cross_section_width: Optional[float] = None,
         reference: bool = False,
+        smoothing_km: Optional[float] = None,
     ) -> Dict[str, Any]:
         """Load multiple profiles across missions and compute cross-mission comparison.
 
@@ -196,6 +197,7 @@ class MissionManager:
             drop_outliers=drop_outliers,
             cross_section_width=cross_section_width,
             reference=reference,
+            smoothing_km=smoothing_km,
         )
         if report is not None and isinstance(out, dict):
             out["selection"] = report
