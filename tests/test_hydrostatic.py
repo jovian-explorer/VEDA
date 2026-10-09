@@ -286,3 +286,19 @@ def test_mars_gravity_with_j2_and_rotation():
     prof.derived.update(compute_atmospheric_diagnostics(prof, mars))
     assert prof.raw_attributes["hydrostatic_max_pct"] < 1e-3
     assert "J2" in prof.raw_attributes["gravity_model"]
+
+
+def test_profiles_spanning_less_than_a_scale_height_get_no_temperature():
+    """Over less than one scale height (the density falling by less than a factor e) every
+    level depends on the fitted boundary: a few kilometres of a MAVEN pass leg near
+    periapsis gave 4 to 7 K.  Two scale heights are enough."""
+    from veda.analysis.hydrostatic import temperature_from_density_draws
+    z = np.arange(150.0, 155.01, 0.1)                     # 5 km: about half a scale height at 200 K
+    rho = _atmosphere(lambda zz: 200.0 + 0 * zz, z)
+    short = temperature_from_density(z, rho, _g(z), R_MARS)
+    assert short["top_temperature_k"] is None and np.isnan(short["temperature_k"]).all()
+    assert np.isnan(temperature_from_density_draws(z, rho[None, :], _g(z), R_MARS)["temperature_k"]).all()
+    assert temperature_from_density(z, rho, _g(z), R_MARS, t_top=200.0)["top_temperature_k"] == 200.0
+    z2 = np.arange(150.0, 175.01, 0.1)                    # 25 km: about two scale heights
+    r = temperature_from_density(z2, _atmosphere(lambda zz: 200.0 + 0 * zz, z2), _g(z2), R_MARS)
+    assert r["top_temperature_k"] == pytest.approx(200.0, abs=0.01)

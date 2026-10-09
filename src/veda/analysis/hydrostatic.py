@@ -48,6 +48,11 @@ import numpy as np
 # Part of the profile's altitude range at its top used to fit the boundary scale height
 TOP_FIT_FRACTION = 0.2
 TOP_FIT_MIN_POINTS = 5
+# The density must fall by at least this much (natural logarithm: a factor e, one scale
+# height) from the bottom to the top of a profile for its top temperature to be fitted.
+# Over less, every level depends on the boundary: a few kilometres of a MAVEN pass leg
+# near periapsis gave 4 to 7 K.
+MIN_DENSITY_FALL = 1.0
 
 
 def _layer_integral(z: np.ndarray, rho: np.ndarray, g: np.ndarray, phi: Optional[np.ndarray] = None) -> np.ndarray:
@@ -108,6 +113,8 @@ def temperature_from_density(z_km, rho, g_ms2, r_spec, rho_sigma=None,
     zs, rs, gs, rr = z[idx] * 1000.0, rho[idx], g[idx], r_all[idx]
     phs = None if ph is None else ph[idx]
 
+    if t_top is None and not np.log(rs[0] * rr[0] / (rs[-1] * rr[-1])) >= MIN_DENSITY_FALL:
+        return result                     # less than a scale height: the top is not determined
     if t_top is None:
         span = zs[-1] - zs[0]
         top = zs >= zs[-1] - TOP_FIT_FRACTION * span
@@ -166,6 +173,8 @@ def temperature_from_density_draws(z_km, rho_draws, g_ms2, r_spec, rho_sigma=Non
     idx = idx[np.argsort(z[idx], kind="stable")]
     zs, rs, gs, rr = z[idx] * 1000.0, rd[:, idx], g[idx], r_all[idx]
     phs = None if ph is None else ph[idx]
+    if not np.log(rs[0, 0] * rr[0] / (rs[0, -1] * rr[-1])) >= MIN_DENSITY_FALL:
+        return {"temperature_k": t_out, "pressure_pa": p_out}
     span = zs[-1] - zs[0]
     top = zs >= zs[-1] - TOP_FIT_FRACTION * span
     if top.sum() < TOP_FIT_MIN_POINTS:
