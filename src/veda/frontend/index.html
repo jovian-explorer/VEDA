@@ -282,6 +282,7 @@
         <button class="view-subtab-btn" id="btn-subtab-cut" title="One point per profile (the variable at one altitude, a layer statistic or a whole-profile quantity) against time, latitude, local time, zenith angle, Ls, longitude or day of year">📍 Altitude cut</button>
         <button class="view-subtab-btn" id="btn-subtab-cross" title="Zonal mean of the compared profiles in latitude bands at every level, with its standard error and the number of profiles">🗺️ Cross section</button>
         <button class="view-subtab-btn" id="btn-subtab-spectra" title="Vertical wavenumber spectra of the temperature perturbations of the compared profiles in a layer">〰️ Spectra</button>
+        <button class="view-subtab-btn" id="btn-subtab-sampling" title="Where and when the compared profiles were taken: latitude against the season (Ls on Mars, the date elsewhere) and against local solar time">🧭 Sampling</button>
         <button class="view-subtab-btn" id="btn-subtab-map">🌐 Planetary Spatial Map & Footprints</button>
       </div>
 
@@ -385,6 +386,14 @@
           <span class="hint" id="veda-spec-status">Temperature profiles of the comparison; choose a layer they cover and press Compute.</span>
         </div>
         <div id="veda-spec-plot" class="compare-tab-plot"></div>
+      </div>
+
+      <!-- Tab 1e: where and when the compared profiles were taken -->
+      <div id="veda-subtab-sampling-panel" style="flex: 1; display: none; flex-direction: column;">
+        <div class="row cut-controls">
+          <span class="hint" id="veda-sampling-status"></span>
+        </div>
+        <div id="veda-sampling-plot" class="compare-tab-plot"></div>
       </div>
 
       <!-- Tab 2: Planetary Spatial Footprints Map -->
@@ -729,6 +738,7 @@
           <li><strong>Common grid:</strong> profiles are interpolated (never extrapolated) onto altitude levels (default 0.5 km on Venus, Mars and Pluto, 2 km elsewhere; set <em>Grid step</em>) or onto pressure levels uniform in log pressure.</li>
           <li><strong>Composite mean $\mu(z)$ and spread ($\pm 1\sigma$):</strong> arithmetic for temperature-like quantities, geometric (in log space) for pressure and densities; per group for climatologies by latitude, local time, zenith angle, Ls, year, month, month of the year or mission, as deviations from the mean, and as differences between groups with 95&nbsp;% bootstrap intervals.</li>
           <li><strong>Uncertainties:</strong> each profile's 1&sigma; (archived or propagated) and, for Mars Express, Akatsuki and Pioneer Venus, the systematic uncertainty from the temperature assumed at the top of the retrieval; the mean with its standard error or 95&nbsp;% bootstrap interval, optionally weighted by 1/&sigma;&sup2;, and an uncertainty budget at each level (natural variability against random errors).</li>
+          <li><strong>Sampling:</strong> where and when the compared profiles were taken (latitude against Ls or date and against local time), since differences between missions or groups can come from their sampling.</li>
           <li><strong>Reference atmospheres:</strong> Venus-GRAM 2021 / VIRA on Venus and Mars-GRAM 2024 on Mars, as a line or as each profile's deviation from it.</li>
           <li><strong>Altitude cut:</strong> one point per profile at a fixed altitude, a layer statistic or a whole-profile diagnostic, against time, latitude, local time, zenith angle, Ls, longitude or day of year, with tide and wave fits and means in bins (seasonal or latitude climatologies) with bootstrap intervals.</li>
           <li><strong>Any variable:</strong> temperature, pressure, densities, potential temperature, $N^2$, lapse rate, temperature from density, the margin above the CO$_2$ frost point and more, in the units you choose.</li>

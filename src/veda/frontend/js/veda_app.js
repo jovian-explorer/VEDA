@@ -1051,7 +1051,7 @@ function setupBodyModeControls() {
   }
 
   // Subtabs: profiles, altitude cut, map
-  const SUBTABS = ['soundings', 'cut', 'cross', 'spectra', 'map'];
+  const SUBTABS = ['soundings', 'cut', 'cross', 'spectra', 'sampling', 'map'];
   const showSubtab = (name) => {
     vedaState.bodySubtab = name;
     SUBTABS.forEach(t => {
@@ -1243,6 +1243,7 @@ function renderActiveSubtab() {
   else if (vedaState.bodySubtab === 'cut') renderAltitudeCut();
   else if (vedaState.bodySubtab === 'cross') renderCrossSection();
   else if (vedaState.bodySubtab === 'spectra') prefillSpectraLayer();
+  else if (vedaState.bodySubtab === 'sampling') renderSampling();
   else renderComparisonPlot();
 }
 
@@ -2095,6 +2096,89 @@ function renderUncertaintyBudget(plotDiv, data, varCfg) {
   const valueAxis = plotStyle.swapAxes ? 'yaxis' : 'xaxis';            // uncertainties start at zero
   layout[valueAxis] = { ...(layout[valueAxis] || {}), rangemode: 'tozero' };
   window.Plotly.newPlot(plotDiv, traces, themedLayout(layout), { responsive: true, displayModeBar: true });
+}
+
+/** Where and when the compared profiles were taken: latitude against the season (Mars
+ *  solar longitude Ls; the date elsewhere) and against local solar time, one point per
+ *  profile, coloured by mission (by group when grouped).  Differences between missions
+ *  or groups can come from where and when they sample as much as from the atmosphere. */
+function renderSampling() {
+  const plotDiv = document.getElementById('veda-sampling-plot');
+  const status = document.getElementById('veda-sampling-status');
+  if (!plotDiv || !window.Plotly) return;
+  const data = vedaState.lastComparisonData;
+  const profs = (data && data.profiles) || [];
+  if (!profs.length) {
+    if (plotDiv.data) Plotly.purge(plotDiv);
+    plotDiv.innerHTML = '<div class="empty-state">No profiles to show. Compare some profiles first.</div>';
+    if (status) status.textContent = '';
+    return;
+  }
+  const useLs = profs.some(p => p.ls != null);                       // Mars: the season is Ls
+  const groups = (data.groups || []).filter(g => !g.ungrouped);
+  const groupOf = {};
+  groups.forEach((g, gi) => g.observation_ids.forEach(id => { groupOf[id] = gi; }));
+  const who = (p) => (p.mission_label || p.mission_id).toUpperCase();
+  const keyOf = (p) => (groups.length ? (groupOf[p.observation_id] != null ? groups[groupOf[p.observation_id]].label : 'Not grouped') : who(p));
+  // groups in their own order (as in the soundings legend), missions as they come
+  const keys = groups.length
+    ? [...groups.map(g => g.label), 'Not grouped'].filter(k => profs.some(p => keyOf(p) === k))
+    : [...new Set(profs.map(keyOf))];
+  const colorOf = (key, i) => (groups.length
+    ? (groups.findIndex(g => g.label === key) >= 0 ? paletteColor(groups.findIndex(g => g.label === key) + 1) : '#94a3b8')
+    : (plotStyle.palette === 'veda' && MISSION_COLORS[key.toLowerCase()]) || paletteColor(i));
+  const fmt = (v, d) => (v == null ? '?' : Number(v).toFixed(d));
+  const hover = (p) => `<b>${escHtml(who(p))}</b> ${escHtml((p.time_utc || '').replace('T', ' ').slice(0, 16))}<br>${escHtml(p.observation_id)}`
+    + `<br>latitude ${fmt(p.latitude, 1)}°, local time ${fmt(p.lst, 2)} h` + (p.ls != null ? `, Ls ${fmt(p.ls, 1)}°` : '')
+    + (p.sza != null ? `, SZA ${fmt(p.sza, 1)}°` : '');
+  const traces = [];
+  keys.forEach((key, i) => {
+    const list = profs.filter(p => keyOf(p) === key && p.latitude != null);
+    const c = colorOf(key, i);
+    const marker = { color: c, size: 8, line: { width: 0.5, color: plotColors().ink } };
+    const left = list.filter(p => (useLs ? p.ls != null : !!p.time_utc));
+    const right = list.filter(p => p.lst != null);
+    traces.push({ type: 'scatter', mode: 'markers', name: `${key} (${list.length})`, legendgroup: key, marker,
+      x: left.map(p => (useLs ? p.ls : p.time_utc)), y: left.map(p => p.latitude), xaxis: 'x', yaxis: 'y',
+      customdata: left.map(p => p.observation_id), text: left.map(hover), hovertemplate: '%{text}<extra></extra>' });
+    traces.push({ type: 'scatter', mode: 'markers', name: key, legendgroup: key, showlegend: false, marker,
+      x: right.map(p => p.lst), y: right.map(p => p.latitude), xaxis: 'x2', yaxis: 'y2',
+      customdata: right.map(p => p.observation_id), text: right.map(hover), hovertemplate: '%{text}<extra></extra>' });
+  });
+  // side by side in a wide card, one above the other (and taller) in a narrow one
+  plotDiv.style.height = '';
+  const stacked = (plotDiv.clientWidth || 0) < 760;
+  if (stacked) plotDiv.style.height = `${Math.max(plotDiv.clientHeight, 620)}px`;
+  const lat = { title: { text: 'Latitude (°)' }, range: [-90, 90], dtick: 30, zeroline: false };
+  const layout = {
+    title: { text: `${(data.body_name || data.body_id || '').toUpperCase()} • where and when the ${profs.length} profiles were taken`, ...TITLE_BELOW_MODEBAR },
+    hovermode: 'closest', margin: { l: 64, r: 20, t: 78, b: 60 }, legend: { orientation: 'h', y: stacked ? -0.16 : -0.2 },
+    xaxis: { anchor: 'y', domain: stacked ? [0, 1] : [0, 0.46],
+             ...(useLs ? { title: { text: 'Mars season, solar longitude Ls (°)' }, range: [0, 360], dtick: 90 }
+                       : { title: { text: 'Date (UTC)' }, type: 'date' }) },
+    yaxis: { ...lat, anchor: 'x', domain: stacked ? [0.62, 1] : [0, 1] },
+    xaxis2: { anchor: 'y2', domain: stacked ? [0, 1] : [0.54, 1], title: { text: 'Local solar time (h)' }, range: [0, 24], dtick: 3 },
+    yaxis2: { ...lat, anchor: 'x2', domain: stacked ? [0, 0.36] : [0, 1] },
+  };
+  Plotly.newPlot(plotDiv, traces, themedLayout(layout), { responsive: true, displayModeBar: true });
+  plotDiv.removeAllListeners?.('plotly_click');
+  plotDiv.on?.('plotly_click', (ev) => {
+    const id = ev.points && ev.points[0] && ev.points[0].customdata;
+    if (id) document.querySelector(`#veda-comparison-table-body tr[data-obs-id="${CSS.escape(id)}"] .btn-dive-deep`)?.click();
+  });
+  if (status) {
+    const n = profs.length;
+    const withLat = profs.filter(p => p.latitude != null).length;
+    const withLt = profs.filter(p => p.lst != null && p.latitude != null).length;
+    const withLs = profs.filter(p => p.ls != null && p.latitude != null).length;
+    const lats = profs.map(p => p.latitude).filter(v => v != null);
+    status.textContent = `${n} profile${n === 1 ? '' : 's'}`
+      + (lats.length ? `, latitude ${Math.min(...lats).toFixed(0)} to ${Math.max(...lats).toFixed(0)}°` : '')
+      + (withLat < n ? `; ${n - withLat} without a latitude are not shown` : '')
+      + (withLt < withLat ? `; ${withLat - withLt} without a local time are missing on the right` : '')
+      + (useLs && withLs < withLat ? `; ${withLat - withLs} without Ls are missing on the left` : '')
+      + '. Click a point to open the profile.';
+  }
 }
 
 /** Each group's composite mean minus the first group's, with its 95 % bootstrap interval
