@@ -94,6 +94,20 @@ def gravity_profile(body: BodyInfo, z_km: np.ndarray, latitude_deg: Optional[flo
     return g, f"g0 (R/(R+z))^2, g0 = {body.surface_gravity:g} m/s^2, R = {r_body:g} km"
 
 
+def hydrostatic_gravity(profile: ObservationProfile, body: BodyInfo, z, g):
+    """The gravity of the hydrostatic integrals: the profile's ``g``, or the one its archive
+    integrated with where the data set says so (MRO MCS: GM/r^2 without J2 or rotation;
+    its altitudes follow from that with 43.49 g/mol)."""
+    ds_id = (profile.raw_attributes or {}).get("DATASET_ID")
+    if ds_id and body.gm_km3_s2:
+        from ..archives.datasets import get_dataset
+        ds = get_dataset(ds_id)
+        if ds is not None and ds.hydrostatic_gravity == "gm_r2":
+            r = (body.radius_km + np.asarray(z, dtype=float)) * 1e3
+            return body.gm_km3_s2 * 1e9 / r ** 2
+    return g
+
+
 def hydrostatic_geopotential(profile: ObservationProfile, g) -> Optional[np.ndarray]:
     """The geopotential (m^2/s^2) the archive gives at each level of the profile, for the
     hydrostatic integrals (hydrostatic.py: d Phi instead of g dz), or None.  Read only for
@@ -321,7 +335,8 @@ def _diagnostics(profile: ObservationProfile, body: BodyInfo) -> Dict[str, np.nd
 
         # How well the archived pressure, temperature and altitudes fit hydrostatic balance
         from .hydrostatic import hydrostatic_consistency
-        profile.raw_attributes.update(hydrostatic_consistency(z, p_hpa, t_k, gz, zc * r_spec, phi))
+        profile.raw_attributes.update(hydrostatic_consistency(z, p_hpa, t_k, hydrostatic_gravity(profile, body, z, gz),
+                                                              zc * r_spec, phi))
 
         # CO2 atmospheres (Mars, Venus): the CO2 frost point and how close T comes to it
         from .condensation import co2_condensation_temperature, co2_volume_fraction
@@ -422,6 +437,7 @@ def _hydrostatic_retrieval(profile: ObservationProfile, body: BodyInfo, z: np.nd
     """temperature_from_density at the profile's gravity, or None when it gives nothing."""
     from .hydrostatic import temperature_from_density
     g, _ = gravity_profile(body, z, profile.latitude, (profile.raw_attributes or {}).get("ALTITUDE_REFERENCE", ""))
+    g = hydrostatic_gravity(profile, body, z, g)
     r = temperature_from_density(z, rho, g, density_gas_constant(profile, body), rho_sigma=sigma,
                                  phi=hydrostatic_geopotential(profile, g))
     return None if r["top_temperature_k"] is None else r

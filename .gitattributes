@@ -1,0 +1,3 @@
+# Archive products used as test fixtures: kept byte for byte (fixed-length records,
+# CRLF and LF lines as the archive wrote them)
+tests/data/** binary

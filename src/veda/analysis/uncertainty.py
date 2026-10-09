@@ -307,9 +307,10 @@ def propagate(profile, body, derived: Dict[str, np.ndarray], gz: Optional[np.nda
         from .hydrostatic import hydrostatic_uncertainty
         tt = t_draws if t_draws is not None else np.broadcast_to(t, (MC_DRAWS, z.size))
         pp = p + _draws(s_p, z, l_p, rng) if s_p is not None else np.broadcast_to(p, (MC_DRAWS, z.size))
-        from .atmospheric import hydrostatic_geopotential
-        profile.raw_attributes.update(hydrostatic_uncertainty(z, p, t, gz, r_spec, np.where(pp > 0, pp, np.nan), tt,
-                                                              phi=hydrostatic_geopotential(profile, gz)))
+        from .atmospheric import hydrostatic_geopotential, hydrostatic_gravity
+        g_h = hydrostatic_gravity(profile, body, z, gz)
+        profile.raw_attributes.update(hydrostatic_uncertainty(z, p, t, g_h, r_spec, np.where(pp > 0, pp, np.nan), tt,
+                                                              phi=hydrostatic_geopotential(profile, g_h)))
 
     if "temperature_from_density" in derived:
         rho, s_rho = _density_and_sigma(profile, body, z.shape)
@@ -319,9 +320,10 @@ def propagate(profile, body, derived: Dict[str, np.ndarray], gz: Optional[np.nda
             with np.errstate(invalid="ignore", divide="ignore"):
                 rel = np.where(np.isfinite(s_rho) & (rho > 0), s_rho / rho, np.nan)
             rho_draws = rho * np.exp(_draws(rel, z, corr_of("density", rho, s_rho, log=True), rng))
-            from .atmospheric import density_gas_constant, hydrostatic_geopotential
-            r = temperature_from_density_draws(z, rho_draws, gz, density_gas_constant(profile, body), s_rho,
-                                               phi=hydrostatic_geopotential(profile, gz))
+            from .atmospheric import density_gas_constant, hydrostatic_geopotential, hydrostatic_gravity
+            g_h = hydrostatic_gravity(profile, body, z, gz)
+            r = temperature_from_density_draws(z, rho_draws, g_h, density_gas_constant(profile, body), s_rho,
+                                               phi=hydrostatic_geopotential(profile, g_h))
             out["temperature_from_density"] = _std(r["temperature_k"])
             out["pressure_from_density"] = _std(r["pressure_pa"] / 100.0)
 

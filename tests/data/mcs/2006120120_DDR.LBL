@@ -1,0 +1,45 @@
+PDS_VERSION_ID               = PDS3
+
+RECORD_TYPE                  = STREAM
+RECORD_BYTES                 = 17954
+FILE_RECORDS                 = 2  
+DESCRIPTION                  = "This table contains NASA Level 2 geophysical profile
+                                data records from the Mars Climate Sounder collected
+                                during the orbital operations phase of the Mars
+                                Reconnaissance Orbiter mission."
+^TABLE                       = ("2006120120_DDR.TAB", 2889<BYTES>)
+DATA_SET_ID                  = "MRO-M-MCS-5-DDR-V6.2"
+MISSION_NAME                 = "MARS RECONNAISSANCE ORBITER"
+INSTRUMENT_HOST_NAME         = "MARS RECONNAISSANCE ORBITER"
+INSTRUMENT_NAME              = "MARS CLIMATE SOUNDER"
+PRODUCT_NAME                 = "MCS DDR"
+PRODUCT_ID                   = "2006120120_DDR.TAB"
+TARGET_NAME                  = "MARS"
+START_TIME                   = 2006-12-01T20:00:24.914
+STOP_TIME                    = 2006-12-01T23:58:33.742
+SPACECRAFT_CLOCK_START_COUNT = 849470443.195
+SPACECRAFT_CLOCK_STOP_COUNT  = 849484732.151
+PRODUCT_CREATION_TIME        = 2024-12-11T12:49:42
+START_ORBIT_NUMBER           = 1635
+STOP_ORBIT_NUMBER            = 1637
+START_SOLAR_LONGITUDE        = 143.85538
+STOP_SOLAR_LONGITUDE         = 143.93842
+
+OBJECT                       = TABLE
+  INTERCHANGE_FORMAT         = ASCII
+  ROW_BYTES                  = 17954
+  ROWS                       = 2  
+  COLUMNS                    = 1652
+  ^STRUCTURE                 = "MCS_DDR1.FMT"
+
+  OBJECT                     = CONTAINER
+    NAME                     = FRAME_STRUCTURE
+    START_BYTE               = 1050
+    BYTES                    = 161
+    REPETITIONS              = 105
+    ^STRUCTURE               = "MCS_DDR2.FMT"
+    DESCRIPTION              = "See MCS_DDR1.FMT & MCS_DDR2.FMT"
+  END_OBJECT                 = CONTAINER
+END_OBJECT                   = TABLE
+
+END

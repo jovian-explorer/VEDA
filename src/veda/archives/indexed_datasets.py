@@ -170,8 +170,9 @@ INDEXED_DATASETS = [
         id='mro-m-mcs-5-ddr-v1.0', mission_id='mro', instrument='MCS (Mars Climate Sounder)', level='DDR (L2)',
         title='Mars Climate Sounder derived atmospheric profiles (temperature, pressure, dust, water ice), 4-hour files', body_ids=('mars',), archive='NASA PDS',
         base_url='https://pds-atmospheres.nmsu.edu/PDS/data/', volume_pattern='^MROM_2\\d{3}$', index_path='INDEX/INDEX.TAB',
-        rules=(('_ddr\\.', 'MCS DDR file (about 200 profiles of T, P, dust and ice)', 'table'),), refs=('mccleese2007', 'kleinbohl2009', 'zurek2007'),
-        data_prefix='DATA/', label_from_data=True, cumulative_index='INDEX/CUMINDEX.TAB',
+        rules=(('_ddr\\.', 'MCS DDR file (about 300 profiles of T, P, dust and ice)', 'table'),), refs=('mccleese2007', 'kleinbohl2009', 'zurek2007'),
+        data_prefix='DATA/', label_from_data=True, cumulative_index='INDEX/CUMINDEX.TAB', profile_rows='mcs_ddr',
+        hydrostatic_gravity='gm_r2',
     ),
     Dataset(
         id='mro-m-mcs-2-edr-v1.0', mission_id='mro', instrument='MCS (Mars Climate Sounder)', level='EDR',

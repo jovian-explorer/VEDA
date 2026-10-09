@@ -781,8 +781,10 @@ function renderSelectionReport(sel, filters) {
   el.innerHTML = Object.entries(sel).map(([mid, r]) => {
     const out = Object.entries(r.left_out || {}).map(([why, n]) => `${n} ${escHtml(why)}`);
     if (r.failed) out.push(`${r.failed} unreadable`);
+    const rows = r.files_of_many_profiles
+      ? ` (${r.files_of_many_profiles} of them files of about 300 MCS profiles each, of which up to 10 are read)` : '';
     const parts = [`<strong>${escHtml(name(mid))}</strong>: ${r.kept} kept`,
-      r.note ? escHtml(r.note) : `${r.in_date_range} in the date range, ${r.tried} read`];
+      r.note ? escHtml(r.note) : `${r.in_date_range} in the date range${rows}, ${r.tried} read`];
     if (out.length) parts.push(`left out: ${out.join(', ')}`);
     if (r.not_indexed?.length) parts.push(`not indexed yet: open the mission's archive data to index ${r.not_indexed.map(escHtml).join(', ')}`);
     return `<div>${parts.join('; ')}</div>`;

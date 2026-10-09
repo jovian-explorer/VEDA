@@ -718,7 +718,18 @@ def get_product(dataset_id: str, product_id: str) -> Optional[Dict[str, Any]]:
     with _db_lock, _connect() as conn:
         r = conn.execute("SELECT * FROM products WHERE dataset_id=? AND product_id=?",
                          (dataset_id.lower(), product_id)).fetchone()
-    return product_dict(r) if r else None
+    if r:
+        return product_dict(r)
+    # one profile of a file that holds many (MRO MCS: <file>_P<row>), from the file's entry
+    ds = get_dataset(dataset_id)
+    if ds is not None and ds.profile_rows:
+        from .mcs import split_id, sub_product
+        parts = split_id(product_id)
+        if parts:
+            parent = get_product(dataset_id, parts[0])
+            if parent:
+                return sub_product(parent, parts[1])
+    return None
 
 
 # ------------------------------------------------------------------ download

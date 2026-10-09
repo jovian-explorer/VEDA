@@ -116,6 +116,13 @@ class Dataset:
     # Profiles published in a research data repository (Zenodo, BIRA-IASB) without PDS
     # labels: how to list and read them (see archives/repositories.py)
     repository: Dict[str, Any] = field(default_factory=dict)
+    # Files holding many profiles, one per table row, offered as profiles <file>_P<row>
+    # without listing them in the catalogue ("mcs_ddr": MRO MCS, archives/mcs.py)
+    profile_rows: str = ""
+    # The gravity the archive's own hydrostatic integration used, where it is not VEDA's
+    # ("gm_r2": GM/r^2 without J2 or rotation, MRO MCS), for VEDA's hydrostatic check and
+    # temperature from density; the other derived quantities keep VEDA's gravity
+    hydrostatic_gravity: str = ""
     # PDS4 bundle: folder (inside the bundle) holding the product XML labels; a tuple
     # gives several folders (Akatsuki LIR: calibrated levels, maps, geometry).
     pds4_product_dir: Optional[Union[str, Tuple[str, ...]]] = None
@@ -172,7 +179,8 @@ class Dataset:
             "portal_only": self.portal_only, "portal_help": self.portal_help,
             "live": bool(self.service), "service": self.service, "refs": list(self.refs),
             "auto_index": self.auto_index, "index_note": self.index_note,
-            "has_profiles": any(kind == "profile" for _, _, kind in self.rules),
+            "has_profiles": any(kind == "profile" for _, _, kind in self.rules) or bool(self.profile_rows),
+            "profile_rows": self.profile_rows,
         }
 
 

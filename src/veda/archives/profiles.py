@@ -177,6 +177,11 @@ def load_profile(dataset_id: str, product_id: str) -> ObservationProfile:
         raise LookupError(f"Unknown product {dataset_id}/{product_id}")
     if prod["kind"] != "profile":
         raise ValueError(f"{product_id} is a {prod['product_type']}, not a vertical profile")
+    if ds.profile_rows and prod.get("row") is not None:
+        from .mcs import row_profile
+        prof = row_profile(ds, prod, Path(fetch_product(dataset_id, product_id)), int(prod["row"]))
+        prof.derived.update(compute_atmospheric_diagnostics(prof))
+        return prof
     return profile_from_label(ds, prod, Path(fetch_product(dataset_id, product_id)))
 
 

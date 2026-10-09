@@ -200,6 +200,43 @@ def _candidates(ds_ids: List[str], f: ProfileFilter, variable: str, n: int) -> T
     return total, [out[i] for i in spread_order(len(out))]
 
 
+# Files of many profiles read for one comparison (MCS: 4-hour files of about 300 profiles,
+# about 6 MB each), spread over the dates
+MAX_ROW_FILES = 10
+
+
+def _row_candidates(ds_ids: List[str], f: ProfileFilter, n: int) -> Tuple[int, List[Dict[str, Any]]]:
+    """Up to ``n`` profiles from the files of many profiles of ``ds_ids`` in the date range:
+    up to MAX_ROW_FILES files spread over the dates (downloaded when the filter allows),
+    and in each about n / files rows spread over the file whose geometry passes ``f``."""
+    from ..archives.mcs import candidates
+    from ..parallel import thread_map
+    q = catalog.SearchQuery(dataset_ids=ds_ids, start=f.start, end=f.end, kind="table",
+                            downloaded_only=not f.download, limit=1)
+    total = catalog.search(q)["total"]
+    if not total or n <= 0:
+        return total, []
+    n_files = min(MAX_ROW_FILES, n, total)
+    files = []
+    for k in range(n_files):
+        q.offset = (k * total) // n_files
+        files += catalog.search(q)["products"][:1]
+    files = [files[i] for i in spread_order(len(files))]
+    paths = {}
+    for fl, res in zip(files, thread_map(catalog.fetch_product, [(fl["dataset_id"], fl["product_id"]) for fl in files])):
+        if not isinstance(res, Exception):
+            paths[fl["product_id"]] = res
+    files = [fl for fl in files if fl["product_id"] in paths]
+    per_file = max(1, -(-n // max(1, len(files))))
+    rows = []
+    for ds_id in ds_ids:
+        mine = [fl for fl in files if fl["dataset_id"] == ds_id]
+        if mine:
+            rows += candidates(get_dataset(ds_id), mine, lambda fl: paths[fl["product_id"]],
+                               lambda g: passes(g, f)[0], per_file)
+    return total, rows
+
+
 def spread_order(n: int) -> List[int]:
     """0..n-1 reordered so that every prefix is spread over the whole range (first, middle,
     quarters, ...): when only some candidates are kept they still span the dates."""
@@ -245,7 +282,7 @@ def select_profiles(manager, body_id: str, mission_ids: List[str], variable: str
     budget = f.per_mission * (4 if f.geometry_limits() else 1)
     for mid in mission_ids:
         ds_ids = [d.id for d in datasets_for(mid, body_id) if not d.portal_only and not d.service
-                  and any(kind == "profile" for _, _, kind in d.rules) and provides(d, variable)
+                  and (any(kind == "profile" for _, _, kind in d.rules) or d.profile_rows) and provides(d, variable)
                   and (not f.datasets or d.id in f.datasets) and (not f.instruments or d.instrument in f.instruments)]
         r = {"in_date_range": 0, "tried": 0, "kept": 0, "left_out": {}, "failed": 0}
         report[mid] = r
@@ -258,7 +295,18 @@ def select_profiles(manager, body_id: str, mission_ids: List[str], variable: str
         not_indexed = [d for d in ds_ids if not catalog.dataset_status(get_dataset(d))["indexed_volumes"]]
         if not_indexed:
             r["not_indexed"] = not_indexed
-        r["in_date_range"], cands = _candidates(ds_ids, f, variable, budget)
+        row_ids = [d for d in ds_ids if get_dataset(d).profile_rows]
+        plain_ids = [d for d in ds_ids if d not in row_ids]
+        r["in_date_range"], cands = _candidates(plain_ids, f, variable, budget) if plain_ids else (0, [])
+        if row_ids:
+            # files of many profiles (MCS): their rows, interleaved with the other candidates
+            n_files, rows = _row_candidates(row_ids, f, budget)
+            r["in_date_range"] += n_files
+            r["files_of_many_profiles"] = n_files
+            mixed = []
+            for k in range(max(len(cands), len(rows))):
+                mixed += ([cands[k]] if k < len(cands) else []) + ([rows[k]] if k < len(rows) else [])
+            cands = mixed
         n_kept = 0
         # Candidates are read in batches across the worker processes; a batch is the
         # number still needed (twice that when geometry limits will reject some), and
