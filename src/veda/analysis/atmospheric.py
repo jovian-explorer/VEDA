@@ -1053,6 +1053,7 @@ def compare_profiles_on_body(
     z_grid = np.round(grid_lo + step * np.arange(max(num_steps, 2)), 6)
 
     interpolated_matrix = []
+    without_values = []         # profiles with no values of the variable (on this vertical)
     sigma_matrix = []           # each value's 1-sigma, in log space (relative) for log-averaged variables
     systematic_matrix = []      # each value's systematic uncertainty, the same way
     profile_summaries = []
@@ -1069,10 +1070,12 @@ def compare_profiles_on_body(
 
         z_p = _vertical_coordinate(p, vertical)
         if v is None or z_p is None or z_p.size < 2 or v.shape != z_p.shape:
+            without_values.append(p.observation_id)
             continue
 
         ok = np.isfinite(z_p) & np.isfinite(v)
         if ok.sum() < 2:
+            without_values.append(p.observation_id)
             continue
 
         z_clean = z_p[ok]
@@ -1168,7 +1171,8 @@ def compare_profiles_on_body(
         })
 
     if not interpolated_matrix:
-        return _empty_comparison(body, variable_name, [] if by_pressure else [round(float(z), 4) for z in z_grid])
+        return {**_empty_comparison(body, variable_name, [] if by_pressure else [round(float(z), 4) for z in z_grid]),
+                "without_values": without_values}
 
     mat = np.array(interpolated_matrix)  # shape: (n_profiles, n_grid)
     smat = np.array(sigma_matrix)
@@ -1299,6 +1303,8 @@ def compare_profiles_on_body(
                                 for x, n in zip(np.exp(stats["ci_hi"]) if log_like else stats["ci_hi"], n_per_level)],
         "profile_count": len(profile_summaries),
         "profiles": profile_summaries,
+        # the selected profiles left out for having no values of the variable (on this vertical)
+        "without_values": without_values,
         # spread = natural variability (+) random errors; random and systematic errors of the mean
         # (log-averaged variables: 100 x the 1-sigma of ln(value), the percent of the value while small)
         "uncertainty_budget": {

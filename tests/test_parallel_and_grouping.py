@@ -266,3 +266,22 @@ def test_comparison_grid_spans_the_levels_with_values():
     none = compare_profiles_on_body([prof("a", 300.0)], get_body("venus"), altitude_step_km=1.0,
                                     variable_name="electron_density_cm3")
     assert none["grid_km"] and none["profile_count"] == 0           # still a grid: "none of them has it"
+
+
+def test_comparison_names_the_profiles_without_values():
+    """Selected profiles with no values of the variable (a MAVEN accelerometer leg below
+    2 sigma, a ROSE occultation above the ionosphere) were dropped silently: the selection
+    report said 8 kept and the plot showed 6."""
+    z = np.arange(0.0, 30.0, 1.0)
+
+    def prof(oid, t):
+        return ObservationProfile(observation_id=oid, mission_id="vex", body_id="venus", instrument="VeRa",
+                                  time_utc="2010-03-05T00:00:00", latitude=0.0, longitude=0.0, altitude_km=z,
+                                  temperature_k=t)
+    profs = [prof("a", 300.0 - z), prof("b", 305.0 - z), prof("c", np.full(z.size, np.nan)),
+             ObservationProfile(observation_id="d", mission_id="vex", body_id="venus", instrument="VeRa",
+                                time_utc="2010-03-05T00:00:00", altitude_km=z)]
+    comp = compare_profiles_on_body(profs, get_body("venus"), altitude_step_km=1.0)
+    assert comp["profile_count"] == 2 and comp["without_values"] == ["c", "d"]
+    none = compare_profiles_on_body(profs[2:], get_body("venus"), altitude_step_km=1.0)
+    assert none["profile_count"] == 0 and none["without_values"] == ["c", "d"]

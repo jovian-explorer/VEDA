@@ -1304,7 +1304,9 @@ async function updateComparison() {
       const outlierText = !scr ? '' : !scr.flagged.length ? ` Outlier screen (|z| > ${scr.z}): none flagged.`
         : ` Outlier screen (|z| > ${scr.z}): ${scr.flagged.length} flagged (${scr.flagged.join(', ')}), `
           + (scr.left_out ? 'left out of the composites.' : 'drawn dashed and kept in the composites.');
-      statusEl.textContent = `Aggregated ${compData.profile_count} sounding${compData.profile_count === 1 ? "" : "s"} from ${nMissions} mission${nMissions === 1 ? "" : "s"}${compData.averaging ? `; ${compData.averaging}; the spread is shown where at least two profiles overlap` : ""}.${compData.vertical_reference_warning ? ` Note: ${compData.vertical_reference_warning}` : ""}${outlierText}${compData.reference && compData.reference.altitude_note && compData.vertical !== 'pressure' ? ` Reference atmosphere: ${compData.reference.altitude_note}` : ''}`;
+      const nw = (compData.without_values || []).length;
+      const noValues = !nw ? '' : ` ${nw} other selected profile${nw === 1 ? ' has' : 's have'} no values of this variable${compData.vertical === 'pressure' ? ' on pressure levels' : ''} and ${nw === 1 ? 'is' : 'are'} left out.`;
+      statusEl.textContent = `Aggregated ${compData.profile_count} sounding${compData.profile_count === 1 ? "" : "s"} from ${nMissions} mission${nMissions === 1 ? "" : "s"}${compData.averaging ? `; ${compData.averaging}; the spread is shown where at least two profiles overlap` : ""}.${noValues}${compData.vertical_reference_warning ? ` Note: ${compData.vertical_reference_warning}` : ""}${outlierText}${compData.reference && compData.reference.altitude_note && compData.vertical !== 'pressure' ? ` Reference atmosphere: ${compData.reference.altitude_note}` : ''}`;
     }
   } catch (err) {
     if (seq !== comparisonSeq) return;
