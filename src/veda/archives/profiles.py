@@ -244,6 +244,8 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
         tbl.text_columns = {k: [x for x, m in zip(v, mask) if m] for k, v in tbl.text_columns.items()}
 
     time_utc = prod.get("start_time") or ""
+    if ds.label_time and tbl.metadata.get("START_TIME"):
+        time_utc = str(tbl.metadata["START_TIME"])          # the catalogue has the date only
     leg = prod.get("leg")
     if ds.pass_legs and leg and ds.pass_legs in tbl.columns:
         # One leg of an aerobraking pass: before periapsis (inbound) or from it on.  Both
@@ -453,9 +455,28 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
         with np.errstate(invalid="ignore"):
             s[s < 0] = np.nan
         prof.uncertainty[key] = s
+    if ds.leg_min_snr and leg and ds.pass_legs in tbl.columns:
+        _trim_leg(prof, np.asarray(tbl.columns[ds.pass_legs], dtype=float), ds.leg_min_snr)
     _add_solar_geometry(prof, ds)
     prof.derived.update(compute_atmospheric_diagnostics(prof, body))
     return prof
+
+
+def _trim_leg(prof: ObservationProfile, t: np.ndarray, min_snr: float) -> None:
+    """Leave out the measured density of a pass leg beyond the first level, going out
+    from periapsis (``t``: seconds from it), where the density is below ``min_snr`` times
+    its 1-sigma or missing: farther out the files hold noise about zero."""
+    rho, s = prof.derived.get("density_measured"), prof.uncertainty.get("density_measured")
+    if rho is None or s is None or not (np.shape(rho) == np.shape(s) == t.shape) or not t.size:
+        return
+    order = np.argsort(np.abs(t), kind="stable")
+    with np.errstate(invalid="ignore"):
+        weak = ~(np.asarray(rho)[order] >= min_snr * np.asarray(s)[order])
+    drop = order[int(np.argmax(weak)):] if weak.any() else order[:0]
+    for d in (prof.derived, prof.uncertainty):
+        a = np.array(d["density_measured"], dtype=float)
+        a[drop] = np.nan
+        d["density_measured"] = a
 
 
 def _add_solar_geometry(prof: ObservationProfile, ds: Dataset) -> None:

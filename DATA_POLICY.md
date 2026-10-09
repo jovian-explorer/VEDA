@@ -73,6 +73,7 @@ The authoritative list is VEDA's own catalogue (`src/veda/archives/datasets.py`,
 | InSight | EDL atmospheric reconstruction | Derived (PDS4) | `insight-edl-atmosphere` | NASA PDS Atmospheres Node | Karatekin, Banfield & Ashley (2020), data doi:10.17189/1518935 |
 | Mars Reconnaissance Orbiter (MRO) | ACC (aerobraking density profiles, 2006) | L5 (derived) | `mro-m-accel-5-profile-v1.0` | NASA PDS Atmospheres Node | Tolson et al. (2008); data: Tolson et al. (2010) |
 | 2001 Mars Odyssey | ACC (aerobraking density profiles, 2001-2002) | L5 (derived) | `ody-m-accel-5-derived-v1.0` | NASA PDS Atmospheres Node | Tolson et al. (2005); data: Withers & Murphy (2009) |
+| MAVEN | ACC (accelerometer density profiles of the periapsis passes, 2014-2020) | L3 (derived, PDS4) | `maven-acc-profile` | NASA PDS Atmospheres Node | Zurek et al. (2015); data: Tolson & Lugo (2016) |
 | Mars Reconnaissance Orbiter (MRO) | CRISM limb dust and water-ice aerosol profiles, 2009-2012 | Derived (PDS4) | `mro-crism-smith2013-aerosol` | NASA PDS Atmospheres Node | Smith et al. (2013); data: Khayat (2024), doi:10.17189/76ha-be75 |
 | Mars Reconnaissance Orbiter (MRO) | CRISM limb aerosol abundance and particle size profiles, 2010-2017 | Derived (PDS4) | `mro-crism-guzewich-aerosol` | NASA PDS Atmospheres Node | Guzewich et al. (2014, 2019); data: Khayat (2024), doi:10.17189/76ha-be75 |
 | Mars Express (MEX) | MaRS (Radio Science) | L4 | `mex-m-mrs-5-occ` | ESA PSA (mirror: NASA PDS Geosciences Node) | Pätzold et al. (2016); Pätzold et al. (2004); Chicarro et al. (2004) |

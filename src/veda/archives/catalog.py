@@ -232,14 +232,14 @@ def index_pds4(ds: Dataset, volume: str) -> List[Dict[str, Any]]:
     from concurrent.futures import ThreadPoolExecutor
     root = f"{ds.base_url}{volume}/"
     dirs = [ds.pds4_product_dir] if isinstance(ds.pds4_product_dir, str) else list(ds.pds4_product_dir)
-    if ds.pds4_walk:
-        def subdirs(d):
-            try:
-                return [f"{d}{s}/" for s in http.list_directory(root + d, dirs_only=True, login_url=ds.login_url)]
-            except http.LoginRequired:
-                raise
-            except http.ArchiveError:
-                return []
+    def subdirs(d):
+        try:
+            return [f"{d}{s}/" for s in http.list_directory(root + d, dirs_only=True, login_url=ds.login_url)]
+        except http.LoginRequired:
+            raise
+        except http.ArchiveError:
+            return []
+    for _ in range(int(ds.pds4_walk)):              # True: one level; MAVEN accelerometer: year/month
         with ThreadPoolExecutor(8) as pool:
             dirs = [s for subs in pool.map(subdirs, dirs) for s in subs]
 
@@ -267,7 +267,7 @@ def index_pds4(ds: Dataset, volume: str) -> List[Dict[str, Any]]:
                     "start_time": t0, "stop_time": t1,
                     "target": (ds.body_ids[0] if len(ds.body_ids) == 1 else "").upper(),
                     "product_type": ptype, "kind": kind, "extra": "{}"})
-    return out
+    return [leg for r in out for leg in _pass_legs(ds, r)]
 
 
 def index_volume(ds: Dataset, volume: str) -> List[Dict[str, Any]]:

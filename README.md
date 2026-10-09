@@ -45,7 +45,7 @@ In **By Planetary Mission**, *Archive data* lists every payload and data set of 
 
 ### Connected archives and payloads
 
-All 25 missions in VEDA are connected (161 data sets: 55 read from archive indexes, 106 searched live). Highlights:
+All 25 missions in VEDA are connected (162 data sets: 56 read from archive indexes, 106 searched live). Highlights:
 
 | Body | Mission | Payloads | Route |
 |---|---|---|---|
@@ -54,7 +54,7 @@ All 25 missions in VEDA are connected (161 data sets: 55 read from archive index
 | Venus | Magellan, Pioneer Venus, VEGA | Radio occultation profiles (Magellan; PVO 1978-1989 temperature-pressure and electron density, recovered by Withers et al. 2020), radar, gravity; the VEGA 2 lander descent (63 km to the surface) and VEGA balloon records; PVO OIMS, ONMS, probes | NASA PDS |
 | Mars | Mars Express | MaRS L4 profiles (indexed); SPICAM, PFS, OMEGA, ASPERA-3, MARSIS, HRSC, VMC | ESA PSA |
 | Mars | MRO | MCS DDR/EDR/RDR (indexed), CRISM, SHARAD; CTX and MARCI on request | NASA PDS |
-| Mars | MAVEN, MGS, MRO, Mars Odyssey, MER, Phoenix, MSL, InSight | NGIMS, IUVS, ACC; MGS and MRO radio occultation profiles; MRO MCS temperature profiles (each row of the 4-hour DDR files); MRO and Mars Odyssey aerobraking density profiles; MRO CRISM dust and water-ice aerosol profiles; entry profiles of Spirit, Opportunity, Phoenix, Curiosity and InSight; TES, MOLA | NASA PDS |
+| Mars | MAVEN, MGS, MRO, Mars Odyssey, MER, Phoenix, MSL, InSight | NGIMS, IUVS, ACC; MGS and MRO radio occultation profiles; MRO MCS temperature profiles (each row of the 4-hour DDR files); MAVEN accelerometer density profiles (deep dips, aerobraking, science orbits); MRO and Mars Odyssey aerobraking density profiles; MRO CRISM dust and water-ice aerosol profiles; entry profiles of Spirit, Opportunity, Phoenix, Curiosity and InSight; TES, MOLA | NASA PDS |
 | Jupiter | Juno, Galileo | MWR, JIRAM, UVS, JunoCam, MAG, gravity; Galileo SSI, NIMS, UVS, PPR, MAG, PLS, EPD, probe | NASA PDS, OPUS |
 | Saturn, Titan | Cassini-Huygens | ISS, VIMS, UVIS, CIRS (OPUS), INMS; RSS profiles of the Titan neutral atmosphere and ionosphere and of the Saturn ionosphere; UVIS Saturn thermosphere profiles; Huygens HASI, DISR, GCMS, ACP, DWE, SSP | NASA PDS, OPUS, ESA PSA |
 | Pluto | New Horizons | REX, Alice, LORRI, Ralph MVIC/LEISA, SWAP, PEPSSI, SDC | NASA PDS |

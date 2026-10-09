@@ -5540,6 +5540,58 @@
    "note": "Data: MRO-M-ACCEL-5-PROFILE-V1.0 (Tolson et al., PDS Atmospheres Node, volume MROA_0001)."
   },
   {
+   "key": "zurek2015",
+   "authors": [
+    "Zurek, R. W.",
+    "Tolson, R. H.",
+    "Baird, D.",
+    "Johnson, M. Z.",
+    "Bougher, S. W."
+   ],
+   "et_al": false,
+   "year": 2015,
+   "title": "Application of MAVEN Accelerometer and Attitude Control Data to Mars Atmospheric Characterization",
+   "journal": "Space Science Reviews",
+   "volume": "195",
+   "issue": "1-4",
+   "pages": "303-317",
+   "doi": "10.1007/s11214-014-0095-x",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "maven",
+     "payload": "ACC"
+    }
+   ],
+   "note": "Checked on Crossref (online 7 November 2014, print December 2015). Data: MAVEN Accelerometer Data (Tolson & Lugo, PDS Atmospheres Node)."
+  },
+  {
+   "key": "tolson2016data",
+   "authors": [
+    "Tolson, R.",
+    "Lugo, R."
+   ],
+   "et_al": false,
+   "year": 2016,
+   "title": "MAVEN Accelerometer Data (urn:nasa:pds:maven_acc)",
+   "journal": "NASA Planetary Data System",
+   "volume": "",
+   "issue": "",
+   "pages": "",
+   "doi": "",
+   "url": "https://pds-atmospheres.nmsu.edu/PDS/data/PDS4/MAVEN/acc_bundle/",
+   "verified": true,
+   "type": "dataset",
+   "used_for": [
+    {
+     "mission": "maven",
+     "payload": "ACC"
+    }
+   ],
+   "note": "Bundle label bundle_maven__accel.xml checked (title, author list, publication year 2016); the bundle has no DOI."
+  },
+  {
    "key": "smith2013",
    "authors": [
     "Smith, M. D.",

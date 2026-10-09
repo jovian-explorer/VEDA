@@ -109,6 +109,10 @@ class Dataset:
     # two profiles, the inbound leg (before periapsis) and the outbound leg, which are at
     # different places and local times and would zigzag if compared as one profile.
     pass_legs: Optional[str] = None
+    # Pass legs: the measured density is kept from periapsis outward while it is at least
+    # this many times its 1-sigma, and left out beyond (MAVEN accelerometer files run to
+    # 300 s from periapsis, 200-230 km, where the density is noise).  0: all levels.
+    leg_min_snr: float = 0.0
     # The per-sample times ("et" column) are when the signal reached the ground station,
     # not when it crossed the atmosphere (Mars Express MaRS: EPHEMERIS_SECONDS is the
     # ground received time); VEDA subtracts the one-way light time for the geometry.
@@ -127,8 +131,12 @@ class Dataset:
     # gives several folders (Akatsuki LIR: calibrated levels, maps, geometry).
     pds4_product_dir: Optional[Union[str, Tuple[str, ...]]] = None
     # Products sit one level further down, in subfolders listed by the server
-    # (Akatsuki: one folder per orbit, r0001 ...): list those too.
-    pds4_walk: bool = False
+    # (Akatsuki: one folder per orbit, r0001 ...): list those too; a number gives the
+    # depth (MAVEN accelerometer: 2, year and month folders).
+    pds4_walk: Union[bool, int] = False
+    # The catalogue time comes from the file name, which gives the date only (MAVEN
+    # accelerometer): the label's start time is used when the profile is read.
+    label_time: bool = False
     # Archive that only works through its own website with an account (no
     # public index): VEDA links to the login page and imports what is downloaded.
     portal_only: bool = False
@@ -759,6 +767,34 @@ DATASETS: List[Dataset] = [
         doi="10.2514/1.34301",
     ),
     Dataset(
+        id="maven-acc-profile", mission_id="maven", instrument="ACC (accelerometer)", level="L3 (derived, PDS4)",
+        title="MAVEN accelerometer: thermospheric density profiles of the periapsis passes (deep dips, the 2019 "
+              "aerobraking and science orbits, Oct 2014 - 2020)",
+        body_ids=("mars",), archive="NASA PDS Atmospheres Node (PDS4)",
+        base_url="https://pds-atmospheres.nmsu.edu/PDS/data/PDS4/MAVEN/",
+        volume_pattern=r"^acc_bundle$",
+        pds4_product_dir="l3/", pds4_walk=2,                       # l3/<year>/<month>/
+        time_from_name=r"_(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})_v\d+",
+        label_time=True,
+        rules=((r"pro-acc-p\d+", "Density profile along the periapsis pass", "profile"),),
+        # Altitudes are above the spheroid a = 3396.19 km, f = 0.00588600756 (PROFDS.txt) at
+        # areodetic latitudes, as for the MRO accelerometer data: put on the 3389.5 km sphere.
+        profile_columns={"altitude": "AREODETIC ALTITUDE", "latitude": "Areodetic Latitude",
+                         "longitude": "Longitude", "lst": "True Local Solar Time", "sza": "Solar Zenith Angle"},
+        altitude_spheroid=(3396.19, 5.88600756e-3),
+        # The 1-s density, the data set's own resolution, with its 1-sigma (inflated by the
+        # scatter of the 1-s about the 99-s values, user advisory Eq. 2); the 99-s running
+        # polynomial, which damps fuel slosh, spans tens of kilometres on the legs.
+        extra_variables={"density_measured": ("1-SEC DENSITY", "SIGMA 1-SEC DENSITY")},
+        value_factor={"density_measured": 1e-9},              # KG/KM**3
+        pass_legs="Seconds from Periapsis",
+        leg_min_snr=2.0,
+        citation=("Tolson, R., & Lugo, R. (2016). MAVEN Accelerometer Data (urn:nasa:pds:maven_acc), NASA Planetary "
+                  "Data System; Zurek, R. W., et al. (2015). Application of MAVEN accelerometer and attitude control "
+                  "data to Mars atmospheric characterization. Space Sci. Rev., 195, 303-317."),
+        doi="10.1007/s11214-014-0095-x",
+    ),
+    Dataset(
         id="pvoro-nssdc", mission_id="pvo", instrument="ORO (Radio Occultation)", level="Derived (PDS4)",
         title="Pioneer Venus Orbiter radio occultations: temperature-pressure and electron density profiles "
               "(1978-1992, recovered from NSSDC by Withers et al. 2020)",
@@ -962,6 +998,7 @@ _REFS = {
     "insight-edl-atmosphere": ("karatekin2020data",),
     "ody-m-accel-5-derived-v1.0": ("tolson2005",),
     "mro-m-accel-5-profile-v1.0": ("tolson2008",),
+    "maven-acc-profile": ("zurek2015", "tolson2016data"),
     "mro-crism-smith2013-aerosol": ("smith2013", "khayat2024data"),
     "mro-crism-guzewich-aerosol": ("guzewich2014", "guzewich2019", "khayat2024data"),
     "corss-titan-neutral-profiles": ("schinder2011", "schinder2012", "schinder2015"),

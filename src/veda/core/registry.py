@@ -482,6 +482,10 @@ MISSIONS: Dict[str, MissionInfo] = {
             InstrumentInfo(id="ROSE", name="Radio Occultation Science Experiment", instrument_type="radio_science",
                            measurement_targets=["neutral_atmosphere", "ionosphere"],
                            description="Radio occultation soundings of Mars electron density profiles and neutral lower atmosphere."),
+            InstrumentInfo(id="ACC", name="Accelerometer", instrument_type="accelerometer",
+                           measurement_targets=["upper_atmosphere"],
+                           description="Thermospheric mass density along each periapsis pass from the spacecraft's accelerometer "
+                                       "and attitude control data: deep dips to about 120 km, the 2019 aerobraking and science orbits."),
         ],
         authoritative_archive="NASA PDS Atmospheres Node",
         archive_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/MAVEN/maven_main.html",
