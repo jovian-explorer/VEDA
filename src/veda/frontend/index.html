@@ -212,6 +212,7 @@
               <option value="month">Month</option>
               <option value="month_of_year">Month of the year (all years)</option>
               <option value="mission">Mission</option>
+              <option value="instrument" title="Each mission's instruments apart, e.g. MRO's Mars Climate Sounder and radio occultations">Mission and instrument</option>
             </select>
           </label>
           <label title="Width of the latitude, local time, zenith angle or Ls bins; empty: 30°, 3 h, 30°, 30°">Bin width
@@ -739,7 +740,7 @@
         <ul>
           <li><strong>Which profiles:</strong> choose them by date, latitude, local time, solar zenith angle or Mars season (Ls) and the number per mission; VEDA searches the whole archive and reports why profiles were left out.</li>
           <li><strong>Common grid:</strong> profiles are interpolated (never extrapolated) onto altitude levels (default 0.5 km on Venus, Mars and Pluto, 2 km elsewhere; set <em>Grid step</em>) or onto pressure levels uniform in log pressure, and if you like smoothed to a common vertical resolution (error-weighted, with the uncertainty propagated).</li>
-          <li><strong>Composite mean $\mu(z)$ and spread ($\pm 1\sigma$):</strong> arithmetic for temperature-like quantities, geometric (in log space) for pressure and densities; per group for climatologies by latitude, local time, zenith angle, Ls, year, month, month of the year or mission, as deviations from the mean, and as differences between groups with 95&nbsp;% bootstrap intervals.</li>
+          <li><strong>Composite mean $\mu(z)$ and spread ($\pm 1\sigma$):</strong> arithmetic for temperature-like quantities, geometric (in log space) for pressure and densities; per group for climatologies by latitude, local time, zenith angle, Ls, year, month, month of the year, mission or instrument, as deviations from the mean, and as differences between groups with 95&nbsp;% bootstrap intervals.</li>
           <li><strong>Uncertainties:</strong> each profile's 1&sigma; (archived or propagated) and, for Mars Express, Akatsuki and Pioneer Venus, the systematic uncertainty from the temperature assumed at the top of the retrieval; the mean with its standard error or 95&nbsp;% bootstrap interval, optionally weighted by 1/&sigma;&sup2;, and an uncertainty budget at each level (natural variability against random errors).</li>
           <li><strong>Sampling:</strong> where and when the compared profiles were taken (latitude against Ls or date and against local time), since differences between missions or groups can come from their sampling.</li>
           <li><strong>Reference atmospheres:</strong> Venus-GRAM 2021 / VIRA on Venus and Mars-GRAM 2024 on Mars, as a line or as each profile's deviation from it.</li>

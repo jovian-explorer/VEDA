@@ -227,3 +227,24 @@ def test_difference_between_groups_with_its_interval():
     assert "MGS minus MEX difference" in text and "MGS minus MEX ci95_low" in text
     one = compare_profiles_on_body(profs[:20], mars, altitude_step_km=1.0, group_by="mission")
     assert one["group_differences"] == []
+
+
+def test_group_by_mission_and_instrument():
+    """One mission's instruments apart (MRO's MCS and radio occultations): two groups and
+    their difference."""
+    from veda.analysis.atmospheric import compare_profiles_on_body
+    from veda.core.models import ObservationProfile
+    from veda.core.registry import get_body
+    z = np.arange(0.0, 30.0, 1.0)
+
+    def prof(oid, instrument, t0):
+        return ObservationProfile(observation_id=oid, mission_id="mro", body_id="mars", instrument=instrument,
+                                  time_utc="2011-12-01T00:00:00", latitude=65.0, longitude=0.0, altitude_km=z,
+                                  temperature_k=t0 - 1.5 * z)
+    profs = [prof("a", "MCS (Mars Climate Sounder)", 200.0), prof("b", "MCS (Mars Climate Sounder)", 202.0),
+             prof("c", "RSS (Radio Science)", 197.0), prof("d", "RSS (Radio Science)", 199.0)]
+    comp = compare_profiles_on_body(profs, get_body("mars"), altitude_step_km=1.0, group_by="instrument")
+    assert [g["label"] for g in comp["groups"]] == ["MRO MCS (Mars Climate Sounder)", "MRO RSS (Radio Science)"]
+    d = comp["group_differences"][0]
+    assert d["label"] == "MRO RSS (Radio Science) minus MRO MCS (Mars Climate Sounder)"
+    assert d["difference"][10] == pytest.approx(-3.0)

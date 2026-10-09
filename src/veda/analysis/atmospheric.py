@@ -571,7 +571,7 @@ def _geom(p) -> Dict[str, Any]:
     return profile_geometry(p)
 
 
-GROUPINGS = ("latitude", "lst", "sza", "ls", "year", "month", "month_of_year", "mission")
+GROUPINGS = ("latitude", "lst", "sza", "ls", "year", "month", "month_of_year", "mission", "instrument")
 _MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 
 
@@ -596,6 +596,10 @@ def _group_key(s: Dict[str, Any], by: str, width: float):
     if by == "mission":
         m = (s.get("mission_label") or s.get("mission_id") or "").upper()
         return (m, m) if m else None
+    if by == "instrument":                              # one mission's instruments apart (MRO: MCS and radio science)
+        m = (s.get("mission_label") or s.get("mission_id") or "").upper()
+        i = (s.get("instrument") or "").strip()
+        return (f"{m} {i}", f"{m} {i}".strip()) if m or i else None
     return None
 
 
