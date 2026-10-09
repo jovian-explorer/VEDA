@@ -5592,6 +5592,84 @@
    "note": "Bundle label bundle_maven__accel.xml checked (title, author list, publication year 2016); the bundle has no DOI."
   },
   {
+   "key": "withers2020rose",
+   "authors": [
+    "Withers, P.",
+    "Felici, M.",
+    "Mendillo, M.",
+    "Moore, L.",
+    "Narvaez, C.",
+    "Vogt, M. F.",
+    "Oudrhiri, K.",
+    "Kahan, D.",
+    "Jakosky, B. M."
+   ],
+   "et_al": false,
+   "year": 2020,
+   "title": "The MAVEN Radio Occultation Science Experiment (ROSE)",
+   "journal": "Space Science Reviews",
+   "volume": "216",
+   "issue": "4",
+   "pages": "61",
+   "doi": "10.1007/s11214-020-00687-6",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "maven",
+     "payload": "ROSE"
+    }
+   ],
+   "note": "Checked on Crossref (article 61, June 2020; correction: doi:10.1007/s11214-020-00714-6)."
+  },
+  {
+   "key": "withers2020radiosci",
+   "authors": [
+    "Withers, P.",
+    "Moore, L."
+   ],
+   "et_al": false,
+   "year": 2020,
+   "title": "How to Process Radio Occultation Data: 2. From Time Series of Two-Way, Single-Frequency Frequency Residuals to Vertical Profiles of Ionospheric Properties",
+   "journal": "Radio Science",
+   "volume": "55",
+   "issue": "8",
+   "pages": "e2019RS007046",
+   "doi": "10.1029/2019RS007046",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "maven",
+     "payload": "ROSE"
+    }
+   ],
+   "note": "Checked on Crossref. The processing of the ROSE electron density profiles (SIS, rose.derived:data.edp)."
+  },
+  {
+   "key": "withers2017rosedata",
+   "authors": [
+    "Withers, P."
+   ],
+   "et_al": false,
+   "year": 2017,
+   "title": "MAVEN ROSE Derived Data Bundle (urn:nasa:pds:maven.rose.derived)",
+   "journal": "NASA Planetary Data System",
+   "volume": "",
+   "issue": "",
+   "pages": "",
+   "doi": "10.17189/1517630",
+   "verified": true,
+   "type": "dataset",
+   "used_for": [
+    {
+     "mission": "maven",
+     "payload": "ROSE"
+    }
+   ],
+   "note": "DOI registered with DataCite (creator P. Withers, 2017); also in the bundle label (version 1.37)."
+  },
+  {
    "key": "smith2013",
    "authors": [
     "Smith, M. D.",

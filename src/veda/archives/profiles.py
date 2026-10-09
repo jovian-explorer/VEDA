@@ -246,6 +246,8 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
     time_utc = prod.get("start_time") or ""
     if ds.label_time and tbl.metadata.get("START_TIME"):
         time_utc = str(tbl.metadata["START_TIME"])          # the catalogue has the date only
+    if ds.representative.get("time") and tbl.metadata.get(ds.representative["time"]):
+        time_utc = str(tbl.metadata[ds.representative["time"]])      # the profile's representative time
     leg = prod.get("leg")
     if ds.pass_legs and leg and ds.pass_legs in tbl.columns:
         # One leg of an aerobraking pass: before periapsis (inbound) or from it on.  Both
@@ -339,6 +341,12 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
     if s is not None:
         sig_key = next((k for k in tbl.columns if k.upper().strip('"').startswith(("SIGMA ELECTRON", "NOISE LEVEL ELECTRON"))), None)
         unc["electron_density_cm3"] = _to_per_cm3(s, (tbl.units.get(sig_key, "") or ne_unit).upper())
+    if ds.neutral_below_km is not None and ne_cm3 is not None and unc.get("electron_density_cm3") is not None:
+        ne_cm3, unc["electron_density_cm3"] = _without_neutral_region(z, ne_cm3, unc["electron_density_cm3"],
+                                                                      ds.neutral_below_km)
+    if ds.topside_min_snr and ne_cm3 is not None and unc.get("electron_density_cm3") is not None:
+        ne_cm3, unc["electron_density_cm3"] = _without_topside_noise(z, ne_cm3, unc["electron_density_cm3"],
+                                                                     ds.topside_min_snr, ds.peak_below_km)
 
     for key, (ca, cb) in ds.sigma_from_bracket.items():
         a, b = _col(tbl, ca), _col(tbl, cb)
@@ -435,6 +443,14 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
     )
     if n is not None:
         prof.derived["number_density_m3"] = n
+    rep = {k: tbl.metadata.get(v) for k, v in ds.representative.items() if k != "time"}
+    rep = {k: float(v) for k, v in rep.items()
+           if isinstance(v, (int, float)) and not isinstance(v, bool) and np.isfinite(v)}
+    if rep:
+        # the archive's representative point instead of the medians along the ray path
+        prof.latitude = rep.get("latitude", prof.latitude)
+        prof.longitude = rep.get("longitude", prof.longitude)
+        prof.raw_attributes["REPRESENTATIVE_POINT"] = rep
     for key, (col, sig) in ds.extra_variables.items():
         v = _col(tbl, col)
         factor = 1.0
@@ -460,6 +476,49 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
     _add_solar_geometry(prof, ds)
     prof.derived.update(compute_atmospheric_diagnostics(prof, body))
     return prof
+
+
+def _without_neutral_region(z: np.ndarray, ne: np.ndarray, s: np.ndarray, below_km: float) -> Tuple[np.ndarray, np.ndarray]:
+    """An electron density profile without its levels up to the highest one below
+    ``below_km`` where the density is negative beyond 3 sigma: where all refraction is taken
+    as plasma's (MAVEN ROSE), the neutral atmosphere gives large negative values there."""
+    z, ne, s = (np.asarray(a, dtype=float) for a in (z, ne, s))
+    if not (z.shape == ne.shape == s.shape):
+        return ne, s
+    with np.errstate(invalid="ignore"):
+        neg = (ne < -3.0 * s) & (z < below_km)
+    if not neg.any():
+        return ne, s
+    with np.errstate(invalid="ignore"):
+        low = z <= np.max(z[neg])
+    return np.where(low, np.nan, ne), np.where(low, np.nan, s)
+
+
+def _without_topside_noise(z: np.ndarray, ne: np.ndarray, s: np.ndarray, min_snr: float,
+                           peak_below_km: float = 300.0) -> Tuple[np.ndarray, np.ndarray]:
+    """An electron density profile up to the first level above its peak (the largest
+    density below ``peak_below_km``) where the density is below ``min_snr`` times its
+    1-sigma (or missing); all of it left out when there is no level below
+    ``peak_below_km`` or the peak itself is below that."""
+    z, ne, s = (np.asarray(a, dtype=float) for a in (z, ne, s))
+    if not (z.shape == ne.shape == s.shape):
+        return ne, s
+    with np.errstate(invalid="ignore"):
+        low = np.isfinite(ne) & (z < peak_below_km)
+    if not low.any():
+        return np.full(ne.shape, np.nan), np.full(s.shape, np.nan)
+    k = int(np.where(low)[0][np.argmax(ne[low])])
+    with np.errstate(invalid="ignore"):
+        if not ne[k] >= min_snr * s[k]:
+            return np.full(ne.shape, np.nan), np.full(s.shape, np.nan)
+        order = np.argsort(z, kind="stable")
+        above = order[np.searchsorted(z[order], z[k], side="right"):]
+        weak = ~(ne[above] >= min_snr * s[above])
+    drop = above[int(np.argmax(weak)):] if weak.any() else above[:0]
+    ne, s = ne.copy(), s.copy()
+    ne[drop] = np.nan
+    s[drop] = np.nan
+    return ne, s
 
 
 def _trim_leg(prof: ObservationProfile, t: np.ndarray, min_snr: float) -> None:

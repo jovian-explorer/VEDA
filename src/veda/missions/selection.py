@@ -96,12 +96,14 @@ def _median(a) -> Optional[float]:
 
 
 def profile_geometry(p: ObservationProfile) -> Dict[str, Optional[float]]:
-    """Latitude, local solar time (h) and solar zenith angle (deg) of a profile: the median
-    along the ray path where the archive gives them per level, else its header values."""
+    """Latitude, local solar time (h) and solar zenith angle (deg) of a profile: the
+    archive's representative point where its data set names one (MAVEN ROSE), else the
+    median along the ray path where the archive gives them per level, else its header values."""
     track = p.track or {}
     attrs = p.raw_attributes or {}
-    lst = circular_median(track.get("lst"), 24.0)        # a ray path can cross midnight
-    sza = _median(track.get("sza"))
+    rep = attrs.get("REPRESENTATIVE_POINT") or {}
+    lst = rep.get("lst", circular_median(track.get("lst"), 24.0))     # a ray path can cross midnight
+    sza = rep.get("sza", _median(track.get("sza")))
     if lst is None and isinstance(attrs.get("LST"), (int, float)):
         lst = float(attrs["LST"])
     if sza is None and isinstance(attrs.get("SZA"), (int, float)):

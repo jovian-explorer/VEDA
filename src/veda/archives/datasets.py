@@ -137,6 +137,22 @@ class Dataset:
     # The catalogue time comes from the file name, which gives the date only (MAVEN
     # accelerometer): the label's start time is used when the profile is read.
     label_time: bool = False
+    # Header-table fields giving the profile's representative point (time, latitude,
+    # longitude, lst, sza), used instead of the medians along the ray path: MAVEN ROSE
+    # profiles run to 1000 km and more, and the team gives the point where the ray passes
+    # 3550 km from the centre of Mars (about 160 km up, near the electron density peak)
+    representative: Dict[str, str] = field(default_factory=dict)
+    # Electron densities up to the highest level below this altitude (km) where they are
+    # negative beyond 3 sigma are left out: MAVEN ROSE takes all refraction as plasma's,
+    # so the neutral atmosphere below about 80 km gives large negative values (its SIS)
+    neutral_below_km: Optional[float] = None
+    # Electron density profiles end at the first level above their peak (the largest density
+    # below peak_below_km) where the density is below this many times its 1-sigma; profiles
+    # with no such peak above it are left out whole (MAVEN ROSE runs to 1000-2500 km, far
+    # into the noise, and some of its occultations start above the ionosphere, where the
+    # largest of a thousand noisy levels is 3 or 4 sigma).  0: all levels.
+    topside_min_snr: float = 0.0
+    peak_below_km: float = 300.0
     # Archive that only works through its own website with an account (no
     # public index): VEDA links to the login page and imports what is downloaded.
     portal_only: bool = False
@@ -795,6 +811,32 @@ DATASETS: List[Dataset] = [
         doi="10.1007/s11214-014-0095-x",
     ),
     Dataset(
+        id="maven-rose-edp", mission_id="maven", instrument="ROSE (Radio Occultation Science Experiment)",
+        level="L3 (derived, PDS4)",
+        title="MAVEN radio occultations (ROSE): ionospheric electron density profiles (2016 - 2025)",
+        body_ids=("mars",), archive="NASA PDS PPI Node (PDS4)",
+        base_url="https://pds-ppi.igpp.ucla.edu/data/",
+        volume_pattern=r"^maven-rose-derived$",
+        pds4_product_dir="data/edp/", pds4_walk=2,                 # data/edp/<year>/<month>/
+        time_from_name=r"_(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})T(?P<hh>\d{2})(?P<mm>\d{2})(?P<ss>\d{2})_v\d+",
+        representative={"time": "UTCTIME3550", "latitude": "AREOCENTRICLAT3550", "longitude": "AREOCENTRICLON3550",
+                        "lst": "LTST3550", "sza": "SZA3550"},
+        rules=((r"mvn_rse_l3_edp_", "Ionospheric electron density profile", "profile"),),
+        # RADIUS (from the centre of Mars) rather than ALTITUDEMOLA, for the 3389.5 km sphere
+        # of the other Mars data sets; the geometry is the ray's closest approach at each level.
+        # One 1-sigma per profile: the rms of the density above 400 km (5e9 m^-3 if the
+        # profile ends lower), SIS section 5.2.3.1.
+        profile_columns={"radius": "RADIUS", "electron_density": "NELEC", "electron_density_sigma": "SNELEC",
+                         "latitude": "OCCAREOCENTRICLAT", "longitude": "OCCAREOCENTRICLON",
+                         "sza": "OCCSZA", "lst": "OCCLTST"},
+        neutral_below_km=100.0,
+        topside_min_snr=2.0,
+        citation=("Withers, P. (2017). MAVEN ROSE Derived Data Bundle (urn:nasa:pds:maven.rose.derived), NASA Planetary "
+                  "Data System, doi:10.17189/1517630; Withers, P., et al. (2020). The MAVEN Radio Occultation Science "
+                  "Experiment (ROSE). Space Sci. Rev., 216, 61."),
+        doi="10.17189/1517630",
+    ),
+    Dataset(
         id="pvoro-nssdc", mission_id="pvo", instrument="ORO (Radio Occultation)", level="Derived (PDS4)",
         title="Pioneer Venus Orbiter radio occultations: temperature-pressure and electron density profiles "
               "(1978-1992, recovered from NSSDC by Withers et al. 2020)",
@@ -999,6 +1041,7 @@ _REFS = {
     "ody-m-accel-5-derived-v1.0": ("tolson2005",),
     "mro-m-accel-5-profile-v1.0": ("tolson2008",),
     "maven-acc-profile": ("zurek2015", "tolson2016data"),
+    "maven-rose-edp": ("withers2020rose", "withers2020radiosci", "withers2017rosedata"),
     "mro-crism-smith2013-aerosol": ("smith2013", "khayat2024data"),
     "mro-crism-guzewich-aerosol": ("guzewich2014", "guzewich2019", "khayat2024data"),
     "corss-titan-neutral-profiles": ("schinder2011", "schinder2012", "schinder2015"),

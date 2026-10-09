@@ -1,0 +1,526 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="https://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1800.sch"
+   schematypens="http://purl.oclc.org/dsdl/schematron"?>
+<Product_Observational
+   xmlns="http://pds.nasa.gov/pds4/pds/v1"
+   xmlns:pds="http://pds.nasa.gov/pds4/pds/v1"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="
+      http://pds.nasa.gov/pds4/pds/v1
+      https://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1800.xsd">
+       <Identification_Area>
+             <logical_identifier>urn:nasa:pds:maven.rose.derived:data.edp:mvn_rse_l3_edp_20160823t192357</logical_identifier>
+             <version_id>1.1</version_id>
+             <title>MAVEN ROSE Electron Density Profile</title>
+             <information_model_version>1.8.0.0</information_model_version>
+             <product_class>Product_Observational</product_class>
+             <Citation_Information>
+                   <author_list>Paul Withers</author_list>
+                   <publication_year>2018</publication_year>
+                   <description>MAVEN ROSE Electron Density Profile</description>
+            </Citation_Information>
+             <Modification_History>
+                   <Modification_Detail>
+                         <modification_date>2017-10-09</modification_date>
+                         <version_id>1.0</version_id>
+                         <description>Initial version</description>
+                  </Modification_Detail>
+                   <Modification_Detail>
+                         <modification_date>2018-01-24</modification_date>
+                         <version_id>1.1</version_id>
+                         <description>Added five MSO parameters to both tables in data file</description>
+                  </Modification_Detail>
+            </Modification_History>
+      </Identification_Area>
+       <Observation_Area>
+             <Time_Coordinates>
+                   <start_date_time>2016-08-23T19:23:57.962Z</start_date_time>
+                   <stop_date_time>2016-08-23T19:32:13.946Z</stop_date_time>
+            </Time_Coordinates>
+             <Primary_Result_Summary>
+                   <purpose>Science</purpose>
+                   <processing_level>Derived</processing_level>
+                   <description>MAVEN ROSE electron density profile</description>
+            </Primary_Result_Summary>
+             <Investigation_Area>
+                   <name>Mars Atmosphere And Volatile EvolutioN Mission</name>
+                   <type>Mission</type>
+                   <Internal_Reference>
+                         <lid_reference>urn:nasa:pds:context:investigation:mission.maven</lid_reference>
+                         <reference_type>data_to_investigation</reference_type>
+                  </Internal_Reference>
+            </Investigation_Area>
+             <Observing_System>
+                   <Observing_System_Component>
+                         <name>MAVEN</name>
+                         <type>Spacecraft</type>
+                         <Internal_Reference>
+                               <lid_reference>urn:nasa:pds:context:instrument_host:spacecraft.maven</lid_reference>
+                               <reference_type>is_instrument_host</reference_type>
+                        </Internal_Reference>
+                  </Observing_System_Component>
+                   <Observing_System_Component>
+                         <name>RSE</name>
+                         <type>Instrument</type>
+                         <Internal_Reference>
+                               <lid_reference>urn:nasa:pds:context:instrument:rss.maven</lid_reference>
+                               <reference_type>is_instrument</reference_type>
+                        </Internal_Reference>
+                  </Observing_System_Component>
+            </Observing_System>
+             <Target_Identification>
+                   <name>Mars</name>
+                   <type>Planet</type>
+                   <Internal_Reference>
+                         <lid_reference>urn:nasa:pds:context:target:planet.mars</lid_reference>
+                         <reference_type>data_to_target</reference_type>
+                  </Internal_Reference>
+            </Target_Identification>
+      </Observation_Area>
+       <File_Area_Observational>
+             <File>
+                   <file_name>mvn_rse_l3_edp_20160823T192357_v01_r01.tab</file_name>
+                   <creation_date_time>2018-01-29T11:43:52</creation_date_time>
+                   <file_size unit="byte">487060</file_size>
+                   <md5_checksum>03cbd06f03b0015119dcf14de09ce987</md5_checksum>
+             </File>
+             <Table_Character>
+                   <name>MAVEN ROSE Occultation Header Table</name>
+                   <offset unit="byte">0</offset>
+                   <records>1</records>
+                   <description>A one record table with observing conditions at the data point closest to radius 3550 km</description>
+                   <record_delimiter>Carriage-Return Line-Feed</record_delimiter>
+                   <Record_Character>
+                         <fields>17</fields>
+                         <groups>0</groups>
+                         <record_length unit="byte">490</record_length>
+                         <Field_Character>
+                               <name>UTCTIME3550</name>
+                               <field_number>1</field_number>
+                               <field_location unit="byte">2</field_location>
+                               <data_type>ASCII_Date_Time_YMD</data_type>
+                               <field_length unit="byte">23</field_length>
+                               <description>UTC at Mars when downlink ray has closest approach distance of 3550 km</description>
+                         </Field_Character>
+                         <Field_Character>
+                               <name>AREOCENTRICLAT3550</name>
+                               <field_number>2</field_number>
+                               <field_location unit="byte">25</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <unit>degree</unit>
+                               <description>Areocentric north latitude of closest approach point of downlink ray at time UTCTIME3550</description>
+                         </Field_Character>
+                         <Field_Character>
+                               <name>AREOCENTRICLON3550</name>
+                               <field_number>3</field_number>
+                               <field_location unit="byte">45</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <unit>degree</unit>
+                               <description>Areocentric east longitude of closest approach point of downlink ray at time UTCTIME3550</description>
+                         </Field_Character>
+                         <Field_Character>
+                               <name>SZA3550</name>
+                               <field_number>4</field_number>
+                               <field_location unit="byte">65</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <unit>degree</unit>
+                               <description>Solar zenith angle of closest approach point of downlink ray at time UTCTIME3550</description>
+                         </Field_Character>
+                         <Field_Character>
+                               <name>LTST3550</name>
+                               <field_number>5</field_number>
+                               <field_location unit="byte">85</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <unit>hour</unit>
+                               <description>Local true solar time of closest approach point of downlink ray at time UTCTIME3550</description> 
+                         </Field_Character>             
+                         <Field_Character>
+                               <name>LS3550</name>
+                               <field_number>6</field_number>
+                               <field_location unit="byte">105</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <unit>degree</unit>
+                               <description>Areocentric east longitude of the Sun (Ls) at time UTCTIME3550</description> 
+                         </Field_Character>             
+                         <Field_Character>
+                               <name>NXFLAG</name>
+                               <field_number>7</field_number>
+                               <field_location unit="byte">140</field_location>
+                               <data_type>ASCII_Integer</data_type>
+                               <field_length unit="byte">1</field_length>
+                               <field_format>%1d</field_format>
+                               <description>Occultation direction flag: 0 if ingress occultation, 1 if egress occultation</description> 
+                         </Field_Character>
+                         <Field_Character>
+                               <name>BSPFILENAME</name>
+                               <field_number>8</field_number>
+                               <field_location unit="byte">151</field_location>
+                               <data_type>ASCII_String</data_type>
+                               <field_length unit="byte">30</field_length>
+                               <field_format>%40s</field_format>
+                               <description>The name of the SPK file used in processing</description>
+                         </Field_Character>
+                         <Field_Character>
+                               <name>UPLINKBAND</name>
+                               <field_number>9</field_number>
+                               <field_location unit="byte">190</field_location>
+                               <data_type>ASCII_String</data_type>
+                               <field_length unit="byte">1</field_length>
+                               <field_format>%1s</field_format>
+                               <description>
+                                  The Band identifier for uplink:  X denotes X-Band.  0 indicates no uplink.
+                               </description>
+                         </Field_Character>
+                         <Field_Character>
+                               <name>UPLINKANTENNA</name>
+                               <field_number>10</field_number>
+                               <field_location unit="byte">199</field_location>
+                               <data_type>ASCII_Integer</data_type>
+                               <field_length unit="byte">2</field_length>
+                               <field_format>%2d</field_format>
+                               <description>Identifier for the DSN antenna used for uplink;  00  if there was no uplink</description>
+                         </Field_Character>
+                         <Field_Character>
+                               <name>DOWNLINKBAND</name>
+                               <field_number>11</field_number>
+                               <field_location unit="byte">210</field_location>
+                               <data_type>ASCII_String</data_type>
+                               <field_length unit="byte">1</field_length>
+                               <field_format>%1s</field_format>
+                               <description>The Band identifier for downlink: X denotes X-Band</description>
+                         </Field_Character>
+                         <Field_Character>
+                               <name>DOWNLINKANTENNA</name>
+                               <field_number>12</field_number>
+                               <field_location unit="byte">219</field_location>
+                               <data_type>ASCII_Integer</data_type>
+                               <field_length unit="byte">2</field_length>
+                               <field_format>%2d</field_format>
+                               <description>Identifier for the DSN antenna used for downlink</description>
+                         </Field_Character>
+                         <Field_Character>
+                               <name>MSOX3550</name>
+                               <field_number>13</field_number>
+                               <field_location unit="byte">221</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <unit>km</unit>
+                               <description>X-coordinate in the MSO reference frame of the closest approach point of the downlink ray at time UTCTIME3550</description>
+                         </Field_Character>
+                         <Field_Character>
+                               <name>MSOY3550</name>
+                               <field_number>14</field_number>
+                               <field_location unit="byte">241</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <unit>km</unit>
+                               <description>Y-coordinate in the MSO reference frame of the closest approach point of the downlink ray at time UTCTIME3550</description>
+                         </Field_Character>
+                         <Field_Character>
+                               <name>MSOZ3550</name>
+                               <field_number>15</field_number>
+                               <field_location unit="byte">261</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <unit>km</unit>
+                               <description>Z-coordinate in the MSO reference frame of the closest approach point of the downlink ray at time UTCTIME3550</description>
+                         </Field_Character>
+                         <Field_Character>
+                               <name>MSOLAT3550</name>
+                               <field_number>16</field_number>
+                               <field_location unit="byte">281</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <unit>degree</unit>
+                               <description>North latitude in the MSO reference frame of the closest approach point of the downlink ray at time UTCTIME3550</description>
+                         </Field_Character>
+                         <Field_Character>
+                               <name>MSOLON3550</name>
+                               <field_number>17</field_number>
+                               <field_location unit="byte">301</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <unit>degree</unit>
+                               <description>East longitude in the MSO reference frame of the closest approach point of the downlink ray at time UTCTIME3550</description>
+                         </Field_Character>
+                   </Record_Character>
+             </Table_Character>
+             <Table_Character>
+                   <name>MAVEN ROSE Electron Density Profile</name>
+                   <offset unit="byte">490</offset>
+                   <records>993</records>
+                   <description>Electron density profile versus radial distance</description>
+                   <record_delimiter>Carriage-Return Line-Feed</record_delimiter>
+                   <Record_Character>
+                         <fields>25</fields>
+                         <groups>0</groups>
+                         <record_length unit="byte">490</record_length>
+                         <Field_Character>
+                               <name>RADIUS</name>
+                               <field_number>1</field_number>
+                               <field_location unit="byte">1</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <unit>km</unit>
+                               <description>Radial distance</description>
+                         </Field_Character>
+                         <Field_Character>
+                               <name>ALTITUDEMOLA</name>
+                               <field_number>2</field_number>
+                               <field_location unit="byte">21</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <unit>km</unit>
+                               <description>Altitude with respect to MOLA areoid</description>
+                         </Field_Character>
+                         <Field_Character>
+                               <name>NELEC</name>
+                               <field_number>3</field_number>
+                               <field_location unit="byte">41</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <unit>1/m**3</unit>
+                               <description>Electron density</description>
+                         </Field_Character>
+                         <Field_Character>
+                               <name>SNELEC</name>
+                               <field_number>4</field_number>
+                               <field_location unit="byte">61</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <unit>1/m**3</unit>
+                               <description>One-sigma uncertainty in NELEC</description>
+                         </Field_Character>
+                         <Field_Character>
+                               <name>BENDINGANGLEDOWN</name>
+                               <field_number>5</field_number>
+                               <field_location unit="byte">81</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <unit>radian</unit>
+                               <description>Bending angle of downlink ray</description> 
+                         </Field_Character>             
+                         <Field_Character>
+                               <name>IMPACTPARAMDOWN</name>
+                               <field_number>6</field_number>
+                               <field_location unit="byte">101</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <unit>km</unit>
+                               <description>Impact parameter of downlink ray</description> 
+                         </Field_Character>             
+                         <Field_Character>
+                               <name>REFRACTIVITYDOWN</name>
+                               <field_number>7</field_number>
+                               <field_location unit="byte">121</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <description>Refractivity at RADIUS and at the frequency of the downlink ray</description> 
+                         </Field_Character>
+                         <Field_Character>
+                               <name>ERTYEAR</name>
+                               <field_number>8</field_number>
+                               <field_location unit="byte">147</field_location>
+                               <data_type>ASCII_Integer</data_type>
+                               <field_length unit="byte">4</field_length>
+                               <field_format>%4d</field_format>
+                               <unit>year</unit>
+                               <description>Earth Receive Time of the occultation measurement (year)</description> 
+                         </Field_Character>
+                         <Field_Character>
+                               <name>ERTDOY</name>
+                               <field_number>9</field_number>
+                               <field_location unit="byte">158</field_location>
+                               <data_type>ASCII_Integer</data_type>
+                               <field_length unit="byte">3</field_length>
+                               <field_format>%3d</field_format>
+                               <unit>day</unit>
+                               <description>Earth Receive Time of the occultation measurement (day of year)</description> 
+                         </Field_Character>
+                         <Field_Character>
+                               <name>ERTSEC</name>
+                               <field_number>10</field_number>
+                               <field_location unit="byte">169</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">12</field_length>
+                               <field_format>%12.6f</field_format>
+                               <unit>second</unit>
+                               <description>Earth Receive Time of the occultation measurement (seconds)</description> 
+                         </Field_Character>
+                         <Field_Character>
+                               <name>ERTDATETIME</name>
+                               <field_number>11</field_number>
+                               <field_location unit="byte">182</field_location>
+                               <data_type>ASCII_Date_Time_YMD</data_type>
+                               <field_length unit="byte">23</field_length>
+                               <field_format>%23s</field_format>
+                               <description>Earth Receive Time of the occultation measurement (date/time format)</description> 
+                         </Field_Character>
+                         <Field_Character>
+                               <name>OCCTIME</name>
+                               <field_number>12</field_number>
+                               <field_location unit="byte">206</field_location>
+                               <data_type>ASCII_Date_Time_YMD</data_type>
+                               <field_length unit="byte">23</field_length>
+                               <field_format>%23s</field_format>
+                               <description>Date and time of the occultation measurement at Mars</description> 
+                         </Field_Character>
+                         <Field_Character>
+                               <name>OCCAREOCENTRICLAT</name>
+                               <field_number>13</field_number>
+                               <field_location unit="byte">229</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <unit>degree</unit>
+                               <description>Areocentric north latitude of the ray path closest approach point</description> 
+                         </Field_Character>
+                         <Field_Character>
+                               <name>OCCAREOCENTRICLON</name>
+                               <field_number>14</field_number>
+                               <field_location unit="byte">249</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <unit>degree</unit>
+                               <description>Areocentric east longitude of the ray path closest approach point</description> 
+                         </Field_Character>
+                         <Field_Character>
+                               <name>OCCSZA</name>
+                               <field_number>15</field_number>
+                               <field_location unit="byte">269</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <unit>degree</unit>
+                               <description>Solar zenith angle at the ray path closest approach point</description> 
+                         </Field_Character>
+                         <Field_Character>
+                               <name>OCCLTST</name>
+                               <field_number>16</field_number>
+                               <field_location unit="byte">289</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <unit>hour</unit>
+                               <description>Local true solar time at the ray path closest approach point</description> 
+                         </Field_Character>
+                         <Field_Character>
+                               <name>OCCLS</name>
+                               <field_number>17</field_number>
+                               <field_location unit="byte">309</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <unit>degree</unit>
+                               <description>
+                                    The angle between the Mars-Sun line at the observation time 
+                                    and the Mars-Sun line at Mars vernal equinox.
+                               </description> 
+                         </Field_Character>
+                         <Field_Character>
+                               <name>OCCFRESID</name>
+                               <field_number>18</field_number>
+                               <field_location unit="byte">329</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <unit>hertz</unit>
+                               <description>Frequency residual from the archived RSSG residual file</description> 
+                         </Field_Character>
+                         <Field_Character>
+                               <name>OCCFRESIDADJ</name>
+                               <field_number>19</field_number>
+                               <field_location unit="byte">349</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <unit>hertz</unit>
+                               <description>Frequency residual after baseline correction</description> 
+                         </Field_Character>
+                         <Field_Character>
+                               <name>IMPACTPARAMAVERAGE</name>
+                               <field_number>20</field_number>
+                               <field_location unit="byte">369</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <unit>km</unit>
+                               <description>Average of up and down impact parameters</description> 
+                         </Field_Character>
+                         <Field_Character>
+                               <name>OCCMSOX</name>
+                               <field_number>21</field_number>
+                               <field_location unit="byte">389</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <unit>km</unit>
+                               <description>X-coordinate in the MSO reference frame of the downlink ray at its closest approach to Mars</description> 
+                         </Field_Character>
+                         <Field_Character>
+                               <name>OCCMSOY</name>
+                               <field_number>22</field_number>
+                               <field_location unit="byte">409</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <unit>km</unit>
+                               <description>Y-coordinate in the MSO reference frame of the downlink ray at its closest approach to Mars</description> 
+                         </Field_Character>
+                         <Field_Character>
+                               <name>OCCMSOZ</name>
+                               <field_number>23</field_number>
+                               <field_location unit="byte">429</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <unit>km</unit>
+                               <description>Z-coordinate in the MSO reference frame of the downlink ray at its closest approach to Mars</description> 
+                         </Field_Character>
+                         <Field_Character>
+                               <name>OCCMSOLAT</name>
+                               <field_number>24</field_number>
+                               <field_location unit="byte">449</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <unit>degree</unit>
+                               <description>North latitude in the MSO reference frame of the downlink ray at its closest approach to Mars</description> 
+                         </Field_Character>
+                         <Field_Character>
+                               <name>OCCMSOLON</name>
+                               <field_number>25</field_number>
+                               <field_location unit="byte">469</field_location>
+                               <data_type>ASCII_Real</data_type>
+                               <field_length unit="byte">20</field_length>
+                               <field_format>%20.6e</field_format>
+                               <unit>degree</unit>
+                               <description>East longitude in the MSO reference frame of the downlink ray at its closest approach to Mars</description> 
+                         </Field_Character>
+                   </Record_Character>
+             </Table_Character>
+      </File_Area_Observational>
+</Product_Observational>

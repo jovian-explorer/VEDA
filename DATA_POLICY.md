@@ -74,6 +74,7 @@ The authoritative list is VEDA's own catalogue (`src/veda/archives/datasets.py`,
 | Mars Reconnaissance Orbiter (MRO) | ACC (aerobraking density profiles, 2006) | L5 (derived) | `mro-m-accel-5-profile-v1.0` | NASA PDS Atmospheres Node | Tolson et al. (2008); data: Tolson et al. (2010) |
 | 2001 Mars Odyssey | ACC (aerobraking density profiles, 2001-2002) | L5 (derived) | `ody-m-accel-5-derived-v1.0` | NASA PDS Atmospheres Node | Tolson et al. (2005); data: Withers & Murphy (2009) |
 | MAVEN | ACC (accelerometer density profiles of the periapsis passes, 2014-2020) | L3 (derived, PDS4) | `maven-acc-profile` | NASA PDS Atmospheres Node | Zurek et al. (2015); data: Tolson & Lugo (2016) |
+| MAVEN | ROSE (ionospheric electron density profiles, 2016-2025) | L3 (derived, PDS4) | `maven-rose-edp` | NASA PDS PPI Node | Withers et al. (2020); Withers & Moore (2020); data: Withers (2017), doi:10.17189/1517630 |
 | Mars Reconnaissance Orbiter (MRO) | CRISM limb dust and water-ice aerosol profiles, 2009-2012 | Derived (PDS4) | `mro-crism-smith2013-aerosol` | NASA PDS Atmospheres Node | Smith et al. (2013); data: Khayat (2024), doi:10.17189/76ha-be75 |
 | Mars Reconnaissance Orbiter (MRO) | CRISM limb aerosol abundance and particle size profiles, 2010-2017 | Derived (PDS4) | `mro-crism-guzewich-aerosol` | NASA PDS Atmospheres Node | Guzewich et al. (2014, 2019); data: Khayat (2024), doi:10.17189/76ha-be75 |
 | Mars Express (MEX) | MaRS (Radio Science) | L4 | `mex-m-mrs-5-occ` | ESA PSA (mirror: NASA PDS Geosciences Node) | Pätzold et al. (2016); Pätzold et al. (2004); Chicarro et al. (2004) |
@@ -213,7 +214,7 @@ The authoritative list is VEDA's own catalogue (`src/veda/archives/datasets.py`,
 
 ### Not available yet
 
-* **MAVEN STATIC, SWEA, SWIA, MAG, LPW, EUV, SEP and ROSE**, and most Juno, Cassini, Galileo, MESSENGER and MGS plasma data: the PDS PPI node registers these only as bundles and collections, so they cannot be searched by date yet.
+* **MAVEN STATIC, SWEA, SWIA, MAG, LPW, EUV and SEP, and the raw and calibrated ROSE data** (its electron density profiles are connected), and most Juno, Cassini, Galileo, MESSENGER and MGS plasma data: the PDS PPI node registers these only as bundles and collections, so they cannot be searched by date yet.
 * **Pioneer Venus OUVS, OIR and OCPP**: no public archive route was found.
 * **Galileo NIMS Jupiter cubes, MRO gravity** and, while their indexes are unverified, **Cassini CAPS/MAG/RPWS/MIMI/RADAR, Juno JADE/JEDI/Waves, MESSENGER MDIS/EPPS, LRO LAMP/CRaTER and Dawn FC/VIR** volume indexes.
 * **Akatsuki LAC**: not yet published by JAXA.
