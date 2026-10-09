@@ -134,6 +134,13 @@ def row_profile(ds, prod: Dict[str, Any], label_path: Path, row: int):
         unc = {"temperature_k": s, "temperature_c": s}
     track = {k: d[f"level_{k.upper()[:3]}"][row][good]
              for k in ("latitude", "longitude") if d.get(f"level_{k.upper()[:3]}") is not None}
+    # dust (21.6 um) and water-ice (11.9 um) opacity per km, with their 1-sigma
+    aerosols = {}
+    for key, col in (("dust_opacity_per_km", "DUST"), ("ice_opacity_per_km", "H2OICE")):
+        if d.get(f"level_{col}") is not None and np.isfinite(d[f"level_{col}"][row][good]).any():
+            aerosols[key] = d[f"level_{col}"][row][good]
+            if d.get(f"level_{col}_ERR") is not None:
+                unc[key] = d[f"level_{col}_ERR"][row][good]
     geom = row_geometry(d, row)
     flags = {k: float(d[k][row]) for k in ("T_QUAL", "P_QUAL", "OBS_QUAL", "GQUAL")
              if d.get(k) is not None and np.isfinite(d[k][row])}
@@ -157,6 +164,7 @@ def row_profile(ds, prod: Dict[str, Any], label_path: Path, row: int):
                                     archive_url=prod.get("url", ""), doi_or_citation=ds.citation or ds.doi,
                                     retrieval_method=prod.get("product_type", "")),
         raw_attributes=attrs, uncertainty=unc, track=track)
+    prof.derived.update(aerosols)
     return prof
 
 

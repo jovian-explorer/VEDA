@@ -57,6 +57,13 @@ def test_each_row_of_a_ddr_file_is_a_profile(ddr_file):
     assert k == 0 and np.isfinite(p.temperature_k).all()   # the levels at -9999 below the retrieval are left out
     # MCS altitudes are hydrostatic with GM/r^2: VEDA checks them with the same gravity
     assert p.raw_attributes["hydrostatic_max_pct"] < 0.15
+    # dust and water-ice opacity per km with their 1-sigma: level 40 of the row reads
+    # 3.5561e-06 +- 1.0834e-06 (dust) and 3.3927e-03 +- 7.1677e-05 (water ice)
+    k40 = int(np.nanargmin(np.abs(p.pressure_hpa - 0.1266)))
+    assert p.derived["dust_opacity_per_km"][k40] == pytest.approx(3.5561e-06)
+    assert p.uncertainty["dust_opacity_per_km"][k40] == pytest.approx(1.0834e-06)
+    assert p.derived["ice_opacity_per_km"][k40] == pytest.approx(3.3927e-03)
+    assert p.uncertainty["ice_opacity_per_km"][k40] == pytest.approx(7.1677e-05)
     other = load_profile(DS, "2006120120_DDR_P001")
     assert other.latitude == pytest.approx(-28.76247)
     with pytest.raises(ValueError):
@@ -78,3 +85,9 @@ def test_comparisons_take_mcs_profiles_from_the_files(ddr_file):
     from veda.archives.datasets import get_dataset
     assert get_dataset(DS).to_dict()["has_profiles"] is True
     assert json.dumps(comp)                                   # serialisable for the window
+    from veda.missions.selection import provides
+    ds = get_dataset(DS)
+    assert provides(ds, "temperature_k") and provides(ds, "dust_opacity_per_km") and not provides(ds, "dust_mixing_ratio")
+    dust = get_mission_manager().compare_on_body("mars", [{"mission_id": "mro", "observation_id": "2006120120_DDR_P000"}],
+                                                 variable_name="dust_opacity_per_km", altitude_step_km=1.0)
+    assert dust["profile_count"] == 1 and any(v for v in dust["profiles"][0]["interpolated_series"] if v)

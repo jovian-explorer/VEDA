@@ -97,6 +97,9 @@ const VARIABLE_CONFIGS = {
   ice_opacity_per_mbar: { label: 'Water-ice opacity per mbar, CRISM', units: 'mbar⁻¹', axis: 'Water-ice Δτ/Δp at 2.2 µm (mbar⁻¹)', color: '#3b82f6', bodies: ['mars'] },
   dust_effective_radius: { label: 'Dust effective radius, CRISM', units: 'µm', axis: 'Dust effective radius (µm)', color: '#92400e', bodies: ['mars'] },
   ice_effective_radius: { label: 'Water-ice effective radius, CRISM', units: 'µm', axis: 'Water-ice effective radius (µm)', color: '#1d4ed8', bodies: ['mars'] },
+  // MRO MCS: opacity per km on each pressure surface, dust at 21.6 um and water ice at 11.9 um
+  dust_opacity_per_km: { label: 'Dust opacity per km, MCS (21.6 µm)', units: 'km⁻¹', axis: 'Dust opacity per km at 21.6 µm (km⁻¹)', logScale: true, color: '#c2410c', bodies: ['mars'] },
+  ice_opacity_per_km: { label: 'Water-ice opacity per km, MCS (11.9 µm)', units: 'km⁻¹', axis: 'Water-ice opacity per km at 11.9 µm (km⁻¹)', logScale: true, color: '#0284c7', bodies: ['mars'] },
 };
 
 // Mission Distinct Color Palette for Comparative Charts
@@ -2708,7 +2711,7 @@ async function inspectProfileObservation(obs) {
       'co2_condensation_temperature', 't_minus_co2_condensation',
       'temperature_from_density', 'pressure_from_density',
       'dust_mixing_ratio', 'ice_mixing_ratio', 'dust_opacity_per_mbar', 'ice_opacity_per_mbar',
-      'dust_effective_radius', 'ice_effective_radius',
+      'dust_effective_radius', 'ice_effective_radius', 'dust_opacity_per_km', 'ice_opacity_per_km',
     ];
 
     const hasValidData = (k) => {

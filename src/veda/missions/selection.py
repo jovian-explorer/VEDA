@@ -271,6 +271,8 @@ def provides(ds, variable: str) -> bool:
         return "density_measured" in ds.extra_variables or "number_density" in ds.profile_columns
     if any(variable in d.extra_variables for d in DATASETS):
         return variable in ds.extra_variables
+    if ds.profile_rows:                  # (MCS rows: temperature, pressure and what follows from them)
+        return True
     return any(c in ds.profile_columns for c in _CORE_COLUMNS) or not ds.extra_variables
 
 

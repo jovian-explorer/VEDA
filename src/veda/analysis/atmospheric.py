@@ -1400,7 +1400,8 @@ def export_profiles_long_csv(profiles: List[ObservationProfile], body: Optional[
     ]
     from ..core.registry import get_variable_info
     extra_units = {"dtheta_dz": "K/km", "number_density_m3": "m^-3", "molar_mass": "g/mol",
-                   "co2_condensation_temperature": "K", "t_minus_co2_condensation": "K"}
+                   "co2_condensation_temperature": "K", "t_minus_co2_condensation": "K",
+                   "dust_opacity_per_km": "1/km", "ice_opacity_per_km": "1/km"}
     unit_of = (lambda k: (get_variable_info(k) or {}).get("units") or extra_units.get(k))
     units = [f"{k}={unit_of(k)}" for k in var_cols if unit_of(k)]
     if units:

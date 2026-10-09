@@ -173,6 +173,8 @@ INDEXED_DATASETS = [
         rules=(('_ddr\\.', 'MCS DDR file (about 300 profiles of T, P, dust and ice)', 'table'),), refs=('mccleese2007', 'kleinbohl2009', 'zurek2007'),
         data_prefix='DATA/', label_from_data=True, cumulative_index='INDEX/CUMINDEX.TAB', profile_rows='mcs_ddr',
         hydrostatic_gravity='gm_r2',
+        # aerosol opacity per km on each pressure surface (read by archives/mcs.py)
+        extra_variables={'dust_opacity_per_km': ('DUST', 'DUST_ERR'), 'ice_opacity_per_km': ('H2OICE', 'H2OICE_ERR')},
     ),
     Dataset(
         id='mro-m-mcs-2-edr-v1.0', mission_id='mro', instrument='MCS (Mars Climate Sounder)', level='EDR',
