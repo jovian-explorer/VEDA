@@ -268,13 +268,22 @@ def _diagnostics(profile: ObservationProfile, body: BodyInfo) -> Dict[str, np.nd
     if phi is not None:
         profile.raw_attributes["gravity_model"] += "; hydrostatic integrals in the archive's geopotential"
 
-    # 3. Scale height H = R_spec T / g(z) (km) and speed of sound with cp(T)
+    # 3. Scale height H = Z R_spec T / g(z) (km) and speed of sound with cp(T); Z the
+    # compressibility, 1 but in Titan's dense cold troposphere (realgas.py)
+    from .realgas import compressibility
     from .thermo import cp_model, heat_capacity
     r_spec = gas_constant_levels(profile, body)       # per level where the archive gives the molar mass
     cp_t = heat_capacity(body, t_k)                 # J/(kg K), temperature dependent for CO2/N2 atmospheres
     profile.raw_attributes["cp_model"] = cp_model(body)
+    p_now = profile.pressure_hpa
+    z_c = compressibility(body, t_k, p_now) if p_now is not None and np.shape(p_now) == z.shape else None
+    zc = 1.0 if z_c is None else np.where(np.isfinite(z_c), z_c, 1.0)
+    if z_c is not None and np.isfinite(z_c).any():
+        k_low = int(np.nanargmin(np.where(np.isfinite(z_c), z, np.inf)))
+        profile.raw_attributes["equation_of_state"] = (
+            f"real gas, second virial coefficient of the N2-CH4 mixture (Z = {z_c[k_low]:.4f} at {z[k_low]:.1f} km)")
     with np.errstate(invalid="ignore", divide="ignore"):
-        h_scale = (r_spec * t_k) / (gz * 1000.0)
+        h_scale = (zc * r_spec * t_k) / (gz * 1000.0)
         gamma = np.where(cp_t > r_spec, cp_t / (cp_t - r_spec), np.nan)
         cs = np.sqrt(gamma * r_spec * t_k)
     derived["scale_height"] = h_scale
@@ -303,8 +312,8 @@ def _diagnostics(profile: ObservationProfile, body: BodyInfo) -> Dict[str, np.nd
 
         with np.errstate(invalid="ignore", divide="ignore"):
             theta = t_k * (p_ref / np.where(p_hpa > 0, p_hpa, np.nan)) ** kappa
-            # Mass density rho = P / (R * T) in kg/m^3 (P in Pa = hPa * 100)
-            rho = (p_hpa * 100.0) / (r_spec * t_k)
+            # Mass density rho = P / (Z R T) in kg/m^3 (P in Pa = hPa * 100)
+            rho = (p_hpa * 100.0) / (zc * r_spec * t_k)
 
         derived["potential_temperature"] = theta
         derived["dtheta_dz"] = _gradient_nan_safe(z, theta)
@@ -312,7 +321,7 @@ def _diagnostics(profile: ObservationProfile, body: BodyInfo) -> Dict[str, np.nd
 
         # How well the archived pressure, temperature and altitudes fit hydrostatic balance
         from .hydrostatic import hydrostatic_consistency
-        profile.raw_attributes.update(hydrostatic_consistency(z, p_hpa, t_k, gz, r_spec, phi))
+        profile.raw_attributes.update(hydrostatic_consistency(z, p_hpa, t_k, gz, zc * r_spec, phi))
 
         # CO2 atmospheres (Mars, Venus): the CO2 frost point and how close T comes to it
         from .condensation import co2_condensation_temperature, co2_volume_fraction
@@ -367,6 +376,10 @@ def _hydrostatic_temperature(profile: ObservationProfile, body: BodyInfo, z: np.
     r = _hydrostatic_retrieval(profile, body, z, rho, sigma)
     if r is None:
         return
+    from .realgas import REAL_GAS_BODIES, temperature_with_compressibility
+    if body.id in REAL_GAS_BODIES:
+        # p = Z(T, p) rho R T: Titan's troposphere is 4 % denser than an ideal gas at its T and p
+        r["temperature_k"] = temperature_with_compressibility(body, r["pressure_pa"], rho, density_gas_constant(profile, body))
     derived["temperature_from_density"] = r["temperature_k"]
     derived["pressure_from_density"] = r["pressure_pa"] / 100.0
     profile.raw_attributes["hydrostatic_top_temperature_k"] = round(r["top_temperature_k"], 2)

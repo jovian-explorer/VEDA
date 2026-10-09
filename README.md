@@ -87,7 +87,7 @@ An opened profile shows every quantity in the product with the archived 1-sigma 
 * Cold-point tropopause (Titan, Jupiter, Saturn), gravity-wave temperature perturbations and potential energy
 * For ionospheres, the peak height and density, a fitted Chapman layer and $\text{VTEC} = 10^{-7}\int N_e\,dz$ (TECU)
 * From a measured density (accelerometer and entry-probe profiles, SOIR, radio occultation number densities): temperature and pressure by downward hydrostatic integration
-* For profiles with temperature and pressure: their hydrostatic consistency (largest and median departure of the archived pressure from the hydrostatic one)
+* For profiles with temperature and pressure: their hydrostatic consistency (largest and median departure of the archived pressure from the hydrostatic one); in Titan's dense, cold troposphere with the real-gas compressibility (4 % from an ideal gas at the surface)
 * On Mars and Venus, the CO$_2$ frost point at each level and the margin of the temperature above it (at or below zero, CO$_2$ can condense), with the smallest margin of each profile
 
 Heat capacity depends on temperature for Venus, Mars, Titan and Pluto ($c_p(T)$ from JANAF tables), gravity on latitude for Mars, Jupiter and Saturn, and the body constants come from measured compositions; the [User Guide](USAGE.md#3-scientific-inversion-and-atmospheric-physics) gives every method with its checks against archive values.
