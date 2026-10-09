@@ -38,7 +38,9 @@ export const vedaState = {
   compareMeanBand: 'sem',        // sem | ci95 (band around the composite mean)
   compareOutlierZ: '',           // '' (off) or the robust z threshold of the outlier screen
   compareDropOutliers: false,    // leave flagged profiles out of the composites
-  compareShowAs: 'values',  // values | deviation
+  compareShowAs: 'values',  // values | deviation | reference | groupdiff | pairs | budget
+  // tolerances of the coincident pairs ('': the default of analysis/coincidence.py)
+  comparePairsHours: '', comparePairsLat: '', comparePairsLon: '', comparePairsLst: '',
   lastComparisonData: null,
   bodySubtab: 'soundings', // 'soundings' | 'cut' | 'cross' | 'map'
   crossWidth: 10,           // latitude band width of the cross section (deg)
@@ -664,6 +666,7 @@ function currentComparisonRequest() {
     group_width: Number(vedaState.compareGroupWidth) || 0,
     altitude_step_km: Number(vedaState.compareAltitudeStep) || undefined,
     smoothing_km: Number(vedaState.compareSmoothing) > 0 ? Number(vedaState.compareSmoothing) : undefined,
+    coincidence: vedaState.compareShowAs === 'pairs' && vedaState.compareGroupBy ? pairTolerances() : undefined,
     vertical: vedaState.compareVertical === 'pressure' ? 'pressure' : undefined,
     weighting: ['inverse_variance', 'inverse_variance_total'].includes(vedaState.compareWeighting) ? vedaState.compareWeighting : undefined,
     outlier_z: Number(vedaState.compareOutlierZ) || undefined,
@@ -798,12 +801,36 @@ function renderSelectionReport(sel, filters) {
 // computer and filled in again the next time VEDA opens.  A remembered filter only fills
 // the fields: nothing is searched or downloaded until Apply is pressed.
 const COMPARE_FORM_KEY = 'veda.compare.form';
+// Tolerances of Show: Difference of coincident pairs: input, state, request field, largest value, name, unit
+const PAIR_TOLERANCES = [
+  ['veda-compare-pairs-hours', 'comparePairsHours', 'hours', 8784, 'Pairs within', 'hours'],
+  ['veda-compare-pairs-lat', 'comparePairsLat', 'lat', 180, 'Latitude', '°'],
+  ['veda-compare-pairs-lon', 'comparePairsLon', 'lon', 180, 'Longitude', '°'],
+  ['veda-compare-pairs-lst', 'comparePairsLst', 'lst', 12, 'Local time', 'h'],
+];
+
+/** The tolerances given (empty fields are left to the defaults). */
+function pairTolerances() {
+  const out = {};
+  PAIR_TOLERANCES.forEach(([, key, field, max]) => {
+    const v = Number(vedaState[key]);
+    if (vedaState[key] !== '' && v > 0 && v <= max) out[field] = v;
+  });
+  return out;
+}
+
+function syncPairsControls() {
+  const box = document.getElementById('veda-compare-pairs');
+  if (box) box.style.display = vedaState.compareShowAs === 'pairs' ? '' : 'none';
+}
+
 const COMPARE_OPTIONS = [
   ['veda-compare-group-by', 'compareGroupBy'], ['veda-compare-group-width', 'compareGroupWidth'],
   ['veda-compare-altitude-step', 'compareAltitudeStep'], ['veda-compare-vertical', 'compareVertical'],
   ['veda-compare-smoothing', 'compareSmoothing'],
   ['veda-compare-show-as', 'compareShowAs'], ['veda-compare-weighting', 'compareWeighting'],
   ['veda-compare-mean-band', 'compareMeanBand'], ['veda-compare-outlier-z', 'compareOutlierZ'],
+  ...PAIR_TOLERANCES.map(([id, key]) => [id, key]),
 ];
 
 function saveCompareForm() {
@@ -832,6 +859,11 @@ function restoreCompareForm() {
     if (id === 'veda-compare-altitude-step') {
       const v = el.value === '' ? '' : Number(el.value);
       if (v !== '' && !(v >= 0.01 && v <= 100)) { el.value = ''; return; }
+      vedaState[key] = v;
+    } else if (PAIR_TOLERANCES.some(([pid]) => pid === id)) {
+      const max = PAIR_TOLERANCES.find(([pid]) => pid === id)[3];
+      const v = el.value === '' ? '' : Number(el.value);
+      if (v !== '' && !(v > 0 && v <= max)) { el.value = ''; return; }
       vedaState[key] = v;
     } else {
       vedaState[key] = el.value;
@@ -895,10 +927,26 @@ function setupBodyModeControls() {
     updateComparison();
   });
   showAs?.addEventListener('change', () => {
-    const needRef = showAs.value === 'reference' && !(vedaState.lastComparisonData || {}).reference;
+    const last = vedaState.lastComparisonData || {};
+    const needRef = showAs.value === 'reference' && !last.reference;
+    const needPairs = showAs.value === 'pairs' && !(last.coincident_differences || []).length;
     vedaState.compareShowAs = showAs.value;
-    if (needRef) updateComparison(); else renderComparisonPlot();
+    syncPairsControls();
+    if (needRef || needPairs) updateComparison(); else renderComparisonPlot();
   });
+  PAIR_TOLERANCES.forEach(([id, key, , max, name, unit]) => {
+    const box = document.getElementById(id);
+    box?.addEventListener('change', () => {
+      const v = box.value === '' ? '' : Number(box.value);
+      if (v !== '' && !(v > 0 && v <= max)) {
+        box.value = vedaState[key] === '' ? '' : vedaState[key];
+        return toast(`${name}: above 0 and at most ${max}${unit === '°' ? '' : ' '}${unit}`, 'bad');
+      }
+      vedaState[key] = v;
+      if (vedaState.compareShowAs === 'pairs') updateComparison();
+    });
+  });
+  syncPairsControls();
   const refBox = document.getElementById('veda-compare-reference');
   refBox?.addEventListener('change', () => {
     vedaState.compareReference = refBox.checked;
@@ -1180,6 +1228,17 @@ async function openComparisonRecipe(csvText) {
   setVal('veda-compare-vertical', vedaState.compareVertical);
   setVal('veda-compare-weighting', vedaState.compareWeighting);
   setVal('veda-compare-outlier-z', vedaState.compareOutlierZ);
+  if (r.coincidence && typeof r.coincidence === 'object') {
+    // the comparison was exported showing coincident pairs: show them again, with its tolerances
+    vedaState.compareShowAs = 'pairs';
+    PAIR_TOLERANCES.forEach(([id, key, field, max]) => {
+      const v = Number(r.coincidence[field]);
+      vedaState[key] = v > 0 && v <= max ? v : '';
+      setVal(id, vedaState[key]);
+    });
+    setVal('veda-compare-show-as', 'pairs');
+    syncPairsControls();
+  }
   syncUnitButtons();
   switchMode('body');
   await loadAndRenderCelestialBody(r.body_id);
@@ -1903,6 +1962,10 @@ function renderComparisonPlot() {
     renderGroupDifferences(plotDiv, raw, varCfg);
     return;
   }
+  if (vedaState.compareShowAs === 'pairs') {
+    renderCoincidentPairs(plotDiv, raw, varCfg);
+    return;
+  }
   if (vedaState.compareShowAs === 'budget') {
     renderUncertaintyBudget(plotDiv, raw, varCfg);
     return;
@@ -2251,6 +2314,63 @@ function renderGroupDifferences(plotDiv, data, varCfg) {
     title: { text: cleanPlotlyMath(`${(data.body_name || data.body_id || '').toUpperCase()} • ${varCfg.label}: difference from ${diffs[0].reference_group}`) },
     hovermode: 'closest', margin: { l: 70, r: 25, t: 56, b: 60 },
   }, { xLog: false, varTitle: `Difference from ${diffs[0].reference_group} (${units})`,
+       coordTitle: byPressure ? 'Pressure (hPa)' : altitudeAxisTitle((data.profiles || []).map(p => p.altitude_reference)) });
+  plotStyle.vertical = saved;
+  window.Plotly.newPlot(plotDiv, traces, themedLayout(layout), { responsive: true, displayModeBar: true });
+}
+
+/** Coincident pairs (analysis/coincidence.py): profiles of the first group and of another
+ *  taken close in time and place, paired one to one; the mean of the pairs' differences with
+ *  its 95 % bootstrap interval over the pairs, and each pair's difference drawn faint.  The
+ *  pairs compare two instruments on the same atmosphere, without their sampling. */
+function renderCoincidentPairs(plotDiv, data, varCfg) {
+  const all = data.coincident_differences || [];
+  const diffs = all.filter(d => d.n_pairs > 0 && (d.difference || []).length);
+  const tol = (all[0] || {}).tolerances || {};
+  const within = `${tol.hours ?? 12} h, ${tol.lat ?? 5}° of latitude, ${tol.lon ?? 20}° of longitude and ${tol.lst ?? 1.5} h of local time`;
+  if (!diffs.length) {
+    if (plotDiv.data) Plotly.purge(plotDiv);
+    plotDiv.innerHTML = `<div class="empty-state">${!all.length
+      ? 'Group the profiles (<em>Group composites by</em>, for example <em>Mission and instrument</em>) into two or more groups to pair the profiles of the first group with those of the others.'
+      : `No profile of ${escHtml(all.map(d => d.group).join(', '))} was taken within ${within} of a profile of ${escHtml(all[0].reference_group)}. Widen the tolerances under <em>Show</em>.`}</div>`;
+    return;
+  }
+  const byPressure = data.vertical === 'pressure';
+  const zGrid = byPressure ? data.grid_hpa : data.grid_km;
+  const at = (values) => orient(values, zGrid.map((zv, k) => (values[k] == null ? null : zv)));
+  const traces = [];
+  diffs.forEach((d, i) => {
+    const c = paletteColor(i + 2);
+    (d.pair_series || []).forEach((row, j) => {
+      const p = d.pairs[j] || {};
+      const sep = [['Δt', p.hours, ' h'], ['Δlat', p.lat, '°'], ['Δlon', p.lon, '°'], ['ΔLT', p.lst, ' h']]
+        .filter(([, v]) => v != null).map(([n, v, u]) => `${n} ${v}${u}`).join(', ');
+      traces.push({ ...at(row), type: 'scatter', mode: 'lines', line: { color: c, width: 1 }, opacity: 0.3,
+        name: `${d.label}: each pair`, showlegend: j === 0, legendgroup: `p${i}`,
+        hovertemplate: `<b>${escHtml(String(p.other))} minus ${escHtml(String(p.first))}</b><br>${escHtml(sep)}<br>%{x:.3g}<br>%{y:.4g}<extra></extra>` });
+    });
+    traces.push({ ...at(d.ci95_low), type: 'scatter', mode: 'lines', line: { width: 0, color: 'transparent' },
+      showlegend: false, hoverinfo: 'skip', legendgroup: `d${i}` });
+    traces.push({ ...at(d.ci95_high), type: 'scatter', mode: 'lines', line: { width: 0, color: 'transparent' },
+      fill: plotStyle.swapAxes ? 'tonexty' : 'tonextx', fillcolor: c.startsWith('#') && c.length === 7 ? `${c}44` : 'rgba(128,128,128,0.25)',
+      name: `${d.label}: 95 % interval`, hoverinfo: 'skip', legendgroup: `d${i}` });
+    traces.push({ ...at(d.difference), type: 'scatter', mode: 'lines', line: { color: c, width: plotStyle.lineWidth + 1 },
+      name: `${d.label}: mean of ${d.n_pairs} pairs`, legendgroup: `d${i}`,
+      customdata: d.difference.map((_, k) => [d.se[k], d.pairs_per_level[k]]),
+      hovertemplate: `<b>${escHtml(d.label)}</b><br>%{x:.3g} ± %{customdata[0]:.2g} (1σ), %{customdata[1]} pairs<br>%{y:.4g}<extra></extra>` });
+  });
+  const zero = zGrid.map((_, k) => (diffs.some(d => d.difference[k] != null) ? 0 : null));
+  traces.push({ ...at(zero), type: 'scatter', mode: 'lines', line: { color: plotColors().ink, width: 1, dash: 'dash' },
+    hoverinfo: 'skip', showlegend: false });
+  const units = diffs[0].percent ? '%' : cleanPlotlyMath(varCfg.units || '');
+  const ref = diffs[0].reference_group;
+  const saved = plotStyle.vertical;
+  plotStyle.vertical = byPressure ? 'pressure' : 'altitude';
+  const layout = styleLayout({
+    title: { text: cleanPlotlyMath(`${(data.body_name || data.body_id || '').toUpperCase()} • ${varCfg.label}: coincident pairs, difference from ${ref}`)
+      + `<br><sup>pairs within ${escHtml(within)}</sup>` },
+    hovermode: 'closest', margin: { l: 70, r: 25, t: 72, b: 60 },
+  }, { xLog: false, varTitle: `Difference from ${ref} (${units})`,
        coordTitle: byPressure ? 'Pressure (hPa)' : altitudeAxisTitle((data.profiles || []).map(p => p.altitude_reference)) });
   plotStyle.vertical = saved;
   window.Plotly.newPlot(plotDiv, traces, themedLayout(layout), { responsive: true, displayModeBar: true });

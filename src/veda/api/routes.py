@@ -259,6 +259,13 @@ class CompareFilter(BaseModel):
         return v
 
 
+class CoincidenceTolerances(BaseModel):
+    hours: float = Field(12.0, gt=0.0, le=24.0 * 366)
+    lat: float = Field(5.0, gt=0.0, le=180.0)
+    lon: float = Field(20.0, gt=0.0, le=180.0)
+    lst: float = Field(1.5, gt=0.0, le=12.0)
+
+
 class CrossCompareRequest(BaseModel):
     # list of {"mission_id": ..., "observation_id": ...}
     observations: Optional[List[Dict[str, str]]] = Field(None, max_length=5000)
@@ -284,6 +291,8 @@ class CrossCompareRequest(BaseModel):
     reference: bool = False
     # smooth each profile to this vertical resolution (km, Gaussian FWHM) before averaging
     smoothing_km: Optional[float] = Field(None, gt=0.0, le=100.0)
+    # coincident pairs between the first group and the others, within these tolerances
+    coincidence: Optional["CoincidenceTolerances"] = None
 
 
 @router.post("/compare/body/{body_id}")
@@ -318,7 +327,8 @@ def _compare_or_404(body_id: str, req: "CrossCompareRequest") -> dict:
         group_by=req.group_by or "", group_width=req.group_width, altitude_step_km=req.altitude_step_km,
         vertical=req.vertical, pressure_step_decades=req.pressure_step_decades, weighting=req.weighting,
         outlier_z=req.outlier_z, drop_outliers=req.drop_outliers, cross_section_width=req.cross_section_width,
-        reference=req.reference, smoothing_km=req.smoothing_km)
+        reference=req.reference, smoothing_km=req.smoothing_km,
+        coincidence=req.coincidence.model_dump() if req.coincidence else None)
     if isinstance(comp, dict) and comp.get("error"):
         raise HTTPException(status_code=400, detail=comp["error"])
     return comp
@@ -653,6 +663,7 @@ def comparison_recipe(body_id: str, req: "CrossCompareRequest", comp: dict) -> d
             "outlier_z": req.outlier_z, "drop_outliers": req.drop_outliers,
             "cross_section_width": req.cross_section_width, "reference": req.reference,
             "smoothing_km": req.smoothing_km,
+            "coincidence": req.coincidence.model_dump() if req.coincidence else None,
             # the filter that chose the profiles, for the record (the profiles are listed below)
             **({"filter": req.filter.model_dump(exclude_none=True)} if req.filter else {}),
             "observations": [{"mission_id": p["mission_id"], "observation_id": p["observation_id"]}

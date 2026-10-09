@@ -970,6 +970,7 @@ def compare_profiles_on_body(
     cross_section_width: Optional[float] = None,
     reference: bool = False,
     smoothing_km: Optional[float] = None,
+    coincidence: Optional[Dict[str, float]] = None,
 ) -> Dict[str, Any]:
     """Cross-compare multi-mission profiles for a target planetary body.
 
@@ -980,7 +981,9 @@ def compare_profiles_on_body(
     references (the 1-bar level, an ellipsoid, a landing site) then line up, and
     profiles without a pressure column are left out.  ``smoothing_km``: each profile is
     first smoothed on the grid to this vertical resolution (Gaussian FWHM, error-weighted;
-    analysis/smoothing.py), with its 1-sigma propagated.
+    analysis/smoothing.py), with its 1-sigma propagated.  ``coincidence``: tolerances (hours,
+    lat, lon, lst) of coincident pairs between the first group and the others, whose mean
+    difference is given (analysis/coincidence.py).
     """
     if vertical not in VERTICALS:
         raise ValueError(f"vertical must be one of: {', '.join(VERTICALS)}")
@@ -1219,6 +1222,12 @@ def compare_profiles_on_body(
                                smat, stat_weighting) if group_by else []
     group_differences = _group_differences(mat, profile_summaries, log_like, group_by, group_width, sig,
                                            smat, stat_weighting) if group_by else []
+    coincident = []
+    if group_by and coincidence is not None:
+        from .coincidence import coincident_differences
+        coincident = coincident_differences(mat, profile_summaries,
+                                            [_group_key(s_, group_by, group_width) for s_ in profile_summaries],
+                                            log_like, sig, coincidence)
     budget = uncertainty_budget(mat, rand_s, sys_s, stat_weighting)
     pct = (lambda a: 100.0 * a) if log_like else (lambda a: a)       # log space: relative, in percent
 
@@ -1228,6 +1237,8 @@ def compare_profiles_on_body(
         "groups": groups,
         # each group minus the first, with standard error and bootstrap interval
         "group_differences": group_differences,
+        # the same from coincident pairs (close in time and place), when asked
+        "coincident_differences": coincident,
         "averaging": ("geometric mean and 1-sigma factor (log space)" if log_like else "arithmetic mean and 1-sigma (sample)")
                      + ("; inverse-variance weights" if weighting == "inverse_variance" else
                         "; inverse-variance weights (random and systematic uncertainty)"
@@ -1521,6 +1532,14 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
         lines.append("# '<group> minus <first group>' columns: difference of the composite means, its standard error "
                      "and 95 % bootstrap interval (each group resampled on its own)"
                      + ("; in percent of the first group's geometric mean." if diffs[0].get("percent") else "."))
+    coinc = [c for c in comparison.get("coincident_differences") or [] if c.get("difference")]
+    for c in coinc:
+        header += [f"{c['label']} pairs difference", f"{c['label']} pairs se", f"{c['label']} pairs ci95_low",
+                   f"{c['label']} pairs ci95_high", f"{c['label']} pairs at level"]
+        t = c.get("tolerances") or {}
+        lines.append(f"# coincident pairs, {c['label']}: {c['n_pairs']} pairs within {t.get('hours', 0):g} h, "
+                     f"{t.get('lat', 0):g} deg latitude, {t.get('lon', 0):g} deg longitude, {t.get('lst', 0):g} h local time; "
+                     + " ".join(f"{p['first']}/{p['other']}" for p in c["pairs"]))
     budget = comparison.get("uncertainty_budget") or {}
     bkeys = [k for k in _BUDGET_COLUMNS if any(v is not None for v in budget.get(k) or [])]
     if bkeys:
@@ -1565,6 +1584,9 @@ def export_comparison_to_csv(comparison: Dict[str, Any]) -> str:
         for d in diffs:
             row += [_csv_num(at(d["difference"], i)), _csv_num(at(d["se"], i)), _csv_num(at(d["ci95_low"], i)),
                     _csv_num(at(d["ci95_high"], i))]
+        for c in coinc:
+            row += [_csv_num(at(c["difference"], i)), _csv_num(at(c["se"], i)), _csv_num(at(c["ci95_low"], i)),
+                    _csv_num(at(c["ci95_high"], i)), str(at(c["pairs_per_level"], i) or 0)]
         row += [_csv_num(at(budget.get(k), i)) for k in bkeys]
         if ref:
             row.append(_csv_num(at(ref, i)))
