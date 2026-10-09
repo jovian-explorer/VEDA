@@ -203,6 +203,7 @@ RS_PROFILE_COLUMNS = {  # ESA/JAXA radio-science L4 layout (MaRS, VeRa heritage)
     "pressure": "PRESSURE",
     "pressure_sigma": "SIGMA PRESSURE",
     "number_density": "NUMBER DENSITY",
+    "number_density_sigma": "SIGMA NUMBER DENSITY",      # (MaRS, MGS and MRO TPS)
     "electron_density": ("ELECTRON NUMBER DENSITY", "ELECTRON DENSITY"),
     "electron_density_sigma": ("SIGMA ELECTRON NUMBER DENSITY", "NOISE LEVEL ELECTRON NUMBER DENSITY",
                                "SIGMA ELECTRON DENSITY"),

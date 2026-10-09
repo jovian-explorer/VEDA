@@ -888,3 +888,17 @@ def test_systematic_uncertainty_from_the_boundary_temperatures(client):
     o = np.argsort(z)
     k = int(np.argmin(np.abs(grid - 40.0)))
     assert p["interpolated_systematic"][k] == pytest.approx(np.interp(grid[k], z[o], mex_sys[o]), rel=1e-3)
+
+
+def test_number_density_uncertainty_of_radio_occultations(client):
+    """Mars Express, MGS and MRO give the 1-sigma of the number density (SIGMA NUMBER
+    DENSITY); the Mars Express one was skipped because the same table has LOWER / MEDIUM /
+    UPPER variants of the other columns.  It is read now, and the temperature retrieved
+    from the density gets a Monte Carlo 1-sigma."""
+    mex = client.get("/api/veda/archive/profile/mex-m-mrs-5-occ/M32ICL2L04_AIX_040931105_60").json()
+    n, s_n = _label_rows(SAMPLES / "mars_express" / "M32ICL2L04_AIX_040931105_60.TAB", (21, 22))
+    got = np.array([np.nan if v is None else v for v in mex["uncertainty"]["number_density_m3"]])
+    np.testing.assert_allclose(got, s_n, rtol=1e-6)
+    assert s_n[0] / n[0] == pytest.approx(0.0255, abs=1e-3)
+    assert any(v is not None and v > 0 for v in mex["uncertainty"]["temperature_from_density"])
+    assert mex["uncertainty"]["temperature_k"][0] == pytest.approx(10.0)       # the MEDIUM retrieval's, as before

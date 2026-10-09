@@ -97,17 +97,20 @@ def _grams_per_cm3(unit: str) -> bool:
 
 
 def _sigma(tbl, name) -> Optional[np.ndarray]:
-    """Uncertainty columns are skipped by match_column, so look them up directly."""
+    """Uncertainty columns are skipped by match_column, so look them up directly.  Of the
+    retrieval variants of one column (Mars Express, Akatsuki: LOWER / MEDIUM / UPPER
+    boundary condition) the MEDIUM one; a column without variants (SIGMA NUMBER DENSITY in
+    the same Mars Express tables) is taken as it is."""
     if not name:
         return None
     for want in ([name] if isinstance(name, str) else name):
         want = want.upper().replace("_", " ")
-        for k, v in tbl.columns.items():
-            u = k.upper().replace("_", " ").strip('"')
-            if u.startswith(want) and ("MEDIUM" in u or not any("MEDIUM" in c.upper() for c in tbl.columns)):
-                arr = np.asarray(v, dtype=float)
-                if np.isfinite(arr).any():
-                    return arr
+        matches = [(k, v) for k, v in tbl.columns.items() if k.upper().replace("_", " ").strip('"').startswith(want)]
+        medium = [kv for kv in matches if "MEDIUM" in kv[0].upper()]
+        for _, v in (medium or matches):
+            arr = np.asarray(v, dtype=float)
+            if np.isfinite(arr).any():
+                return arr
     return None
 
 
