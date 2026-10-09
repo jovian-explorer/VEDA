@@ -256,7 +256,7 @@ When you publish figures, tables or values produced with VEDA, please cite:
 ### Data availability statement (template)
 Remove the archives you did not use and add the data set DOIs:
 
-> The spacecraft observations analysed in this study are publicly available from the NASA Planetary Data System (PDS) Atmospheres Node (https://pds-atmospheres.nmsu.edu/), the ESA Planetary Science Archive (PSA) (https://archives.esac.esa.int/psa/) and the JAXA Data Archives and Transmission System (DARTS) (https://data.darts.isas.jaxa.jp/); ISRO mission data are available to registered users from the Indian Space Science Data Centre (ISSDC/PRADAN) (https://pradan.issdc.gov.in/). Spacecraft and planetary ephemerides were obtained from the NASA NAIF SPICE archive (https://naif.jpl.nasa.gov/) and the mission SPICE archives at ESA and JAXA. Archived values were read, unit-converted and compared with VEDA version 0.2.0 (https://github.com/jovian-explorer/VEDA).
+> The spacecraft observations analysed in this study are publicly available from the NASA Planetary Data System (PDS) Atmospheres Node (https://pds-atmospheres.nmsu.edu/), the ESA Planetary Science Archive (PSA) (https://archives.esac.esa.int/psa/) and the JAXA Data Archives and Transmission System (DARTS) (https://darts.isas.jaxa.jp/); ISRO mission data are available to registered users from the Indian Space Science Data Centre (ISSDC/PRADAN) (https://pradan.issdc.gov.in/). Spacecraft and planetary ephemerides were obtained from the NASA NAIF SPICE archive (https://naif.jpl.nasa.gov/) and the mission SPICE archives at ESA and JAXA. Archived values were read, unit-converted and compared with VEDA version 0.2.0 (https://github.com/jovian-explorer/VEDA).
 
 ---
 

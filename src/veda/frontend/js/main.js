@@ -760,7 +760,7 @@ async function fillDatasetTable(box) {
           <tr>
             <td>${escHtml(missionName(d.mission_id))}</td>
             <td>${escHtml(d.title)}<br><code>${escHtml(d.id)}</code></td>
-            <td>${d.base_url ? `<a href="${escHtml(d.base_url)}" target="_blank" rel="noopener">${escHtml(d.archive)}</a>` : escHtml(d.archive)}${d.portal_only ? '<br><span class="badge">account needed</span>' : ''}</td>
+            <td>${d.url ? `<a href="${escHtml(d.url)}" target="_blank" rel="noopener">${escHtml(d.archive)}</a>` : escHtml(d.archive)}${d.portal_only ? '<br><span class="badge">account needed</span>' : ''}</td>
             <td>${escHtml(d.citation || 'See the data set documentation')}${d.doi ? `<br><a href="https://doi.org/${escHtml(d.doi)}" target="_blank" rel="noopener">doi:${escHtml(d.doi)}</a>` : ''}</td>
           </tr>`).join('')}
         </tbody>
@@ -881,7 +881,7 @@ function dataPolicyBody() {
   const portals = (state.meta && state.meta.data_portals) || [];
   const licenses = (state.meta && state.meta.licenses) || {};
   const stmt = (state.meta && state.meta.data_availability) ||
-    `The spacecraft observations analysed in this study are publicly available from the NASA Planetary Data System (PDS) Atmospheres Node (https://pds-atmospheres.nmsu.edu/), the ESA Planetary Science Archive (PSA) (https://archives.esac.esa.int/psa/) and the JAXA Data Archives and Transmission System (DARTS) (https://data.darts.isas.jaxa.jp/). Archived values were read, unit-converted and compared with VEDA version ${appVersion()} (${REPO_URL}).`;
+    `The spacecraft observations analysed in this study are publicly available from the NASA Planetary Data System (PDS) Atmospheres Node (https://pds-atmospheres.nmsu.edu/), the ESA Planetary Science Archive (PSA) (https://archives.esac.esa.int/psa/) and the JAXA Data Archives and Transmission System (DARTS) (https://darts.isas.jaxa.jp/). Archived values were read, unit-converted and compared with VEDA version ${appVersion()} (${REPO_URL}).`;
   const licenseKey = { nasa_pds_atm: 'nasa_pds', pds_opus: 'nasa_pds', esa_psa: 'esa_psa', jaxa_darts: 'jaxa_darts', research_repositories: 'cc_by_4', isro_issdc: 'isro_issdc', naif_spice: 'naif_spice' };
 
   const portalsHtml = portals.map(p => {

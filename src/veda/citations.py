@@ -218,7 +218,7 @@ def build(dataset_ids: Iterable[str], features: Iterable[str],
 def availability_statement(archives: List[str], geometry: bool) -> str:
     names = {"NASA PDS": "the NASA Planetary Data System (PDS, https://pds.nasa.gov/)",
              "ESA PSA": "the ESA Planetary Science Archive (PSA, https://archives.esac.esa.int/psa/)",
-             "JAXA DARTS": "the JAXA Data Archives and Transmission System (DARTS, https://data.darts.isas.jaxa.jp/)",
+             "JAXA DARTS": "the JAXA Data Archives and Transmission System (DARTS, https://darts.isas.jaxa.jp/)",
              "ISRO ISSDC": "the ISRO Indian Space Science Data Centre (ISSDC/PRADAN, https://pradan.issdc.gov.in/; "
                            "registered users)",
              "OPUS": "the NASA PDS Ring-Moon Systems Node (https://pds-rings.seti.org/)"}

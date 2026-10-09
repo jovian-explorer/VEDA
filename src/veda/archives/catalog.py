@@ -698,7 +698,7 @@ def product_dict(r: sqlite3.Row) -> Dict[str, Any]:
         "level": ds.level if ds else None,
         "path": r["path"], "start_time": r["start_time"], "stop_time": r["stop_time"],
         "target": r["target"], "product_type": r["product_type"], "kind": r["kind"],
-        "url": r["path"] if r["path"].startswith("http") else (ds.base_url if ds and ds.repository else
+        "url": r["path"] if r["path"].startswith("http") else (ds.page_url if ds and ds.repository else
                                                                 (f"{ds.base_url}{r['volume']}/{r['path']}" if ds else None)),
         "live": bool(ds and ds.service),
         "downloaded": is_downloaded(r, ds),

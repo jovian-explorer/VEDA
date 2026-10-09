@@ -556,3 +556,22 @@ def test_negative_uncertainties_are_fill(tmp_path):
 def test_pressure_units_to_hpa(unit, factor):
     """Pressures in kPa, microbar, nanobar or dyn/cm^2 were all taken for pascals."""
     np.testing.assert_allclose(_to_hpa(np.array([2.0]), unit), [2.0 * factor])
+
+
+def test_repository_pages_are_linked_without_the_trailing_slash():
+    """Zenodo and BIRA-IASB answer 404 for record pages ending in a slash, which the
+    product links of the archive browser and the Data & Licenses table used; archive
+    folders keep theirs."""
+    from veda.archives.catalog import product_dict
+    from veda.archives.datasets import get_dataset
+    for did, page in (("vex-vera-gramigna2023", "https://zenodo.org/records/20056665"),
+                      ("vex-vera-fsi-imamura", "https://zenodo.org/records/4621070"),
+                      ("vex-soir-co2-temperature",
+                       "https://data.aeronomie.be/dataset/venus-atmospheric-profiles-from-spicav-soir-vexv23")):
+        ds = get_dataset(did)
+        assert ds.base_url == page + "/" and ds.to_dict()["url"] == page
+        row = {"dataset_id": did, "product_id": "x", "volume": "repository", "path": "x.csv", "start_time": "",
+               "stop_time": "", "target": "VENUS", "product_type": "Profile", "kind": "profile", "extra": "{}"}
+        assert product_dict(row)["url"] == page
+    mgs = get_dataset("mgs-m-rss-5-sdp-v1.0")
+    assert mgs.to_dict()["url"] == mgs.base_url and mgs.base_url.endswith("/")

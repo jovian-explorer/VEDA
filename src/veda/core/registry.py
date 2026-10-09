@@ -29,7 +29,7 @@ BODIES: Dict[str, BodyInfo] = {
         description="Terrestrial planet enveloped in an opaque, superrotating carbon dioxide atmosphere with dense global sulphuric acid cloud decks (48 to 70 km altitude), extreme surface pressure (~92 bar), and intense greenhouse heating (~737 K surface temperature). Venus exhibits complex atmospheric wave phenomena, including planetary-scale Kelvin and Rossby waves, and strong thermal tides.",
         supported_missions=["akatsuki", "vex", "magellan", "pvo", "vega", "bepicolombo", "messenger", "galileo"],
         mission_page_url="https://science.nasa.gov/venus/",
-        data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Venus/venus.html",
+        data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/VENUS/venus_matrix.html",
     ),
     "mars": BodyInfo(
         id="mars",
@@ -49,7 +49,7 @@ BODIES: Dict[str, BodyInfo] = {
         description="Terrestrial planet with a rarefied, highly dynamic carbon dioxide atmosphere (~6.1 hPa surface pressure) characterized by planetary dust storm cycles, polar CO2 and water-ice caps, diurnal thermal tides, and photochemical atmospheric loss driven by solar wind interaction with localized crustal remnant magnetic fields.",
         supported_missions=["mex", "mgs", "maven", "mro", "ody", "mer", "phoenix", "msl", "insight", "mom"],
         mission_page_url="https://science.nasa.gov/mars/",
-        data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Mars/mars.html",
+        data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Mars/Mars.html",
         # Gravity field MRO120D (Konopliv et al. 2016, Icarus 274, 253; PDS MRO-M-RSS-5-SDP-V1,
         # jgmro_120d_sha.tab: GM of Mars 42828.3750 km^3/s^2, fully normalized C20
         # -8.750220925e-4 at 3396.0 km, so J2 = -C20 sqrt(5) = 1.956608e-3), sidereal
@@ -107,7 +107,7 @@ BODIES: Dict[str, BodyInfo] = {
         description="Ringed gas giant with a hydrogen-dominated atmosphere exhibiting powerful equatorial jet streams exceeding 400 m/s, an enduring hexagonal polar jet stream pattern at the north pole, seasonal great storms, and intricate electrodynamic interactions with its massive ring system.",
         supported_missions=["cassini"],
         mission_page_url="https://science.nasa.gov/saturn/",
-        data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Saturn/saturn.html",
+        data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/SATURN/matrix.html",
         # Cassini Grand Finale gravity field (Iess et al. 2019, Science 364, eaat2965),
         # rotation 10 h 33 min 38 s (Mankovich et al. 2019), 1-bar radii (Archinal et al. 2018)
         gm_km3_s2=37931207.7, j2=16290.573e-6, j2_reference_radius_km=60330.0,
@@ -133,7 +133,7 @@ BODIES: Dict[str, BodyInfo] = {
         description="Largest moon of Saturn, the only natural satellite with a dense atmosphere (surface pressure ~1.47 bar). Dominated by nitrogen and methane, Titan features multi-layered organic photochemical tholin hazes, active methane-ethane meteorological precipitation, and liquid hydrocarbon lakes and seas across polar regions.",
         supported_missions=["cassini"],
         mission_page_url="https://science.nasa.gov/saturn/moons/titan/",
-        data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Titan/titan.html",
+        data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/TITAN/titan_matrix.html",
     ),
     "pluto": BodyInfo(
         id="pluto",
@@ -367,9 +367,9 @@ MISSIONS: Dict[str, MissionInfo] = {
                            description="Probing atmospheric structure, auroras, and ring occultations in the far/extreme UV."),
         ],
         authoritative_archive="NASA PDS Atmospheres / Ring-Moon Systems",
-        archive_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Cassini/cassini.html",
+        archive_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Cassini/Cassini.html",
         mission_page_url="https://science.nasa.gov/mission/cassini/",
-        data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Cassini/cassini.html",
+        data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Cassini/Cassini.html",
         citation="Matson, D. L., et al. (2002). Cassini/Huygens flyby of Jupiter. Science, 296(5571), 1281-1282.",
         description="Flagship NASA/ESA/ASI mission to the Saturnian system (1997 to 2017), completing 294 orbits and numerous targeted flybys of Titan. Obtained multi-frequency radio science occultations of Saturn and Titan, mapped Titan's surface with radar, and carried out CIRS thermal infrared atmospheric sounding.",
     ),
@@ -484,9 +484,9 @@ MISSIONS: Dict[str, MissionInfo] = {
                            description="Radio occultation soundings of Mars electron density profiles and neutral lower atmosphere."),
         ],
         authoritative_archive="NASA PDS Atmospheres Node",
-        archive_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/MAVEN/maven.html",
+        archive_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/MAVEN/maven_main.html",
         mission_page_url="https://science.nasa.gov/mission/maven/",
-        data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/MAVEN/maven.html",
+        data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/MAVEN/maven_main.html",
         citation="Jakosky, B. M., et al. (2015). MAVEN observations of the response of Mars to an interplanetary coronal mass ejection. Science, 350(6261).",
         description="NASA Mars Atmosphere and Volatile EvolutioN spacecraft orbiting Mars since 2014, investigating the upper atmosphere, ionosphere, solar wind interactions, and mechanisms driving atmospheric volatile escape over geological history.",
     ),
@@ -610,9 +610,9 @@ MISSIONS: Dict[str, MissionInfo] = {
                            description="In-situ composition measurements in the Venusian upper atmosphere."),
         ],
         authoritative_archive="NASA PDS Atmospheres Node",
-        archive_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/PVO/pvo.html",
+        archive_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/PIONEER_Venus/pioneer_venus.html",
         mission_page_url="https://science.nasa.gov/mission/pioneer-venus-1/",
-        data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/PVO/pvo.html",
+        data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/PIONEER_Venus/pioneer_venus.html",
         citation="Colin, L. (1980). Pioneer Venus program. JGR: Space Physics, 85(A13), 7575-7598.",
         description="NASA Pioneer Venus 1 orbiter that operated from 1978 to 1992 across a full 11-year solar cycle, compiling the foundational long-term dataset of Venusian upper atmosphere neutral density, ionospheric electron density, and radio occultation profiles.",
     ),
@@ -775,9 +775,9 @@ MISSIONS: Dict[str, MissionInfo] = {
                            description="Drag accelerations during the 2006 aerobraking, inverted for thermospheric density along each pass through periapsis (about 100-150 km)."),
         ],
         authoritative_archive="NASA PDS Geosciences / Atmospheres Nodes",
-        archive_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Mars/mro.html",
+        archive_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/MARS/mro.html",
         mission_page_url="https://science.nasa.gov/mission/mars-reconnaissance-orbiter/",
-        data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Mars/mro.html",
+        data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/MARS/mro.html",
         citation="Zurek, R. W., & Smrekar, S. E. (2007). An overview of the Mars Reconnaissance Orbiter (MRO) science investigation. JGR: Planets, 112(E5).",
         description="NASA Mars Reconnaissance Orbiter operating continuously in Mars orbit since 2006, acquiring daily global atmospheric temperature, dust, and water-ice soundings with the Mars Climate Sounder (MCS) alongside ultra-high-resolution HiRISE surface imaging.",
     ),
@@ -797,7 +797,7 @@ MISSIONS: Dict[str, MissionInfo] = {
         ],
         authoritative_archive="NASA PDS Atmospheres Node",
         archive_url="https://pds-atmospheres.nmsu.edu/PDS/data/odya_1001/",
-        mission_page_url="https://science.nasa.gov/mission/mars-odyssey/",
+        mission_page_url="https://science.nasa.gov/mission/odyssey/",
         data_page_url="https://pds-atmospheres.nmsu.edu/PDS/data/odya_1001/",
         citation="Tolson, R. H., et al. (2005). Application of accelerometer data to Mars Odyssey aerobraking and atmospheric modeling. Journal of Spacecraft and Rockets, 42(3), 435-443.",
         description="NASA orbiter at Mars since October 2001; its aerobraking passes from October 2001 to January 2002 sampled the thermosphere over the north polar region and low latitudes.",
@@ -884,7 +884,7 @@ MISSIONS: Dict[str, MissionInfo] = {
         ],
         authoritative_archive="ISRO ISSDC (Indian Space Science Data Centre)",
         archive_url="https://www.issdc.gov.in/",
-        mission_page_url="https://www.isro.gov.in/MarsOrbiterMission.html",
+        mission_page_url="https://www.isro.gov.in/MarsOrbiterMissionSpacecraft.html",
         data_page_url="https://www.issdc.gov.in/",
         citation="Bhardwaj, A., et al. (2016). On the evening and morning exosphere of Mars: Results from MENCA on the Mars Orbiter Mission. Geophysical Research Letters, 43(6), 2388-2395.",
         description="India's first interplanetary mission by ISRO (2013 to 2022), entering Mars orbit on 24 September 2014. Carried five scientific payloads including the Space Physics Laboratory (SPL/VSSC) MENCA quadrupole mass spectrometer for in-situ exospheric neutral composition sounding.",
@@ -1232,7 +1232,7 @@ DATA_AVAILABILITY_STATEMENT = (
     "The spacecraft observations analysed in this study are publicly available from the NASA "
     "Planetary Data System (PDS) Atmospheres Node (https://pds-atmospheres.nmsu.edu/), the ESA "
     "Planetary Science Archive (PSA) (https://archives.esac.esa.int/psa/) and the JAXA Data Archives "
-    "and Transmission System (DARTS) (https://data.darts.isas.jaxa.jp/); ISRO mission data are "
+    "and Transmission System (DARTS) (https://darts.isas.jaxa.jp/); ISRO mission data are "
     "available to registered users from the Indian Space Science Data Centre (ISSDC/PRADAN) "
     "(https://pradan.issdc.gov.in/). Spacecraft and planetary ephemerides were obtained from the "
     "NASA NAIF SPICE archive (https://naif.jpl.nasa.gov/) and the mission SPICE archives at ESA and "

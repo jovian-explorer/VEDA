@@ -170,11 +170,17 @@ class Dataset:
         hms = [int(g.get(k) or 0) for k in ("hh", "mm", "ss")]
         return f"{day.isoformat()}T{hms[0]:02d}:{hms[1]:02d}:{hms[2]:02d}"
 
+    @property
+    def page_url(self) -> str:
+        """The data set's page for people: the archive folder, or a research repository's
+        record page, which Zenodo and BIRA-IASB answer with 404 when it ends in a slash."""
+        return self.base_url.rstrip("/") if self.repository else self.base_url
+
     def to_dict(self) -> Dict[str, object]:
         return {
             "id": self.id, "mission_id": self.mission_id, "instrument": self.instrument,
             "level": self.level, "title": self.title, "body_ids": list(self.body_ids),
-            "archive": self.archive, "url": self.base_url, "citation": self.citation,
+            "archive": self.archive, "url": self.page_url, "citation": self.citation,
             "doi": self.doi, "needs_login": bool(self.login_url), "login_url": self.login_url,
             "portal_only": self.portal_only, "portal_help": self.portal_help,
             "live": bool(self.service), "service": self.service, "refs": list(self.refs),
