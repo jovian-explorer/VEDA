@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import csv
 import io
+import re
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -106,7 +107,10 @@ def _read_table(p: Path, fname: str, table, kind: str, meta: Dict[str, object]) 
         raise FileNotFoundError(f"{fname} (named in {p.name}) was not loaded with the label")
     offset = int(_text(table, "offset", "0") or 0)
     records = int(_text(table, "records", "0") or 0)
-    raw = data_p.read_bytes()[offset:].decode("utf-8", errors="replace")
+    data = data_p.read_bytes()
+    if kind == "character":
+        offset = _record_start(data, offset, int(_text(table, "Record_Character/record_length", "0") or 0))
+    raw = data[offset:].decode("utf-8", errors="replace")
     lines = [ln for ln in raw.splitlines() if ln.strip()]
     if records:
         lines = lines[:records] if kind == "character" else lines
@@ -115,12 +119,12 @@ def _read_table(p: Path, fname: str, table, kind: str, meta: Dict[str, object]) 
     text_cols: Dict[str, List[str]] = {}
     if kind == "character":
         fields = table.findall("Record_Character/Field_Character")
-        for f in fields:
-            name = _text(f, "name")
-            start = int(_text(f, "field_location", "1")) - 1
-            length = int(_text(f, "field_length", "0"))
-            cells = [ln[start:start + length].strip() for ln in lines]
-            _store(name, cells, _text(f, "data_type"), _text(f, "unit"), f, columns, units, text_cols)
+        spans = [(int(_text(f, "field_location", "1")) - 1, int(_text(f, "field_length", "0"))) for f in fields]
+        whole = _values_by_field(lines, spans)
+        for i, f in enumerate(fields):
+            start, length = spans[i]
+            cells = [row[i] for row in whole] if whole else [ln[start:start + length].strip() for ln in lines]
+            _store(_text(f, "name"), cells, _text(f, "data_type"), _text(f, "unit"), f, columns, units, text_cols)
     else:
         delim = {"Comma": ",", "Horizontal Tab": "\t", "Semicolon": ";", "Vertical Bar": "|"}.get(
             _text(table, "field_delimiter", "Comma"), ",")
@@ -137,6 +141,33 @@ def _read_table(p: Path, fname: str, table, kind: str, meta: Dict[str, object]) 
     t = Pds3Table(label_path=str(p), table_path=str(data_p), metadata=meta, columns=columns, units=units)
     t.text_columns = text_cols
     return t
+
+
+def _record_start(data: bytes, offset: int, record_length: int) -> int:
+    """Where the records start.  The label's offset, unless it points into the first line
+    and that whole line is one record of the label's length: then the line's start (the
+    MAVEN accelerometer profiles give an offset of 1 byte for tables starting at 0, which
+    cut the sign off the first row)."""
+    if not 0 < offset < len(data) or data[offset - 1:offset] in (b"\n", b"\r") or not record_length:
+        return offset
+    start = data.rfind(b"\n", 0, offset) + 1
+    end = data.find(b"\n", offset)
+    return start if end >= 0 and end + 1 - start == record_length else offset
+
+
+def _values_by_field(lines: List[str], spans: List[tuple]) -> Optional[List[List[str]]]:
+    """Each line's values split at blanks, when every line has one value per field and
+    each lies on its field's columns: values are then read whole where the label gives a
+    field too narrow (MAVEN accelerometer profiles: an 8-character mass in a 7-character
+    field, which also cut the last digit of the next field).  None otherwise: the
+    label's columns are used."""
+    out = []
+    for ln in lines:
+        toks = [(m.start(), m.end(), m.group()) for m in re.finditer(r"\S+", ln)]
+        if len(toks) != len(spans) or any(not (s < fs + fl and e > fs) for (s, e, _), (fs, fl) in zip(toks, spans)):
+            return None
+        out.append([t for _, _, t in toks])
+    return out
 
 
 def _store(name, cells, dtype, unit, field, columns, units, text_cols):

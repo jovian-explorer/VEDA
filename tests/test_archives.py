@@ -575,3 +575,19 @@ def test_repository_pages_are_linked_without_the_trailing_slash():
         assert product_dict(row)["url"] == page
     mgs = get_dataset("mgs-m-rss-5-sdp-v1.0")
     assert mgs.to_dict()["url"] == mgs.base_url and mgs.base_url.endswith("/")
+
+
+def test_pds4_table_whose_label_is_a_byte_and_a_column_off():
+    """MAVEN accelerometer profiles (archive files): the label puts the table at byte 1
+    where it starts at 0, and gives the spacecraft mass and the bias noise 7 characters
+    where they take 8.  That read the first row's -300 s as 300 s, 1055.214 kg as 1055.21
+    and the bias noise 0.008 kg/km^3 as 0.00 (the archive's user advisory gives 0.0077611
+    for this pass, P03302, and a peak density near 5.07 kg/km^3 in its figure 3)."""
+    from pathlib import Path
+
+    from veda.readers.pds4_reader import read_pds4_table
+    t = read_pds4_table(str(Path(__file__).parent / "data" / "maven_acc" / "mvn_acc_l3_pro-acc-p03302_20160610_v02_r01.xml"))
+    c = t.columns
+    assert t.row_count() == 601 and c["Seconds from Periapsis"][0] == -300.0 and c["AREODETIC ALTITUDE"][0] == 184.334
+    assert np.all(c["SPACECRAFT MASS"] == 1055.214) and np.all(c["BIAS NOISE 1-SIGMA"] == 0.008)
+    assert np.all(np.diff(c["Seconds from Periapsis"]) == 1.0) and np.nanmax(c["1-SEC DENSITY"]) == 5.065
