@@ -422,3 +422,19 @@ def test_broken_downloads_are_continued_where_they_stopped(tmp_path, monkeypatch
         srv.shutdown()
         srv.server_close()
         net.session().close()
+
+
+def test_method_papers_for_the_derived_quantities_and_references():
+    """The Cite panel names the papers behind the reference atmospheres, the CO2 frost
+    point, Mars' gravity field and Titan's real gas when they were used; NASA technical
+    memoranda are cited with their NTRS address."""
+    from veda.citations import build
+    out = build([], ["venus_reference", "mars_reference", "co2_frost_point", "mars_gravity", "titan_real_gas"])
+    methods = next(f for f in out["features"] if f["title"] == "Methods")
+    keys = [i["key"] for i in methods["items"]]
+    assert keys == ["justh2021", "seiff1985", "justh2024", "james1992", "greve2010", "konopliv2016", "tsonopoulos1974"]
+    texts = {i["key"]: i["text"] for i in methods["items"]}
+    assert texts["justh2021"].endswith("https://ntrs.nasa.gov/citations/20210022168")
+    assert "https://doi.org/10.1016/j.icarus.2016.02.052" in texts["konopliv2016"]
+    assert "@techreport{justh2024" in out["bibtex"] and "@incollection{james1992" in out["bibtex"]
+    assert "url      = {https://ntrs.nasa.gov/citations/20240012934}" in out["bibtex"]

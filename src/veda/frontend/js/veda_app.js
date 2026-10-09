@@ -1228,6 +1228,7 @@ async function updateComparison() {
     // products picked by hand
     (compData.profiles || []).forEach(p => { if (p.dataset_id) recordProduct({ dataset_id: p.dataset_id, volume: p.volume }); });
     renderSelectionReport(compData.selection, compData.selection_filters);
+    recordMethods(vedaState.activeBodyId, vedaState.selectedCompareVariable, !!(compData.reference && compData.reference.series));
     vedaState.currentBodyObservations = exploreData.observations || [];
 
     renderActiveSubtab();
@@ -1382,6 +1383,7 @@ function renderAltitudeCut() {
   const varLabel = cleanPlotlyMath(cfg.label || cfg.axis);
   const diag = isDiag ? diagLabels[yKey.slice(5)] : null;
   const yScale = isDiag || isAlt ? 1 : pScale;
+  if (/co2_margin/.test(yKey) || /co2_margin/.test(xKey)) recordMethods(vedaState.activeBodyId, 'co2_condensation_temperature');
   const yTitle = diag ? (diag[1] ? `${diag[0]} (${diag[1]})` : diag[0])
     : isAlt ? 'Altitude (km)' : (pScale === 1 ? cleanPlotlyMath(cfg.axis) : `Pressure (${pUnit})`);
   const layerText = `${grid[kLo]} to ${grid[kHi]} km`;
@@ -2192,6 +2194,21 @@ function renderSampling() {
   }
 }
 
+// Quantities that depend on gravity (Mars: effective gravity of the MRO120D field) or on the
+// equation of state (Titan: real-gas compressibility)
+const GRAVITY_VARIABLES = new Set(['scale_height', 'buoyancy_freq_sq', 'buoyancy_period', 'dry_adiabatic_lapse_rate',
+  'temperature_from_density', 'pressure_from_density', 'wave_potential_energy', 't_prime']);
+const EOS_VARIABLES = new Set(['density', 'scale_height', 'temperature_from_density', 'pressure_from_density']);
+
+/** The method papers behind what is shown go into the Cite panel: the reference
+ *  atmospheres, the CO2 frost point, Mars' gravity field, Titan's real gas. */
+function recordMethods(bodyId, variable, reference = false) {
+  if (reference) recordFeature(bodyId === 'mars' ? 'mars_reference' : 'venus_reference');
+  if (/co2_condensation/.test(variable || '')) recordFeature('co2_frost_point');
+  if (bodyId === 'mars' && GRAVITY_VARIABLES.has(variable)) recordFeature('mars_gravity');
+  if (bodyId === 'titan' && EOS_VARIABLES.has(variable)) recordFeature('titan_real_gas');
+}
+
 /** Each group's composite mean minus the first group's, with its 95 % bootstrap interval
  *  (analysis/atmospheric.py _group_differences): differences between missions, seasons or
  *  latitude bands and whether they exceed what the sampling of the profiles explains. */
@@ -2717,6 +2734,9 @@ async function inspectProfileObservation(obs) {
       return `<option value="${k}"${selected}${disabled}>${cfg.label}${cfg.units ? ` (${cfg.units})` : ''}${statusText}</option>`;
     }).join('');
 
+    // the derived quantities shown: gravity, equation of state, CO2 frost point (Cite panel)
+    recordMethods(prof.body_id, 'scale_height');
+    if ((prof.derived || {}).co2_condensation_temperature) recordMethods(prof.body_id, 'co2_condensation_temperature');
     const missionTag = (prof.mission_id || 'LOCAL').toUpperCase();
     const bodyName = (vedaState.bodies || []).find(b => b.id === prof.body_id)?.name || prof.body_id || '';
     const instTag = prof.instrument || 'Sounder';

@@ -43,6 +43,11 @@ FEATURE_REFS = {
     "publication_figure": ["hunter2007"],
     "figure_export": ["plotly2015"],
     "gravity_waves": ["tsuda2000"],
+    "venus_reference": ["justh2021", "seiff1985"],
+    "mars_reference": ["justh2024"],
+    "co2_frost_point": ["james1992", "greve2010"],
+    "mars_gravity": ["konopliv2016"],
+    "titan_real_gas": ["tsonopoulos1974"],
 }
 FEATURE_TITLES = {
     "geometry": "Observation geometry (NAIF SPICE, SpiceyPy)",
@@ -53,6 +58,11 @@ FEATURE_TITLES = {
     "publication_figure": "Publication figures (Matplotlib)",
     "figure_export": "Interactive figures (Plotly)",
     "gravity_waves": "Methods",
+    "venus_reference": "Methods",
+    "mars_reference": "Methods",
+    "co2_frost_point": "Methods",
+    "mars_gravity": "Methods",
+    "titan_real_gas": "Methods",
 }
 
 
@@ -92,6 +102,8 @@ def ref_text(r: Dict[str, Any]) -> str:
         parts.append(f" {venue}" + (f", {vol}{issue}" if vol else "") + (f", {pages}" if pages else "") + ".")
     if r.get("doi"):
         parts.append(f" https://doi.org/{r['doi']}")
+    elif r.get("url"):
+        parts.append(f" {r['url']}")
     elif r.get("type") != "software":
         parts.append(" (No DOI; check the page numbers in the printed volume.)")
     return "".join(parts).strip()
@@ -102,19 +114,22 @@ def _bib_escape(s: str) -> str:
 
 
 def ref_bibtex(r: Dict[str, Any]) -> str:
-    kind = {"article": "article", "inproceedings": "inproceedings", "book": "book", "software": "software"}.get(
-        r.get("type") or "article", "misc")
+    kind = {"article": "article", "inproceedings": "inproceedings", "book": "book", "software": "software",
+            "techreport": "techreport", "incollection": "incollection"}.get(r.get("type") or "article", "misc")
     authors = list(r.get("authors") or [])
     if r.get("et_al"):
         authors.append("others")
     fields = [("author", " and ".join(authors)), ("title", "{" + (r.get("title") or "") + "}"), ("year", str(r.get("year") or ""))]
     if r.get("journal"):
-        fields.append(({"article": "journal", "misc": "howpublished"}.get(kind, "booktitle"), r["journal"]))
+        fields.append(({"article": "journal", "misc": "howpublished", "techreport": "institution"}.get(kind, "booktitle"),
+                       r["journal"]))
     for k in ("volume", "issue", "pages", "doi"):
         v = _pages(r) if k == "pages" else r.get(k)
         if v:
             fields.append(("number" if k == "issue" else k, str(v)))
-    if not r.get("doi") and r.get("type") != "software":
+    if r.get("url") and not r.get("doi"):
+        fields.append(("url", r["url"]))
+    elif not r.get("doi") and r.get("type") != "software":
         fields.append(("note", "No DOI; page numbers not verified"))
     body = ",\n".join(f"  {k:<8} = {{{_bib_escape(v) if k not in ('title', 'doi') else v}}}" for k, v in fields if v)
     return f"@{kind}{{{r['key']},\n{body}\n}}"

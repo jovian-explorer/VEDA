@@ -612,7 +612,7 @@ function helpBody() {
 
     <section data-help>
       <h3>What to cite</h3>
-      <p><strong>Cite</strong> lists the references for exactly the data sets and features you used on this computer (data sets with the archive identifiers of the products you opened, instrument and mission papers, archive acknowledgements, SPICE if you used geometry, the libraries behind derived quantities and figures, and VEDA), with BibTeX and a data availability statement to copy. <em>Start a new list</em> clears it for a new paper.</p>
+      <p><strong>Cite</strong> lists the references for exactly the data sets and features you used on this computer (data sets with the archive identifiers of the products you opened, instrument and mission papers, archive acknowledgements, SPICE if you used geometry, the libraries behind derived quantities and figures, the papers behind the methods you used, such as the reference atmospheres and the CO<sub>2</sub> frost point, and VEDA), with BibTeX and a data availability statement to copy. <em>Start a new list</em> clears it for a new paper.</p>
     </section>
 
     <section data-help>

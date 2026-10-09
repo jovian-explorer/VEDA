@@ -140,7 +140,7 @@ Products with several data objects (an image and its housekeeping table, several
 Some archive labels contain errors, and VEDA repairs the common ones from the values themselves: floats written in the opposite byte order to the label (Juno JIRAM spectra), integers labelled as floats (VEX SPICAV), wrong record lengths and files shorter than their label.
 
 ### What to cite
-**Cite** in the toolbar lists the references for what you have opened and used on this computer: each data set with the archive data set identifiers of the products you opened, the instrument and mission papers, the archive acknowledgements, SPICE and SpiceyPy if you used geometry, the libraries behind derived quantities and figures, and VEDA. Copy everything as BibTeX or text, or copy the data availability statement. **Start a new list** clears it (for a new paper).
+**Cite** in the toolbar lists the references for what you have opened and used on this computer: each data set with the archive data set identifiers of the products you opened, the instrument and mission papers, the archive acknowledgements, SPICE and SpiceyPy if you used geometry, the libraries behind derived quantities and figures, the papers behind the methods you used (the Venus-GRAM / VIRA and Mars-GRAM reference atmospheres, the CO2 frost point of James et al. 1992 as written by Greve et al. 2010, Mars' MRO120D gravity field for derived quantities of Mars profiles, the virial coefficients behind Titan's real gas), and VEDA. Copy everything as BibTeX or text, or copy the data availability statement. **Start a new list** clears it (for a new paper).
 
 ---
 

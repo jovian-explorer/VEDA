@@ -6202,6 +6202,157 @@
     }
    ],
    "note": ""
+  },
+  {
+   "key": "justh2021",
+   "authors": [
+    "Justh, H. L.",
+    "Dwyer Cianciolo, A. M.",
+    "Hoffman, J."
+   ],
+   "et_al": false,
+   "year": 2021,
+   "title": "Venus Global Reference Atmospheric Model (Venus-GRAM): User Guide",
+   "journal": "NASA Technical Memorandum NASA/TM-20210022168",
+   "volume": "",
+   "issue": "",
+   "pages": "",
+   "doi": "",
+   "url": "https://ntrs.nasa.gov/citations/20210022168",
+   "verified": true,
+   "type": "techreport",
+   "used_for": [
+    {
+     "mission": "method",
+     "payload": "venus_reference_atmosphere"
+    }
+   ],
+   "note": "Checked on the NASA Technical Reports Server (record 20210022168: title, authors, technical memorandum)."
+  },
+  {
+   "key": "justh2024",
+   "authors": [
+    "Justh, H. L.",
+    "Burns, K. L.",
+    "Dutta, S.",
+    "Hoffman, J."
+   ],
+   "et_al": false,
+   "year": 2024,
+   "title": "Mars Global Reference Atmospheric Model (Mars-GRAM) 2024: User Guide",
+   "journal": "NASA Technical Memorandum NASA/TM-20240012934",
+   "volume": "",
+   "issue": "",
+   "pages": "",
+   "doi": "",
+   "url": "https://ntrs.nasa.gov/citations/20240012934",
+   "verified": true,
+   "type": "techreport",
+   "used_for": [
+    {
+     "mission": "method",
+     "payload": "mars_reference_atmosphere"
+    }
+   ],
+   "note": "Checked on the NASA Technical Reports Server (record 20240012934, report number NASA/TM-20240012934)."
+  },
+  {
+   "key": "greve2010",
+   "authors": [
+    "Greve, R.",
+    "Grieger, B.",
+    "Stenzel, O. J."
+   ],
+   "et_al": false,
+   "year": 2010,
+   "title": "MAIC-2, a latitudinal model for the Martian surface temperature, atmospheric water transport and surface glaciation",
+   "journal": "Planetary and Space Science",
+   "volume": "58",
+   "issue": "6",
+   "pages": "931-940",
+   "doi": "10.1016/j.pss.2010.03.002",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "method",
+     "payload": "co2_frost_point"
+    }
+   ],
+   "note": "Eq. 7: the CO2 frost point of James et al. (1992) that VEDA uses. Checked on Crossref."
+  },
+  {
+   "key": "james1992",
+   "authors": [
+    "James, P. B.",
+    "Kieffer, H. H.",
+    "Paige, D. A."
+   ],
+   "et_al": false,
+   "year": 1992,
+   "title": "The seasonal cycle of carbon dioxide on Mars",
+   "journal": "Mars (eds. H. H. Kieffer, B. M. Jakosky, C. W. Snyder & M. S. Matthews), University of Arizona Press, Tucson",
+   "volume": "",
+   "issue": "",
+   "pages": "934-968",
+   "doi": "",
+   "verified": false,
+   "type": "incollection",
+   "used_for": [
+    {
+     "mission": "method",
+     "payload": "co2_frost_point"
+    }
+   ],
+   "note": "Book chapter without a DOI or Crossref record; authors, title and pages as cited in the literature."
+  },
+  {
+   "key": "konopliv2016",
+   "authors": [
+    "Konopliv, A. S.",
+    "Park, R. S.",
+    "Folkner, W. M."
+   ],
+   "et_al": false,
+   "year": 2016,
+   "title": "An improved JPL Mars gravity field and orientation from Mars orbiter and lander tracking data",
+   "journal": "Icarus",
+   "volume": "274",
+   "issue": "",
+   "pages": "253-260",
+   "doi": "10.1016/j.icarus.2016.02.052",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "method",
+     "payload": "mars_gravity"
+    }
+   ],
+   "note": "MRO120D gravity field: GM and J2 of Mars' effective gravity. Checked on Crossref."
+  },
+  {
+   "key": "tsonopoulos1974",
+   "authors": [
+    "Tsonopoulos, C."
+   ],
+   "et_al": false,
+   "year": 1974,
+   "title": "An empirical correlation of second virial coefficients",
+   "journal": "AIChE Journal",
+   "volume": "20",
+   "issue": "2",
+   "pages": "263-272",
+   "doi": "10.1002/aic.690200209",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "method",
+     "payload": "titan_real_gas"
+    }
+   ],
+   "note": "Second virial coefficients of the N2-CH4 mixture (Titan's real-gas compressibility). Checked on Crossref."
   }
  ]
 }

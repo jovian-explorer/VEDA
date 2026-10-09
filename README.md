@@ -124,6 +124,7 @@ When you open a mission, its generic and body kernels download in the background
 * the instrument and mission papers (checked against Crossref);
 * the archive acknowledgements;
 * SPICE and SpiceyPy if you used geometry, and NumPy, SciPy, Astropy, Matplotlib or Plotly for the features you used;
+* the papers behind the methods you used: the reference atmospheres, the CO$_2$ frost point, Mars' gravity field, Titan's real gas;
 * VEDA itself.
 
 It gives BibTeX, plain text and a matching data availability statement, all ready to copy.
