@@ -3,7 +3,6 @@ import numpy as np
 import pytest
 
 from veda.analysis.wave_and_stability import (
-    detect_tropopause,
     extract_gravity_wave_activity,
     fit_chapman_ionosphere,
     tropopause_for_body,
@@ -16,27 +15,6 @@ from veda.analysis.atmospheric import (
 )
 from veda.core.models import ObservationProfile
 from veda.core.registry import get_body
-
-
-def test_tropopause_detection_cpt_and_lrt():
-    """Verify CPT and LRT tropopause detection on a synthetic troposphere-stratosphere profile."""
-    # z from 0 to 30 km
-    z_km = np.linspace(0.0, 30.0, 301)
-    # Troposphere lapse rate: 6.5 K/km from 290 K at surface to 11 km (T = 218.5 K)
-    # Isothermal / slight inversion in stratosphere above 11 km
-    t_k = np.where(
-        z_km <= 11.0,
-        290.0 - 6.5 * z_km,
-        218.5 + 1.2 * (z_km - 11.0)
-    )
-
-    res = detect_tropopause(z_km, t_k, min_alt_km=8.0, max_alt_km=20.0)
-    assert res["cpt_alt_km"] is not None
-    assert abs(res["cpt_alt_km"] - 11.0) < 0.2
-    assert abs(res["cpt_temp_k"] - 218.5) < 1.0
-
-    assert res["lrt_alt_km"] is not None
-    assert abs(res["lrt_alt_km"] - 11.0) < 0.5
 
 
 def test_gravity_wave_extraction():

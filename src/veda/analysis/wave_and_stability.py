@@ -1,7 +1,7 @@
 """Advanced Atmospheric Stability, Gravity Wave, and Ionospheric Profiler for VEDA.
 
 Provides:
-1. Cold Point Tropopause (CPT) and Lapse Rate Tropopause (LRT) Detection.
+1. Cold-point tropopause, searched where each body has one.
 2. Gravity Wave Perturbation Analysis:
    - Background temperature by a zero-phase Butterworth low-pass with a stated cutoff wavelength.
    - Temperature perturbation T'(z) = T(z) - T_bar(z).
@@ -16,70 +16,6 @@ from typing import Any, Dict, Optional, Tuple
 import numpy as np
 from scipy.signal import butter, sosfiltfilt
 from scipy.optimize import curve_fit
-
-
-def detect_tropopause(
-    z_km: np.ndarray,
-    t_k: np.ndarray,
-    min_alt_km: float = 6.0,
-    max_alt_km: float = 25.0,
-) -> Dict[str, Optional[float]]:
-    """Detect Cold Point Tropopause (CPT) and Lapse Rate Tropopause (LRT).
-
-    CPT: Altitude of absolute minimum temperature within tropopause search window.
-    LRT: Lowest level where -dT/dz <= 2 K/km, and 2 km layer above doesn't exceed 2 K/km.
-    """
-    z = np.asarray(z_km, dtype=np.float64)
-    t = np.asarray(t_k, dtype=np.float64)
-
-    res: Dict[str, Optional[float]] = {
-        "cpt_alt_km": None,
-        "cpt_temp_k": None,
-        "lrt_alt_km": None,
-        "lrt_temp_k": None,
-    }
-
-    ok = np.isfinite(z) & np.isfinite(t)
-    if ok.sum() < 5:
-        return res
-
-    z_clean = z[ok]
-    t_clean = t[ok]
-    sort_idx = np.argsort(z_clean)
-    z_clean, t_clean = z_clean[sort_idx], t_clean[sort_idx]
-
-    # Window mask
-    window = (z_clean >= min_alt_km) & (z_clean <= max_alt_km)
-    if not window.any():
-        window = np.ones_like(z_clean, dtype=bool)
-
-    z_win = z_clean[window]
-    t_win = t_clean[window]
-
-    # 1. Cold Point Tropopause (CPT)
-    min_idx = np.argmin(t_win)
-    res["cpt_alt_km"] = round(float(z_win[min_idx]), 2)
-    res["cpt_temp_k"] = round(float(t_win[min_idx]), 2)
-
-    # 2. Lapse Rate Tropopause (LRT)
-    # Compute lapse rate Gamma = -dT/dz in K/km
-    gamma = -np.gradient(t_clean, z_clean)
-
-    for i in range(len(z_clean) - 1):
-        if z_clean[i] < min_alt_km or z_clean[i] > max_alt_km:
-            continue
-        if gamma[i] <= 2.0:
-            # Check 2 km column above
-            z_above = z_clean[i] + 2.0
-            mask_above = (z_clean >= z_clean[i]) & (z_clean <= z_above)
-            if mask_above.sum() >= 2:
-                avg_gamma_above = np.mean(gamma[mask_above])
-                if avg_gamma_above <= 2.0:
-                    res["lrt_alt_km"] = round(float(z_clean[i]), 2)
-                    res["lrt_temp_k"] = round(float(t_clean[i]), 2)
-                    break
-
-    return res
 
 
 # Where to look for a cold-point tropopause on each body, as an altitude range (km above
