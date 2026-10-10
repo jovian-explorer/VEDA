@@ -701,7 +701,7 @@ function helpBody() {
           <p>On Venus, with $C_p = C_{p0}(T/T_0)^{\\nu}$ (Lebonnois et al. 2010): $\\theta^{\\nu} = T^{\\nu} + \\nu T_0^{\\nu} \\ln (P_0/P)^{R_{spec}/C_{p0}}$.</p></li>
         <li><strong>Brunt-V&auml;is&auml;l&auml; frequency ($N^2$):</strong>
           <p>$$N^2(z) = \\frac{g(z)}{T(z)}\\left(\\frac{dT}{dz} + \\Gamma_d\\right), \\quad \\Gamma_d = g/c_p(T)$$</p>
-          Negative $N^2$ marks convectively unstable layers. For Venus, Mars, Titan and Pluto $c_p$ depends on temperature (JANAF ideal-gas values of the main gases weighted by composition): about 740 J/(kg K) on Mars at 200 K, 850 to 1140 J/(kg K) from 300 to 735 K on Venus.</li>
+          Negative $N^2$ marks convectively unstable layers. For Venus, Mars, Titan and Pluto $c_p$ depends on temperature (JANAF ideal-gas values of the main gases weighted by composition): about 740 J/(kg K) on Mars at 200 K, 850 to 1140 J/(kg K) from 300 to 735 K on Venus. On Jupiter and Saturn, hydrogen's cp with its rotational levels at the local equilibrium para fraction (intermediate hydrogen, Conrath &amp; Gierasch 1984).</li>
         <li><strong>Gravity-wave potential energy</strong> ($\\overline{T}$ a Butterworth low-pass of the profile with an 8 km cutoff, $\\overline{N}$ its stability):
           <p>$$E_p(z) = \\frac{1}{2}\\left(\\frac{g}{\\overline{N}}\\right)^2 \\left(\\frac{T'}{\\overline{T}}\\right)^2, \\quad T' = T - \\overline{T}$$</p></li>
         <li><strong>Temperature from a density profile</strong> (integrated downwards from an isothermal fit to the top of the profile):

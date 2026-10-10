@@ -10,6 +10,17 @@ mass.  Other bodies keep their constant cp from the registry.
 
 Interpolation is linear in T between tabulated points and held constant
 outside 100-1000 K.
+
+Jupiter and Saturn: molecular hydrogen's rotation is only partly excited at 70-200 K,
+so its cp is far below the 7/2 R of the high-temperature limit, and it depends on the
+fraction of para hydrogen.  VEDA uses the "frozen equilibrium" or "intermediate" cp:
+the para fraction is the thermal-equilibrium value at the local temperature, but stays
+fixed while a parcel moves, as for displacements fast compared with ortho-para
+conversion, which sets the buoyancy frequency and the speed of sound (Conrath &
+Gierasch 1984, Icarus 57, 184; Massie & Hunten 1982, Icarus 49, 213).  Its rotational
+part comes from the rigid-rotor partition functions of para (even J) and ortho (odd J)
+hydrogen, theta_rot = 85.35 K; for normal (3:1) and para hydrogen they give NIST's cp
+within 0.4 % at 100-300 K.  Helium is 5/2 R.
 """
 from __future__ import annotations
 
@@ -26,9 +37,43 @@ _CP_MOLAR: Dict[str, np.ndarray] = {
     "Ar":  np.full(10, 20.786),
     "CH4": np.array([33.258, 33.473, 35.695, 40.500, 46.342, 52.227, 57.794, 62.932, 67.601, 71.795]),
     "CO":  np.array([29.104, 29.108, 29.142, 29.342, 29.794, 30.443, 31.171, 31.899, 32.577, 33.183]),
+    "He":  np.full(10, 20.786),
+    "H2":  np.full(10, np.nan),          # computed: _h2_cp_molar
 }
 # Bodies whose atmosphere is (almost) entirely made of tabulated gases
-_VARIABLE_CP_BODIES = ("venus", "mars", "titan", "pluto")
+_VARIABLE_CP_BODIES = ("venus", "mars", "titan", "pluto", "jupiter", "saturn")
+R_MOLAR = 8.314462618                  # J/(mol K)
+H2_THETA_ROT = 85.35                   # K, hcB/k with B = 59.32 cm^-1
+
+
+def _h2_rotation(t: np.ndarray, odd: bool):
+    """(cv_rot / R, partition function) of ortho (odd J) or para (even J) hydrogen."""
+    j = np.arange(1 if odd else 0, 31, 2, dtype=float)
+    g = (2.0 * j + 1.0) * (3.0 if odd else 1.0)               # nuclear spin weights 3 : 1
+    x = (j * (j + 1.0) * H2_THETA_ROT)[None, :] / t[:, None]
+    w = g[None, :] * np.exp(-(x - x.min(axis=1, keepdims=True)))
+    z = w.sum(axis=1)
+    m1 = (w * x).sum(axis=1) / z
+    m2 = (w * x * x).sum(axis=1) / z
+    return m2 - m1 ** 2, z * np.exp(-x.min(axis=1))
+
+
+def h2_para_fraction(t_k) -> np.ndarray:
+    """Equilibrium para fraction of hydrogen at temperature t_k (0.25 when hot)."""
+    t = np.clip(np.atleast_1d(np.asarray(t_k, dtype=float)), 20.0, 1000.0)
+    _, zp = _h2_rotation(t, False)
+    _, zo = _h2_rotation(t, True)
+    return zp / (zp + zo)
+
+
+def _h2_cp_molar(t_k, para_fraction=None) -> np.ndarray:
+    """cp of hydrogen (J/(mol K)) at fixed para fraction (default: the equilibrium one at
+    t_k, the intermediate cp); vibration (theta 6332 K) is negligible below 1000 K."""
+    t = np.clip(np.atleast_1d(np.asarray(t_k, dtype=float)), 20.0, 1000.0)
+    cp_para, _ = _h2_rotation(t, False)
+    cp_ortho, _ = _h2_rotation(t, True)
+    fp = h2_para_fraction(t) if para_fraction is None else para_fraction
+    return R_MOLAR * (2.5 + fp * cp_para + (1.0 - fp) * cp_ortho)
 
 
 def cp_model(body) -> str:
@@ -57,7 +102,8 @@ def heat_capacity(body, t_k) -> np.ndarray:
         out[~np.isfinite(t)] = np.nan
         return out
     tc = np.clip(t, _T[0], _T[-1])
-    molar = sum(f * np.interp(tc, _T, _CP_MOLAR[g]) for g, f in fr.items())
+    molar = sum(f * (_h2_cp_molar(t.ravel()).reshape(t.shape) if g == "H2" else np.interp(tc, _T, _CP_MOLAR[g]))
+                for g, f in fr.items())
     mu_kg = float(body.mean_molecular_weight) / 1000.0          # kg/mol
     out = molar / mu_kg
     out = np.where(np.isfinite(t), out, np.nan)

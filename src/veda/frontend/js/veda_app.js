@@ -2295,6 +2295,7 @@ function recordMethods(bodyId, variable, reference = false) {
   if (bodyId === 'mars' && GRAVITY_VARIABLES.has(variable)) recordFeature('mars_gravity');
   if (bodyId === 'titan' && EOS_VARIABLES.has(variable)) recordFeature('titan_real_gas');
   if (bodyId === 'venus' && /potential_temperature|dtheta_dz/.test(variable || '')) recordFeature('venus_potential_temperature');
+  if ((bodyId === 'jupiter' || bodyId === 'saturn') && /buoyancy|adiabatic|wave_potential|t_prime|gw_/.test(variable || '')) recordFeature('giant_planet_cp');
 }
 
 /** Each group's composite mean minus the first group's, with its 95 % bootstrap interval

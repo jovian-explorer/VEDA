@@ -46,8 +46,23 @@ def test_mars_reference_cp_is_cp_at_its_mean_temperature():
 
 
 def test_constant_cp_for_other_bodies():
+    ceres = get_body("ceres")
+    assert heat_capacity(ceres, np.array([165.0]))[0] == ceres.isobaric_heat_capacity_cp
+
+
+def test_hydrogen_heat_capacity_from_its_rotational_levels():
+    """Rigid-rotor cp of normal (3:1) and para hydrogen against NIST (REFPROP, 0.01 bar),
+    and the intermediate cp of the giant planets: Jupiter's dry adiabatic lapse rate at
+    165 K is 10 % steeper than with 7/2 R for H2, 19 % near its 110 K tropopause."""
+    from veda.analysis.thermo import _h2_cp_molar, h2_para_fraction
+    t = np.array([100.0, 150.0, 200.0, 300.0])
+    np.testing.assert_allclose(_h2_cp_molar(t, 0.25), [22.572, 25.384, 27.278, 28.847], rtol=0.004)
+    np.testing.assert_allclose(_h2_cp_molar(t[:3], 1.0), [27.009, 32.665, 32.395], rtol=0.004)
+    assert h2_para_fraction(np.array([1000.0]))[0] == pytest.approx(0.25, abs=1e-3)
+    assert h2_para_fraction(np.array([77.0]))[0] == pytest.approx(0.50, abs=0.02)      # liquid-N2 converters
     jup = get_body("jupiter")
-    assert heat_capacity(jup, np.array([165.0]))[0] == jup.isobaric_heat_capacity_cp
+    ratio = jup.isobaric_heat_capacity_cp / heat_capacity(jup, np.array([165.0, 110.0]))
+    np.testing.assert_allclose(ratio, [1.098, 1.19], rtol=0.01)
 
 
 # ---------------------------------------------------------------- isothermal atmosphere
@@ -330,7 +345,7 @@ def test_saturn_composition_is_cassini_helium_and_constants_follow_from_it():
     cp_molar = comp["H2"] / 100 * 3.5 * r + comp["He"] / 100 * 2.5 * r + comp["CH4"] / 100 * 33.258
     assert sat.isobaric_heat_capacity_cp == pytest.approx(cp_molar / (mu / 1000.0), abs=1.0)
     from veda.analysis.thermo import heat_capacity
-    assert heat_capacity(sat, np.array([120.0]))[0] == sat.isobaric_heat_capacity_cp     # constant cp
+    assert heat_capacity(sat, np.array([1000.0]))[0] == pytest.approx(sat.isobaric_heat_capacity_cp, rel=0.01)  # 7/2 R when hot
 
 
 def test_jupiter_composition_is_galileo_probe_and_constants_follow_from_it():

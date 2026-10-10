@@ -74,8 +74,9 @@ BODIES: Dict[str, BodyInfo] = {
         # CH4 from the probe mass spectrometer, C/H = 1.19e-3 (Wong et al. 2004, Icarus 171,
         # 153), CH4/H2 = 2.38e-3.  Mole fractions H2 0.86233, He 0.13562, CH4 0.00205.
         # mu = 0.86233 x 2.01588 + 0.13562 x 4.002602 + 0.00205 x 16.0425 = 2.3141 g/mol,
-        # R = 8314.4626 / mu; cp from 7/2 R for H2, 5/2 R for He and 33.26 J/(mol K) for
-        # CH4, per kg of the mixture (as for Saturn).
+        # R = 8314.4626 / mu; reference cp from 7/2 R for H2, 5/2 R for He and 33.26 J/(mol K)
+        # for CH4, per kg of the mixture (as for Saturn); derived quantities use cp(T) with
+        # hydrogen's rotational levels (analysis.thermo)
         mean_molecular_weight=2.3141,
         gas_constant_r=3593.0,
         isobaric_heat_capacity_cp=12092.0,
@@ -102,8 +103,8 @@ BODIES: Dict[str, BodyInfo] = {
         # already revised upwards.  (Achterberg & Flasar 2020, PSJ 1, 30, find a lower
         # He/H2 of 0.04-0.075 from CIRS alone; the abundance is not settled.)  CH4 0.45 %.
         # mu = 0.8855 x 2.01588 + 0.11 x 4.002602 + 0.0045 x 16.0425 = 2.2975 g/mol,
-        # R = 8314.4626 / mu; cp from 7/2 R for H2 (normal hydrogen, rotation excited),
-        # 5/2 R for He and 33.26 J/(mol K) for CH4, per kg of the mixture.
+        # R = 8314.4626 / mu; reference cp from 7/2 R for H2 (the hot limit), 5/2 R for He and
+        # 33.26 J/(mol K) for CH4, per kg of the mixture; derived quantities use cp(T) (analysis.thermo)
         mean_molecular_weight=2.2975,
         gas_constant_r=3618.9,
         isobaric_heat_capacity_cp=12276.0,
@@ -1179,7 +1180,7 @@ FIELD_REGISTRY: Dict[str, dict] = {
         "reference": "Salby, M. L. (1996), Fundamentals of Atmospheric Physics, Academic Press; cp(T) from the JANAF thermochemical tables",
         "doi": "",
         "archive": "Planetary Thermodynamic Formulation",
-        "description": "Temperature decrease of a dry parcel rising adiabatically. VEDA uses a temperature-dependent cp for CO2 and N2 atmospheres (Venus, Mars, Titan, Pluto); a layer is statically unstable where the observed lapse rate exceeds it."
+        "description": "Temperature decrease of a dry parcel rising adiabatically. VEDA uses a temperature-dependent cp for CO2 and N2 atmospheres (Venus, Mars, Titan, Pluto) and for hydrogen on Jupiter and Saturn (intermediate hydrogen, Conrath & Gierasch 1984); a layer is statically unstable where the observed lapse rate exceeds it."
     },
     "t_prime": {
         "id": "t_prime",

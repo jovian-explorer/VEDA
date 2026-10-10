@@ -6537,6 +6537,54 @@
     }
    ],
    "note": "Crossref stores the page as the DOI suffix (2009JE003458). The citation article number is E06006 (ADS bibcode 2010JGRE..115.6006L, which resolves to this DOI). cp(T) = cp0 (T/T0)^nu and the potential temperature that follows from it (Venus)."
+  },
+  {
+   "key": "conrath1984",
+   "authors": [
+    "Conrath, B. J.",
+    "Gierasch, P. J."
+   ],
+   "et_al": false,
+   "year": 1984,
+   "title": "Global variation of the para hydrogen fraction in Jupiter's atmosphere and implications for dynamics on the outer planets",
+   "journal": "Icarus",
+   "volume": "57",
+   "issue": "2",
+   "pages": "184-204",
+   "doi": "10.1016/0019-1035(84)90065-4",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "method",
+     "payload": "giant_planet_cp"
+    }
+   ],
+   "note": "Para hydrogen fraction near local equilibrium; the frozen-equilibrium (intermediate) heat capacity of hydrogen for Jupiter and Saturn. Checked on Crossref."
+  },
+  {
+   "key": "massie1982",
+   "authors": [
+    "Massie, S. T.",
+    "Hunten, D. M."
+   ],
+   "et_al": false,
+   "year": 1982,
+   "title": "Conversion of para and ortho hydrogen in the Jovian planets",
+   "journal": "Icarus",
+   "volume": "49",
+   "issue": "2",
+   "pages": "213-226",
+   "doi": "10.1016/0019-1035(82)90073-2",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "method",
+     "payload": "giant_planet_cp"
+    }
+   ],
+   "note": "Ortho-para conversion times and the equilibrium, normal and intermediate heat capacities of hydrogen. Checked on Crossref."
   }
  ]
 }
