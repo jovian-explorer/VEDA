@@ -1363,6 +1363,8 @@ def export_profile_to_csv(profile: ObservationProfile) -> str:
         if k in (profile.systematic or {}):
             cols.append(f"systematic_{k}")
             data_arrays.append(np.asarray(profile.systematic[k], dtype=float))
+    if _units_line(values_cols):
+        lines.append(_units_line(values_cols))
     if any(c.startswith("sigma_") for c in cols):
         lines.append("# sigma_* columns are 1-sigma uncertainties: archived, or propagated from them by VEDA (User Guide).")
     if any(c.startswith("systematic_") for c in cols):
@@ -1381,6 +1383,27 @@ def export_profile_to_csv(profile: ObservationProfile) -> str:
         lines.append(",".join(row))
 
     return "\n".join(lines)
+
+
+# Units of the quantities the registry has none for (data sets' extra variables and a few derived ones)
+_EXTRA_UNITS = {"refractivity_n": "N-units", "dtheta_dz": "K/km", "number_density_m3": "m^-3", "molar_mass": "g/mol",
+                "co2_condensation_temperature": "K", "t_minus_co2_condensation": "K",
+                "dust_opacity_per_km": "1/km", "ice_opacity_per_km": "1/km",
+                "density_measured": "kg/m^3", "h2so4_ppm": "ppm", "absorptivity_db_km": "dB/km",
+                "tec_m2": "m^-2 (electron content along the ray path, 0 at the start of the occultation)",
+                "dust_mixing_ratio": "1 (optical depth at 2.2 um per unit column-mass fraction)",
+                "ice_mixing_ratio": "1 (optical depth at 2.2 um per unit column-mass fraction)",
+                "dust_opacity_per_mbar": "1/mbar (optical depth at 2.2 um)",
+                "ice_opacity_per_mbar": "1/mbar (optical depth at 2.2 um)",
+                "dust_effective_radius": "um", "ice_effective_radius": "um"}
+
+
+def _units_line(keys: List[str]) -> str:
+    """'# units: k=unit; ...' for the columns ``keys``, or '' when none has a unit."""
+    from ..core.registry import get_variable_info
+    unit_of = (lambda k: (get_variable_info(k) or {}).get("units") or _EXTRA_UNITS.get(k))
+    units = [f"{k}={unit_of(k)}" for k in keys if unit_of(k)]
+    return ("# units: " + "; ".join(units) + " (sigma_* and systematic_* as their quantity)") if units else ""
 
 
 def _csv_num(v: Any) -> str:
@@ -1428,14 +1451,8 @@ def export_profiles_long_csv(profiles: List[ObservationProfile], body: Optional[
         "# level_* columns the position of each level along the ray path where the archive gives it.",
         f"# Processed with VEDA {__version__} (https://github.com/jovian-explorer/VEDA, doi:10.5281/zenodo.23215291), MIT License",
     ]
-    from ..core.registry import get_variable_info
-    extra_units = {"dtheta_dz": "K/km", "number_density_m3": "m^-3", "molar_mass": "g/mol",
-                   "co2_condensation_temperature": "K", "t_minus_co2_condensation": "K",
-                   "dust_opacity_per_km": "1/km", "ice_opacity_per_km": "1/km"}
-    unit_of = (lambda k: (get_variable_info(k) or {}).get("units") or extra_units.get(k))
-    units = [f"{k}={unit_of(k)}" for k in var_cols if unit_of(k)]
-    if units:
-        lines.append("# units: " + "; ".join(units) + " (sigma_* and systematic_* as their quantity)")
+    if _units_line(var_cols):
+        lines.append(_units_line(var_cols))
     if sys_cols:
         lines.append("# systematic_* columns are systematic uncertainties (the boundary temperature of radio occultation "
                      "retrievals: half the difference between the archive's lower- and upper-boundary retrievals).")

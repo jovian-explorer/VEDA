@@ -97,6 +97,10 @@ def test_uncertainties_reach_the_comparison_and_the_exports():
     assert "sigma_mex_a" in header and "sigma_mex_b" in header
     one = export_profile_to_csv(a)
     assert "sigma_scale_height" in one and "sigma_lapse_rate" in one
+    # every column's unit, derived ones and data sets' own variables included
+    a.derived["density_measured"] = np.ones_like(a.altitude_km)
+    units = next(line for line in export_profile_to_csv(a).splitlines() if line.startswith("# units:"))
+    assert "scale_height=km" in units and "density_measured=kg/m^3" in units
 
 
 def test_profiles_without_uncertainties_get_none():
