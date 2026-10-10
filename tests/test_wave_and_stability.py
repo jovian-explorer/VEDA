@@ -199,3 +199,13 @@ def test_failed_chapman_fit_reports_no_fit(monkeypatch):
     z = np.linspace(100.0, 500.0, 50)
     res = ws.fit_chapman_ionosphere(z, 1e5 * np.exp(-((z - 300.0) / 60.0) ** 2))
     assert res == {"nmf2_cm3": None, "hmf2_km": None, "scale_height_km": None, "r_squared": None}
+
+
+def test_chapman_fit_keeps_negative_noise():
+    # leaving out the negative densities fits the positive half of the noise: H came out 3 % high
+    z = np.arange(100.0, 400.0, 1.0)
+    x = (z - 140.0) / 10.0
+    ne = 1e5 * np.exp(0.5 * (1.0 - x - np.exp(-x)))
+    rng = np.random.default_rng(3)
+    h = [fit_chapman_ionosphere(z, ne + rng.normal(0.0, 1e4, z.size))["scale_height_km"] for _ in range(20)]
+    assert np.mean(h) == pytest.approx(10.0, abs=0.15)

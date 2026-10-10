@@ -290,8 +290,10 @@ def fit_chapman_ionosphere(
     z = np.asarray(z_km, dtype=np.float64)
     ne = np.asarray(ne_cm3, dtype=np.float64)
 
-    ok = np.isfinite(z) & np.isfinite(ne) & (ne > 0)
-    if ok.sum() < 8:
+    # negative densities are kept: they are the noise about zero above and below the layer,
+    # and leaving them out would fit the positive half of that noise only (a flatter layer)
+    ok = np.isfinite(z) & np.isfinite(ne)
+    if ok.sum() < 8 or not (ne[ok] > 0).any():
         return {"nmf2_cm3": None, "hmf2_km": None, "scale_height_km": None, "r_squared": None}
 
     z_c = z[ok]
