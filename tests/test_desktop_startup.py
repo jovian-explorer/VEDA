@@ -59,3 +59,23 @@ def test_health_reports_the_launch_id(monkeypatch):
     from veda.api.app import create_app
     monkeypatch.setenv("VEDA_LAUNCH_ID", "launch-123")
     assert TestClient(create_app()).get("/api/health").json()["launch_id"] == "launch-123"
+
+
+def test_backend_moves_to_the_next_port_when_its_port_is_taken_first(monkeypatch):
+    """Two launches at once: both found 8765 free and the second's server could not bind
+    it, so that launch stopped with 'could not start on port 8765' (the frozen-build launch
+    tests failed this way when two runs overlapped)."""
+    tried = []
+
+    def serve(host, port):
+        tried.append(port)
+        if len(tried) == 1:
+            desktop._server_error.append(SystemExit(3))       # the other launch bound it first
+
+    monkeypatch.setattr(desktop, "_serve", serve)
+    monkeypatch.setattr(desktop, "free_port", lambda p: p)
+    monkeypatch.setattr(desktop, "_wait_until_up", lambda url, lid, server, **k: (server.join() or not desktop._server_error))
+    assert desktop._start_backend("127.0.0.1", 8765, False, "x") == (8766, True)
+    assert tried == [8765, 8766]
+    tried.clear()
+    assert desktop._start_backend("127.0.0.1", 8765, True, "x") == (8765, False)       # --port: no other port

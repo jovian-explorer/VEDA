@@ -32,6 +32,7 @@ import traceback
 import urllib.error
 import urllib.request
 import webbrowser
+from typing import Tuple
 from pathlib import Path
 
 # In a PyInstaller build, change CWD to _MEIPASS so native DLLs (like
@@ -101,6 +102,26 @@ def _serve(host: str, port: int) -> None:
     except BaseException as exc:  # noqa: BLE001 - uvicorn exits with SystemExit when it cannot bind
         _server_error.append(exc)
         _log(f"Backend server stopped: {exc!r}")
+
+
+def _start_backend(host: str, port: int, fixed: bool, launch_id: str) -> Tuple[int, bool]:
+    """Start the server; (its port, whether it answers /api/health).  Without a fixed
+    port, free_port picks the first free one from ``port``; when another program binds it
+    before the server does (two launches at the same moment), the next free port is
+    tried, up to three times."""
+    for _ in range(3):
+        if not fixed:
+            port = free_port(port)
+        _log(f"Backend URL: http://{host}:{port}/")
+        _server_error.clear()
+        server = threading.Thread(target=_serve, args=(host, port), daemon=True)
+        server.start()
+        if _wait_until_up(f"http://{host}:{port}/api/health", launch_id, server):
+            return port, True
+        if fixed or not _server_error:
+            return port, False
+        port += 1
+    return port, False
 
 
 def _wait_until_up(url: str, launch_id: str, server: threading.Thread,
@@ -219,15 +240,12 @@ def main(argv: list[str] | None = None) -> int:
         _show_error_dialog(f"{APP_TITLE} - Startup Error", msg)
         return 2
 
-    host, port = "127.0.0.1", args.port or free_port()
-    url = f"http://{host}:{port}/"
-    _log(f"Backend URL: {url}")
     import uuid
     launch_id = os.environ["VEDA_LAUNCH_ID"] = uuid.uuid4().hex      # answered by /api/health
-    server = threading.Thread(target=_serve, args=(host, port), daemon=True)
-    server.start()
-
-    if not _wait_until_up(url + "api/health", launch_id, server):
+    host = "127.0.0.1"
+    port, up = _start_backend(host, args.port or 8765, bool(args.port), launch_id)
+    url = f"http://{host}:{port}/"
+    if not up:
         if _server_error:
             msg = (f"The backend server could not start on port {port}"
                    + (" (is another program using it? try --port)" if args.port else "")
