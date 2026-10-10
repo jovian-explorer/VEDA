@@ -817,7 +817,7 @@ def test_observation_ids_cannot_reach_files_outside_the_data_folder(client, tmp_
     assert client.get(f"/api/veda/profile/akatsuki/{stem}").status_code == 200       # the sample itself
     outside = tmp_path.as_posix()
     rel = "../" * 12 + outside.split(":", 1)[-1].lstrip("/")
-    for oid in (f"{outside}/{stem}", f"{rel}/{stem}", f"..\{stem}", "*", "rs_*"):
+    for oid in (f"{outside}/{stem}", f"{rel}/{stem}", f"..\\{stem}", "*", "rs_*"):
         assert client.get(f"/api/veda/profile/akatsuki/{oid}").status_code == 404, oid
         assert client.get(f"/api/veda/export/profile/akatsuki/{oid}/csv").status_code == 404, oid
     for oid in (f"{outside}/{img}", f"{rel}/{img}"):
