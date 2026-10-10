@@ -22,6 +22,8 @@ TECU_CONVERSION_FACTOR: float = 1e-7
 def compute_vtec(
     altitude_km: Union[np.ndarray, list],
     electron_density_cm3: Union[np.ndarray, list],
+    sigma_cm3=None,
+    corr_km: float = 0.0,
 ) -> Dict[str, float]:
     """Compute integrated Vertical Total Electron Content (VTEC).
 
@@ -39,6 +41,10 @@ def compute_vtec(
             alt_max_km (float): Upper integration boundary in km.
             peak_density_cm3 (float): Maximum electron density (NmF2) in el/cm^3.
             peak_alt_km (float): Altitude of maximum electron density (hmF2) in km.
+            vtec_sigma_tecu (float): 1-sigma of vtec_tecu from ``sigma_cm3`` (NaN without),
+                the trapezoid weights w_i of the levels and their errors correlated as
+                r(dz) = exp(-dz^2 / (2 L^2)), L = ``corr_km`` (0: independent):
+                sigma^2 = 1e-14 sum_ij w_i w_j sigma_i sigma_j r(z_i - z_j).
     """
     alt = np.asarray(altitude_km, dtype=np.float64).flatten()
     ne = np.asarray(electron_density_cm3, dtype=np.float64).flatten()
@@ -49,6 +55,7 @@ def compute_vtec(
         "alt_max_km": float(np.nan),
         "peak_density_cm3": float(np.nan),
         "peak_alt_km": float(np.nan),
+        "vtec_sigma_tecu": float(np.nan),
     }
 
     if alt.shape != ne.shape or alt.size < 2:
@@ -69,6 +76,9 @@ def compute_vtec(
     # Deduplicate strictly identical altitudes if present
     alt_uniq, uniq_idx = np.unique(alt_sorted, return_index=True)
     ne_uniq = ne_sorted[uniq_idx]
+    s_uniq = None
+    if sigma_cm3 is not None and np.shape(sigma_cm3) == alt.shape:
+        s_uniq = np.asarray(sigma_cm3, dtype=np.float64).flatten()[valid][sort_idx][uniq_idx]
 
     if alt_uniq.size < 2:
         return empty_res
@@ -87,8 +97,23 @@ def compute_vtec(
     if peak_density <= 0.0:
         peak_density = peak_alt = float(np.nan)
 
+    vtec_sigma = float(np.nan)
+    if s_uniq is not None and np.all(np.isfinite(s_uniq) & (s_uniq >= 0)):
+        w = np.zeros(alt_uniq.size)
+        dz = np.diff(alt_uniq)
+        w[:-1] += 0.5 * dz
+        w[1:] += 0.5 * dz
+        b = w * s_uniq
+        if corr_km and corr_km > 0:
+            r = np.exp(-(alt_uniq[:, None] - alt_uniq[None, :]) ** 2 / (2.0 * corr_km ** 2))
+            var = float(b @ r @ b)
+        else:
+            var = float(b @ b)
+        vtec_sigma = TECU_CONVERSION_FACTOR * float(np.sqrt(max(var, 0.0)))
+
     return {
         "vtec_tecu": vtec_tecu,
+        "vtec_sigma_tecu": vtec_sigma,
         "alt_min_km": float(np.min(alt_uniq)),
         "alt_max_km": float(np.max(alt_uniq)),
         "peak_density_cm3": peak_density,

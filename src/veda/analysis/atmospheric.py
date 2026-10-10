@@ -454,8 +454,16 @@ def _ionosphere_diagnostics(profile: ObservationProfile, z: np.ndarray) -> None:
         return
     try:
         from .advanced_science import compute_vtec
-        vtec_res = compute_vtec(z, ne)
+        s_ne = (profile.uncertainty or {}).get("electron_density_cm3")
+        corr = 0.0
+        if s_ne is not None:
+            # the correlation length of the errors: the data set's, else the shortest the
+            # profile's scatter allows (a lower bound, so this 1-sigma is one too)
+            from .uncertainty import error_correlation_from_scatter
+            corr = _correlation_km(profile) or error_correlation_from_scatter(z, ne, s_ne)
+        vtec_res = compute_vtec(z, ne, s_ne, corr)
         profile.raw_attributes["vtec_tecu"] = vtec_res.get("vtec_tecu")
+        profile.raw_attributes["vtec_sigma_tecu"] = vtec_res.get("vtec_sigma_tecu")
         profile.raw_attributes["hmf2_km"] = vtec_res.get("peak_alt_km")
         profile.raw_attributes["nmf2_cm3"] = vtec_res.get("peak_density_cm3")
         if ne.size >= 8:
@@ -492,6 +500,9 @@ PROFILE_DIAGNOSTICS: Dict[str, Tuple[str, ...]] = {
     "chapman_hm_sigma_km": ("1-sigma of the Chapman fit peak altitude", "km"),
     "chapman_h_sigma_km": ("1-sigma of the Chapman fit scale height", "km"),
     "tec_tecu": ("Electron content of the profile", "TECU"),
+    "tec_sigma_tecu": ("Lower bound of the 1-sigma of the electron content", "TECU",
+                       "From the archived density errors, correlated over the shortest length the profile allows; "
+                       "errors correlated over longer distances would give a larger 1-sigma."),
     "gw_mean_ep_j_kg": ("Mean gravity-wave potential energy", "J/kg"),
     "gw_wavelength_km": ("Dominant vertical wavelength", "km"),
     "hydrostatic_max_pct": ("Largest departure of the pressure from hydrostatic balance", "%"),
@@ -527,6 +538,7 @@ def profile_diagnostics(profile: ObservationProfile) -> Dict[str, Optional[float
         "chapman_hm_sigma_km": _finite(chap.get("hmf2_sigma_km")),
         "chapman_h_sigma_km": _finite(chap.get("scale_height_sigma_km")),
         "tec_tecu": _finite(a.get("vtec_tecu")),
+        "tec_sigma_tecu": _finite(a.get("vtec_sigma_tecu")),
         "gw_mean_ep_j_kg": ep if ep else None,          # 0.0 means "not computed"
         "gw_wavelength_km": _finite(a.get("gw_dominant_wavelength_km")),
         "hydrostatic_max_pct": _finite(a.get("hydrostatic_max_pct")),

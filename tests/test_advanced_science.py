@@ -478,3 +478,18 @@ def test_electron_number_density_is_not_taken_for_the_neutral_number_density():
                                    "product_type": "profile"}, tmp / "p.lbl")
     assert prof.electron_density_cm3 is not None and np.nanmax(prof.electron_density_cm3) == pytest.approx(1e4, rel=0.05)
     assert "number_density_m3" not in prof.derived and "temperature_from_density" not in prof.derived
+
+
+def test_electron_content_sigma_matches_monte_carlo():
+    # independent and correlated errors: the analytic 1-sigma against redrawn profiles
+    z = np.arange(100.0, 400.0, 2.0)
+    x = (z - 150.0) / 20.0
+    ne = 1e5 * np.exp(0.5 * (1.0 - x - np.exp(-x)))
+    s = np.full(z.size, 3e3)
+    rng = np.random.default_rng(2)
+    for corr in (0.0, 6.0):
+        r = np.exp(-(z[:, None] - z[None, :]) ** 2 / (2.0 * corr ** 2)) if corr else np.eye(z.size)
+        draws = rng.multivariate_normal(np.zeros(z.size), r * 3e3 ** 2, size=2000)
+        mc = np.std([compute_vtec(z, ne + d)["vtec_tecu"] for d in draws])
+        assert compute_vtec(z, ne, s, corr)["vtec_sigma_tecu"] == pytest.approx(mc, rel=0.06)
+    assert np.isnan(compute_vtec(z, ne)["vtec_sigma_tecu"])

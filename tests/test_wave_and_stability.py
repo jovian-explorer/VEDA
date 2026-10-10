@@ -233,6 +233,6 @@ def test_altitude_cut_error_bars_name_existing_diagnostics():
     js = (Path(__file__).resolve().parents[1] / "src" / "veda" / "frontend" / "js" / "veda_app.js").read_text(encoding="utf-8")
     block = js[js.index("const DIAG_SIGMA = {"):]
     pairs = re.findall(r"(\w+): '(\w+)'", block[:block.index("};")])
-    assert len(pairs) == 4
+    assert len(pairs) == 5
     for value, sigma in pairs:
         assert value in PROFILE_DIAGNOSTICS and sigma in PROFILE_DIAGNOSTICS

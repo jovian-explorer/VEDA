@@ -2277,7 +2277,7 @@ function renderSampling() {
 // error bars and weighted fits in the altitude cut
 const DIAG_SIGMA = {
   chapman_nm_cm3: 'chapman_nm_sigma_cm3', chapman_hm_km: 'chapman_hm_sigma_km', chapman_h_km: 'chapman_h_sigma_km',
-  co2_margin_min_k: 'co2_margin_min_sigma_k',
+  co2_margin_min_k: 'co2_margin_min_sigma_k', tec_tecu: 'tec_sigma_tecu',
 };
 
 // Quantities that depend on gravity (Mars: effective gravity of the MRO120D field) or on the
