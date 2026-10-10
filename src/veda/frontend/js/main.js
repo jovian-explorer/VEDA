@@ -697,7 +697,8 @@ function helpBody() {
           <p>$$\\frac{dP}{dz} = -\\rho(z) g(z), \\quad P(z) = \\rho(z) R_{spec} T(z)$$</p>
           with $R_{spec} = R_{univ} / \\mu$ and $g(z) = g_0 (R_p / (R_p + z))^2$.</li>
         <li><strong>Potential temperature ($\\theta$):</strong>
-          <p>$$\\theta(z) = T(z) \\left(\\frac{P_0}{P(z)}\\right)^{R_{spec}/C_p}$$</p></li>
+          <p>$$\\theta(z) = T(z) \\left(\\frac{P_0}{P(z)}\\right)^{R_{spec}/C_p}$$</p>
+          <p>On Venus, with $C_p = C_{p0}(T/T_0)^{\\nu}$ (Lebonnois et al. 2010): $\\theta^{\\nu} = T^{\\nu} + \\nu T_0^{\\nu} \\ln (P_0/P)^{R_{spec}/C_{p0}}$.</p></li>
         <li><strong>Brunt-V&auml;is&auml;l&auml; frequency ($N^2$):</strong>
           <p>$$N^2(z) = \\frac{g(z)}{T(z)}\\left(\\frac{dT}{dz} + \\Gamma_d\\right), \\quad \\Gamma_d = g/c_p(T)$$</p>
           Negative $N^2$ marks convectively unstable layers. For Venus, Mars, Titan and Pluto $c_p$ depends on temperature (JANAF ideal-gas values of the main gases weighted by composition): about 740 J/(kg K) on Mars at 200 K, 850 to 1140 J/(kg K) from 300 to 735 K on Venus.</li>

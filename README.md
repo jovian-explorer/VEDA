@@ -82,10 +82,10 @@ An opened profile shows every quantity in the product with the archived 1-sigma 
 
 * Lapse rate $\Gamma = -dT/dz$ and gravity $g(z) = g_0 (R_p/(R_p+z))^2$
 * Scale height $H = R_{spec} T / g$ and speed of sound
-* Potential temperature $\theta = T (P_0/P)^{R_{spec}/c_p}$ and mass density $\rho = P/(R_{spec} T)$
+* Potential temperature $\theta = T (P_0/P)^{R_{spec}/c_p}$ (on Venus with the variable $c_p$ of Venus circulation models) and mass density $\rho = P/(R_{spec} T)$
 * Brunt-Vaisala frequency $N^2 = \frac{g}{T}\left(\frac{dT}{dz} + \frac{g}{c_p}\right)$ and buoyancy period
-* Cold-point tropopause (Titan, Jupiter, Saturn), gravity-wave temperature perturbations and potential energy
-* For ionospheres, the peak height and density, a fitted Chapman layer and $\text{VTEC} = 10^{-7}\int N_e\,dz$ (TECU)
+* Cold-point tropopause (Titan, Jupiter, Saturn), gravity-wave temperature perturbations and potential energy (also compared across profiles, to average over a layer)
+* For ionospheres, the peak height and density, a fitted Chapman layer with the 1-sigma of its parameters, and the electron content of the profile $10^{-7}\int N_e\,dz$ (TECU)
 * From a measured density (accelerometer and entry-probe profiles, SOIR, radio occultation number densities): temperature and pressure by downward hydrostatic integration
 * For profiles with temperature and pressure: their hydrostatic consistency (largest and median departure of the archived pressure from the hydrostatic one); in Titan's dense, cold troposphere with the real-gas compressibility (4 % from an ideal gas at the surface)
 * On Mars and Venus, the CO$_2$ frost point at each level and the margin of the temperature above it (at or below zero, CO$_2$ can condense), with the smallest margin of each profile
