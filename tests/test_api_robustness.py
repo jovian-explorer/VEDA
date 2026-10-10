@@ -303,6 +303,19 @@ def test_uploaded_fits_can_be_rendered_and_listed(client, tmp_path):
     assert client.get("/api/veda/image/user_imported/my_upload/render").status_code == 404
 
 
+def test_uploaded_image_time_is_never_the_file_creation_date(client, tmp_path):
+    """FITS DATE is when the file was written: the upload's answer showed it as the
+    observation time, which the stored image (DATE-OBS only) did not have."""
+    from astropy.io import fits as _fits
+    f = tmp_path / "dated.fits"
+    hdu = _fits.PrimaryHDU(np.ones((8, 8), dtype="float32"))
+    hdu.header["DATE"] = "2026-01-01T00:00:00"
+    hdu.writeto(f)
+    r = _upload(client, "dated.fits", _b64(f), body_id="pluto")
+    assert r.status_code == 200 and r.json()["time_utc"] == ""
+    client.delete("/api/veda/uploads/dated")
+
+
 @pytest.mark.parametrize("name", ["upper_case.FITS", "short_suffix.fts", "lower.fits"])
 def test_uploaded_images_of_every_accepted_suffix_render(client, tmp_path, name):
     """Bug: only lower-case .fit/.fits were rendered, so accepted .FITS and .fts

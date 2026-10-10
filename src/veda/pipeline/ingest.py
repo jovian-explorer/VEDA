@@ -113,7 +113,8 @@ def ingest_planetary_file(
             "body_id": b.id,
             "mission_id": mission_id or "user_imported",
             "instrument": instrument or (str(fits_data.header.get("INSTRUME", "Camera")) if suffix in (".fit", ".fits", ".fts") else "Camera"),
-            "time_utc": str(fits_data.header.get("DATE-OBS") or fits_data.header.get("DATE") or ""),
+            # (FITS DATE is when the file was written, not the observation)
+            "time_utc": time_utc or str(fits_data.header.get("DATE-OBS") or ""),
             "shape": [fits_data.stats.get("shape_y", 0), fits_data.stats.get("shape_x", 0)],
             "stats": fits_data.stats,
             "header": fits_data.header,
