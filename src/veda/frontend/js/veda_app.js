@@ -1484,8 +1484,12 @@ function renderAltitudeCut() {
   // its levels onto the grid; 0: independent); a layer minimum or maximum, the 1-sigma at
   // that level.
   const sOf = (p) => {
+    if (isDiag) {           // whole-profile quantities with a 1-sigma of their own
+      const v = (p.diagnostics || {})[DIAG_SIGMA[yKey.slice(5)]];
+      return v != null && isFinite(v) ? v : null;
+    }
     const sg = p.interpolated_sigma;
-    if (isDiag || isAlt || !sg) return null;
+    if (isAlt || !sg) return null;
     if (!isLayer) return sg[k];
     const s = p.interpolated_series;
     const L = p.sigma_correlation_km || 0;
@@ -2268,6 +2272,13 @@ function renderSampling() {
       + '. Click a point to open the profile.';
   }
 }
+
+// The 1-sigma of a whole-profile quantity (analysis/atmospheric.py PROFILE_DIAGNOSTICS), for
+// error bars and weighted fits in the altitude cut
+const DIAG_SIGMA = {
+  chapman_nm_cm3: 'chapman_nm_sigma_cm3', chapman_hm_km: 'chapman_hm_sigma_km', chapman_h_km: 'chapman_h_sigma_km',
+  co2_margin_min_k: 'co2_margin_min_sigma_k',
+};
 
 // Quantities that depend on gravity (Mars: effective gravity of the MRO120D field) or on the
 // equation of state (Titan: real-gas compressibility)

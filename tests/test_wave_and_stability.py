@@ -222,3 +222,17 @@ def test_gravity_wave_energy_is_a_comparison_variable():
     s = np.array([np.nan if v is None else v for v in comp["profiles"][0]["interpolated_series"]], dtype=float)
     k = np.searchsorted(comp["grid_km"], 75.0)
     assert s[k] == pytest.approx(np.interp(75.0, z, prof.derived["wave_potential_energy"]), rel=1e-6)
+
+
+def test_altitude_cut_error_bars_name_existing_diagnostics():
+    """The altitude cut draws the 1-sigma of whole-profile quantities (DIAG_SIGMA in veda_app.js):
+    each pair must be two quantities of PROFILE_DIAGNOSTICS."""
+    import re
+    from pathlib import Path
+    from veda.analysis.atmospheric import PROFILE_DIAGNOSTICS
+    js = (Path(__file__).resolve().parents[1] / "src" / "veda" / "frontend" / "js" / "veda_app.js").read_text(encoding="utf-8")
+    block = js[js.index("const DIAG_SIGMA = {"):]
+    pairs = re.findall(r"(\w+): '(\w+)'", block[:block.index("};")])
+    assert len(pairs) == 4
+    for value, sigma in pairs:
+        assert value in PROFILE_DIAGNOSTICS and sigma in PROFILE_DIAGNOSTICS
