@@ -347,7 +347,8 @@ def cube_spectrum(dataset_id: str, product_id: str, line: int, sample: int,
         raise HTTPException(400, "pixel outside the cube")
     a = _read(obj, lines=slice(max(0, line - box), line + box + 1),
               samples=slice(max(0, sample - box), sample + box + 1))
-    with np.errstate(invalid="ignore"):
+    with warnings.catch_warnings():                 # an all-NaN band gives NaN, sent as null
+        warnings.simplefilter("ignore", RuntimeWarning)
         spec = np.nanmean(a.reshape(a.shape[0], -1), axis=1)
     return {"object": obj.name, "line": line, "sample": sample, "box": box, "unit": obj.unit,
             "band": list(range(bands)), "values": _finite_list(spec)}

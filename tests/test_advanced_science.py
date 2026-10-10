@@ -489,7 +489,8 @@ def test_electron_content_sigma_matches_monte_carlo():
     rng = np.random.default_rng(2)
     for corr in (0.0, 6.0):
         r = np.exp(-(z[:, None] - z[None, :]) ** 2 / (2.0 * corr ** 2)) if corr else np.eye(z.size)
-        draws = rng.multivariate_normal(np.zeros(z.size), r * 3e3 ** 2, size=2000)
+        chol = np.linalg.cholesky(r + 1e-9 * np.eye(z.size))
+        draws = 3e3 * rng.standard_normal((2000, z.size)) @ chol.T
         mc = np.std([compute_vtec(z, ne + d)["vtec_tecu"] for d in draws])
         assert compute_vtec(z, ne, s, corr)["vtec_sigma_tecu"] == pytest.approx(mc, rel=0.06)
     assert np.isnan(compute_vtec(z, ne)["vtec_sigma_tecu"])
