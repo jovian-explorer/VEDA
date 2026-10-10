@@ -118,9 +118,16 @@ def test_chapman_layer_total_electron_content():
     assert r["vtec_tecu"] == pytest.approx(TECU_CONVERSION_FACTOR * nm * h * np.e, rel=1e-2)
 
 
-def test_tec_clamps_negative_noise_and_handles_short_input():
+def test_tec_keeps_negative_noise_and_handles_short_input():
     r = compute_vtec(np.array([100.0, 200.0, 300.0, 400.0]), np.array([-500.0, 1e5, 2e5, -100.0]))
     assert r["vtec_tecu"] > 0 and r["peak_alt_km"] == 300.0
+    # noise about zero integrates to about zero (clamping at 0 gave +0.4 sigma per level)
+    z = np.arange(100.0, 1100.0)
+    ne = np.random.default_rng(1).normal(0.0, 1e4, z.size)
+    r = compute_vtec(z, ne)
+    assert abs(r["vtec_tecu"]) < 0.25 * TECU_CONVERSION_FACTOR * 0.4e4 * 1000.0  # bias 0.4 TECU, noise 0.03
+    r = compute_vtec(z, -np.abs(ne))
+    assert r["vtec_tecu"] < 0 and np.isnan(r["peak_density_cm3"]) and np.isnan(r["peak_alt_km"])
     assert np.isnan(compute_vtec(np.array([200.0]), np.array([1e5]))["vtec_tecu"])
     assert np.isnan(compute_vtec(np.array([np.nan, np.nan]), np.array([np.nan, np.nan]))["vtec_tecu"])
 

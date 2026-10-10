@@ -61,13 +61,10 @@ def compute_vtec(
     alt_v = alt[valid]
     ne_v = ne[valid]
 
-    # Clamp unphysical negative retrieved electron density artifacts to 0
-    ne_phys = np.maximum(ne_v, 0.0)
-
     # Sort strictly by increasing altitude
     sort_idx = np.argsort(alt_v)
     alt_sorted = alt_v[sort_idx]
-    ne_sorted = ne_phys[sort_idx]
+    ne_sorted = ne_v[sort_idx]
 
     # Deduplicate strictly identical altitudes if present
     alt_uniq, uniq_idx = np.unique(alt_sorted, return_index=True)
@@ -76,17 +73,22 @@ def compute_vtec(
     if alt_uniq.size < 2:
         return empty_res
 
-    # Trapezoidal integration using scipy.integrate.trapezoid
+    # Trapezoidal integration of the densities as they are: negative values are noise about
+    # zero (below and above the layer of an occultation profile), and setting them to zero
+    # would keep only the positive half of the noise, a bias of 0.4 sigma per level.  A
+    # profile of noise alone gives about zero, below zero if its noise is.
     integral_val = float(integrate.trapezoid(ne_uniq, x=alt_uniq))
     vtec_tecu = float(TECU_CONVERSION_FACTOR * integral_val)
 
-    # Peak ionospheric F2 parameters (NmF2 and hmF2)
+    # Peak ionospheric F2 parameters (NmF2 and hmF2); a profile without a positive density has none
     peak_idx = int(np.argmax(ne_sorted))
     peak_density = float(ne_sorted[peak_idx])
     peak_alt = float(alt_sorted[peak_idx])
+    if peak_density <= 0.0:
+        peak_density = peak_alt = float(np.nan)
 
     return {
-        "vtec_tecu": max(0.0, vtec_tecu),
+        "vtec_tecu": vtec_tecu,
         "alt_min_km": float(np.min(alt_uniq)),
         "alt_max_km": float(np.max(alt_uniq)),
         "peak_density_cm3": peak_density,
