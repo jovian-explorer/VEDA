@@ -710,7 +710,8 @@ function helpBody() {
         <li><strong>Radio occultation (Abel inversion; how the archived profiles were retrieved):</strong>
           <p>$$\\mu(r) - 1 = \\frac{1}{\\pi} \\int_r^{r_{top}} \\frac{\\alpha(a)}{\\sqrt{a^2 - r^2}}\\,da$$</p></li>
         <li><strong>Vertical total electron content:</strong>
-          <p>$$\\text{VTEC} = 10^{-7} \\int N_e(z)\\,dz \\quad [\\text{TECU}]$$</p></li>
+          <p>$$\\text{VTEC} = 10^{-7} \\int N_e(z)\\,dz \\quad [\\text{TECU}]$$</p>
+          <p>over the altitudes the profile covers (the electron content of the profile, not extrapolated), negative densities (noise about zero) included.</p></li>
       </ul>
       <p>The <strong>Variables</strong> panel lists every variable with its formula, reference and DOI. VEDA does not alter archived values; check derived profiles against the official PDS labels and calibration documents before publishing.</p>
     </section>
