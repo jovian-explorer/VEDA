@@ -456,3 +456,15 @@ def test_venus_potential_temperature_cites_its_cp_fit():
     from veda.citations import FEATURE_REFS, ref_text, references
     assert FEATURE_REFS["venus_potential_temperature"] == ["lebonnois2010"]
     assert "115(E6), E06006" in ref_text(references()["lebonnois2010"])
+
+
+def test_profile_view_records_the_method_papers_of_what_it_shows():
+    """Opening a profile lists the papers behind its derived quantities in Cite: before, only
+    gravity, the real gas and the frost point were recorded there, not Venus' potential
+    temperature, the giant planets' hydrogen cp or the gravity-wave energy."""
+    from pathlib import Path
+    from veda.citations import FEATURE_REFS
+    js = (Path(__file__).resolve().parents[1] / "src" / "veda" / "frontend" / "js" / "veda_app.js").read_text(encoding="utf-8")
+    assert "['co2_condensation_temperature', 'potential_temperature', 'buoyancy_freq_sq', 'wave_potential_energy']" in js
+    for feature in ("venus_potential_temperature", "giant_planet_cp", "gravity_waves"):
+        assert f"recordFeature('{feature}')" in js and FEATURE_REFS[feature]

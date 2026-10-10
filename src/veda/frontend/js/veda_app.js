@@ -2894,7 +2894,9 @@ async function inspectProfileObservation(obs) {
 
     // the derived quantities shown: gravity, equation of state, CO2 frost point (Cite panel)
     recordMethods(prof.body_id, 'scale_height');
-    if ((prof.derived || {}).co2_condensation_temperature) recordMethods(prof.body_id, 'co2_condensation_temperature');
+    // (and Venus' potential temperature, the giant planets' hydrogen cp, gravity waves)
+    ['co2_condensation_temperature', 'potential_temperature', 'buoyancy_freq_sq', 'wave_potential_energy']
+      .forEach(k => { if ((prof.derived || {})[k]) recordMethods(prof.body_id, k); });
     const missionTag = (prof.mission_id || 'LOCAL').toUpperCase();
     const bodyName = (vedaState.bodies || []).find(b => b.id === prof.body_id)?.name || prof.body_id || '';
     const instTag = prof.instrument || 'Sounder';
