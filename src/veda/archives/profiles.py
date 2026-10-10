@@ -13,7 +13,7 @@ from ..analysis.solar_geometry import circular_median
 from ..core.models import ObservationProfile, ProvenanceRecord
 from ..core.registry import get_body
 from ..readers.pds3_reader import match_column, read_pds3_table
-from .catalog import fetch_product, get_product
+from .catalog import fetch_product, get_product, label_pointers
 from .datasets import Dataset, get_dataset
 
 
@@ -341,7 +341,15 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
     if s is not None:
         sig_key = next((k for k in tbl.columns if k.upper().strip('"').startswith(("SIGMA ELECTRON", "NOISE LEVEL ELECTRON"))), None)
         unc["electron_density_cm3"] = _to_per_cm3(s, (tbl.units.get(sig_key, "") or ne_unit).upper())
-    if ds.neutral_below_km is not None and ne_cm3 is not None and unc.get("electron_density_cm3") is not None:
+    lowest = _info_number(label, *ds.ne_lowest_valid_info) if ds.ne_lowest_valid_info and ne_cm3 is not None else None
+    if lowest is not None:
+        # the team's lowest valid radius of the electron densities (the altitudes are radius - R)
+        with np.errstate(invalid="ignore"):
+            below = z < lowest - body.radius_km
+        ne_cm3 = np.where(below, np.nan, ne_cm3)
+        if unc.get("electron_density_cm3") is not None:
+            unc["electron_density_cm3"] = np.where(below, np.nan, unc["electron_density_cm3"])
+    elif ds.neutral_below_km is not None and ne_cm3 is not None and unc.get("electron_density_cm3") is not None:
         ne_cm3, unc["electron_density_cm3"] = _without_neutral_region(z, ne_cm3, unc["electron_density_cm3"],
                                                                       ds.neutral_below_km)
     if ds.topside_min_snr and ne_cm3 is not None and unc.get("electron_density_cm3") is not None:
@@ -476,6 +484,26 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
     _add_solar_geometry(prof, ds)
     prof.derived.update(compute_atmospheric_diagnostics(prof, body))
     return prof
+
+
+def _info_number(label: Path, pointer: str, name: str) -> Optional[float]:
+    """The number on the line "<name> [unit] : <value>" of the companion text that the label's
+    ``pointer`` names (MaRS ^ION_INFO); None without the text or the line, or for a default
+    value (negative, e.g. -9999.999)."""
+    try:
+        file = next((n for ptr, n in label_pointers(label.read_text(encoding="latin-1", errors="replace"))
+                     if ptr == pointer), None)
+        text = (label.parent / file).read_text(encoding="latin-1", errors="replace") if file else ""
+    except OSError:
+        return None
+    for line in text.splitlines():
+        if line.strip().startswith(name) and ":" in line:
+            try:
+                v = float(line.split(":", 1)[1].split()[0])
+            except (ValueError, IndexError):
+                return None
+            return v if v > 0 else None
+    return None
 
 
 def _without_neutral_region(z: np.ndarray, ne: np.ndarray, s: np.ndarray, below_km: float) -> Tuple[np.ndarray, np.ndarray]:

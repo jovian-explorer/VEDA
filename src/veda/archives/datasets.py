@@ -146,6 +146,12 @@ class Dataset:
     # negative beyond 3 sigma are left out: MAVEN ROSE takes all refraction as plasma's,
     # so the neutral atmosphere below about 80 km gives large negative values (its SIS)
     neutral_below_km: Optional[float] = None
+    # (label pointer, line name) of a companion text whose line gives the radius (km) below
+    # which the electron densities are not valid; where it has a value it replaces the rule
+    # above.  MaRS L4 ionosphere: ^ION_INFO, "Lowest valid altitude of ionospheric profile",
+    # where the X-band density first rises above -3 sigma going up from the neutral
+    # atmosphere, copied into the differential Doppler products (MEX-MRS-RIU-IS-3050, item 16)
+    ne_lowest_valid_info: Tuple[str, str] = ()
     # Electron density profiles end at the first level above their peak (the largest density
     # below peak_below_km) where the density is below this many times its 1-sigma; profiles
     # with no such peak above it are left out whole (MAVEN ROSE runs to 1000-2500 km, far
@@ -965,6 +971,12 @@ DATASETS: List[Dataset] = [
             (r"l04_i(\w{2})_", "L4 ionosphere electron density profile", "profile"),
         ),
         profile_columns=RS_PROFILE_COLUMNS,
+        # The ionosphere profiles run from the surface to 1000-5800 km: below the team's lowest
+        # valid radius (else the highest level under 100 km at -3 sigma) the X-band densities
+        # are the neutral atmosphere's, and above the peak they end in noise
+        ne_lowest_valid_info=("ION_INFO", "Lowest valid altitude of ionospheric profile"),
+        neutral_below_km=100.0,
+        topside_min_snr=2.0,
         # Each profile is integrated down from three temperatures at the top (the labels'
         # LOWER / MEDIUM / UPPER BOUNDARY CONDITION columns, e.g. 130, 165 and 200 K); VEDA
         # uses MEDIUM and keeps half the LOWER-UPPER difference as the systematic uncertainty

@@ -824,11 +824,13 @@ def fetch_product(dataset_id: str, product_id: str,
         # Fetched before with every required file; optional description files that
         # the archive does not have are not asked for again on every open (the files
         # present then must still be there, e.g. after part of the cache was cleared).
+        # Lines "-<name>" record companion texts the data set reads that were not found.
         try:
             have = [n for n in done_marker.read_text(encoding="utf-8").splitlines() if n]
         except OSError:
             have = None
-        if have is not None and all((label_path.parent / n).is_file() for n in have):
+        if have is not None and all((label_path.parent / n).is_file() for n in have if not n.startswith("-")) \
+                and _companions_done(ds, label_path, {n[1:] for n in have if n.startswith("-")}):
             return label_path
     if prod["path"].startswith(("http://", "https://")):
         # Live-search product: the label URL is known exactly; format files live in a
@@ -875,6 +877,7 @@ def fetch_product(dataset_id: str, product_id: str,
     has_data = any(not _is_doc_pointer(p, n) and not (n.lower().endswith(".fmt") or p == "STRUCTURE")
                    for p, n in pending)
     seen = set()
+    missing = []          # companion texts the data set reads that the archive does not have
     while pending:
         pointer, name = pending.pop(0)
         if PurePosixPath(name.replace("\\", "/")).name != name:
@@ -887,7 +890,8 @@ def fetch_product(dataset_id: str, product_id: str,
             continue
         is_format = name.lower().endswith(".fmt") or pointer == "STRUCTURE"
         is_doc = _is_doc_pointer(pointer, name)
-        if is_doc and (ancestors or has_data):
+        companion = pointer in _companion_pointers(ds)      # a text the data set reads, next to the label
+        if is_doc and (ancestors or has_data) and not companion:
             continue      # optional, see has_data above
         folders = list(product_dirs)
         if is_format:
@@ -897,9 +901,10 @@ def fetch_product(dataset_id: str, product_id: str,
             root = [a for a in ancestors if a.rstrip("/").rsplit("/", 1)[-1].upper() == prod["volume"].upper()]
             first = [_FORMAT_DIRS[prod["volume"]]] if prod["volume"] in _FORMAT_DIRS else []
             folders = first + [r + d for r in root for d in ("LABEL/", "label/")] + folders + label_dirs
-        if is_doc:
+        if is_doc and not companion:
             folders += [b + d for b in [volume_url, *ancestors[:3]] for d in ("DOCUMENT/", "document/")]
-        folders.append(volume_url)
+        if not companion:
+            folders.append(volume_url)
         folders = list(dict.fromkeys(folders))
         if ancestors:      # one spelling per folder: the case the label itself uses
             variant = name.upper() if label_path.name.isupper() else name
@@ -913,16 +918,36 @@ def fetch_product(dataset_id: str, product_id: str,
                           if is_format else None)
         if not ok and not is_doc:
             raise http.ArchiveError(f"{name} (referenced by {label_path.name}) is missing from the archive.")
+        if not ok and companion:
+            missing.append(name)
         if ok and is_format:
             # Format files can include further format files.
             pending += label_pointers(dest.read_text(encoding="latin-1", errors="replace"))
     try:
         names = sorted(p.name for p in label_path.parent.iterdir()
                        if p.is_file() and not p.name.endswith((".complete", ".part")))
-        done_marker.write_text("\n".join(names), encoding="utf-8")
+        done_marker.write_text("\n".join(names + ["-" + n for n in missing]), encoding="utf-8")
     except OSError:
         pass
     return label_path
+
+
+def _companion_pointers(ds) -> set:
+    """Label pointers to description texts that the data set reads (ne_lowest_valid_info)."""
+    return {ds.ne_lowest_valid_info[0]} if ds is not None and ds.ne_lowest_valid_info else set()
+
+
+def _companions_done(ds, label_path: Path, not_found: set) -> bool:
+    """Whether the label's companion texts that the data set reads are downloaded or known to
+    be missing (products downloaded before the data set read them have neither)."""
+    want = _companion_pointers(ds)
+    if not want:
+        return True
+    try:
+        pointers = label_pointers(label_path.read_text(encoding="latin-1", errors="replace"))
+    except OSError:
+        return True
+    return all((label_path.parent / n).is_file() or n in not_found for p, n in pointers if p in want)
 
 
 def _is_doc_pointer(pointer: str, name: str) -> bool:
