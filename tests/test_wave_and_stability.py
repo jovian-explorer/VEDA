@@ -204,3 +204,21 @@ def test_chapman_fit_uncertainties_match_the_scatter_of_refits():
             unit = "_cm3" if k == "nmf2" else "_km"
             spread = np.std([f[k + unit] for f in fits])
             assert np.median([f[k + "_sigma" + unit] for f in fits]) == pytest.approx(spread, rel=0.25)
+
+
+def test_gravity_wave_energy_is_a_comparison_variable():
+    """Ep is averaged over a fixed layer (Tsuda et al. 2000: 20-30 km), which needs Ep on the
+    comparison grid (altitude cut: mean in a layer); it was computed but could not be compared."""
+    from pathlib import Path
+    js = (Path(__file__).resolve().parents[1] / "src" / "veda" / "frontend" / "js" / "veda_app.js").read_text(encoding="utf-8")
+    assert "wave_potential_energy: { label:" in js and "t_prime: { label:" in js
+    venus = get_body("venus")
+    z = np.arange(60.0, 90.0, 0.25)
+    t = 240.0 - 1.5 * (z - 60.0) + 2.0 * np.sin(2.0 * np.pi * z / 4.0)
+    prof = ObservationProfile(observation_id="gw", mission_id="vex", body_id="venus", instrument="VeRa",
+                              time_utc="2007-01-01T00:00:00", altitude_km=z, temperature_k=t)
+    prof.derived = compute_atmospheric_diagnostics(prof, venus)
+    comp = compare_profiles_on_body([prof], venus, altitude_step_km=1.0, variable_name="wave_potential_energy")
+    s = np.array([np.nan if v is None else v for v in comp["profiles"][0]["interpolated_series"]], dtype=float)
+    k = np.searchsorted(comp["grid_km"], 75.0)
+    assert s[k] == pytest.approx(np.interp(75.0, z, prof.derived["wave_potential_energy"]), rel=1e-6)

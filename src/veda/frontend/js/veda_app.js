@@ -101,6 +101,10 @@ const VARIABLE_CONFIGS = {
   ice_effective_radius: { label: 'Water-ice effective radius, CRISM', units: 'µm', axis: 'Water-ice effective radius (µm)', color: '#1d4ed8', bodies: ['mars'] },
   // MRO MCS: opacity per km on each pressure surface, dust at 21.6 um and water ice at 11.9 um
   dust_opacity_per_km: { label: 'Dust opacity per km, MCS (21.6 µm)', units: 'km⁻¹', axis: 'Dust opacity per km at 21.6 µm (km⁻¹)', logScale: true, color: '#c2410c', bodies: ['mars'] },
+  // Gravity waves (filter and E_p in USAGE): a layer mean of E_p in the altitude cut is the usual
+  // measure of wave activity (Tsuda et al. 2000: E_p averaged over 20-30 km)
+  wave_potential_energy: { label: 'Gravity-wave potential energy (Ep)', units: 'J/kg', axis: 'Gravity-wave potential energy Ep (J/kg)', color: '#e879f9' },
+  t_prime: { label: "Temperature perturbation (T')", units: 'K', axis: "Temperature perturbation T' (K)", color: '#f472b6' },
   ice_opacity_per_km: { label: 'Water-ice opacity per km, MCS (11.9 µm)', units: 'km⁻¹', axis: 'Water-ice opacity per km at 11.9 µm (km⁻¹)', logScale: true, color: '#0284c7', bodies: ['mars'] },
 };
 
@@ -1450,6 +1454,7 @@ function renderAltitudeCut() {
   const diag = isDiag ? diagLabels[yKey.slice(5)] : null;
   const yScale = isDiag || isAlt ? 1 : pScale;
   if (/co2_margin/.test(yKey) || /co2_margin/.test(xKey)) recordMethods(vedaState.activeBodyId, 'co2_condensation_temperature');
+  if (/gw_/.test(yKey) || /gw_/.test(xKey)) recordMethods(vedaState.activeBodyId, 'gw_mean_ep_j_kg');
   const yTitle = diag ? (diag[1] ? `${diag[0]} (${diag[1]})` : diag[0])
     : isAlt ? 'Altitude (km)' : (pScale === 1 ? cleanPlotlyMath(cfg.axis) : `Pressure (${pUnit})`);
   const layerText = `${grid[kLo]} to ${grid[kHi]} km`;
@@ -2275,6 +2280,7 @@ const EOS_VARIABLES = new Set(['density', 'scale_height', 'temperature_from_dens
 function recordMethods(bodyId, variable, reference = false) {
   if (reference) recordFeature(bodyId === 'mars' ? 'mars_reference' : 'venus_reference');
   if (/co2_condensation/.test(variable || '')) recordFeature('co2_frost_point');
+  if (/wave_potential_energy|t_prime|gw_/.test(variable || '')) recordFeature('gravity_waves');
   if (bodyId === 'mars' && GRAVITY_VARIABLES.has(variable)) recordFeature('mars_gravity');
   if (bodyId === 'titan' && EOS_VARIABLES.has(variable)) recordFeature('titan_real_gas');
   if (bodyId === 'venus' && /potential_temperature|dtheta_dz/.test(variable || '')) recordFeature('venus_potential_temperature');
@@ -2835,6 +2841,7 @@ async function inspectProfileObservation(obs) {
       'temperature_from_density', 'pressure_from_density',
       'dust_mixing_ratio', 'ice_mixing_ratio', 'dust_opacity_per_mbar', 'ice_opacity_per_mbar',
       'dust_effective_radius', 'ice_effective_radius', 'dust_opacity_per_km', 'ice_opacity_per_km',
+      'wave_potential_energy', 't_prime',
     ];
 
     const hasValidData = (k) => {
