@@ -48,3 +48,22 @@ def test_titan_troposphere_is_treated_as_a_real_gas():
     np.testing.assert_allclose(prof.derived["density"], n * 1.380649e-23 / r, rtol=1e-6)
     np.testing.assert_allclose(prof.derived["temperature_from_density"][:60], t[:60], rtol=2e-3)
     assert "real gas" in prof.raw_attributes["equation_of_state"]
+
+
+def test_speed_of_sound_of_cold_nitrogen_matches_nist():
+    """Titan's troposphere: the ideal-gas speed of sound was 1.1 to 2.2 % too fast for N2 at
+    80-100 K; with the acoustic virial correction it is within 0.3 % of NIST (REFPROP)."""
+    from veda.analysis.atmospheric import compute_atmospheric_diagnostics
+    titan = get_body("titan")
+    titan_n2 = type("Body", (), {"id": "titan", "atmospheric_composition": {"N2": 100.0}})
+    from veda.analysis.realgas import sound_speed_factor
+    r = 8.314462618 / 0.0280134
+    for t, p, nist in ((80.0, 1000.0, 178.31), (100.0, 1000.0, 201.64), (94.0, 1467.0, 193.77)):
+        f = sound_speed_factor(titan_n2, np.array([t]), np.array([p]), 1.4)[0]
+        assert np.sqrt(1.4 * r * t * f) == pytest.approx(nist, rel=0.003)
+    z = np.arange(0.0, 10.0, 1.0)
+    prof = ObservationProfile(observation_id="ti", mission_id="cassini", body_id="titan", instrument="RSS",
+                              time_utc="2006-03-19T00:00:00", altitude_km=z, temperature_k=94.0 - 0.9 * z,
+                              pressure_hpa=1467.0 * np.exp(-z / 20.0))
+    cs = compute_atmospheric_diagnostics(prof, titan)["speed_of_sound"]
+    assert 192.0 < cs[0] < 196.0                     # ideal gas: 198.3 m/s

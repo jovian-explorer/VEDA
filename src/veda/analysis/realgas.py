@@ -90,6 +90,31 @@ def compressibility(body, t_k, p_hpa) -> Optional[np.ndarray]:
     return np.where(np.isfinite(z) & (z > 0.5), z, np.nan)
 
 
+def sound_speed_factor(body, t_k, p_hpa, gamma0) -> Optional[np.ndarray]:
+    """c^2 / c0^2 at each level for a body with a real-gas equation of state (Titan), with
+    c0^2 = gamma0 R T the ideal-gas speed of sound; None for an ideal gas.  To the second
+    virial order c^2 = c0^2 (1 + beta_a p / (R T)) with the acoustic virial coefficient
+        beta_a = 2 B + 2 (gamma0 - 1) T dB/dT + (gamma0 - 1)^2 / gamma0 T^2 d2B/dT2
+    (Gillis & Moldover 1996, Int. J. Thermophys. 17, 1305).  At Titan's surface
+    (94 K, 1.47 bar) it is 0.958: the speed of sound is 2.1 % below the ideal gas's."""
+    gases = REAL_GAS_BODIES.get(getattr(body, "id", ""))
+    if not gases or t_k is None or p_hpa is None:
+        return None
+    comp = getattr(body, "atmospheric_composition", None) or {}
+    fractions = {g: float(comp.get(g, 0.0)) for g in gases}
+    if not any(fractions.values()):
+        return None
+    t = np.asarray(t_k, dtype=float)
+    p = np.asarray(p_hpa, dtype=float) * 100.0
+    h = 0.5                                                    # K, numerical derivatives
+    with np.errstate(invalid="ignore", divide="ignore"):
+        bm, b0, bp = (second_virial(t + d, fractions) for d in (-h, 0.0, h))
+        g1 = np.asarray(gamma0, dtype=float) - 1.0
+        beta = 2.0 * b0 + 2.0 * g1 * t * (bp - bm) / (2.0 * h) + g1 ** 2 / (g1 + 1.0) * t ** 2 * (bp - 2.0 * b0 + bm) / h ** 2
+        f = 1.0 + beta * p / (R_UNIV * t)
+    return np.where(np.isfinite(f) & (f > 0.5), f, np.nan)
+
+
 def temperature_with_compressibility(body, p_pa: np.ndarray, rho: np.ndarray, r_spec, iterations: int = 6) -> np.ndarray:
     """T from p = Z(T, p) rho R T by fixed-point iteration (the ideal-gas T first)."""
     p = np.asarray(p_pa, dtype=float)

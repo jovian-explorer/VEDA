@@ -47,7 +47,7 @@ FEATURE_REFS = {
     "mars_reference": ["justh2024"],
     "co2_frost_point": ["james1992", "greve2010"],
     "mars_gravity": ["konopliv2016"],
-    "titan_real_gas": ["tsonopoulos1974"],
+    "titan_real_gas": ["tsonopoulos1974", "gillis1996"],
 }
 FEATURE_TITLES = {
     "geometry": "Observation geometry (NAIF SPICE, SpiceyPy)",

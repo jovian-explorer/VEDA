@@ -284,7 +284,7 @@ def _diagnostics(profile: ObservationProfile, body: BodyInfo) -> Dict[str, np.nd
 
     # 3. Scale height H = Z R_spec T / g(z) (km) and speed of sound with cp(T); Z the
     # compressibility, 1 but in Titan's dense cold troposphere (realgas.py)
-    from .realgas import compressibility
+    from .realgas import compressibility, sound_speed_factor
     from .thermo import cp_model, heat_capacity
     r_spec = gas_constant_levels(profile, body)       # per level where the archive gives the molar mass
     cp_t = heat_capacity(body, t_k)                 # J/(kg K), temperature dependent for CO2/N2 atmospheres
@@ -300,6 +300,9 @@ def _diagnostics(profile: ObservationProfile, body: BodyInfo) -> Dict[str, np.nd
         h_scale = (zc * r_spec * t_k) / (gz * 1000.0)
         gamma = np.where(cp_t > r_spec, cp_t / (cp_t - r_spec), np.nan)
         cs = np.sqrt(gamma * r_spec * t_k)
+    if z_c is not None:                              # real gas: the acoustic virial correction
+        f_cs = sound_speed_factor(body, t_k, p_now, gamma)
+        cs = cs * np.sqrt(np.where(np.isfinite(f_cs), f_cs, 1.0))
     derived["scale_height"] = h_scale
     derived["speed_of_sound"] = cs
 

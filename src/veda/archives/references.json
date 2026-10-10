@@ -6483,6 +6483,30 @@
     }
    ],
    "note": "Second virial coefficients of the N2-CH4 mixture (Titan's real-gas compressibility). Checked on Crossref."
+  },
+  {
+   "key": "gillis1996",
+   "authors": [
+    "Gillis, K. A.",
+    "Moldover, M. R."
+   ],
+   "et_al": false,
+   "year": 1996,
+   "title": "Practical determination of gas densities from the speed of sound using square-well potentials",
+   "journal": "International Journal of Thermophysics",
+   "volume": "17",
+   "issue": "6",
+   "pages": "1305-1324",
+   "doi": "10.1007/bf01438672",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "method",
+     "payload": "titan_real_gas"
+    }
+   ],
+   "note": "Acoustic virial coefficient from the second virial coefficient (Titan's real-gas speed of sound). Checked on Crossref."
   }
  ]
 }
