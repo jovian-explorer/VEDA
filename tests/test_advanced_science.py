@@ -39,6 +39,12 @@ def test_cp_of_temperature(body_id, t, expected, tol):
     assert heat_capacity(get_body(body_id), np.array([t]))[0] == pytest.approx(expected, abs=tol)
 
 
+def test_mars_reference_cp_is_cp_at_its_mean_temperature():
+    # sets R/cp of the potential temperature: 0.254, as in Mars GCMs (830 J/(kg K) gave 0.230)
+    mars = get_body("mars")
+    assert mars.isobaric_heat_capacity_cp == pytest.approx(heat_capacity(mars, np.array([214.0]))[0], abs=1.0)
+
+
 def test_constant_cp_for_other_bodies():
     jup = get_body("jupiter")
     assert heat_capacity(jup, np.array([165.0]))[0] == jup.isobaric_heat_capacity_cp

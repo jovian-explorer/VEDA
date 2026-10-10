@@ -43,7 +43,10 @@ BODIES: Dict[str, BodyInfo] = {
         # is taken over their sum): mu = 43.487 g/mol, R = 8314.4626 / mu.
         mean_molecular_weight=43.487,
         gas_constant_r=191.2,
-        isobaric_heat_capacity_cp=830.0,
+        # reference cp (sets R/cp of the potential temperature): cp(T) of this composition from
+        # the JANAF tables at the 214 K mean surface temperature, R/cp = 0.254 (Mars GCMs use
+        # about 0.257, cp = 744.5 J/(kg K), Forget et al. 1999); 830 before was cp at about 290 K
+        isobaric_heat_capacity_cp=752.0,
         reference_pressure_hpa=6.1,  # ~6.1 hPa (610 Pa) surface pressure
         atmospheric_composition={"CO2": 95.1, "N2": 2.59, "Ar": 1.94, "O2": 0.161, "CO": 0.058},
         description="Terrestrial planet with a rarefied, highly dynamic carbon dioxide atmosphere (~6.1 hPa surface pressure) characterized by planetary dust storm cycles, polar CO2 and water-ice caps, diurnal thermal tides, and photochemical atmospheric loss driven by solar wind interaction with localized crustal remnant magnetic fields.",

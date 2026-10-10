@@ -741,7 +741,7 @@ def test_body_details_carry_molar_mass_and_heat_capacity(client):
     value where derived quantities use cp(T)."""
     mars = client.get("/api/veda/bodies/mars").json()
     assert mars["mean_molecular_weight"] == pytest.approx(43.487)
-    assert mars["isobaric_heat_capacity_cp"] == 830.0 and mars["cp_model"].startswith("temperature-dependent")
+    assert mars["isobaric_heat_capacity_cp"] == 752.0 and mars["cp_model"].startswith("temperature-dependent")
     assert client.get("/api/veda/bodies/saturn").json()["cp_model"] == "constant"
 
 
