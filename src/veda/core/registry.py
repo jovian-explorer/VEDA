@@ -1047,7 +1047,7 @@ FIELD_REGISTRY: Dict[str, dict] = {
         "reference": "Fjeldbo, G., Kliore, A. J., & Eshleman, V. R. (1971), Astron. J., 76, 123-140",
         "doi": "10.1086/111096",
         "archive": "NASA PDS / ESA PSA / JAXA DARTS",
-        "description": "Planetary atmospheric temperature derived from radio occultation refractivity via hydrostatic integration."
+        "description": "Atmospheric temperature as archived: radio occultation retrievals (refractivity, hydrostatic integration), entry probes, limb sounders and solar occultations."
     },
     "temperature_c": {
         "id": "temperature_c",
@@ -1102,7 +1102,7 @@ FIELD_REGISTRY: Dict[str, dict] = {
         "reference": "Holton, J. R., & Hakim, G. J. (2013), An Introduction to Dynamic Meteorology, 5th ed., Academic Press",
         "doi": "10.1016/C2009-0-63394-8",
         "archive": "Planetary Thermodynamic Formulation",
-        "description": "Potential temperature evaluated with body-specific gas constant R and isobaric heat capacity Cp."
+        "description": "Potential temperature with the body's gas constant and reference cp; on Venus with the variable cp of Venus circulation models (Lebonnois et al. 2010), theta^nu = T^nu + nu T0^nu ln (P_ref/P)^(R/cp0)."
     },
     "lapse_rate": {
         "id": "lapse_rate",
@@ -1124,7 +1124,7 @@ FIELD_REGISTRY: Dict[str, dict] = {
         "reference": "Chamberlain, J. W., & Hunten, D. M. (1987), Theory of Planetary Atmospheres, Academic Press",
         "doi": "",
         "archive": "Planetary Thermodynamic Formulation",
-        "description": "Atmospheric pressure e-folding scale height incorporating altitude-dependent planetary gravity g(z)."
+        "description": "Atmospheric pressure e-folding scale height with altitude-dependent gravity g(z); on Titan times the real-gas compressibility Z."
     },
     "temperature_from_density": {
         "id": "temperature_from_density",
@@ -1157,18 +1157,18 @@ FIELD_REGISTRY: Dict[str, dict] = {
         "reference": "Seiff, A., et al. (1980), J. Geophys. Res., 85(A13), 7903-7933",
         "doi": "10.1029/JA085iA13p07903",
         "archive": "Planetary Thermodynamic Formulation",
-        "description": "Planetary atmospheric gas density evaluated using the ideal gas law with body-specific mean molecular weight."
+        "description": "Mass density from pressure and temperature with the body's mean molecular weight: ideal gas, or on Titan rho = P / (Z R T) with the real-gas compressibility Z."
     },
     "buoyancy_freq_sq": {
         "id": "buoyancy_freq_sq",
         "label": "Squared Buoyancy Frequency N²",
         "units": "s⁻²",
         "category": "derived_stability",
-        "formula": r"N^2 = \frac{g(z)}{T} \left( \frac{dT}{dz} + \frac{g(z)}{c_p} \right) = \frac{g(z)}{\theta} \frac{d\theta}{dz}",
+        "formula": r"N^2 = \frac{g(z)}{T} \left( \frac{dT}{dz} + \frac{g(z)}{c_p(T)} \right)",
         "reference": "Tellmann, S., et al. (2012), Icarus, 221(2), 471-480",
         "doi": "10.1016/j.icarus.2012.08.023",
         "archive": "Planetary Thermodynamic Formulation",
-        "description": "Brunt-Vaisala static stability frequency squared determining atmospheric convective stability on other worlds."
+        "description": "Brunt-Vaisala static stability frequency squared, from temperature with cp(T) (the form with theta holds for a constant cp); negative where the layer is convectively unstable."
     },
     "dry_adiabatic_lapse_rate": {
         "id": "dry_adiabatic_lapse_rate",
@@ -1212,7 +1212,7 @@ FIELD_REGISTRY: Dict[str, dict] = {
         "reference": "Salby, M. L. (1996), Fundamentals of Atmospheric Physics, Academic Press",
         "doi": "",
         "archive": "Planetary Acoustic Formulation",
-        "description": "Adiabatic speed of sound in planetary gas mixtures."
+        "description": "Adiabatic speed of sound with cp(T); on Titan corrected for the real gas with the acoustic virial coefficient (Gillis & Moldover 1996)."
     },
     "buoyancy_period": {
         "id": "buoyancy_period",
