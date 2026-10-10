@@ -438,3 +438,15 @@ def test_method_papers_for_the_derived_quantities_and_references():
     assert "https://doi.org/10.1016/j.icarus.2016.02.052" in texts["konopliv2016"]
     assert "@techreport{justh2024" in out["bibtex"] and "@incollection{james1992" in out["bibtex"]
     assert "url      = {https://ntrs.nasa.gov/citations/20240012934}" in out["bibtex"]
+
+
+def test_dataset_citations_follow_their_registry_records():
+    """Checked against DataCite and Crossref (2026-10): authors, year and title as registered."""
+    from veda.citations import references
+    refs = references()
+    soir = refs["bira2020soir"]
+    assert soir["authors"][0] == "Vandaele, A. C." and soir["year"] == 2017
+    assert refs["kliore2014data"]["year"] == 2019 and refs["koskinen2018data"]["year"] == 2019
+    assert refs["karatekin2020data"]["authors"] == ["Karatekin, O."]
+    assert refs["holsteinrathlou2015data"]["authors"][0] == "Withers, P."
+    assert refs["johnson1992"]["title"] == "Space science reviews volume on Galileo Mission overview"

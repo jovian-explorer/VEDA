@@ -2345,7 +2345,7 @@
    ],
    "et_al": false,
    "year": 1992,
-   "title": "The Galileo mission",
+   "title": "Space science reviews volume on Galileo Mission overview",
    "journal": "Space Science Reviews",
    "volume": "60",
    "issue": "1-4",
@@ -5796,12 +5796,12 @@
   {
    "key": "holsteinrathlou2015data",
    "authors": [
-    "Holstein-Rathlou, C.",
-    "Withers, P."
+    "Withers, P.",
+    "Holstein-Rathlou, C."
    ],
    "et_al": false,
    "year": 2015,
-   "title": "MSL EDL atmospheric reconstruction (PDS4 bundle urn:nasa:pds:msledl)",
+   "title": "MSLEDL Bundle (urn:nasa:pds:msledl)",
    "journal": "NASA Planetary Data System",
    "volume": "",
    "issue": "",
@@ -5820,13 +5820,11 @@
   {
    "key": "karatekin2020data",
    "authors": [
-    "Karatekin, O.",
-    "Banfield, D.",
-    "Ashley, J."
+    "Karatekin, O."
    ],
    "et_al": false,
    "year": 2020,
-   "title": "InSight EDL atmospheric reconstruction (PDS4 bundle urn:nasa:pds:insight_edl)",
+   "title": "InSight EDL Bundle (urn:nasa:pds:insight_edl)",
    "journal": "NASA Planetary Data System",
    "volume": "",
    "issue": "",
@@ -5902,7 +5900,7 @@
    ],
    "et_al": false,
    "year": 2020,
-   "title": "Pioneer Venus Orbiter radio occultation bundle (urn:nasa:pds:pvoro)",
+   "title": "Pioneer Venus Orbiter Radio Occultation Profiles (urn:nasa:pds:pvoro)",
    "journal": "NASA Planetary Data System",
    "volume": "",
    "issue": "",
@@ -6046,8 +6044,8 @@
     "Kliore, A. J."
    ],
    "et_al": false,
-   "year": 2014,
-   "title": "Cassini radio occultations of the Saturn ionosphere (PDS4 bundle corss_saturn_ionosphere)",
+   "year": 2019,
+   "title": "Saturn Ionosphere Bundle (corss_saturn_ionosphere)",
    "journal": "NASA Planetary Data System",
    "volume": "",
    "issue": "",
@@ -6097,8 +6095,8 @@
     "Koskinen, T. T."
    ],
    "et_al": false,
-   "year": 2018,
-   "title": "Saturn thermosphere H2 density and temperature from Cassini UVIS occultations (PDS4 bundle)",
+   "year": 2019,
+   "title": "Structure of Saturn's Thermosphere from Stellar Occultations Bundle",
    "journal": "NASA Planetary Data System",
    "volume": "",
    "issue": "",
@@ -6313,12 +6311,16 @@
   {
    "key": "bira2020soir",
    "authors": [
-    "BIRA-IASB"
+    "Vandaele, A. C.",
+    "Mahieux, A.",
+    "Wilquet, V.",
+    "Chamberlain, S.",
+    "Trompet, L."
    ],
    "et_al": false,
-   "year": 2020,
-   "title": "Venus atmospheric profiles from SPICAV-SOIR on board Venus Express, version w23.00",
-   "journal": "BIRA-IASB data repository",
+   "year": 2017,
+   "title": "Venus atmospheric profiles - From SPICAV-SOIR on board VEx version w23.00",
+   "journal": "Royal Belgian Institute for Space Aeronomy",
    "volume": "",
    "issue": "",
    "pages": "",
