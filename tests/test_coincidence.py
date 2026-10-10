@@ -103,3 +103,10 @@ def test_api_takes_tolerances_and_the_recipe_keeps_them():
     csv = client.post("/api/veda/export/compare/mars/csv", json={**base, "coincidence": {"hours": 6}}).text
     recipe = json.loads(next(l for l in csv.splitlines() if l.startswith("# recipe: "))[len("# recipe: "):])
     assert recipe["coincidence"] == {**DEFAULT_TOLERANCES, "hours": 6.0}
+
+
+def test_times_with_and_without_a_utc_offset_are_compared():
+    # a loaded file's "+00:00" made the comparison fail (naive minus aware datetime)
+    sep = separations({"time_utc": "2020-01-01T00:00:00", "latitude": 1.0},
+                      {"time_utc": "2020-01-01T03:00:00+00:00", "latitude": 2.0})
+    assert sep["hours"] == pytest.approx(3.0)

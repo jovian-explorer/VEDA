@@ -28,14 +28,8 @@ _SEED = 20261009
 
 
 def _time(s: Dict[str, Any]) -> Optional[_dt.datetime]:
-    t = (s.get("time_utc") or "").replace("Z", "")
-    try:
-        return _dt.datetime.fromisoformat(t[:26]) if t else None
-    except ValueError:
-        try:
-            return _dt.datetime.fromisoformat(t[:19])
-        except ValueError:
-            return None
+    from .solar_geometry import parse_utc          # naive UTC, with or without Z or an offset
+    return parse_utc(s.get("time_utc") or "")
 
 
 def _wrapped(a: Optional[float], b: Optional[float], period: float) -> Optional[float]:
