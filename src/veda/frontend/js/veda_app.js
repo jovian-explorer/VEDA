@@ -103,8 +103,8 @@ const VARIABLE_CONFIGS = {
   dust_opacity_per_km: { label: 'Dust opacity per km, MCS (21.6 µm)', units: 'km⁻¹', axis: 'Dust opacity per km at 21.6 µm (km⁻¹)', logScale: true, color: '#c2410c', bodies: ['mars'] },
   // Gravity waves (filter and E_p in USAGE): a layer mean of E_p in the altitude cut is the usual
   // measure of wave activity (Tsuda et al. 2000: E_p averaged over 20-30 km)
-  wave_potential_energy: { label: 'Gravity-wave potential energy (Ep)', units: 'J/kg', axis: 'Gravity-wave potential energy Ep (J/kg)', color: '#e879f9' },
-  t_prime: { label: "Temperature perturbation (T')", units: 'K', axis: "Temperature perturbation T' (K)", color: '#f472b6' },
+  wave_potential_energy: { label: 'Gravity-wave potential energy Ep', units: 'J/kg', axis: 'Gravity-wave potential energy Ep (J/kg)', color: '#e879f9' },
+  t_prime: { label: "Temperature perturbation T'", units: 'K', axis: "Temperature perturbation T' (K)", color: '#f472b6' },
   ice_opacity_per_km: { label: 'Water-ice opacity per km, MCS (11.9 µm)', units: 'km⁻¹', axis: 'Water-ice opacity per km at 11.9 µm (km⁻¹)', logScale: true, color: '#0284c7', bodies: ['mars'] },
 };
 

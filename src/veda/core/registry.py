@@ -1190,18 +1190,18 @@ FIELD_REGISTRY: Dict[str, dict] = {
         "reference": "Tsuda, T., et al. (2000), J. Geophys. Res., 105(D6), 7257-7273",
         "doi": "10.1029/1999jd901005",
         "archive": "Planetary Wave Analysis",
-        "description": "Small-scale atmospheric gravity wave temperature perturbation extracted by high-pass polynomial filtering."
+        "description": "Small-scale temperature perturbation of gravity waves: the profile minus its background, a zero-phase Butterworth low-pass (8 km cutoff wavelength) of the profile after a cubic fit is removed."
     },
     "wave_potential_energy": {
         "id": "wave_potential_energy",
-        "label": "Gravity Wave Potential Energy Density",
+        "label": "Gravity Wave Potential Energy per Unit Mass",
         "units": "J/kg",
         "category": "waves",
-        "formula": r"E_p = \frac{1}{2} \left(\frac{g}{N}\right)^2 \left(\frac{T'}{T_0}\right)^2",
+        "formula": r"E_p = \frac{1}{2} \left(\frac{g}{\overline{N}}\right)^2 \left(\frac{T'}{\overline{T}}\right)^2",
         "reference": "Creasey, J. E., et al. (2006), Geophys. Res. Lett., 33(1), L01803",
         "doi": "10.1029/2005GL024037",
         "archive": "Planetary Wave Analysis",
-        "description": "Specific gravity wave potential energy density quantifying wave activity in planetary atmospheres."
+        "description": "Specific (per unit mass) potential energy of gravity waves, from T' and the stability of the background temperature; averaged over a fixed layer it measures wave activity."
     },
     "speed_of_sound": {
         "id": "speed_of_sound",
