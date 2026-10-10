@@ -3114,7 +3114,7 @@ function trackChips(prof) {
     return v.length ? `${Math.min(...v).toFixed(d)} to ${Math.max(...v).toFixed(d)}` : null;
   };
   const chips = [];
-  if (rng(t.latitude)) chips.push(`<div class="diag-chip"><strong>Tangent lat:</strong> ${rng(t.latitude)}°</div>`);
+  if (rng(t.latitude)) chips.push(`<div class="diag-chip" title="The tangent point of the ray for occultations; the spacecraft or probe for accelerometer passes and descents"><strong>Latitude along the profile:</strong> ${rng(t.latitude)}°</div>`);
   if (rng(t.sza)) chips.push(`<div class="diag-chip"><strong>SZA:</strong> ${rng(t.sza)}°</div>`);
   if (rng(t.lst)) chips.push(`<div class="diag-chip"><strong>Local time:</strong> ${rng(t.lst, 2)} h</div>`);
   const g = prof.geometry || {};
