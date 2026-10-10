@@ -236,3 +236,12 @@ def test_altitude_cut_error_bars_name_existing_diagnostics():
     assert len(pairs) == 5
     for value, sigma in pairs:
         assert value in PROFILE_DIAGNOSTICS and sigma in PROFILE_DIAGNOSTICS
+
+
+def test_mars_season_is_offered_on_mars_only():
+    """Ls exists only for Mars profiles: on other bodies choosing it gave an empty altitude cut."""
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1] / "src" / "veda" / "frontend"
+    js = (root / "js" / "veda_app.js").read_text(encoding="utf-8")
+    assert "['veda-cut-x', 'veda-cut-color', 'veda-compare-group-by'].forEach" in js and "opt.hidden = bodyId !== 'mars'" in js
+    assert ">Earth day of year (all years)</option>" in (root / "index.html").read_text(encoding="utf-8")

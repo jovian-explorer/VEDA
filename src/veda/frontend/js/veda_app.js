@@ -583,6 +583,17 @@ export async function loadAndRenderCelestialBody(bodyId) {
   if (refLabel) refLabel.style.display = REFERENCE_BODIES.has(bodyId) ? '' : 'none';
   const refOpt = document.querySelector('#veda-compare-show-as option[value="reference"]');
   if (refOpt) refOpt.hidden = !REFERENCE_BODIES.has(bodyId);
+  // Ls is Mars' season; on other bodies the option gave an empty cut
+  ['veda-cut-x', 'veda-cut-color', 'veda-compare-group-by'].forEach(id => {
+    const sel = document.getElementById(id);
+    const opt = sel && sel.querySelector('option[value="ls"]');
+    if (!opt) return;
+    opt.hidden = bodyId !== 'mars';
+    if (opt.hidden && sel.value === 'ls') {
+      sel.value = sel.options[0].value;
+      if (id === 'veda-compare-group-by') vedaState.compareGroupBy = sel.value;
+    }
+  });
   const bodyDetails = await api.vedaBodyDetails(bodyId);
   vedaState.activeBody = bodyDetails;
 
@@ -1556,7 +1567,7 @@ function renderAltitudeCut() {
     });
   }
   const xTitles = { time: 'Time (UTC)', latitude: 'Latitude (°)', lst: 'Local solar time (h)', sza: 'Solar zenith angle (°)',
-                    ls: 'Solar longitude Ls (°)', longitude: 'Longitude (°)', season: 'Day of year' };
+                    ls: 'Solar longitude Ls (°)', longitude: 'Longitude (°)', season: 'Earth day of year (UTC)' };
   if (xKey === 'value2') xTitles.value2 = `${varLabel} at ${grid[k2]} km`;
   if (xDiag) xTitles[xKey] = xDiag[1] ? `${xDiag[0]} (${xDiag[1]})` : xDiag[0];
   const layout = {
