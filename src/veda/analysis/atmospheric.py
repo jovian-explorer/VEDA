@@ -462,7 +462,8 @@ def _ionosphere_diagnostics(profile: ObservationProfile, z: np.ndarray) -> None:
         profile.raw_attributes["nmf2_cm3"] = vtec_res.get("peak_density_cm3")
         if ne.size >= 8:
             from .wave_and_stability import fit_chapman_ionosphere
-            profile.raw_attributes["chapman_fit"] = fit_chapman_ionosphere(z, ne)
+            profile.raw_attributes["chapman_fit"] = fit_chapman_ionosphere(
+                z, ne, (profile.uncertainty or {}).get("electron_density_cm3"))
     except Exception:
         pass
 
@@ -489,6 +490,9 @@ PROFILE_DIAGNOSTICS: Dict[str, Tuple[str, ...]] = {
     "chapman_hm_km": ("Chapman fit peak altitude", "km"),
     "chapman_h_km": ("Chapman fit scale height", "km"),
     "chapman_r2": ("Chapman fit R^2", ""),
+    "chapman_nm_sigma_cm3": ("1-sigma of the Chapman fit peak density", "cm^-3"),
+    "chapman_hm_sigma_km": ("1-sigma of the Chapman fit peak altitude", "km"),
+    "chapman_h_sigma_km": ("1-sigma of the Chapman fit scale height", "km"),
     "tec_tecu": ("Electron content of the profile", "TECU"),
     "gw_mean_ep_j_kg": ("Mean gravity-wave potential energy", "J/kg"),
     "gw_wavelength_km": ("Dominant vertical wavelength", "km"),
@@ -521,6 +525,9 @@ def profile_diagnostics(profile: ObservationProfile) -> Dict[str, Optional[float
         "chapman_hm_km": _finite(chap.get("hmf2_km")),
         "chapman_h_km": _finite(chap.get("scale_height_km")),
         "chapman_r2": _finite(chap.get("r_squared")),
+        "chapman_nm_sigma_cm3": _finite(chap.get("nmf2_sigma_cm3")),
+        "chapman_hm_sigma_km": _finite(chap.get("hmf2_sigma_km")),
+        "chapman_h_sigma_km": _finite(chap.get("scale_height_sigma_km")),
         "tec_tecu": _finite(a.get("vtec_tecu")),
         "gw_mean_ep_j_kg": ep if ep else None,          # 0.0 means "not computed"
         "gw_wavelength_km": _finite(a.get("gw_dominant_wavelength_km")),

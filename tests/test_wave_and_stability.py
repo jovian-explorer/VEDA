@@ -176,7 +176,7 @@ def test_failed_chapman_fit_reports_no_fit(monkeypatch):
     monkeypatch.setattr(ws, "curve_fit", no_convergence)
     z = np.linspace(100.0, 500.0, 50)
     res = ws.fit_chapman_ionosphere(z, 1e5 * np.exp(-((z - 300.0) / 60.0) ** 2))
-    assert res == {"nmf2_cm3": None, "hmf2_km": None, "scale_height_km": None, "r_squared": None}
+    assert res["nmf2_cm3"] is None and res["hmf2_km"] is None and res["hmf2_sigma_km"] is None and not res["weighted"]
 
 
 def test_chapman_fit_keeps_negative_noise():
@@ -187,3 +187,20 @@ def test_chapman_fit_keeps_negative_noise():
     rng = np.random.default_rng(3)
     h = [fit_chapman_ionosphere(z, ne + rng.normal(0.0, 1e4, z.size))["scale_height_km"] for _ in range(20)]
     assert np.mean(h) == pytest.approx(10.0, abs=0.15)
+
+
+def test_chapman_fit_uncertainties_match_the_scatter_of_refits():
+    # the 1-sigma of each parameter is the spread of fits to profiles redrawn within the errors;
+    # with errors stated 3 times too small the chi-square scaling keeps it so
+    z = np.arange(100.0, 300.0, 1.0)
+    x = (z - 140.0) / 10.0
+    ne = 1e5 * np.exp(0.5 * (1.0 - x - np.exp(-x)))
+    rng = np.random.default_rng(5)
+    draws = [ne + rng.normal(0.0, 3e3, z.size) for _ in range(100)]
+    for s in (3e3, 1e3):
+        fits = [fit_chapman_ionosphere(z, d, np.full(z.size, s)) for d in draws]
+        assert all(f["weighted"] for f in fits)
+        for k in ("nmf2", "hmf2", "scale_height"):
+            unit = "_cm3" if k == "nmf2" else "_km"
+            spread = np.std([f[k + unit] for f in fits])
+            assert np.median([f[k + "_sigma" + unit] for f in fits]) == pytest.approx(spread, rel=0.25)

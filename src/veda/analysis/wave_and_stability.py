@@ -214,14 +214,25 @@ def extract_gravity_wave_activity(
     }
 
 
+_NO_FIT = {"nmf2_cm3": None, "hmf2_km": None, "scale_height_km": None, "r_squared": None,
+           "nmf2_sigma_cm3": None, "hmf2_sigma_km": None, "scale_height_sigma_km": None, "weighted": False}
+
+
 def fit_chapman_ionosphere(
     z_km: np.ndarray,
     ne_cm3: np.ndarray,
+    sigma_cm3: Optional[np.ndarray] = None,
 ) -> Dict[str, Any]:
     """Fit analytical alpha-Chapman model to an occultation electron density profile.
 
     Formula:
     Ne(z) = Nm * exp(0.5 * (1 - (z - hm)/H - exp(-(z - hm)/H)))
+
+    With the 1-sigma of every fitted level (``sigma_cm3``) the fit is weighted by
+    1/sigma^2 and the parameters' 1-sigma come from its covariance, scaled up by the
+    reduced chi-square when the levels scatter more than their errors (as in the harmonic
+    fits, tides.py); without it, from the covariance scaled by the residual variance.
+    A parameter that ends on a bound of the fit gets no 1-sigma.
     """
     z = np.asarray(z_km, dtype=np.float64)
     ne = np.asarray(ne_cm3, dtype=np.float64)
@@ -230,10 +241,15 @@ def fit_chapman_ionosphere(
     # and leaving them out would fit the positive half of that noise only (a flatter layer)
     ok = np.isfinite(z) & np.isfinite(ne)
     if ok.sum() < 8 or not (ne[ok] > 0).any():
-        return {"nmf2_cm3": None, "hmf2_km": None, "scale_height_km": None, "r_squared": None}
+        return dict(_NO_FIT)
 
     z_c = z[ok]
     ne_c = ne[ok]
+    s_c = None
+    if sigma_cm3 is not None and np.shape(sigma_cm3) == z.shape:
+        s_c = np.asarray(sigma_cm3, dtype=np.float64)[ok]
+        if not (np.isfinite(s_c) & (s_c > 0)).all():
+            s_c = None
 
     # Initial parameter guesses
     nm_guess = float(np.max(ne_c))
@@ -245,16 +261,26 @@ def fit_chapman_ionosphere(
         zeta_clipped = np.clip(zeta, -50.0, 50.0)
         return nm * np.exp(0.5 * (1.0 - zeta_clipped - np.exp(-zeta_clipped)))
 
+    lo, hi = [nm_guess * 0.2, hm_guess - 100.0, 5.0], [nm_guess * 3.0, hm_guess + 100.0, 300.0]
     try:
-        popt, _ = curve_fit(
+        popt, pcov = curve_fit(
             chapman_func,
             z_c,
             ne_c,
             p0=[nm_guess, hm_guess, h_guess],
-            bounds=([nm_guess * 0.2, hm_guess - 100.0, 5.0], [nm_guess * 3.0, hm_guess + 100.0, 300.0]),
+            sigma=s_c,
+            absolute_sigma=s_c is not None,
+            bounds=(lo, hi),
             maxfev=2000,
         )
         nm_fit, hm_fit, h_fit = popt
+        if s_c is not None:
+            chi2_red = float(np.sum(((ne_c - chapman_func(z_c, *popt)) / s_c) ** 2)) / max(z_c.size - 3, 1)
+            pcov = pcov * max(1.0, chi2_red)
+        with np.errstate(invalid="ignore"):
+            sig = np.sqrt(np.diag(pcov))
+        at_bound = [min(v - a, b - v) <= 1e-6 * (b - a) for v, a, b in zip(popt, lo, hi)]
+        sig = [None if (edge or not np.isfinite(x)) else float(f"{x:.3g}") for x, edge in zip(sig, at_bound)]
 
         # Goodness of fit (R^2)
         residuals = ne_c - chapman_func(z_c, *popt)
@@ -267,8 +293,10 @@ def fit_chapman_ionosphere(
             "hmf2_km": round(float(hm_fit), 2),
             "scale_height_km": round(float(h_fit), 2),
             "r_squared": round(float(r2), 4),
+            "nmf2_sigma_cm3": sig[0], "hmf2_sigma_km": sig[1], "scale_height_sigma_km": sig[2],
+            "weighted": s_c is not None,
         }
     except (RuntimeError, ValueError):
         # no convergence: report no fit (the measured peak is given separately as
         # ne_peak_cm3 / hmf2_km; labelling it "Chapman fit" would be wrong)
-        return {"nmf2_cm3": None, "hmf2_km": None, "scale_height_km": None, "r_squared": None}
+        return dict(_NO_FIT)
