@@ -28,7 +28,7 @@ def test_zero_em_and_en_dashes_across_repository():
     """Verify strictly ZERO em-dashes and ZERO en-dashes across all source and doc files."""
     disallowed = ["\u2014", "\u2013"]
     extensions = [".py", ".js", ".html", ".css", ".md", ".ps1", ".json", ".ini", ".spec", ".txt"]
-    exclude_dirs = [".git", "venv", ".venv", "__pycache__", ".pytest_cache", "build", "dist", "sampledata", "veda.egg-info"]
+    exclude_dirs = [".git", "venv", ".venv", "__pycache__", ".pytest_cache", "build", "dist", "sampledata", "veda.egg-info", "graphify-out"]
 
     violations = []
     for p in ROOT_DIR.rglob("*"):
