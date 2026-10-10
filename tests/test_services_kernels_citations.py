@@ -432,7 +432,7 @@ def test_method_papers_for_the_derived_quantities_and_references():
     out = build([], ["venus_reference", "mars_reference", "co2_frost_point", "mars_gravity", "titan_real_gas"])
     methods = next(f for f in out["features"] if f["title"] == "Methods")
     keys = [i["key"] for i in methods["items"]]
-    assert keys == ["justh2021", "seiff1985", "justh2024", "james1992", "greve2010", "konopliv2016", "tsonopoulos1974"]
+    assert keys == ["justh2021", "seiff1985", "justh2024", "james1992", "greve2010", "konopliv2016", "tsonopoulos1974", "gillis1996"]
     texts = {i["key"]: i["text"] for i in methods["items"]}
     assert texts["justh2021"].endswith("https://ntrs.nasa.gov/citations/20210022168")
     assert "https://doi.org/10.1016/j.icarus.2016.02.052" in texts["konopliv2016"]
