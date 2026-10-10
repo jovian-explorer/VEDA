@@ -313,6 +313,11 @@ def test_uploaded_image_time_is_never_the_file_creation_date(client, tmp_path):
     hdu.writeto(f)
     r = _upload(client, "dated.fits", _b64(f), body_id="pluto")
     assert r.status_code == 200 and r.json()["time_utc"] == ""
+    from veda.missions.uploads_adapter import UploadsAdapter
+    assert UploadsAdapter().load_image("dated").time_utc == ""
+    r = _upload(client, "dated.fits", _b64(f), body_id="pluto", time_utc="2015-07-14T11:50:00")
+    assert r.json()["time_utc"] == "2015-07-14T11:50:00"
+    assert UploadsAdapter().load_image("dated").time_utc == "2015-07-14T11:50:00"
     client.delete("/api/veda/uploads/dated")
 
 
