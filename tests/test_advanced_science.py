@@ -73,6 +73,30 @@ def test_isothermal_mars_scale_height_stability_density():
     assert prof.raw_attributes["cp_model"].startswith("temperature-dependent")
 
 
+def test_venus_potential_temperature_with_variable_cp():
+    """Lebonnois et al. (2010): with cp = cp0 (T/T0)^nu the potential temperature is constant
+    along a dry adiabat, and the near-adiabatic lower atmosphere of the Venus-GRAM mean profile
+    keeps theta within 2 K of its 735 K surface value (a constant 850 J/(kg K) gave 797 K at 20 km)."""
+    from veda.analysis.reference import VENUS_GRAM_2021
+    from veda.analysis.thermo import THETA_CP_FIT, potential_temperature
+    venus = get_body("venus")
+    r = venus.gas_constant_r
+    cp0, t0, nu = THETA_CP_FIT["venus"]
+    # dry adiabat: dT/T = (R / cp(T)) dp/p, integrated in small steps from 92 bar, 735 K
+    lnp = np.linspace(np.log(venus.reference_pressure_hpa), np.log(1.0), 20001)
+    t = np.empty(lnp.size)
+    t[0] = 735.0
+    for i in range(1, lnp.size):
+        dlnp = lnp[i] - lnp[i - 1]
+        half = t[i - 1] * np.exp(0.5 * r / (cp0 * (t[i - 1] / t0) ** nu) * dlnp)
+        t[i] = t[i - 1] * np.exp(r / (cp0 * (half / t0) ** nu) * dlnp)
+    theta = potential_temperature(venus, t, np.exp(lnp), r)
+    assert np.allclose(theta, 735.0, rtol=1e-6)
+    low = [row for row in VENUS_GRAM_2021 if row[0] <= 20]
+    th = potential_temperature(venus, np.array([x[1] for x in low]), np.array([x[2] for x in low]), r)
+    assert np.all(np.abs(th - 735.3) < 2.5)
+
+
 def test_potential_temperature_equals_temperature_at_reference_pressure():
     venus = get_body("venus")
     z = np.array([0.0, 1.0, 2.0])

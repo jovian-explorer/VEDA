@@ -6509,6 +6509,34 @@
     }
    ],
    "note": "Acoustic virial coefficient from the second virial coefficient (Titan's real-gas speed of sound). Checked on Crossref."
+  },
+  {
+   "key": "lebonnois2010",
+   "authors": [
+    "Lebonnois, S.",
+    "Hourdin, F.",
+    "Eymet, V.",
+    "Crespin, A.",
+    "Fournier, R.",
+    "Forget, F."
+   ],
+   "et_al": false,
+   "year": 2010,
+   "title": "Superrotation of Venus' atmosphere analyzed with a full general circulation model",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "115",
+   "issue": "E6",
+   "pages": "2009JE003458",
+   "doi": "10.1029/2009JE003458",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "method",
+     "payload": "venus_potential_temperature"
+    }
+   ],
+   "note": "Crossref stores the page as the DOI suffix (2009JE003458). The citation article number is E06006 (ADS bibcode 2010JGRE..115.6006L, which resolves to this DOI). cp(T) = cp0 (T/T0)^nu and the potential temperature that follows from it (Venus)."
   }
  ]
 }

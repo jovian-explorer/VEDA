@@ -23,7 +23,9 @@ BODIES: Dict[str, BodyInfo] = {
         surface_gravity=8.87,
         mean_molecular_weight=43.45,  # 96.5% CO2, 3.5% N2
         gas_constant_r=191.4,         # J / (kg K)
-        isobaric_heat_capacity_cp=850.0,
+        # reference cp: cp0 = 1000 J/(kg K) at T0 = 460 K of the cp(T) fit of Lebonnois et al.
+        # (2010) that sets Venus' potential temperature (analysis.thermo); 850 before
+        isobaric_heat_capacity_cp=1000.0,
         reference_pressure_hpa=92000.0,  # ~92 bar surface pressure
         atmospheric_composition={"CO2": 96.5, "N2": 3.5, "SO2": 0.015},
         description="Terrestrial planet enveloped in an opaque, superrotating carbon dioxide atmosphere with dense global sulphuric acid cloud decks (48 to 70 km altitude), extreme surface pressure (~92 bar), and intense greenhouse heating (~737 K surface temperature). Venus exhibits complex atmospheric wave phenomena, including planetary-scale Kelvin and Rossby waves, and strong thermal tides.",

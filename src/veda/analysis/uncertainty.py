@@ -245,8 +245,10 @@ def propagate(profile, body, derived: Dict[str, np.ndarray], gz: Optional[np.nda
             rt = rel_t if rel_t is not None else 0.0
             rp = rel_p if rel_p is not None else 0.0
             out["density"] = np.abs(derived["density"]) * np.sqrt(rt ** 2 + rp ** 2)
-            kappa = r_spec / body.isobaric_heat_capacity_cp
-            out["potential_temperature"] = np.abs(derived["potential_temperature"]) * np.sqrt(rt ** 2 + (kappa * rp) ** 2)
+            from .thermo import potential_temperature_sensitivity
+            th = np.abs(derived["potential_temperature"])
+            a_t, a_p = potential_temperature_sensitivity(body, t, th, r_spec)
+            out["potential_temperature"] = th * np.sqrt((a_t * rt) ** 2 + (a_p * rp) ** 2)
         if "t_minus_co2_condensation" in derived and (s_t is not None or s_p is not None):
             from .condensation import co2_condensation_sigma
             s_tc = (co2_condensation_sigma(derived["co2_condensation_temperature"], p, s_p) if s_p is not None
@@ -288,12 +290,10 @@ def propagate(profile, body, derived: Dict[str, np.ndarray], gz: Optional[np.nda
                     n2 = (gz / t_draws) * (dtdz / 1000.0 + gz / heat_capacity(body, t_draws))
                 out["buoyancy_freq_sq"] = _std(n2)
     if "dtheta_dz" in derived and p is not None and (s_t is not None or s_p is not None):
-        kappa = r_spec / body.isobaric_heat_capacity_cp
-        p_ref = body.reference_pressure_hpa
+        from .thermo import potential_temperature
         tt = t_draws if t_draws is not None else np.broadcast_to(t, (MC_DRAWS, z.size))
         pp = p + _draws(s_p, z, l_p, rng) if s_p is not None else np.broadcast_to(p, (MC_DRAWS, z.size))
-        with np.errstate(invalid="ignore", divide="ignore"):
-            theta = tt * (p_ref / np.where(pp > 0, pp, np.nan)) ** kappa
+        theta = potential_temperature(body, tt, pp, r_spec)
         ok_th = np.isfinite(z) & np.isfinite(derived["potential_temperature"])
         op = gradient_operator(z, ok_th) if ok_th.sum() >= 2 else None
         if op is not None:

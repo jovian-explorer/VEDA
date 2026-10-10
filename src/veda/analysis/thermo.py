@@ -62,3 +62,39 @@ def heat_capacity(body, t_k) -> np.ndarray:
     out = molar / mu_kg
     out = np.where(np.isfinite(t), out, np.nan)
     return out
+
+
+# Venus: cp = cp0 (T / T0)^nu, the fit of Lebonnois et al. (2010, JGR 115, E06006) to the
+# VIRA heat capacity used by Venus general circulation models (LMD, OPUS-V), and the
+# potential temperature that follows from it,
+#     theta^nu = T^nu + nu T0^nu ln((p_ref / p)^(R / cp0)),
+# (with one constant cp, 850 J/(kg K) before, the near-adiabatic lower atmosphere of the
+# Venus-GRAM / VIRA mean profile had theta rising from 735 K at the surface to 797 K at
+# 20 km, a stability it does not have; with cp(T) theta stays within 2 K of 735 K)
+THETA_CP_FIT = {"venus": (1000.0, 460.0, 0.35)}        # cp0 (J/(kg K)), T0 (K), nu
+
+
+def potential_temperature(body, t_k, p_hpa, r_spec) -> np.ndarray:
+    """Potential temperature (K) referred to the body's reference pressure: with the
+    variable-cp form above for Venus, else T (p_ref / p)^(R / cp) with the body's reference
+    cp (registry value).  NaN where p is not positive."""
+    t = np.asarray(t_k, dtype=np.float64)
+    p = np.asarray(p_hpa, dtype=np.float64)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        ln_p = np.log(body.reference_pressure_hpa / np.where(p > 0, p, np.nan))
+        fit = THETA_CP_FIT.get(body.id)
+        if fit:
+            cp0, t0, nu = fit
+            return (t ** nu + nu * t0 ** nu * (r_spec / cp0) * ln_p) ** (1.0 / nu)
+        return t * np.exp(r_spec / body.isobaric_heat_capacity_cp * ln_p)
+
+
+def potential_temperature_sensitivity(body, t_k, theta, r_spec):
+    """(d ln theta / d ln T, d ln theta / d ln p) at each level, for first-order errors:
+    (1, -R/cp) with a constant cp; on Venus ((T/theta)^nu, -(T0/theta)^nu R/cp0)."""
+    fit = THETA_CP_FIT.get(body.id)
+    if not fit:
+        return 1.0, -r_spec / body.isobaric_heat_capacity_cp
+    cp0, t0, nu = fit
+    with np.errstate(invalid="ignore", divide="ignore"):
+        return (np.asarray(t_k, dtype=float) / theta) ** nu, -(t0 / np.asarray(theta, dtype=float)) ** nu * r_spec / cp0

@@ -450,3 +450,9 @@ def test_dataset_citations_follow_their_registry_records():
     assert refs["karatekin2020data"]["authors"] == ["Karatekin, O."]
     assert refs["holsteinrathlou2015data"]["authors"][0] == "Withers, P."
     assert refs["johnson1992"]["title"] == "Space science reviews volume on Galileo Mission overview"
+
+
+def test_venus_potential_temperature_cites_its_cp_fit():
+    from veda.citations import FEATURE_REFS, ref_text, references
+    assert FEATURE_REFS["venus_potential_temperature"] == ["lebonnois2010"]
+    assert "115(E6), E06006" in ref_text(references()["lebonnois2010"])

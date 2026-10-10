@@ -48,6 +48,7 @@ FEATURE_REFS = {
     "co2_frost_point": ["james1992", "greve2010"],
     "mars_gravity": ["konopliv2016"],
     "titan_real_gas": ["tsonopoulos1974", "gillis1996"],
+    "venus_potential_temperature": ["lebonnois2010"],
 }
 FEATURE_TITLES = {
     "geometry": "Observation geometry (NAIF SPICE, SpiceyPy)",
@@ -63,6 +64,7 @@ FEATURE_TITLES = {
     "co2_frost_point": "Methods",
     "mars_gravity": "Methods",
     "titan_real_gas": "Methods",
+    "venus_potential_temperature": "Methods",
 }
 
 

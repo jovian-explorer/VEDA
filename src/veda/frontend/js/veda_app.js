@@ -606,7 +606,7 @@ export async function loadAndRenderCelestialBody(bodyId) {
         <div class="phys-badge"><strong>Gravity g₀:</strong> ${fmtGravity(bodyDetails.surface_gravity)} m/s²</div>
         <div class="phys-badge"><strong>Molar mass μ:</strong> ${bodyDetails.mean_molecular_weight} g/mol</div>
         <div class="phys-badge"><strong>Gas Const R:</strong> ${bodyDetails.gas_constant_r} J/(kg K)</div>
-        <div class="phys-badge" title="${String(bodyDetails.cp_model || '').startsWith('temperature') ? 'Derived quantities use cp(T) from the JANAF tables of the main gases; this reference value sets the potential-temperature exponent R/cp.' : 'Constant cp used for derived quantities.'}"><strong>c<sub>p</sub>:</strong> ${bodyDetails.isobaric_heat_capacity_cp} J/(kg K)${String(bodyDetails.cp_model || '').startsWith('temperature') ? ' (reference; varies with T)' : ''}</div>
+        <div class="phys-badge" title="${String(bodyDetails.cp_model || '').startsWith('temperature') ? 'Derived quantities use cp(T) from the JANAF tables of the main gases; this reference value sets the potential-temperature exponent R/cp (Venus: the potential temperature follows the cp(T) fit of Lebonnois et al. 2010, and this is its cp0 at 460 K).' : 'Constant cp used for derived quantities.'}"><strong>c<sub>p</sub>:</strong> ${bodyDetails.isobaric_heat_capacity_cp} J/(kg K)${String(bodyDetails.cp_model || '').startsWith('temperature') ? ' (reference; varies with T)' : ''}</div>
         <div class="phys-badge"><strong>Ref Pressure:</strong> ${bodyDetails.reference_pressure_hpa >= 1 ? bodyDetails.reference_pressure_hpa.toLocaleString() + ' hPa' : bodyDetails.reference_pressure_hpa + ' hPa'}</div>
         <div class="phys-badge"><strong>Atmosphere:</strong> ${compStr}</div>
       </div>
@@ -2277,6 +2277,7 @@ function recordMethods(bodyId, variable, reference = false) {
   if (/co2_condensation/.test(variable || '')) recordFeature('co2_frost_point');
   if (bodyId === 'mars' && GRAVITY_VARIABLES.has(variable)) recordFeature('mars_gravity');
   if (bodyId === 'titan' && EOS_VARIABLES.has(variable)) recordFeature('titan_real_gas');
+  if (bodyId === 'venus' && /potential_temperature|dtheta_dz/.test(variable || '')) recordFeature('venus_potential_temperature');
 }
 
 /** Each group's composite mean minus the first group's, with its 95 % bootstrap interval

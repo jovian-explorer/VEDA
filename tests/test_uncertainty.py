@@ -405,3 +405,20 @@ def test_comparison_reports_and_exports_its_uncertainty_budget():
     header = next(line for line in text.splitlines() if line.startswith("altitude_km,"))
     assert "budget_variability" in header and "budget_mean_systematic_correlated" in header
     assert "# budget_* columns" in text
+
+
+def test_venus_potential_temperature_uncertainty_matches_its_derivatives():
+    from veda.analysis.thermo import potential_temperature
+    venus = get_body("venus")
+    z = np.arange(40.0, 80.0, 1.0)
+    t = 420.0 - 4.0 * (z - 40.0)
+    p = 3500.0 * np.exp(-(z - 40.0) / 6.0)
+    prof = ObservationProfile(observation_id="v", mission_id="vex", body_id="venus", instrument="VeRa",
+                              time_utc="2007-01-01T00:00:00", altitude_km=z, temperature_k=t, pressure_hpa=p,
+                              uncertainty={"temperature_k": np.full(z.size, 1.0), "pressure_hpa": 0.01 * p})
+    prof.derived = compute_atmospheric_diagnostics(prof, venus)
+    r = venus.gas_constant_r
+    th = potential_temperature(venus, t, p, r)
+    d_t = (potential_temperature(venus, t + 1e-4, p, r) - th) / 1e-4          # numerical derivatives
+    d_p = (potential_temperature(venus, t, p * (1 + 1e-6), r) - th) / 1e-6
+    np.testing.assert_allclose(prof.uncertainty["potential_temperature"], np.hypot(d_t * 1.0, d_p * 0.01), rtol=1e-4)

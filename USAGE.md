@@ -191,6 +191,9 @@ Where the profile has 1-sigma pressures or temperatures, VEDA also gives the dep
 ### Poisson Potential Temperature
 To diagnose vertical stability and potential energy across varying pressure levels, VEDA calculates potential temperature referenced to $P_0$:
 $$\theta(z) = T(z) \left(\frac{P_0}{P(z)}\right)^{\frac{R_{spec}}{C_p}}$$
+On Venus, where $c_p$ falls from about 1180 to 600 J kg$^{-1}$ K$^{-1}$ between the surface and 100 km, VEDA uses instead the potential temperature of the Venus general circulation models, from the fit $c_p = c_{p0}(T/T_0)^{\nu}$ with $c_{p0} = 1000$ J kg$^{-1}$ K$^{-1}$, $T_0 = 460$ K, $\nu = 0.35$ (Lebonnois et al. 2010, JGR 115, E06006):
+$$\theta^{\nu} = T^{\nu} + \nu\,T_0^{\nu} \ln\left(\frac{P_0}{P}\right)^{R_{spec}/c_{p0}}.$$
+It is constant along a dry adiabat, so the near-adiabatic lower atmosphere of the Venus-GRAM mean profile keeps $\theta$ within 2 K of 735 K up to 20 km (with a constant $c_p$ of 850 it rose to 797 K, a stability that is not there).
 
 ### Brunt-Vaisala Static Stability Frequency
 The buoyancy frequency squared quantifies resistance to vertical convective displacement:
@@ -205,7 +208,7 @@ where the dry adiabatic lapse rate is $\Gamma_d = g(z) / c_p(T)$. VEDA evaluates
 **Fill values**: temperatures, pressures and densities that are zero or negative are treated as missing (some archives, such as the MER and Phoenix entry profiles, mark missing levels with -1 without declaring it).
 
 ### Heat capacity
-For Venus, Mars, Titan and Pluto, $c_p$ depends on temperature: it is the mole-fraction weighted ideal-gas heat capacity of the main constituents (CO2, N2, Ar, O2, CH4, CO; JANAF thermochemical tables) divided by the mean molar mass. CO2's $c_p$ rises steeply with temperature, so this matters: Mars at 200 K has $c_p \approx 740$ J kg$^{-1}$ K$^{-1}$ (the constant 830 used before 2026-10 understated $\Gamma_d$ by 11 %), and in the deep Venus atmosphere $c_p$ grows from about 850 at 300 K to about 1140 at 735 K. $c_p(T)$ is used for $N^2$, $\Gamma_d$ and the speed of sound $c_s = \sqrt{\gamma R_{spec} T}$ with $\gamma = c_p/(c_p - R_{spec})$. Potential temperature uses the conventional constant $\kappa = R_{spec}/c_p$ at the body's reference $c_p$ (Mars: $c_p(T)$ at its 214 K mean surface temperature, 752 J kg$^{-1}$ K$^{-1}$, so $\kappa = 0.254$, close to the 0.257 of Mars climate models). Other bodies use their constant $c_p$ (shown with the body constants).
+For Venus, Mars, Titan and Pluto, $c_p$ depends on temperature: it is the mole-fraction weighted ideal-gas heat capacity of the main constituents (CO2, N2, Ar, O2, CH4, CO; JANAF thermochemical tables) divided by the mean molar mass. CO2's $c_p$ rises steeply with temperature, so this matters: Mars at 200 K has $c_p \approx 740$ J kg$^{-1}$ K$^{-1}$ (the constant 830 used before 2026-10 understated $\Gamma_d$ by 11 %), and in the deep Venus atmosphere $c_p$ grows from about 850 at 300 K to about 1140 at 735 K. $c_p(T)$ is used for $N^2$, $\Gamma_d$ and the speed of sound $c_s = \sqrt{\gamma R_{spec} T}$ with $\gamma = c_p/(c_p - R_{spec})$. Potential temperature uses the conventional constant $\kappa = R_{spec}/c_p$ at the body's reference $c_p$, except on Venus (above) (Mars: $c_p(T)$ at its 214 K mean surface temperature, 752 J kg$^{-1}$ K$^{-1}$, so $\kappa = 0.254$, close to the 0.257 of Mars climate models). Other bodies use their constant $c_p$ (shown with the body constants).
 
 ### Gravity Wave Potential Energy
 Atmospheric gravity wave activity is quantified from temperature fluctuations $T'(z) = T(z) - \overline{T}(z)$:

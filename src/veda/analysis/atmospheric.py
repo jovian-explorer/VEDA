@@ -321,14 +321,12 @@ def _diagnostics(profile: ObservationProfile, body: BodyInfo) -> Dict[str, np.nd
     # 5. Pressure-based quantities
     p_hpa = profile.pressure_hpa
     if p_hpa is not None and p_hpa.size == z.size:
-        # Potential temperature with the conventional constant kappa = R / cp_ref, cp_ref
-        # being cp at the body's reference temperature (registry value); referenced to
-        # the body's reference pressure (e.g. 1 bar for the giant planets, 6.1 hPa for Mars).
-        kappa = r_spec / body.isobaric_heat_capacity_cp
-        p_ref = body.reference_pressure_hpa
+        # Potential temperature referred to the body's reference pressure (1 bar for the
+        # giant planets, 6.1 hPa for Mars): constant R / cp_ref, or Venus' variable cp (thermo.py)
+        from .thermo import potential_temperature
+        theta = potential_temperature(body, t_k, p_hpa, r_spec)
 
         with np.errstate(invalid="ignore", divide="ignore"):
-            theta = t_k * (p_ref / np.where(p_hpa > 0, p_hpa, np.nan)) ** kappa
             # Mass density rho = P / (Z R T) in kg/m^3 (P in Pa = hPa * 100)
             rho = (p_hpa * 100.0) / (zc * r_spec * t_k)
 
