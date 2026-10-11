@@ -94,7 +94,7 @@ def minmax_indices(y: np.ndarray, max_points: int) -> np.ndarray:
 
 
 _NOT_A_MEASUREMENT = re.compile(
-    r"(^|[ _.])(SAMPLE|RECORD|ROW|INDEX|PACKET|SEQUENCE|FRAME|COUNTER)([ _]?(NUMBER|NO|ID|COUNT))?$|"
+    r"(^|[ _.])(SAMPLE|RECORD|ROW|INDEX|PACKET|PKT|SEQUENCE|FRAME|COUNTER)([ _]?(NUMBER|NO|ID|COUNT))?$|"
     r"EPHEMERIS|SCLK|SPACECRAFT[ _]CLOCK|(^|[ _])(ET|TIME|UTC|JD|MJD|DOY|YEAR|MONTH|DAY|HOUR|MINUTE|SECOND)"
     r"([ _]|$)|^(ET|UTC|SCET|ERT|OBT|SCLK)([A-Z]{0,4}|[ _].*)$|(^|[ _])(ID|TYPE|VERSION|COUNTER|ORBIT)$|QUALITY|FLAG|MODE|STATUS|CHECKSUM|SPARE", re.I)
 
@@ -120,10 +120,13 @@ def _as_numbers(values) -> Optional[np.ndarray]:
 def default_y(obj: DataObject, x: Optional[str]) -> Optional[str]:
     """The first field that looks like a measurement (not a counter, clock or flag)."""
     nums = [f for f in obj.fields if f.kind == "number" and f.name != x]
+
+    def measurement(f) -> bool:     # by its name, or its description (MCS RDR: a column named "1")
+        return not _NOT_A_MEASUREMENT.search(f.name) and not re.match(r"\W*(an? )?(quality|flag)", f.description or "", re.I)
     for f in nums:
-        if f.items == 1 and not _NOT_A_MEASUREMENT.search(f.name):
+        if f.items == 1 and measurement(f):
             return f.name
-    vec = next((f for f in nums if f.items > 1 and not _NOT_A_MEASUREMENT.search(f.name)), None)
+    vec = next((f for f in nums if f.items > 1 and measurement(f)), None)
     if vec:
         return vec.name
     return nums[0].name if nums else None

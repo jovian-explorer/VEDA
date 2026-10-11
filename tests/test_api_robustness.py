@@ -941,3 +941,14 @@ def test_numbers_in_character_columns_are_plotted(client, tmp_path, monkeypatch)
     assert j["rows"] == 3 and j["series"][0]["name"] == "MASS"         # ORBIT is a counter
     j = client.get("/api/veda/product/pvo-v-onms/ONMS/table", params={"y": ["BALTIT"]}).json()
     assert j["series"][0]["values"] == [640.5, 597.8, 597.3]
+
+
+def test_default_series_skips_quality_columns_and_packet_counts():
+    """The MCS RDR table starts with a column named "1" (a quality indicator) and a packet
+    count; the table view plotted those first."""
+    from veda.api.product_routes import default_y
+    from veda.readers.product import DataObject, Field
+    fields = [Field("1", "", "A quality indicator: 0 means this record contains valid data"),
+              Field("PKT_COUNT", "", "The packet count"), Field("RADIANCE", "W/m2/sr/cm-1", "Calibrated radiance")]
+    obj = DataObject(name="TABLE", kind="table", shape=(3, 3), fields=fields)
+    assert default_y(obj, None) == "RADIANCE"
