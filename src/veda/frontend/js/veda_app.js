@@ -2638,9 +2638,10 @@ export function renderPlanetaryMap(projection = '2d') {
       const px = [], py = [], pz = [];
       const customdata = [];
 
-      obsList.forEach(o => {
-        const latRad = ((o.latitude || 0) * Math.PI) / 180;
-        const lonRad = ((o.longitude || 0) * Math.PI) / 180;
+      // observations without a position are not drawn (they were put at 0 N, 0 E)
+      obsList.filter(o => Number.isFinite(o.latitude) && Number.isFinite(o.longitude)).forEach(o => {
+        const latRad = (o.latitude * Math.PI) / 180;
+        const lonRad = (o.longitude * Math.PI) / 180;
         px.push(R * Math.cos(latRad) * Math.cos(lonRad));
         py.push(R * Math.cos(latRad) * Math.sin(lonRad));
         pz.push(R * Math.sin(latRad));
@@ -2672,7 +2673,11 @@ export function renderPlanetaryMap(projection = '2d') {
 
     const layout = {
       title: {
-        text: `${(body.name || '').toUpperCase()} • 3D Planetary Coordinates Globe`,
+        text: `${(body.name || '').toUpperCase()} • 3D Planetary Coordinates Globe`
+          + (() => {
+            const n = Object.values(byMission).flat().filter(o => !(Number.isFinite(o.latitude) && Number.isFinite(o.longitude))).length;
+            return n ? ` (${n} without a position not shown)` : '';
+          })(),
         font: { color: '#e0e0e0', size: 14 },
       },
       paper_bgcolor: 'transparent',
