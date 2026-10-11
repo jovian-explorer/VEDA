@@ -1070,7 +1070,7 @@ FIELD_REGISTRY: Dict[str, dict] = {
         "reference": "Tellmann, S., et al. (2012), Icarus, 221(2), 471-480",
         "doi": "10.1016/j.icarus.2012.08.023",
         "archive": "ESA PSA / NASA PDS",
-        "description": "Planetary atmospheric pressure profile obtained from hydrostatic equilibrium integration."
+        "description": "Atmospheric pressure as archived: integrated hydrostatically in radio occultation and stellar or solar occultation retrievals, measured directly by entry probes and landers."
     },
     "refractivity": {
         "id": "refractivity",
@@ -1092,7 +1092,7 @@ FIELD_REGISTRY: Dict[str, dict] = {
         "reference": "Fjeldbo, G., Kliore, A. J., & Eshleman, V. R. (1971), Astron. J., 76, 123-140 (radio occultation retrieval)",
         "doi": "10.1086/111096",
         "archive": "NASA PDS / ESA PSA / ISRO ISSDC",
-        "description": "Planetary ionospheric electron density inverted from dual-frequency radio occultation excess phase."
+        "description": "Ionospheric electron density from radio occultations (one or two frequencies) by Abel inversion of the bending angle or excess phase, as archived."
     },
     "potential_temperature": {
         "id": "potential_temperature",
