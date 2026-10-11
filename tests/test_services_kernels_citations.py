@@ -468,3 +468,21 @@ def test_profile_view_records_the_method_papers_of_what_it_shows():
     assert "['co2_condensation_temperature', 'potential_temperature', 'buoyancy_freq_sq', 'wave_potential_energy']" in js
     for feature in ("venus_potential_temperature", "giant_planet_cp", "gravity_waves"):
         assert f"recordFeature('{feature}')" in js and FEATURE_REFS[feature]
+
+
+def test_downloads_remove_parts_left_by_a_killed_process(tmp_path):
+    """A download in a process that was killed leaves its .part file behind for good."""
+    import os
+    import time
+    from veda.archives import net
+    dest = tmp_path / "mar099s.bsp"
+    stale = tmp_path / "mar099s.bsp.16800-22696.part"
+    fresh = tmp_path / "mar099s.bsp.17000-1.part"
+    other = tmp_path / "de440s.bsp.16800-22696.part"
+    for f in (stale, fresh, other):
+        f.write_bytes(b"x")
+    old = time.time() - 2 * net.STALE_PART_S
+    os.utime(stale, (old, old))
+    os.utime(other, (old, old))
+    net._part_path(dest)
+    assert not stale.exists() and fresh.exists() and other.exists()     # only this file's old parts

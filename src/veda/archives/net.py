@@ -153,7 +153,25 @@ def _part_path(dest: Path) -> Path:
     at once (selected products sharing a format file, worker processes reading
     profiles from one folder) wrote into one .part file, so one failed with a
     permission error and the file could be saved cut short."""
+    _remove_stale_parts(dest)
     return dest.with_name(f"{dest.name}.{os.getpid()}-{threading.get_ident()}.part")
+
+
+STALE_PART_S = 3600
+
+
+def _remove_stale_parts(dest: Path) -> None:
+    """Delete .part files of ``dest`` not written to for an hour: a download whose process
+    was killed (closed window, crash) leaves one behind, and it was never removed (a
+    55 MB Mars kernel was found).  A running download writes to its own file every few
+    seconds, so it is not touched."""
+    now = time.time()
+    for old in dest.parent.glob(f"{dest.name}.*.part"):
+        try:
+            if now - old.stat().st_mtime > STALE_PART_S:
+                old.unlink()
+        except OSError:
+            pass
 
 
 def _install(tmp: Path, dest: Path) -> None:
