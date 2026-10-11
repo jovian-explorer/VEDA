@@ -22,45 +22,6 @@ export function el(tag, attrs = {}, ...kids) {
 
 export function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
 
-// ---------------------------------------------------------------- formatting
-
-export function fmt(v, digits = 2) {
-  if (v === null || v === undefined || Number.isNaN(v)) return '-';
-  if (typeof v === 'boolean') return v ? 'yes' : 'no';
-  if (typeof v !== 'number') return String(v);
-  if (v !== 0 && (Math.abs(v) >= 1e5 || Math.abs(v) < 1e-3)) {
-    return v.toExponential(2).replace('e+', '\u00d710^').replace('e-', '\u00d710^-');
-  }
-  return v.toFixed(digits).replace(/\.?0+$/, '') || '0';
-}
-
-export function bytes(n) {
-  if (!n && n !== 0) return '-';
-  const u = ['B', 'kB', 'MB', 'GB', 'TB'];
-  let i = 0;
-  while (n >= 1024 && i < u.length - 1) { n /= 1024; i++; }
-  return `${n < 10 && i > 0 ? n.toFixed(1) : Math.round(n)} ${u[i]}`;
-}
-
-export function clock(seconds) {
-  if (!seconds || seconds < 0) return '-';
-  if (seconds < 60) return `${Math.round(seconds)} s`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)} min ${Math.round(seconds % 60)} s`;
-  return `${(seconds / 3600).toFixed(1)} h`;
-}
-
-export function isoDay(d) { return d.toISOString().slice(0, 10); }
-
-export function timeOf(iso) { return iso ? iso.slice(11, 19) : '-'; }
-export function dayOf(iso)  { return iso ? iso.slice(0, 10) : '-'; }
-
-/** Signed degrees to a hemisphere-tagged string. */
-export function latlon(v, kind) {
-  if (v === null || v === undefined) return '-';
-  const h = kind === 'lat' ? (v >= 0 ? 'N' : 'S') : (v >= 0 ? 'E' : 'W');
-  return `${Math.abs(v).toFixed(2)}\u00b0${h}`;
-}
-
 // ---------------------------------------------------------------- feedback
 
 export function toast(message, kind = '') {
@@ -367,106 +328,8 @@ export function closeDrawer() {
   }
 }
 
-export function fillSelect(select, options, value) {
-  clear(select);
-  for (const o of options) {
-    const opt = typeof o === 'string' ? {value: o, label: o} : o;
-    select.append(el('option', {value: opt.value, title: opt.title || null},
-                     opt.label));
-  }
-  if (value !== undefined && value !== null) select.value = value;
-}
-
 // ---------------------------------------------------------------- plotly
 
-export const PALETTE = [
-  '#0284c7', // Luminous Celestial Blue
-  '#f97316', // Vibrant Solar Amber
-  '#10b981', // Neon Emerald
-  '#8b5cf6', // Electric Violet
-  '#f43f5e', // Radiant Rose
-  '#06b6d4', // Bright Cyan
-  '#eab308', // Sun Gold
-  '#ec4899', // Nebula Pink
-];
-
-export const PLOT_CONFIG = {
-  displaylogo: false,
-  responsive: true,
-  // The bundled basemaps make geo plots work with no network access.
-  topojsonURL: 'vendor/topojson/',
-  toImageButtonOptions: {format: 'png', scale: 2, filename: 'veda_plot'},
-  modeBarButtonsToRemove: ['sendDataToCloud', 'select2d'],
-};
-
-export function layoutBase(extra = {}) {
-  const isDark = document.documentElement.dataset.theme !== 'light';
-  const fontScale = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--font-scale') || '1.0');
-
-  return Object.assign({
-    font: {
-      family: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-      size: Math.round(12 * fontScale),
-      color: isDark ? '#e2e8f0' : '#1e293b'
-    },
-    paper_bgcolor: isDark ? '#0f172a' : '#ffffff',
-    plot_bgcolor: isDark ? 'rgba(15, 23, 42, 0.75)' : 'rgba(248, 250, 252, 0.75)',
-    margin: {l: 64, r: 24, t: 40, b: 54},
-    hovermode: 'closest',
-    hoverlabel: {
-      bgcolor: isDark ? '#1e293b' : '#ffffff',
-      bordercolor: isDark ? '#475569' : '#cbd5e1',
-      font: {
-        family: 'system-ui, -apple-system, sans-serif',
-        size: Math.round(11.5 * fontScale),
-        color: isDark ? '#f8fafc' : '#0f172a'
-      }
-    },
-    xaxis: {
-      gridcolor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0',
-      zerolinecolor: isDark ? 'rgba(255, 255, 255, 0.2)' : '#94a3b8',
-      zeroline: true,
-      zerolinewidth: 1.2,
-      ticks: 'outside',
-      ticklen: 4,
-      tickcolor: isDark ? '#475569' : '#94a3b8',
-      automargin: true,
-      linecolor: isDark ? '#334155' : '#cbd5e1',
-      linewidth: 1
-    },
-    yaxis: {
-      gridcolor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#e2e8f0',
-      zerolinecolor: isDark ? 'rgba(255, 255, 255, 0.2)' : '#94a3b8',
-      zeroline: true,
-      zerolinewidth: 1.2,
-      ticks: 'outside',
-      ticklen: 4,
-      tickcolor: isDark ? '#475569' : '#94a3b8',
-      automargin: true,
-      linecolor: isDark ? '#334155' : '#cbd5e1',
-      linewidth: 1
-    },
-    legend: {
-      bgcolor: isDark ? 'rgba(15, 23, 42, 0.85)' : 'rgba(255, 255, 255, 0.85)',
-      bordercolor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
-      borderwidth: 1,
-      font: {size: Math.round(11 * fontScale), color: isDark ? '#e2e8f0' : '#334155'}
-    },
-  }, extra);
-}
-
-/**
- * Plots dropped from the page (a panel re-rendered with innerHTML, a drawer
- * closed) keep a window resize handler and all their data until purged, so a
- * long session got slower and slower.  Purge every plot as it leaves the page.
- */
-/**
- * Readable ticks on every log axis, applied after Plotly has chosen the range:
- * Plotly's default labels minor ticks with bare digits ("5 6 7 8 9 0.1 2 3", where
- * 5 means 0.05) and uses SI prefixes ("100μ" for 1e-4), which read as wrong values
- * after a unit change.  Spans under ~3 decades get 1-2-5 ticks with full values,
- * wider spans one tick per decade written as powers of ten.
- */
 export function fixLogTicks(gd) {
   const fl = gd && gd._fullLayout;
   if (!fl || !window.Plotly) return;
@@ -511,12 +374,4 @@ export function installPlotJanitor() {
       }
     }
   }).observe(document.body, { childList: true, subtree: true });
-}
-
-export function emptyPlot(nodeId, message) {
-  Plotly.purge(nodeId);
-  const node = document.getElementById(nodeId);
-  clear(node);
-  node.append(el('p', {class: 'hint', style: 'padding:34px 6px;text-align:center'},
-                 message));
 }

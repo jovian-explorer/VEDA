@@ -140,15 +140,6 @@ const MISSION_COLORS = {
   user_imported: '#00e5ff',
 };
 
-export function getMissionColor(missionId) {
-  const m = (missionId || '').toLowerCase();
-  if (MISSION_COLORS[m]) return MISSION_COLORS[m];
-  const fallback = ['#ff5252', '#448aff', '#00e676', '#ffb300', '#ba68c8', '#00e5ff', '#ff3d00', '#69f0ae'];
-  let hash = 0;
-  for (let i = 0; i < m.length; i++) hash = (hash << 5) - hash + m.charCodeAt(i);
-  return fallback[Math.abs(hash) % fallback.length];
-}
-
 // Planetary Icons & Badges
 const BODY_EMOJIS = {
   venus: '🟡',
@@ -2814,17 +2805,6 @@ export async function loadAndRenderMission(missionId) {
 
   // Indexing a mission's archive can take seconds; do not hold up whatever opened the mission.
   showMissionArchive(missionId);
-}
-
-export async function inspectObservation(obs) {
-  vedaState.selectedObservation = obs;
-  const isImage = obs.data_type === 'image' || ['LORRI', 'UVI', 'LIR', 'JunoCam', 'ISS'].includes(obs.instrument);
-
-  if (isImage) {
-    await inspectImageObservation(obs);
-  } else {
-    await inspectProfileObservation(obs);
-  }
 }
 
 /** Open an archive product: profiles in the profile viewer, everything else in the product viewer. */
