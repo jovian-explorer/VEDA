@@ -198,7 +198,7 @@ It is constant along a dry adiabat, so the near-adiabatic lower atmosphere of th
 ### Brunt-Vaisala Static Stability Frequency
 The buoyancy frequency squared quantifies resistance to vertical convective displacement:
 $$N^2(z) = \frac{g(z)}{T(z)} \left(\frac{dT}{dz} + \Gamma_d\right) = \frac{g(z)}{\theta(z)} \frac{d\theta}{dz}$$
-where the dry adiabatic lapse rate is $\Gamma_d = g(z) / c_p(T)$. VEDA evaluates N^2 from temperature alone (no pressure column needed).
+where the dry adiabatic lapse rate is $\Gamma_d = g(z) / c_p(T)$. VEDA evaluates N^2 from temperature alone (no pressure column needed), with $c_p(T)$; the form with $\theta$ holds for a constant $c_p$ only, so $d\theta/dz$ and $N^2$ need not agree where $c_p$ varies (Venus, Mars, the giant planets).
 * $N^2(z) > 0$: Dynamically stable layer supporting internal gravity wave propagation.
 * $N^2(z) = 0$: Neutral stability.
 * $N^2(z) < 0$: Superadiabatic, convective overturning instability.
