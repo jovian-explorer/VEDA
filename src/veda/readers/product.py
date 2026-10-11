@@ -31,7 +31,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 
-from .pds3_reader import _label_lines, _rejoin_broken_records, _strip_comments  # noqa: F401
+from .pds3_reader import _label_lines, _rejoin_broken_records
 
 
 class ProductError(ValueError):
