@@ -210,3 +210,10 @@ def test_globe_draws_no_observation_without_a_position():
     assert "const located = activeObs.filter(o => Number.isFinite(o.latitude) && Number.isFinite(o.longitude));" in js
     # the listing has no positions: they come from the compared profiles
     assert "return o.latitude == null && p ? { ...o, latitude: p.latitude, longitude: p.longitude } : o;" in js
+
+
+def test_listing_takes_positions_the_archive_index_gives():
+    from veda.missions.archive_adapter import _indexed_position
+    assert _indexed_position({"extra": '{"LATITUDE": 85.9562, "LONGITUDE": 44.1488}'}) == {"latitude": 85.9562, "longitude": 44.1488}
+    assert _indexed_position({"extra": {"LATITUDE": 12.0}}) == {}            # latitude alone: no position
+    assert _indexed_position({"extra": "not json"}) == {} and _indexed_position({}) == {}

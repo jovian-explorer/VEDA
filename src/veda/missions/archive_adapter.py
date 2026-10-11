@@ -57,6 +57,7 @@ class ArchiveMissionAdapter(BaseMissionAdapter):
                 "orbit": p["orbit"],
                 "archive_source": p["url"],
                 "is_cached": True,
+                **_indexed_position(p),
             })
         if self._images is not None:
             for img in self._images.discover_observations(body_id=body_id):
@@ -99,3 +100,19 @@ class ArchiveMissionAdapter(BaseMissionAdapter):
     def get_provenance(self, observation_id: str) -> Optional[ProvenanceRecord]:
         prof = self.load_profile(observation_id)
         return prof.provenance if prof else None
+
+
+def _indexed_position(p: Dict[str, Any]) -> Dict[str, float]:
+    """Latitude and longitude where the archive's index gives them (SOIR), for the map."""
+    import json
+    extra = p.get("extra") or {}
+    if isinstance(extra, str):
+        try:
+            extra = json.loads(extra)
+        except ValueError:
+            return {}
+    try:
+        lat, lon = float(extra["LATITUDE"]), float(extra["LONGITUDE"])
+    except (KeyError, TypeError, ValueError):
+        return {}
+    return {"latitude": lat, "longitude": lon} if -90 <= lat <= 90 and abs(lon) <= 360 else {}
