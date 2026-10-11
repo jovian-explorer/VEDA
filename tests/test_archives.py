@@ -593,3 +593,13 @@ def test_pds4_table_whose_label_is_a_byte_and_a_column_off():
     assert t.row_count() == 601 and c["Seconds from Periapsis"][0] == -300.0 and c["AREODETIC ALTITUDE"][0] == 184.334
     assert np.all(c["SPACECRAFT MASS"] == 1055.214) and np.all(c["BIAS NOISE 1-SIGMA"] == 0.008)
     assert np.all(np.diff(c["Seconds from Periapsis"]) == 1.0) and np.nanmax(c["1-SEC DENSITY"]) == 5.065
+
+
+def test_attached_label_pointers_stop_at_end(tmp_path):
+    """A 116 MB VIRTIS cube with an attached label was read whole for its pointers, and a
+    binary run after END that looked like '^X = name.ext' was fetched as a missing file."""
+    from veda.archives.catalog import _label_text, label_pointers
+    f = tmp_path / "VI0256_00.CAL"
+    f.write_bytes(b'PDS_VERSION_ID = PDS3\r\n^QUBE = 14\r\n^INSTRUMENT_DESC = "VIRTIS_EAICD.TXT"\r\nEND\r\n'
+                  + b"\x00\x12\n^ZZ = &\x12\xf0=.\xc0\xaa\n" + bytes(1000))
+    assert label_pointers(_label_text(f)) == [("INSTRUMENT_DESC", "VIRTIS_EAICD.TXT")]

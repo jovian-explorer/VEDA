@@ -751,6 +751,18 @@ def local_label_path(dataset_id: str, volume: str, path: str) -> Path:
 _POINTER = re.compile(r'^\s*\^(\w+)\s*=\s*\(?\s*"?([^",)\s]+\.\w+)"?', re.M)
 
 
+def _label_text(path: Path) -> str:
+    """A label file's text, or of a data file with an attached label only the label (up to
+    its END line): the whole 116 MB of a VIRTIS calibration cube was read, and a binary
+    line that looked like a pointer was then fetched as a missing companion file."""
+    if path.suffix.lower() in (".lbl", ".xml", ".lblx"):
+        return path.read_text(encoding="latin-1", errors="replace")
+    with path.open("rb") as fh:
+        head = fh.read(2 * 1024 * 1024)
+    end = re.search(rb"\r?\nEND[ \t]*\r?\n", head)
+    return head[:end.end() if end else len(head)].decode("latin-1", errors="replace")
+
+
 def label_pointers(label_text: str) -> List[tuple]:
     """(pointer, file) pairs a label refers to: PDS3 ^TABLE = "x.tab", ^SERIES = ("x.dat", 1)
     ..., or the <file_name> entries of a PDS4 XML label."""
@@ -871,7 +883,7 @@ def fetch_product(dataset_id: str, product_id: str,
     if label_path.suffix.lower() not in (".lbl", ".xml", ".lblx") and not _attached_label(label_path):
         return label_path
 
-    pending = label_pointers(label_path.read_text(encoding="latin-1", errors="replace"))
+    pending = label_pointers(_label_text(label_path))
     # Description texts (^..._DESC, notes) are optional. When the label also points at
     # data, they are not fetched: each miss costs several requests to a slow archive and
     # the data can be read without them. A product that is only text still gets them.
