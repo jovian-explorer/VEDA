@@ -32,6 +32,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np
 
 from .pds3_reader import _label_lines, _rejoin_broken_records
+from .pds4_reader import _strip_ns
 
 
 class ProductError(ValueError):
@@ -973,13 +974,6 @@ _PDS4_TYPES = {
     "UnsignedByte": "u1", "ComplexMSB8": ">c8", "ComplexMSB16": ">c16", "ComplexLSB8": "<c8",
     "ComplexLSB16": "<c16",
 }
-
-
-def _strip_ns(root: ET.Element) -> ET.Element:
-    for el in root.iter():
-        if isinstance(el.tag, str) and "}" in el.tag:
-            el.tag = el.tag.split("}", 1)[1]
-    return root
 
 
 def _t(el: Optional[ET.Element], path: str, default: str = "") -> str:

@@ -23,6 +23,7 @@ from ..config import CACHE_DIR
 from . import net as http
 from .datasets import DATASETS, Dataset, get_dataset
 from .pds3_index import parse_index
+from ..readers.pds3_reader import _attached_label
 
 DB_PATH = CACHE_DIR / "archive_catalog.sqlite"
 PRODUCT_ROOT = CACHE_DIR / "archive"
@@ -867,7 +868,7 @@ def fetch_product(dataset_id: str, product_id: str,
                 raise http.ArchiveError(f"{refused} The archive lists this product, but its server does not "
                                         "serve it at the moment; try again later.")
             raise http.ArchiveError(f"{prod['path']} is not on the archive server ({volume_url})")
-    if label_path.suffix.lower() not in (".lbl", ".xml", ".lblx") and not _has_attached_label(label_path):
+    if label_path.suffix.lower() not in (".lbl", ".xml", ".lblx") and not _attached_label(label_path):
         return label_path
 
     pending = label_pointers(label_path.read_text(encoding="latin-1", errors="replace"))
@@ -955,14 +956,6 @@ def _is_doc_pointer(pointer: str, name: str) -> bool:
     when it is a .txt or .asc stream)."""
     return "DESCRIPTION" in pointer or "_DESC" in pointer or (pointer != "FILE" and name.lower().endswith(
         (".txt", ".asc", ".cat", ".pdf", ".htm", ".html", ".doc", ".docx", ".ps", ".tex")))
-
-
-def _has_attached_label(p: Path) -> bool:
-    try:
-        with p.open("rb") as fh:
-            return b"PDS_VERSION_ID" in fh.read(200).upper()
-    except OSError:
-        return False
 
 
 # volume -> archive folder where its format (.FMT) files were last found
