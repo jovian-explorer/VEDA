@@ -424,6 +424,11 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
     if phi is not None and _unit(tbl, cols.get("geopotential")).replace(" ", "") in _GEOPOTENTIAL_UNITS:
         track["geopotential"] = phi
 
+    # the archive's own gravity at each level (Galileo probe), in m/s^2
+    g_own = _col(tbl, cols.get("gravity"))
+    if g_own is not None and _unit(tbl, cols.get("gravity")).replace(" ", "").upper() in ("M/S^2", "M/S**2", "M*S**-2"):
+        track["gravity"] = np.where(g_own > 0, g_own, np.nan)
+
     lat = track.get("latitude")
     lon = track.get("longitude")
     prof = ObservationProfile(

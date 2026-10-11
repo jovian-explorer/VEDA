@@ -435,7 +435,8 @@ DATASETS: List[Dataset] = [
             (r"/had/", "Helium abundance detector data", "other"),
             (r"/lrd/", "Lightning and radio emission data", "other"),
         ),
-        profile_columns={"altitude": "ALTITUDE", "temperature": "TEMPERATURE", "pressure": "PRESSURE"},
+        profile_columns={"altitude": "ALTITUDE", "temperature": "TEMPERATURE", "pressure": "PRESSURE",
+                         "gravity": "GRAVITY"},
         citation=GP_CITATION,
         label_from_data=True,
         fixed_time="1995-12-07T22:04:44",    # probe entry (Young et al. 1996, Science 272)

@@ -94,6 +94,19 @@ def gravity_profile(body: BodyInfo, z_km: np.ndarray, latitude_deg: Optional[flo
     return g, f"g0 (R/(R+z))^2, g0 = {body.surface_gravity:g} m/s^2, R = {r_body:g} km"
 
 
+def profile_gravity(profile: ObservationProfile, body: BodyInfo, z: np.ndarray) -> Tuple[np.ndarray, str]:
+    """Gravity (m/s^2) at the levels of ``profile`` and its description: the archive's own
+    at each level where it gives one (the Galileo probe: 23.27 m/s^2 at 1 bar, where VEDA's
+    model without the entry latitude gives 24.79), else gravity_profile's."""
+    g, model = gravity_profile(body, z, profile.latitude, (profile.raw_attributes or {}).get("ALTITUDE_REFERENCE", ""))
+    own = (profile.track or {}).get("gravity")
+    if own is not None and np.shape(own) == np.shape(z):
+        own = np.asarray(own, dtype=float)
+        if np.isfinite(own).any():
+            return np.where(np.isfinite(own) & (own > 0), own, g), "the archive's gravity at each level"
+    return g, model
+
+
 def hydrostatic_gravity(profile: ObservationProfile, body: BodyInfo, z, g):
     """The gravity of the hydrostatic integrals: the profile's ``g``, or the one its archive
     integrated with where the data set says so (MRO MCS: GM/r^2 without J2 or rotation;
@@ -150,8 +163,7 @@ def compute_atmospheric_diagnostics(
         try:
             from .uncertainty import propagate
             z = np.asarray(profile.altitude_km, dtype=float)
-            gz, _ = gravity_profile(body, z, profile.latitude,
-                                    (profile.raw_attributes or {}).get("ALTITUDE_REFERENCE", ""))
+            gz, _ = profile_gravity(profile, body, z)
             propagate(profile, body, derived, gz, _correlation_km(profile))
         except Exception:                     # uncertainties are extra; never lose the values
             pass
@@ -276,8 +288,7 @@ def _diagnostics(profile: ObservationProfile, body: BodyInfo) -> Dict[str, np.nd
 
     # 2. Local gravitational acceleration: g(z) = g0 (R / (R + z))^2, or on Jupiter and
     # Saturn the effective gravity at the profile's latitude (J2 and rotation)
-    gz, profile.raw_attributes["gravity_model"] = gravity_profile(
-        body, z, profile.latitude, (profile.raw_attributes or {}).get("ALTITUDE_REFERENCE", ""))
+    gz, profile.raw_attributes["gravity_model"] = profile_gravity(profile, body, z)
     phi = hydrostatic_geopotential(profile, gz)
     if phi is not None:
         profile.raw_attributes["gravity_model"] += "; hydrostatic integrals in the archive's geopotential"
@@ -437,7 +448,7 @@ def _hydrostatic_retrieval(profile: ObservationProfile, body: BodyInfo, z: np.nd
                            sigma: Optional[np.ndarray]) -> Optional[Dict[str, Any]]:
     """temperature_from_density at the profile's gravity, or None when it gives nothing."""
     from .hydrostatic import temperature_from_density
-    g, _ = gravity_profile(body, z, profile.latitude, (profile.raw_attributes or {}).get("ALTITUDE_REFERENCE", ""))
+    g, _ = profile_gravity(profile, body, z)
     g = hydrostatic_gravity(profile, body, z, g)
     r = temperature_from_density(z, rho, g, density_gas_constant(profile, body), rho_sigma=sigma,
                                  phi=hydrostatic_geopotential(profile, g))

@@ -509,3 +509,25 @@ def test_electron_content_sigma_matches_monte_carlo():
         mc = np.std([compute_vtec(z, ne + d)["vtec_tecu"] for d in draws])
         assert compute_vtec(z, ne, s, corr)["vtec_sigma_tecu"] == pytest.approx(mc, rel=0.06)
     assert np.isnan(compute_vtec(z, ne)["vtec_sigma_tecu"])
+
+
+def test_archive_gravity_column_is_used():
+    """The Galileo probe file gives gravity at each level (23.27 m/s^2 at 1 bar); without a
+    latitude VEDA used 24.79 everywhere, and the probe's own pressures and temperatures then
+    departed 17 % from hydrostatic balance (0.26 % with the archive's gravity)."""
+    from veda.analysis.atmospheric import profile_gravity
+    from veda.analysis.hydrostatic import hydrostatic_consistency
+    jup = get_body("jupiter")
+    z = np.linspace(-130.0, 17.0, 300)
+    g_own = np.full(z.size, 23.265)
+    t = 165.0 - 1.9 * z
+    lnp = np.concatenate([[0.0], np.cumsum(-np.diff(z) * 1000.0 * g_own[1:] / (jup.gas_constant_r * 0.5 * (t[1:] + t[:-1])))])
+    p = 1000.0 * np.exp(lnp - np.interp(0.0, z, lnp))
+    prof = ObservationProfile(observation_id="gp", mission_id="galileo", body_id="jupiter", instrument="ASI",
+                              time_utc="1995-12-07T22:04:44", altitude_km=z, temperature_k=t, pressure_hpa=p,
+                              track={"gravity": g_own})
+    g, model = profile_gravity(prof, jup, z)
+    assert np.allclose(g, 23.265) and "archive" in model
+    assert hydrostatic_consistency(z, p, t, g, jup.gas_constant_r)["hydrostatic_max_pct"] < 0.01
+    prof.track = {}
+    assert profile_gravity(prof, jup, z)[0][0] > 24.0                 # the model without a latitude
