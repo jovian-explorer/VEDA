@@ -43,7 +43,7 @@ def test_zero_em_and_en_dashes_across_repository():
             except Exception:
                 pass
 
-    assert not violations, f"Disallowed dash characters found:\n" + "\n".join(violations)
+    assert not violations, "Disallowed dash characters found:\n" +"\n".join(violations)
 
 
 # ===========================================================================
