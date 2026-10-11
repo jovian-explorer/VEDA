@@ -30,7 +30,7 @@ def _mars_profile(dz=0.5, sigma_t=1.0, sigma_p_rel=0.01, oid="p1", seed=7):
 
 def test_single_level_quantities_follow_the_analytic_formulas():
     prof, mars = _mars_profile()
-    t, p, u = prof.temperature_k, prof.pressure_hpa, prof.uncertainty
+    t, u = prof.temperature_k, prof.uncertainty
     np.testing.assert_allclose(u["scale_height"], prof.derived["scale_height"] / t, rtol=1e-9)
     np.testing.assert_allclose(u["density"], prof.derived["density"] * np.sqrt((1 / t) ** 2 + 0.01 ** 2), rtol=1e-9)
     kappa = mars.gas_constant_r / mars.isobaric_heat_capacity_cp

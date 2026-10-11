@@ -1,7 +1,6 @@
 """Profiles from research data repositories (Zenodo, BIRA-IASB): Venus Express VeRa and SOIR."""
 from __future__ import annotations
 
-import io
 import zipfile
 
 import numpy as np

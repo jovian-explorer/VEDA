@@ -10,8 +10,6 @@ Validates:
 """
 from __future__ import annotations
 
-import sys
-from pathlib import Path
 import numpy as np
 import pytest
 
@@ -25,7 +23,7 @@ from veda.api.routes import (
     generate_publication_figure,
     CrossCompareRequest,
 )
-from veda.core.registry import BODIES, MISSIONS, get_body, get_mission, list_bodies, list_missions, get_missions_for_body
+from veda.core.registry import BODIES, MISSIONS, get_body, get_missions_for_body
 from veda.readers.pds3_reader import read_pds3_table
 from veda.readers.fits_reader import (
     apply_contrast_stretch,
@@ -34,7 +32,6 @@ from veda.readers.fits_reader import (
     render_to_png,
 )
 from veda.analysis.atmospheric import (
-    compute_atmospheric_diagnostics,
     compare_profiles_on_body,
     export_profile_to_csv,
     export_comparison_to_csv,

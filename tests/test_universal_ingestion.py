@@ -1,8 +1,6 @@
 """Automated verification tests for universal file ingestion and pipeline processing."""
 from __future__ import annotations
 
-from pathlib import Path
-import pytest
 from veda.api.routes import ParseFileRequest, parse_generic_file_endpoint
 
 

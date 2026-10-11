@@ -9,20 +9,15 @@ Validates:
 """
 from __future__ import annotations
 
-import sys
-from pathlib import Path
-import pytest
 import numpy as np
 
 
-from veda.core.registry import BODIES, MISSIONS, get_body, get_mission, list_bodies, list_missions, get_missions_for_body
-from veda.analysis.atmospheric import compare_profiles_on_body, export_comparison_to_csv, export_profile_to_csv
+from veda.core.registry import BODIES, MISSIONS, get_body, list_bodies, list_missions
+from veda.analysis.atmospheric import compare_profiles_on_body
 from veda.missions.manager import get_mission_manager
 from veda.api.routes import (
     explore_by_body,
-    compare_missions_on_body,
     generate_publication_figure,
-    CrossCompareRequest,
 )
 
 

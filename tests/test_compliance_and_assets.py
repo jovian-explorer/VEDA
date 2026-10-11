@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-import pytest
 
 from veda.config import frontend_dir
 

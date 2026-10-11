@@ -9,10 +9,7 @@ Validates:
 """
 from __future__ import annotations
 
-import sys
-from pathlib import Path
 import numpy as np
-import pytest
 
 
 from veda.readers.fits_reader import (
@@ -21,7 +18,7 @@ from veda.readers.fits_reader import (
     extract_photometric_transect,
     render_to_png,
 )
-from veda.readers.pds3_reader import read_pds3_table, Pds3Table
+from veda.readers.pds3_reader import Pds3Table
 
 
 # ===========================================================================
