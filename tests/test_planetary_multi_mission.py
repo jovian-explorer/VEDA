@@ -203,8 +203,10 @@ def test_akatsuki_samples_are_listed_at_their_own_time_and_place():
 
 
 def test_globe_draws_no_observation_without_a_position():
-    """Observations without latitude or longitude were drawn on the 3D globe at 0 N, 0 E."""
+    """Observations without latitude or longitude were drawn on both maps at 0 N, 0 E."""
     from pathlib import Path
     js = (Path(__file__).resolve().parents[1] / "src" / "veda" / "frontend" / "js" / "veda_app.js").read_text(encoding="utf-8")
-    assert "(o.latitude || 0)" not in js and "(o.longitude || 0)" not in js
-    assert "obsList.filter(o => Number.isFinite(o.latitude) && Number.isFinite(o.longitude))" in js
+    assert "(o.latitude || 0)" not in js and "(o.longitude || 0)" not in js and "o.latitude : 0)" not in js
+    assert "const located = activeObs.filter(o => Number.isFinite(o.latitude) && Number.isFinite(o.longitude));" in js
+    # the listing has no positions: they come from the compared profiles
+    assert "return o.latitude == null && p ? { ...o, latitude: p.latitude, longitude: p.longitude } : o;" in js

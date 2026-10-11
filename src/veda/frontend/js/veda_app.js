@@ -1308,7 +1308,12 @@ async function updateComparison() {
     (compData.profiles || []).forEach(p => { if (p.dataset_id) recordProduct({ dataset_id: p.dataset_id, volume: p.volume }); });
     renderSelectionReport(compData.selection, compData.selection_filters);
     recordMethods(vedaState.activeBodyId, vedaState.selectedCompareVariable, !!(compData.reference && compData.reference.series));
-    vedaState.currentBodyObservations = exploreData.observations || [];
+    // the listing has no positions (they are in the files); the compared profiles have theirs
+    const placed = Object.fromEntries((compData.profiles || []).map(p => [`${p.mission_id}/${p.observation_id}`, p]));
+    vedaState.currentBodyObservations = (exploreData.observations || []).map(o => {
+      const p = placed[`${o.mission_id}/${o.observation_id}`];
+      return o.latitude == null && p ? { ...o, latitude: p.latitude, longitude: p.longitude } : o;
+    });
 
     renderActiveSubtab();
     renderComparisonTable();
@@ -2466,19 +2471,23 @@ export function renderPlanetaryMap(projection = '2d') {
   // Filter observations by selected missions
   const activeObs = observations.filter(o => selectedMids.has(o.mission_id.toLowerCase()));
 
+  // observations without a position are not drawn (both maps put them at 0 N, 0 E)
+  const located = activeObs.filter(o => Number.isFinite(o.latitude) && Number.isFinite(o.longitude));
+  const unplaced = activeObs.length - located.length;
   const statusEl = document.getElementById('veda-map-status');
   if (statusEl) {
-    statusEl.textContent = `${body.name || 'Planetary'} Observation Footprints & Ground Tracks (${activeObs.length} points)`;
+    statusEl.textContent = `${body.name || 'Planetary'} Observation Footprints & Ground Tracks (${located.length} points`
+      + (unplaced ? `; ${unplaced} without a position not shown)` : ')');
   }
 
-  if (activeObs.length === 0) {
-    mapDiv.innerHTML = `<div class="empty-state">No observation footprints available for selected missions on ${body.name || 'this body'}.</div>`;
+  if (located.length === 0) {
+    mapDiv.innerHTML = `<div class="empty-state">No observation footprints available for selected missions on ${body.name || 'this body'}${unplaced ? ` (${unplaced} without a position)` : ''}.</div>`;
     return;
   }
 
   // Group by mission
   const byMission = {};
-  activeObs.forEach(obs => {
+  located.forEach(obs => {
     const mid = obs.mission_id.toLowerCase();
     if (!byMission[mid]) byMission[mid] = [];
     byMission[mid].push(obs);
@@ -2523,8 +2532,8 @@ export function renderPlanetaryMap(projection = '2d') {
     // Mission Footprint Traces
     Object.entries(byMission).forEach(([mid, obsList]) => {
       const color = MISSION_COLORS[mid] || '#38bdf8';
-      const lons = obsList.map(o => o.longitude != null ? (o.longitude > 180 ? o.longitude - 360 : o.longitude) : 0);
-      const lats = obsList.map(o => o.latitude != null ? o.latitude : 0);
+      const lons = obsList.map(o => (o.longitude > 180 ? o.longitude - 360 : o.longitude));
+      const lats = obsList.map(o => o.latitude);
       const customdata = obsList.map(o => [
         o.observation_id,
         o.instrument,
@@ -2638,8 +2647,7 @@ export function renderPlanetaryMap(projection = '2d') {
       const px = [], py = [], pz = [];
       const customdata = [];
 
-      // observations without a position are not drawn (they were put at 0 N, 0 E)
-      obsList.filter(o => Number.isFinite(o.latitude) && Number.isFinite(o.longitude)).forEach(o => {
+      obsList.forEach(o => {
         const latRad = (o.latitude * Math.PI) / 180;
         const lonRad = (o.longitude * Math.PI) / 180;
         px.push(R * Math.cos(latRad) * Math.cos(lonRad));
@@ -2673,11 +2681,7 @@ export function renderPlanetaryMap(projection = '2d') {
 
     const layout = {
       title: {
-        text: `${(body.name || '').toUpperCase()} • 3D Planetary Coordinates Globe`
-          + (() => {
-            const n = Object.values(byMission).flat().filter(o => !(Number.isFinite(o.latitude) && Number.isFinite(o.longitude))).length;
-            return n ? ` (${n} without a position not shown)` : '';
-          })(),
+        text: `${(body.name || '').toUpperCase()} • 3D Planetary Coordinates Globe`,
         font: { color: '#e0e0e0', size: 14 },
       },
       paper_bgcolor: 'transparent',
