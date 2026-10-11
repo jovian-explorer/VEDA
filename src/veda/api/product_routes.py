@@ -96,7 +96,25 @@ def minmax_indices(y: np.ndarray, max_points: int) -> np.ndarray:
 _NOT_A_MEASUREMENT = re.compile(
     r"(^|[ _.])(SAMPLE|RECORD|ROW|INDEX|PACKET|SEQUENCE|FRAME|COUNTER)([ _]?(NUMBER|NO|ID|COUNT))?$|"
     r"EPHEMERIS|SCLK|SPACECRAFT[ _]CLOCK|(^|[ _])(ET|TIME|UTC|JD|MJD|DOY|YEAR|MONTH|DAY|HOUR|MINUTE|SECOND)"
-    r"([ _]|$)|^(ET|UTC|SCET|ERT|OBT|SCLK)([A-Z]{0,4}|[ _].*)$|(^|[ _])(ID|TYPE|VERSION|COUNTER)$|QUALITY|FLAG|MODE|STATUS|CHECKSUM|SPARE", re.I)
+    r"([ _]|$)|^(ET|UTC|SCET|ERT|OBT|SCLK)([A-Z]{0,4}|[ _].*)$|(^|[ _])(ID|TYPE|VERSION|COUNTER|ORBIT)$|QUALITY|FLAG|MODE|STATUS|CHECKSUM|SPARE", re.I)
+
+
+def _as_numbers(values) -> Optional[np.ndarray]:
+    """The values as numbers when every non-blank one is a number, else None."""
+    if not isinstance(values, list) or not values:
+        return None
+    out = np.full(len(values), np.nan)
+    seen = False
+    for i, v in enumerate(values):
+        v = str(v).strip()
+        if not v:
+            continue
+        try:
+            out[i] = float(v)
+        except ValueError:
+            return None
+        seen = True
+    return out if seen else None
 
 
 def default_y(obj: DataObject, x: Optional[str]) -> Optional[str]:
@@ -177,12 +195,27 @@ def table(dataset_id: str, product_id: str, object: Optional[str] = None,
     if not y:
         y = [default_y(obj, x)]
         y = [v for v in y if v]
+    if not y:
+        # every field is labelled CHARACTER (PVO ONMS: numbers among them): the first whose
+        # values are all numbers
+        text = [f.name for f in obj.fields if f.kind == "text" and f.name != x]
+        try:
+            cand = obj.read_table(text) if text else {}
+        except (ProductError, OSError, ValueError, IndexError):
+            cand = {}
+        y = [next((k for k in text if _as_numbers(cand.get(k)) is not None and not _NOT_A_MEASUREMENT.search(k)), None)
+             or next((k for k in text if _as_numbers(cand.get(k)) is not None), None)]
+        y = [v for v in y if v]
     try:
         data = obj.read_table([n for n in [x, *(y or [])] if n])
     except ProductError as exc:
         raise HTTPException(422, str(exc))
     except (OSError, ValueError, IndexError) as exc:
         raise HTTPException(422, f"Could not read {obj.name}: {exc}")
+    for name in y or []:                        # numbers in a column labelled CHARACTER
+        num = _as_numbers(data.get(name)) if isinstance(data.get(name), list) else None
+        if num is not None:
+            data[name] = num
     n = len(next(iter(data.values()))) if data else 0
     rows_total = n
     if (x_min or x_max) and n:

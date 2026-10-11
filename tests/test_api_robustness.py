@@ -921,3 +921,23 @@ def test_number_density_uncertainty_of_radio_occultations(client):
     assert s_n[0] / n[0] == pytest.approx(0.0255, abs=1e-3)
     assert any(v is not None and v > 0 for v in mex["uncertainty"]["temperature_from_density"])
     assert mex["uncertainty"]["temperature_k"][0] == pytest.approx(10.0)       # the MEDIUM retrieval's, as before
+
+
+def test_numbers_in_character_columns_are_plotted(client, tmp_path, monkeypatch):
+    """PVO ONMS tables label every column CHARACTER, numbers included: the table view had
+    no series to plot and showed 0 rows."""
+    from veda.api import product_routes
+    from veda.readers.product import open_product
+    lbl = tmp_path / "ONMS.LBL"
+    rows = ["    1 16  640.5", "    1 16  597.8", "    2  4  597.3"]
+    (tmp_path / "ONMS.TAB").write_text("".join(r.ljust(16) + "\r\n" for r in rows), newline="")
+    cols = "".join(f"  OBJECT = COLUMN\n    NAME = {n}\n    DATA_TYPE = \"CHARACTER\"\n    START_BYTE = {b}\n"
+                   f"    BYTES = {w}\n  END_OBJECT = COLUMN\n" for n, b, w in (("ORBIT", 2, 4), ("MASS", 7, 2), ("BALTIT", 10, 6)))
+    lbl.write_text("PDS_VERSION_ID = PDS3\nRECORD_TYPE = FIXED_LENGTH\nRECORD_BYTES = 18\n^TABLE = \"ONMS.TAB\"\n"
+                   f"OBJECT = TABLE\n  INTERCHANGE_FORMAT = ASCII\n  ROWS = 3\n  COLUMNS = 3\n  ROW_BYTES = 18\n{cols}"
+                   "END_OBJECT = TABLE\nEND\n")
+    monkeypatch.setattr(product_routes, "_product", lambda ds, pid, *a: open_product(str(lbl)))
+    j = client.get("/api/veda/product/pvo-v-onms/ONMS/table").json()
+    assert j["rows"] == 3 and j["series"][0]["name"] == "MASS"         # ORBIT is a counter
+    j = client.get("/api/veda/product/pvo-v-onms/ONMS/table", params={"y": ["BALTIT"]}).json()
+    assert j["series"][0]["values"] == [640.5, 597.8, 597.3]
