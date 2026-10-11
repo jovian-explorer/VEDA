@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
-from .models import ObservationImage, ObservationProfile, ProvenanceRecord
+from .models import ObservationImage, ObservationProfile
 
 
 class BaseMissionAdapter(ABC):
@@ -19,11 +19,6 @@ class BaseMissionAdapter(ABC):
     @abstractmethod
     def list_supported_bodies(self) -> List[str]:
         """Return list of planetary body IDs observed by this mission."""
-        pass
-
-    @abstractmethod
-    def list_supported_instruments(self) -> List[str]:
-        """Return list of instrument IDs supported by this adapter."""
         pass
 
     @abstractmethod
@@ -45,14 +40,4 @@ class BaseMissionAdapter(ABC):
 
     def load_image(self, observation_id: str) -> Optional[ObservationImage]:
         """Load an imaging observation (optional, for camera payloads)."""
-        return None
-
-    def get_provenance(self, observation_id: str) -> Optional[ProvenanceRecord]:
-        """Retrieve full authoritative archive provenance."""
-        prof = self.load_profile(observation_id)
-        if prof and prof.provenance:
-            return prof.provenance
-        img = self.load_image(observation_id)
-        if img and img.provenance:
-            return img.provenance
         return None

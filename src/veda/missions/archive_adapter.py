@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from ..archives import catalog
 from ..archives.datasets import datasets_for
 from ..core.base_adapter import BaseMissionAdapter
-from ..core.models import ObservationImage, ObservationProfile, ProvenanceRecord
+from ..core.models import ObservationImage, ObservationProfile
 from ..core.registry import get_mission
 
 
@@ -26,9 +26,6 @@ class ArchiveMissionAdapter(BaseMissionAdapter):
     def list_supported_bodies(self) -> List[str]:
         m = get_mission(self.mission_id)
         return list(m.primary_targets) if m else []
-
-    def list_supported_instruments(self) -> List[str]:
-        return sorted({d.instrument for d in datasets_for(self.mission_id)})
 
     # -- observations ----------------------------------------------------------
     def discover_observations(self, body_id=None, instrument_id=None, start_time=None,
@@ -96,10 +93,6 @@ class ArchiveMissionAdapter(BaseMissionAdapter):
 
     def load_image(self, observation_id: str) -> Optional[ObservationImage]:
         return self._images.load_image(observation_id) if self._images else None
-
-    def get_provenance(self, observation_id: str) -> Optional[ProvenanceRecord]:
-        prof = self.load_profile(observation_id)
-        return prof.provenance if prof else None
 
 
 def _indexed_position(p: Dict[str, Any]) -> Dict[str, float]:

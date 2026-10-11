@@ -45,9 +45,6 @@ class AkatsukiAdapter(BaseMissionAdapter):
     def list_supported_bodies(self) -> List[str]:
         return ["venus"]
 
-    def list_supported_instruments(self) -> List[str]:
-        return ["RS", "UVI", "LIR", "IR1", "IR2"]
-
     def discover_observations(
         self,
         body_id: Optional[str] = None,
@@ -212,14 +209,3 @@ class AkatsukiAdapter(BaseMissionAdapter):
             )
         except Exception as exc:  # noqa: BLE001 - reported to the user by the API
             raise ValueError(f"Could not read {fits_file.name}: {exc}") from exc
-
-    def get_provenance(self, observation_id: str) -> Optional[ProvenanceRecord]:
-        return ProvenanceRecord(
-            mission_id="akatsuki",
-            instrument="RS",
-            product_level="Level 4",
-            original_file=observation_id,
-            archive_source="JAXA DARTS",
-            archive_url="https://data.darts.isas.jaxa.jp/pub/pds3/",
-            doi_or_citation="JAXA Akatsuki Radio Science Team, VCO-V-RS-5-OCC-V1.0",
-        )

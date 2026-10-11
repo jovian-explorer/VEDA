@@ -154,9 +154,6 @@ class UploadsAdapter(BaseMissionAdapter):
     def list_supported_bodies(self) -> List[str]:
         return []
 
-    def list_supported_instruments(self) -> List[str]:
-        return []
-
     def discover_observations(self, body_id=None, instrument_id=None, start_time=None,
                               end_time=None, limit: int = 100) -> List[Dict[str, Any]]:
         items = [i for i in list_uploads() if not body_id or i["body_id"] == body_id]
