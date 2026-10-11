@@ -57,7 +57,7 @@ class ArchiveMissionAdapter(BaseMissionAdapter):
                 "orbit": p["orbit"],
                 "archive_source": p["url"],
                 "is_cached": True,
-                **_indexed_position(p),
+                **(_indexed_position(p) or _loaded_position(p)),
             })
         if self._images is not None:
             for img in self._images.discover_observations(body_id=body_id):
@@ -116,3 +116,12 @@ def _indexed_position(p: Dict[str, Any]) -> Dict[str, float]:
     except (KeyError, TypeError, ValueError):
         return {}
     return {"latitude": lat, "longitude": lon} if -90 <= lat <= 90 and abs(lon) <= 360 else {}
+
+
+def _loaded_position(p: Dict[str, Any]) -> Dict[str, float]:
+    """Latitude and longitude of a profile already loaded in memory (by a comparison)."""
+    from ..archives.profiles import cached_profile
+    prof = cached_profile(p["dataset_id"], p["product_id"])
+    if prof is None or prof.latitude is None or prof.longitude is None:
+        return {}
+    return {"latitude": float(prof.latitude), "longitude": float(prof.longitude)}

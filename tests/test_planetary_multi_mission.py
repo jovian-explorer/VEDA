@@ -217,3 +217,15 @@ def test_listing_takes_positions_the_archive_index_gives():
     assert _indexed_position({"extra": '{"LATITUDE": 85.9562, "LONGITUDE": 44.1488}'}) == {"latitude": 85.9562, "longitude": 44.1488}
     assert _indexed_position({"extra": {"LATITUDE": 12.0}}) == {}            # latitude alone: no position
     assert _indexed_position({"extra": "not json"}) == {} and _indexed_position({}) == {}
+
+
+def test_listing_takes_positions_of_profiles_already_loaded(monkeypatch):
+    from veda.archives import profiles
+    from veda.core.models import ObservationProfile
+    from veda.missions.archive_adapter import _loaded_position
+    p = {"dataset_id": "ds", "product_id": "pid"}
+    assert _loaded_position(p) == {}                                        # nothing read from disk
+    prof = ObservationProfile(observation_id="pid", mission_id="vex", body_id="venus", instrument="VeRa",
+                              time_utc="2007-01-01T00:00:00", latitude=-12.5, longitude=200.0)
+    monkeypatch.setitem(profiles._PROFILE_CACHE, ("ds", "pid"), prof)
+    assert _loaded_position(p) == {"latitude": -12.5, "longitude": 200.0}

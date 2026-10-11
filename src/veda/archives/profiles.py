@@ -132,6 +132,12 @@ def load_profile_cached(dataset_id: str, product_id: str) -> ObservationProfile:
     return prof
 
 
+def cached_profile(dataset_id: str, product_id: str) -> Optional[ObservationProfile]:
+    """The profile if it is already loaded in this process, else None (nothing is read)."""
+    with _cache_lock:
+        return _PROFILE_CACHE.get((dataset_id, product_id))
+
+
 def _remember(key, prof) -> None:
     with _cache_lock:
         _PROFILE_CACHE[key] = prof
