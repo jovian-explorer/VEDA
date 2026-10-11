@@ -483,12 +483,13 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
             s = _col(tbl, sig) if sig else None
             if s is not None:
                 prof.uncertainty[key] = s * factor
-    # A 1-sigma uncertainty is never negative: negative values are fill (the Phoenix entry
-    # profile writes -1 in its SIGMA columns where there is no value)
+    # A 1-sigma uncertainty is never negative or zero: such values are fill (the Phoenix
+    # entry profile writes -1 in its SIGMA columns where there is no value; the MSL EDL
+    # file 0 for the temperatures it takes from the JPL reconstruction, which have none)
     for key, s in prof.uncertainty.items():
         s = np.array(s, dtype=float)
         with np.errstate(invalid="ignore"):
-            s[s < 0] = np.nan
+            s[s <= 0] = np.nan
         prof.uncertainty[key] = s
     if ds.leg_min_snr and leg and ds.pass_legs in tbl.columns:
         _trim_leg(prof, np.asarray(tbl.columns[ds.pass_legs], dtype=float), ds.leg_min_snr)
