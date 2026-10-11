@@ -788,7 +788,7 @@ def _pds3_qube(node: _Node, ptr: str, record_bytes: int, label: Path) -> DataObj
         def clean(raw):
             raw = _fix_byte_order(raw)
             arr = _clean(raw, missing, mult, base_v)
-            if vmin is not None and dt.kind in "iu":
+            if vmin is not None:           # below it: the special values (null, saturation)
                 arr[raw < vmin] = np.nan
             return arr
         return v, clean
@@ -798,6 +798,7 @@ def _pds3_qube(node: _Node, ptr: str, record_bytes: int, label: Path) -> DataObj
     if set(order) == {"BAND", "LINE", "SAMPLE"}:
         shape = tuple(shape[order.index(w)] for w in ("BAND", "LINE", "SAMPLE"))
     return DataObject(name=node.name, kind="cube", shape=shape, axes=("BAND", "LINE", "SAMPLE"),
+                      unit=str(node.get("CORE_UNIT", "") or "").strip('"'),
                       description=" ".join(node.get("DESCRIPTION", "").split())[:400], _reader=read)
 
 

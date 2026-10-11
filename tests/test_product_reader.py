@@ -164,6 +164,34 @@ END
     assert a[2, 1, 3] == cube[1, 3, 2]
 
 
+def test_real_qube_special_values_and_unit(tmp_path):
+    """VIRTIS calibrated cubes (REAL) mark null and saturated samples -1000 to -1004, below
+    CORE_VALID_MINIMUM = -999; they were shown as radiances (image minimum -1000), and the
+    cube's unit (CORE_UNIT) was left out."""
+    cube = np.array([[[1.5, -1004.0], [-1000.0, 2.5]]], dtype="<f4")      # 1 line, 2 samples, 2 bands (BIP)
+    label = """PDS_VERSION_ID = PDS3
+RECORD_TYPE = FIXED_LENGTH
+RECORD_BYTES = 512
+^QUBE = "v.qub"
+OBJECT = QUBE
+  AXES = 3
+  AXIS_NAME = (BAND, SAMPLE, LINE)
+  CORE_ITEMS = (2, 2, 1)
+  CORE_ITEM_BYTES = 4
+  CORE_ITEM_TYPE = PC_REAL
+  CORE_VALID_MINIMUM = -999
+  CORE_NULL = -1004
+  CORE_UNIT = "W/m**2/sr/micron"
+  SUFFIX_ITEMS = (0, 0, 0)
+END_OBJECT = QUBE
+END
+"""
+    o = open_product(str(_write(tmp_path, "v.qub", label, cube.tobytes()))).objects[0]
+    assert o.unit == "W/m**2/sr/micron"
+    a = o.read_array()
+    assert np.isnan(a[1, 0, 0]) and np.isnan(a[0, 0, 1]) and a[0, 0, 0] == 1.5 and a[1, 0, 1] == 2.5
+
+
 def test_raw_file_without_layout_gives_a_clear_message(tmp_path):
     label = """PDS_VERSION_ID = PDS3
 ^FILE = "raw.dat"
