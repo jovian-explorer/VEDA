@@ -479,7 +479,7 @@ def _index_csv_split(ds: Dataset, progress=None) -> List[Dict[str, Any]]:
     """Read the whole table once, write every product's CSV, return the rows."""
     from ..analysis.solar_geometry import mars_time_from_ls
     r = ds.repository
-    src = _download(r["url"], _cache_dir(ds) / r["url"].rsplit("/", 1)[-1], progress=None)
+    src = _download(r["url"], _cache_dir(ds) / r["url"].rsplit("/", 1)[-1], progress=progress)
     names = [n for n, _ in r["columns"]]
     lines = src.read_text(encoding="utf-8-sig", errors="replace").splitlines()
     rows = list(csv.reader(lines[1:] if r.get("header") else lines))

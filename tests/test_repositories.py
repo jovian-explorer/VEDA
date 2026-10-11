@@ -282,3 +282,13 @@ def test_repository_zip_download_reports_its_progress(tmp_path, monkeypatch):
     cb = lambda *a: None                                    # noqa: E731
     repo._zip_path(ds, cb)
     assert seen == [cb]
+    from veda.archives.datasets import DATASETS
+    crism = next(d for d in DATASETS if (d.repository or {}).get("kind") == "csv_split")
+
+    def stop(url, dest, progress=None):
+        seen.append(progress)
+        raise RuntimeError("stop here")
+    monkeypatch.setattr(repo, "_download", stop)
+    with pytest.raises(RuntimeError):
+        repo._index_csv_split(crism, cb)
+    assert seen == [cb, cb]
