@@ -11,11 +11,10 @@
  * product with millions of rows stays responsive.
  */
 import { api } from './api.js';
-import { toast, themedLayout, plotColors, drawer } from './ui.js';
+import { toast, themedLayout, plotColors, drawer, esc } from './ui.js';
 import { styleTrace, styleGeneric, paletteColor, plotStyleBody, exportFigure } from './plot_style.js';
 import { showGeometry } from './geometry.js';
 
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const CMAPS = ['gray', 'inferno', 'viridis', 'magma', 'plasma', 'cividis', 'twilight', 'RdBu_r', 'jet'];
 const STRETCHES = [['percentile', 'Percentile 0.5-99.5%'], ['zscale', 'ZScale'], ['linear', 'Linear (min-max)'],
   ['sqrt', 'Square root'], ['log', 'Log'], ['asinh', 'Asinh'], ['histeq', 'Histogram equalised']];

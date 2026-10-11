@@ -3,7 +3,7 @@
  * Main Application Shell and Orchestrator
  */
 import { api, state } from './api.js';
-import { $, $$, el, banner, toast, drawer, closeDrawer, renderMath, updatePlotlyFonts, rethemePlots, installPlotJanitor } from './ui.js';
+import { $, $$, el, banner, toast, drawer, closeDrawer, renderMath, updatePlotlyFonts, rethemePlots, installPlotJanitor, esc as escHtml } from './ui.js';
 import { initVeda, switchMode, vedaState, applyUserPreferences } from './veda_app.js';
 
 const FONT_SCALES = [0.85, 0.92, 1.0, 1.10, 1.20, 1.32, 1.45];
@@ -728,7 +728,6 @@ function helpBody() {
   return container;
 }
 
-const escHtml = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 function missionName(id) {
   const m = (vedaState.missions || []).find(x => x.id === id);

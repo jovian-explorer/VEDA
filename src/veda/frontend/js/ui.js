@@ -20,6 +20,9 @@ export function el(tag, attrs = {}, ...kids) {
   return node;
 }
 
+/** Text made safe to put into HTML. */
+export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 export function clear(node) { while (node.firstChild) node.removeChild(node.firstChild); }
 
 // ---------------------------------------------------------------- feedback

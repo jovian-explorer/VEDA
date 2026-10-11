@@ -3,7 +3,7 @@
  * Dedicated Planetary Science Laboratory Workstation Controller
  */
 import { api, state } from './api.js';
-import { renderMath, toast, cleanPlotlyMath, themedLayout, plotColors, drawer, closeDrawer } from './ui.js';
+import { renderMath, toast, cleanPlotlyMath, themedLayout, plotColors, drawer, closeDrawer, esc as escHtml } from './ui.js';
 import { setupArchiveBrowser, showMissionArchive } from './archive_browser.js';
 import { showGeometry } from './geometry.js';
 import { setupBodySearch, showBodySearch } from './body_search.js';
@@ -15,7 +15,6 @@ import { style as plotStyle, styleTrace, styleLayout, sigmaBand, systematicBand,
 /** Surface gravity with three significant figures (comet 67P: 1.6e-4, not 0.00). */
 const fmtGravity = (g) => (g == null || !isFinite(g) ? 'N/A'
   : Math.abs(g) >= 0.01 ? Number(g).toFixed(2) : Number(g).toExponential(1));
-const escHtml = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 let imageViewerListeners = null;   // AbortController for the open image's window listeners
 

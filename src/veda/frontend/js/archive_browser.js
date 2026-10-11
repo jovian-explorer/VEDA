@@ -3,7 +3,7 @@
  * range, product type and text; download products; open or compare them.
  */
 import { api } from './api.js';
-import { toast } from './ui.js';
+import { toast, esc } from './ui.js';
 
 const PAGE = 200;
 
@@ -22,7 +22,6 @@ const st = {
 
 const $ = (id) => document.getElementById(id);
 const keyOf = (p) => `${p.dataset_id}|${p.product_id}`;
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 export function setupArchiveBrowser({ onOpen, onCompare }) {
   st.onOpen = onOpen;

@@ -8,7 +8,7 @@
  * Kernels are downloaded automatically when Settings allow it.
  */
 import { api } from './api.js';
-import { toast, themedLayout, plotColors } from './ui.js';
+import { toast, themedLayout, plotColors, esc } from './ui.js';
 import { style as plotStyle, paletteColor } from './plot_style.js';
 import { pendingFor } from './spice_auto.js';
 
@@ -28,7 +28,6 @@ const PROJECTIONS = [
   ['equirectangular', 'Cylindrical'], ['north', 'North polar'], ['south', 'South polar'], ['orthographic', 'Orthographic (centred on track)'],
 ];
 
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const state = { view: 'orbit-fixed', projection: 'equirectangular', data: null };
 
 async function fetchGeometry(ds, pid) {

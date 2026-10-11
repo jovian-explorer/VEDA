@@ -6,10 +6,9 @@
  * quantities and figures, and VEDA itself, with BibTeX and a data
  * availability statement to copy.
  */
-import { el, toast } from './ui.js';
+import { el, toast, esc } from './ui.js';
 
 const KEY = 'veda_usage_v1';
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 function load() {
   try {

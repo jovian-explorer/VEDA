@@ -3,13 +3,12 @@
  * filtered by date range. Results can be downloaded, opened or compared.
  */
 import { api } from './api.js';
-import { toast } from './ui.js';
+import { toast, esc } from './ui.js';
 
 const PAGE = 300;
 const st = { bodyId: null, results: [], total: 0, selected: new Map(), onOpen: null, onCompare: null, token: 0 };
 const $ = (id) => document.getElementById(id);
 const keyOf = (p) => `${p.dataset_id}|${p.product_id}`;
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 export function setupBodySearch({ onOpen, onCompare }) {
   st.onOpen = onOpen;
