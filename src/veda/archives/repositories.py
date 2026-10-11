@@ -369,7 +369,7 @@ def _zip_path(ds: Dataset, progress=None) -> Path:
         if f is None:
             raise http.ArchiveError(f"{r['zip']} is no longer in Zenodo record {r['record']}")
         url, key = f["url"], f["key"]
-    return _download(url, _cache_dir(ds) / key, progress=None)
+    return _download(url, _cache_dir(ds) / key, progress=progress)
 
 
 def _parse_time(s: str) -> str:

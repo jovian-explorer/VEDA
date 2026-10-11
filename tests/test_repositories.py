@@ -269,3 +269,16 @@ def test_mars_time_from_ls_inverts_the_computed_season():
     assert mars_time_from_ls(36, 0.0).startswith("2021-02-07")
     t = mars_time_from_ls(33, 317.435059)
     assert t.startswith("2017-02-14") and subsolar_point("mars", t)["ls"] == pytest.approx(317.435, abs=0.01)
+
+
+def test_repository_zip_download_reports_its_progress(tmp_path, monkeypatch):
+    """Indexing a repository data set downloads its zip (the 38 MB SOIR file) with no
+    progress shown: the callback was dropped on the way to the download."""
+    seen = []
+    monkeypatch.setattr(repo, "_cache_dir", lambda ds: tmp_path)
+    monkeypatch.setattr(repo, "_zenodo_files", lambda record: [{"key": get_dataset("vex-vera-gramigna2023").repository["zip"], "size": 1, "url": "https://example.org/x.zip"}])
+    monkeypatch.setattr(repo.http, "download", lambda url, dest, progress=None: seen.append(progress) or dest)
+    ds = get_dataset("vex-vera-gramigna2023")
+    cb = lambda *a: None                                    # noqa: E731
+    repo._zip_path(ds, cb)
+    assert seen == [cb]
