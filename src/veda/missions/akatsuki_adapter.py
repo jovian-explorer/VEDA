@@ -66,15 +66,18 @@ class AkatsukiAdapter(BaseMissionAdapter):
                 name = f.stem
                 is_rs = "rs_" in name.lower()
                 is_img = "uvi_" in name.lower() or "lir_" in name.lower()
+                # time and place from the file itself (they were written in here once, and
+                # every profile was listed at 4.22 N, 9.27 E, images at 0 N, 0 E)
+                obs = self.load_profile(name) if is_rs else self.load_image(name)
                 results.append({
                     "observation_id": name,
                     "mission_id": "akatsuki",
                     "body_id": "venus",
                     "instrument": "RS" if is_rs else ("UVI" if "uvi_" in name.lower() else "LIR"),
                     "product": "Level 4 Atmospheric Profile" if "_l4_" in name else ("Calibrated FITS Image" if is_img else "Radio Occultation"),
-                    "time_utc": "2016-03-03T23:20:05.791Z" if is_rs else "2018-11-05T08:01:12.000Z",
-                    "latitude": 4.22 if is_rs else 0.0,
-                    "longitude": 9.27 if is_rs else 0.0,
+                    "time_utc": getattr(obs, "time_utc", "") or "",
+                    "latitude": getattr(obs, "latitude", None),
+                    "longitude": getattr(obs, "longitude", None),
                     "archive_source": "JAXA DARTS / ISAS",
                     "is_cached": True,
                     "file_path": str(f),

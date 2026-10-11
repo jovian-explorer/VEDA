@@ -186,3 +186,17 @@ def test_no_mission_returns_fabricated_observations():
             assert str(obs.get("archive_source", "")).startswith("https://"), (mid, obs)
     # MOM and Chandrayaan-2 data need an ISSDC login, so nothing is listed until downloaded.
     assert mgr.discover_by_mission("mom") == [] and mgr.discover_by_mission("chandrayaan2") == []
+
+
+def test_akatsuki_samples_are_listed_at_their_own_time_and_place():
+    """The bundled Akatsuki samples were listed at a time and place written into the code:
+    the radio occultation at 4.22 N, 9.27 E instead of its 67 S, 175 E, the image at 0 N, 0 E."""
+    from veda.missions.akatsuki_adapter import AkatsukiAdapter
+    a = AkatsukiAdapter()
+    listed = {o["observation_id"]: o for o in a.discover_observations()}
+    rs = listed["rs_20160303_223100_udsc64_l4_ae_v10"]
+    prof = a.load_profile("rs_20160303_223100_udsc64_l4_ae_v10")
+    assert (rs["time_utc"], rs["latitude"], rs["longitude"]) == (prof.time_utc, prof.latitude, prof.longitude)
+    assert rs["time_utc"].startswith("2016-03-03T23:20:04") and rs["latitude"] < -60
+    uvi = listed["uvi_20181105_080112_283_geo_v10"]
+    assert uvi["latitude"] is None and uvi["time_utc"].startswith("2018-11-05T08:01")
