@@ -30,11 +30,11 @@ def listings(monkeypatch):
     ("mex", dt.date(2026, 8, 15), "ORMM_T19_260801000000_01973.BSP"),   # type 19 preferred over the older type 18
 ])
 def test_spk_chosen_by_coverage_in_file_name(listings, mission, date, expected):
-    assert kernels.mission_spk_for(mission, date).endswith("/" + expected)
+    assert kernels.mission_spks_for(mission, date)[0].endswith("/" + expected)
 
 
 def test_no_spk_for_uncovered_date(listings):
-    assert kernels.mission_spk_for("akatsuki", dt.date(2030, 1, 1)) is None
+    assert kernels.mission_spks_for("akatsuki", dt.date(2030, 1, 1)) == []
     with pytest.raises(LookupError):
         kernels.plan("akatsuki", "venus", dt.date(2030, 1, 1))
 

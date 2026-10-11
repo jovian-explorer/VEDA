@@ -312,12 +312,6 @@ def mission_spks_for(mission_id: str, when: dt.date) -> List[str]:
     return []
 
 
-def mission_spk_for(mission_id: str, when: dt.date) -> Optional[str]:
-    """The main spacecraft SPK covering ``when``."""
-    urls = mission_spks_for(mission_id, when)
-    return urls[0] if urls else None
-
-
 @dataclass
 class KernelPlan:
     urls: List[str] = field(default_factory=list)

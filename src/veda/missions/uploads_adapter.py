@@ -75,12 +75,6 @@ def commit_upload(staged: Path, body_id: str, info: Optional[Dict[str, Any]] = N
     return entry / name
 
 
-def save_upload(name: str, payload: bytes, companions: Dict[str, bytes], body_id: str,
-                info: Optional[Dict[str, Any]] = None) -> Path:
-    """Store an upload (and its companion files) and return the primary path."""
-    return commit_upload(stage_upload(name, payload, companions), body_id, info)
-
-
 def _read_meta(entry: Path) -> Optional[Dict[str, Any]]:
     try:
         meta = json.loads((entry / _META).read_text(encoding="utf-8"))
