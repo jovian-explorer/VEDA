@@ -731,7 +731,7 @@ MISSIONS: Dict[str, MissionInfo] = {
         archive_url="https://pds-atmospheres.nmsu.edu/PDS/data/PDS4/insight_edl_bundle/",
         mission_page_url="https://science.nasa.gov/mission/insight/",
         data_page_url="https://atmos.nmsu.edu/data_and_services/atmospheres_data/INSIGHT/insight.html",
-        citation="Karatekin, O., Banfield, D., & Ashley, J. (2020). InSight EDL atmospheric reconstruction. NASA PDS, https://doi.org/10.17189/1518935.",
+        citation="Karatekin, O. (2020). InSight EDL Bundle (urn:nasa:pds:insight_edl). NASA PDS, https://doi.org/10.17189/1518935.",
         description="Geophysics lander; VEDA reads its entry atmospheric profile.",
     ),
     "lro": MissionInfo(
