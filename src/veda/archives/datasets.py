@@ -649,7 +649,9 @@ DATASETS: List[Dataset] = [
                          "pressure_sigma": "Std Dev Pressure", "latitude": "Planetocentric Latitude",
                          "longitude": "Planetocentric Longitude", "lst": "Local Solar Time (LST)"},
         extra_variables={"density_measured": ("Atmospheric Density", "Std Dev Density")},
-        citation="Karatekin, O., Banfield, D., & Ashley, J. (2020). InSight EDL atmospheric reconstruction. NASA PDS.",
+        # p = rho R T with R = 188.95 J/(kg K) at every level (pure CO2; Mars' composition
+        # gives 191.2): the archived temperatures are 1.2 % above VEDA's from the density
+        citation="Karatekin, O. (2020). InSight EDL Bundle (urn:nasa:pds:insight_edl). NASA PDS.",
         doi="10.17189/1518935",
         times_from_labels=True,
     ),
