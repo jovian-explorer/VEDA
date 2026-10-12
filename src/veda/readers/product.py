@@ -830,7 +830,7 @@ def _collection_specs(coll: _Node, base: int = 0) -> List[Tuple[Field, Dict[str,
             if any(x in spec["type"].upper() for x in ("CHARACTER", "TIME", "DATE", "ASCII")):
                 f.kind = "text"
             out.append((f, spec))
-        elif ch.name == "ARRAY":
+        elif ch.name == "ARRAY" or ch.name.endswith("_ARRAY"):      # SPICAM: HEADER_ARRAY, DATA_ARRAY
             el = next((c for c in ch.children if c.name == "ELEMENT"), None)
             if el is None:
                 continue

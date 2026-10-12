@@ -360,3 +360,46 @@ END
     assert [f.name for f in o.fields] == ["ALTITUDE", "CO2_DENSITY", "CO2_DENSITY (2)"]
     t = o.read_table(["CO2_DENSITY", "CO2_DENSITY (2)"])
     assert list(t["CO2_DENSITY"]) == [2.549e-04, 2.100e-04] and list(t["CO2_DENSITY (2)"]) == [2.4e-04, 2.0e-04]
+
+
+def test_record_array_with_named_sub_arrays(tmp_path):
+    """Mars Express SPICAM UV files are a RECORD_ARRAY of records holding HEADER_ARRAY and
+    DATA_ARRAY objects (not plain ARRAYs): VEDA found no layout and could not open them."""
+    rec = np.zeros((3, 6), dtype="<i2")
+    rec[:, :2] = [[2006, 1], [2006, 2], [2006, 3]]           # header
+    rec[:, 2:] = np.arange(12).reshape(3, 4)                  # data, 2 x 2 per record
+    label = """PDS_VERSION_ID = PDS3
+RECORD_TYPE = FIXED_LENGTH
+RECORD_BYTES = 12
+^RECORD_ARRAY = "s.dat"
+OBJECT = RECORD_ARRAY
+  AXES = 1
+  AXIS_ITEMS = 3
+  OBJECT = COLLECTION
+    BYTES = 12
+    OBJECT = HEADER_ARRAY
+      NAME = "HEADER ARRAY"
+      AXIS_ITEMS = 2
+      START_BYTE = 1
+      OBJECT = ELEMENT
+        DATA_TYPE = LSB_INTEGER
+        BYTES = 2
+      END_OBJECT = ELEMENT
+    END_OBJECT = HEADER_ARRAY
+    OBJECT = DATA_ARRAY
+      NAME = "DATA ARRAY"
+      AXIS_ITEMS = (2,2)
+      START_BYTE = 5
+      OBJECT = ELEMENT
+        DATA_TYPE = LSB_INTEGER
+        BYTES = 2
+      END_OBJECT = ELEMENT
+    END_OBJECT = DATA_ARRAY
+  END_OBJECT = COLLECTION
+END_OBJECT = RECORD_ARRAY
+END
+"""
+    o = open_product(str(_write(tmp_path, "s.dat", label, rec.tobytes()))).objects[0]
+    assert o.kind == "table" and [(f.name, f.items) for f in o.fields] == [("HEADER ARRAY", 2), ("DATA ARRAY", 4)]
+    t = o.read_table()
+    assert list(t["HEADER ARRAY"][2]) == [2006, 3] and list(t["DATA ARRAY"][1]) == [4, 5, 6, 7]
