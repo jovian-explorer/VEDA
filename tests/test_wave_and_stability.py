@@ -211,9 +211,7 @@ def test_gravity_wave_energy_is_a_comparison_variable():
     comparison grid (altitude cut: mean in a layer); it was computed but could not be compared."""
     from pathlib import Path
     js = (Path(__file__).resolve().parents[1] / "src" / "veda" / "frontend" / "js" / "veda_app.js").read_text(encoding="utf-8")
-    assert "
-  wave_potential_energy: { " in js and "
-  t_prime: { " in js
+    assert "  wave_potential_energy: { hint:" in js and "  t_prime: { hint:" in js
     venus = get_body("venus")
     z = np.arange(60.0, 90.0, 0.25)
     t = 240.0 - 1.5 * (z - 60.0) + 2.0 * np.sin(2.0 * np.pi * z / 4.0)
