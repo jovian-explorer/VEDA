@@ -72,6 +72,16 @@ class DataObject:
     extent: Dict[str, Any] = field(default_factory=dict)
     _reader: Optional[Callable[..., Any]] = field(default=None, repr=False)
 
+    def __post_init__(self) -> None:
+        # Columns that share a name (Mars Express SPICAM: three CO2_DENSITY columns, one per
+        # assumed top temperature) get " (2)", " (3)": only the first could be shown before.
+        # The readers look columns up by these same Field objects, so they follow the names.
+        seen: Dict[str, int] = {}
+        for f in self.fields:
+            seen[f.name] = seen.get(f.name, 0) + 1
+            if seen[f.name] > 1:
+                f.name = f"{f.name} ({seen[f.name]})"
+
     def read_table(self, names: Optional[List[str]] = None, limit: Optional[int] = None) -> Dict[str, Any]:
         """Selected fields (all when None), first ``limit`` rows (all when None).
 

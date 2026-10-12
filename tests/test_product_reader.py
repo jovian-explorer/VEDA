@@ -319,3 +319,44 @@ def test_table_of_grid_cells_becomes_a_map(tmp_path):
     a = m.read_array()
     assert a[0, 5, 8] == pytest.approx(200.0 + 8 + 2.5)          # lat row 5, lon column 8
     assert np.isnan(a[0, 0, 0]) and np.isfinite(a).sum() == keep.sum()
+
+
+def test_columns_sharing_a_name_are_all_readable(tmp_path):
+    """SPICAM gives three CO2_DENSITY columns (one per assumed top temperature): only the
+    first could be read or plotted."""
+    rows = [" 35.172 2.549e-04 2.400e-04", " 39.072 2.100e-04 2.000e-04"]
+    label = """PDS_VERSION_ID = PDS3
+RECORD_TYPE = FIXED_LENGTH
+RECORD_BYTES = 28
+^TABLE = "s.tab"
+OBJECT = TABLE
+  INTERCHANGE_FORMAT = ASCII
+  ROWS = 2
+  COLUMNS = 3
+  ROW_BYTES = 28
+  OBJECT = COLUMN
+    NAME = ALTITUDE
+    DATA_TYPE = ASCII_REAL
+    START_BYTE = 1
+    BYTES = 7
+  END_OBJECT = COLUMN
+  OBJECT = COLUMN
+    NAME = CO2_DENSITY
+    DATA_TYPE = ASCII_REAL
+    START_BYTE = 9
+    BYTES = 9
+  END_OBJECT = COLUMN
+  OBJECT = COLUMN
+    NAME = CO2_DENSITY
+    DATA_TYPE = ASCII_REAL
+    START_BYTE = 19
+    BYTES = 9
+  END_OBJECT = COLUMN
+END_OBJECT = TABLE
+END
+"""
+    data = "".join(r.ljust(26) + "\r\n" for r in rows).encode()
+    o = open_product(str(_write(tmp_path, "s.tab", label, data))).objects[0]
+    assert [f.name for f in o.fields] == ["ALTITUDE", "CO2_DENSITY", "CO2_DENSITY (2)"]
+    t = o.read_table(["CO2_DENSITY", "CO2_DENSITY (2)"])
+    assert list(t["CO2_DENSITY"]) == [2.549e-04, 2.100e-04] and list(t["CO2_DENSITY (2)"]) == [2.4e-04, 2.0e-04]
