@@ -143,6 +143,21 @@ def _psa_type(gid: str, level: str) -> str:
 
 
 def query_pds(q: Dict[str, Any], t0: dt.datetime, t1: dt.datetime, limit: int) -> Tuple[List[Dict[str, Any]], int]:
+    """The PDS Registry products in [t0, t1).  The registry answers HTTP 503 to a search
+    that takes it too long (MRO CRISM or MAVEN IUVS over one day; six hours work), so a
+    window it refuses is searched in halves, down to an hour."""
+    try:
+        return _query_pds_window(q, t0, t1, limit)
+    except ServiceError as exc:
+        if "HTTP 503" not in str(exc) or t1 - t0 <= dt.timedelta(hours=1):
+            raise
+    mid = t0 + (t1 - t0) / 2
+    first, n1 = query_pds(q, t0, mid, limit)
+    second, n2 = query_pds(q, mid, t1, max(limit - len(first), 0)) if len(first) < limit else ([], 0)
+    return first + second, n1 + n2
+
+
+def _query_pds_window(q: Dict[str, Any], t0: dt.datetime, t1: dt.datetime, limit: int) -> Tuple[List[Dict[str, Any]], int]:
     insts = q["instruments"]
     inst = " or ".join(f'ref_lid_instrument eq "{i}"' for i in insts)
     query = (f"(({inst}) and product_class eq \"Product_Observational\" and "

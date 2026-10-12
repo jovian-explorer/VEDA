@@ -486,3 +486,23 @@ def test_downloads_remove_parts_left_by_a_killed_process(tmp_path):
     os.utime(other, (old, old))
     net._part_path(dest)
     assert not stale.exists() and fresh.exists() and other.exists()     # only this file's old parts
+
+
+def test_pds_search_refused_for_a_long_window_is_split(monkeypatch):
+    """The PDS Registry answers HTTP 503 to a day of MRO CRISM or MAVEN IUVS products; six
+    hours work.  The live search found nothing for those instruments."""
+    import datetime as dt
+    calls = []
+
+    def window(q, t0, t1, limit):
+        calls.append(t1 - t0)
+        if t1 - t0 > dt.timedelta(hours=6):
+            raise services.ServiceError("The archive search service did not answer (pds.nasa.gov refused the request (HTTP 503).)")
+        return [{"product_id": t0.isoformat()}], 1
+    monkeypatch.setattr(services, "_query_pds_window", window)
+    rows, total = services.query_pds({}, dt.datetime(2012, 1, 1), dt.datetime(2012, 1, 2), 100)
+    assert total == 4 and len(rows) == 4 and rows[0]["product_id"] == "2012-01-01T00:00:00"
+    monkeypatch.setattr(services, "_query_pds_window",
+                        lambda *a: (_ for _ in ()).throw(services.ServiceError("HTTP 500")))
+    with pytest.raises(services.ServiceError):                # other errors are not split
+        services.query_pds({}, dt.datetime(2012, 1, 1), dt.datetime(2012, 1, 2), 100)
