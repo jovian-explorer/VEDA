@@ -66,30 +66,30 @@ export const vedaState = {
 
 // Variable Display Configs
 const VARIABLE_CONFIGS = {
-  temperature_k: { label: 'Temperature', units: 'K', axis: 'Temperature (K)', color: '#ff7043' },
+  temperature_k: { hint: 'Air temperature in kelvin (0 K is absolute zero; water freezes at 273.15 K)', label: 'Temperature', units: 'K', axis: 'Temperature (K)', color: '#ff7043' },
   temperature_c: { label: 'Temperature', units: '°C', axis: 'Temperature (°C)', color: '#ffb74d' },
-  pressure_hpa: { label: 'Atmospheric Pressure', units: 'hPa', axis: 'Pressure (hPa)', logScale: true, color: '#4fc3f7' },
-  lapse_rate: { label: 'Lapse Rate (-dT/dz)', units: 'K/km', axis: 'Lapse Rate (K/km)', color: '#ba68c8' },
-  dry_adiabatic_lapse_rate: { label: 'Dry Adiabatic Lapse Rate (g/cp)', units: 'K/km', axis: 'Dry Adiabatic Lapse Rate (K/km)', color: '#4db6ac' },
-  potential_temperature: { label: 'Potential Temp (θ)', units: 'K', axis: 'Potential Temperature θ (K)', color: '#81c784' },
-  buoyancy_freq_sq: { label: 'Brunt-Väisälä (N²)', units: 'rad²/s²', axis: 'Buoyancy Freq Squared N² (rad²/s²)', color: '#ffb300' },
-  density: { label: 'Mass Density (ρ)', units: 'kg/m³', axis: 'Mass Density ρ (kg/m³)', logScale: true, color: '#4db6ac' },
-  scale_height: { label: 'Scale Height (H)', units: 'km', axis: 'Scale Height H (km)', color: '#90caf9' },
-  electron_density_cm3: { label: 'Electron Density (Ne)', units: 'cm⁻³', axis: 'Electron Density Ne (cm⁻³)', logScale: true, color: '#f06292' },
+  pressure_hpa: { hint: 'Air pressure in hectopascals (at sea level on Earth: about 1013 hPa)', label: 'Atmospheric Pressure', units: 'hPa', axis: 'Pressure (hPa)', logScale: true, color: '#4fc3f7' },
+  lapse_rate: { hint: 'How fast the temperature falls with height (positive: colder higher up)', label: 'Lapse Rate (-dT/dz)', units: 'K/km', axis: 'Lapse Rate (K/km)', color: '#ba68c8' },
+  dry_adiabatic_lapse_rate: { hint: 'How fast a rising parcel of dry air cools; air whose temperature falls faster than this overturns', label: 'Dry Adiabatic Lapse Rate (g/cp)', units: 'K/km', axis: 'Dry Adiabatic Lapse Rate (K/km)', color: '#4db6ac' },
+  potential_temperature: { hint: 'The temperature air would have if brought to the reference pressure; it increases with height where the air is stable', label: 'Potential Temp (θ)', units: 'K', axis: 'Potential Temperature θ (K)', color: '#81c784' },
+  buoyancy_freq_sq: { hint: 'Static stability: positive where displaced air springs back (stable layers), negative where it keeps rising (convection)', label: 'Brunt-Väisälä (N²)', units: 'rad²/s²', axis: 'Buoyancy Freq Squared N² (rad²/s²)', color: '#ffb300' },
+  density: { hint: 'Mass of air per cubic metre, from pressure and temperature', label: 'Mass Density (ρ)', units: 'kg/m³', axis: 'Mass Density ρ (kg/m³)', logScale: true, color: '#4db6ac' },
+  scale_height: { hint: 'Height over which the pressure falls by a factor e (about 2.7)', label: 'Scale Height (H)', units: 'km', axis: 'Scale Height H (km)', color: '#90caf9' },
+  electron_density_cm3: { hint: 'Number of free electrons per cubic centimetre in the ionosphere, the electrically charged upper atmosphere', label: 'Electron Density (Ne)', units: 'cm⁻³', axis: 'Electron Density Ne (cm⁻³)', logScale: true, color: '#f06292' },
   // bodies: offered in the comparison only for these bodies (Magellan radio occultations)
   h2so4_ppm: { label: 'H₂SO₄ vapour', units: 'ppm', bodies: ['venus'], axis: 'H₂SO₄ vapour volume mixing ratio (ppm)', color: '#eab308' },
   absorptivity_db_km: { label: 'Microwave absorptivity', units: 'dB/km', bodies: ['venus'], axis: 'Absorptivity (dB/km)', color: '#f97316' },
   density_measured: { label: 'Mass density (archive)', units: 'kg/m³', axis: 'Mass density ρ (kg/m³)', logScale: true, color: '#14b8a6' },
   number_density_m3: { label: 'Number density (archive)', units: 'm⁻³', axis: 'Number density (m⁻³)', logScale: true, color: '#22d3ee' },
   // CO2 frost point (James et al. 1992) and the margin above it: <= 0 is saturated (CO2 ice clouds)
-  co2_condensation_temperature: { label: 'CO₂ frost point', units: 'K', bodies: ['mars', 'venus'], axis: 'CO₂ frost-point temperature (K)', color: '#93c5fd' },
-  t_minus_co2_condensation: { label: 'T minus CO₂ frost point', units: 'K', bodies: ['mars', 'venus'], axis: 'T − T(CO₂ frost) (K)', color: '#0ea5e9' },
+  co2_condensation_temperature: { hint: 'Temperature at which carbon dioxide freezes out at that pressure', label: 'CO₂ frost point', units: 'K', bodies: ['mars', 'venus'], axis: 'CO₂ frost-point temperature (K)', color: '#93c5fd' },
+  t_minus_co2_condensation: { hint: 'How far the temperature is above the point where carbon dioxide freezes out (below 0: CO2 ice clouds can form)', label: 'T minus CO₂ frost point', units: 'K', bodies: ['mars', 'venus'], axis: 'T − T(CO₂ frost) (K)', color: '#0ea5e9' },
   // mean molar mass per level where the archive gives it (SOIR): used for density and scale height
   molar_mass: { label: 'Mean molar mass (archive)', units: 'g/mol', bodies: ['venus'], axis: 'Mean molar mass (g/mol)', color: '#a3e635' },
   // Hydrostatic retrieval from a measured mass or number density profile (accelerometer, SOIR)
   temperature_from_density: { label: 'Temperature from density (hydrostatic)', units: 'K', axis: 'Temperature from density (K)', color: '#f43f5e' },
   pressure_from_density: { label: 'Pressure from density (hydrostatic)', units: 'hPa', axis: 'Pressure from density (hPa)', logScale: true, color: '#38bdf8' },
-  refractivity: { label: 'Radio Refractivity (N)', units: 'N-units', axis: 'Refractivity N', color: '#a1887f' },
+  refractivity: { hint: 'How much the atmosphere bends the radio signal; the measurement occultation profiles are retrieved from', label: 'Radio Refractivity (N)', units: 'N-units', axis: 'Refractivity N', color: '#a1887f' },
   // MRO CRISM limb aerosol profiles: Smith et al. (2013) give optical depth per unit column-mass
   // fraction, Guzewich et al. (2014, 2019) optical depth per mbar (both at 2.2 um)
   dust_mixing_ratio: { label: 'Dust mixing ratio, CRISM (τ per column-mass fraction)', units: '1', axis: 'Dust mixing ratio (2.2 µm)', color: '#d97706', bodies: ['mars'] },
@@ -102,8 +102,8 @@ const VARIABLE_CONFIGS = {
   dust_opacity_per_km: { label: 'Dust opacity per km, MCS (21.6 µm)', units: 'km⁻¹', axis: 'Dust opacity per km at 21.6 µm (km⁻¹)', logScale: true, color: '#c2410c', bodies: ['mars'] },
   // Gravity waves (filter and E_p in USAGE): a layer mean of E_p in the altitude cut is the usual
   // measure of wave activity (Tsuda et al. 2000: E_p averaged over 20-30 km)
-  wave_potential_energy: { label: 'Gravity-wave potential energy Ep', units: 'J/kg', axis: 'Gravity-wave potential energy Ep (J/kg)', color: '#e879f9' },
-  t_prime: { label: "Temperature perturbation T'", units: 'K', axis: "Temperature perturbation T' (K)", color: '#f472b6' },
+  wave_potential_energy: { hint: 'Energy per kilogram of the small-scale waves (gravity waves) in the temperature profile', label: 'Gravity-wave potential energy Ep', units: 'J/kg', axis: 'Gravity-wave potential energy Ep (J/kg)', color: '#e879f9' },
+  t_prime: { hint: 'Small-scale temperature wiggles left after the smooth background is removed (gravity waves)', label: "Temperature perturbation T'", units: 'K', axis: "Temperature perturbation T' (K)", color: '#f472b6' },
   ice_opacity_per_km: { label: 'Water-ice opacity per km, MCS (11.9 µm)', units: 'km⁻¹', axis: 'Water-ice opacity per km at 11.9 µm (km⁻¹)', logScale: true, color: '#0284c7', bodies: ['mars'] },
 };
 
@@ -558,11 +558,18 @@ function fillCompareVariableOptions() {
   if (!varSelect) return;
   const body = vedaState.activeBodyId;
   const keys = Object.entries(VARIABLE_CONFIGS).filter(([, cfg]) => !cfg.bodies || !body || cfg.bodies.includes(body));
-  varSelect.innerHTML = keys.map(([key, cfg]) => `<option value="${key}">${cfg.label} (${cfg.units})</option>`).join('');
+  varSelect.innerHTML = keys.map(([key, cfg]) => `<option value="${key}"${cfg.hint ? ` title="${escHtml(cfg.hint)}"` : ''}>${cfg.label} (${cfg.units})</option>`).join('');
   if (!keys.some(([k]) => k === vedaState.selectedCompareVariable)) {
     vedaState.selectedCompareVariable = vedaState.unitsTemperature === 'C' ? 'temperature_c' : 'temperature_k';
   }
   varSelect.value = vedaState.selectedCompareVariable;
+  showVariableHint();
+}
+
+/** The plain-language meaning of the compared variable, under its menu. */
+function showVariableHint() {
+  const el = document.getElementById('veda-compare-variable-hint');
+  if (el) el.textContent = (VARIABLE_CONFIGS[vedaState.selectedCompareVariable] || {}).hint || '';
 }
 
 export async function loadAndRenderCelestialBody(bodyId) {
@@ -967,6 +974,7 @@ function setupBodyModeControls() {
     fillCompareVariableOptions();
     varSelect.addEventListener('change', () => {
       vedaState.selectedCompareVariable = varSelect.value;
+      showVariableHint();
       updateComparison();
     });
   }
