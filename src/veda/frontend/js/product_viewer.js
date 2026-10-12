@@ -59,8 +59,11 @@ export async function showProductViewer(box, p, { onGeometry, confirmLarge = fal
     box.innerHTML = `<div class="pv">
       <div class="viewer-toolbar"><div class="viewer-title"><h3><code>${esc(p.product_id)}</code></h3></div>
         <div class="toolbar-actions"><button type="button" class="btn small ghost" data-pv="geometry">&#128752;&#65039; Geometry</button></div></div>
-      <div class="empty-state">This product cannot be plotted: ${esc(err.message)}
-        <br><span class="hint">It is downloaded in the cache (Settings &gt; Data folders). Its observation geometry is still available.</span></div>
+      <div class="empty-state">${err.status >= 500
+        ? `This product could not be downloaded right now: ${esc(err.message)}
+        <br><span class="hint">The archive server may be busy or down; try again in a few minutes.</span>`
+        : `This product cannot be plotted: ${esc(err.message)}
+        <br><span class="hint">VEDA could download the file but not read its layout. The file is in the cache (Settings &gt; Data folders), so you can open it with other software; its observation geometry is still available.</span>`}</div>
       <div class="geo-box pv-geo" hidden></div></div>`;
     box.querySelector('[data-pv="geometry"]').addEventListener('click', () => {
       const geo = box.querySelector('.pv-geo');
