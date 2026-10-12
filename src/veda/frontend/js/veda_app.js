@@ -13,6 +13,15 @@ import { recordProduct, recordFeature } from './citations.js';
 import { style as plotStyle, styleTrace, styleLayout, sigmaBand, systematicBand, orient, paletteColor, plotStyleBody, exportFigure } from './plot_style.js';
 
 /** Surface gravity with three significant figures (comet 67P: 1.6e-4, not 0.00). */
+/** A date axis around times that are all within a minute of each other (one profile): a
+ *  day either side, instead of ticks a millisecond apart. */
+const dayAround = (times) => {
+  const ms = times.filter(Boolean).map(t => Date.parse(/[zZ]|[+-]\d\d:?\d\d$/.test(t) ? t : `${t}Z`)).filter(Number.isFinite);
+  if (!ms.length || Math.max(...ms) - Math.min(...ms) > 60000) return {};
+  const mid = (Math.max(...ms) + Math.min(...ms)) / 2;
+  return { range: [new Date(mid - 864e5).toISOString(), new Date(mid + 864e5).toISOString()] };
+};
+const nProfiles = (n) => `${n} profile${n === 1 ? '' : 's'}`;
 const fmtGravity = (g) => (g == null || !isFinite(g) ? 'N/A'
   : Math.abs(g) >= 0.01 ? Number(g).toFixed(2) : Number(g).toExponential(1));
 
@@ -1584,7 +1593,8 @@ function renderAltitudeCut() {
     xaxis: { title: { text: xTitles[xKey] },
              type: xKey === 'time' ? 'date' : (xKey === 'value2' && cfg.logScale) || (xDiag && ['cm^-3', 'J/kg'].includes(xDiag[1])) ? 'log' : 'linear',
              ...(xKey === 'lst' ? { range: [0, 24], dtick: 3 } : {}), ...(xKey === 'latitude' ? { range: [-90, 90], dtick: 30 } : {}),
-             ...(xKey === 'ls' ? { range: [0, 360], dtick: 30 } : {}) },
+             ...(xKey === 'ls' ? { range: [0, 360], dtick: 30 } : {}),
+             ...(xKey === 'time' ? dayAround(withY.map(o => o.x)) : {}) },
     yaxis: { title: { text: yTitle },
              type: (diag ? ['cm^-3', 'J/kg'].includes(diag[1]) : !isAlt && cfg.logScale) ? 'log' : 'linear' },
     legend: { orientation: 'h', y: -0.18 },
@@ -1795,7 +1805,7 @@ async function computeSpectra() {
     traces.push({ type: 'scatter', mode: 'lines', x: c.m, y: c.ci95_high, line: { width: 0 }, fill: 'tonexty',
       fillcolor: 'rgba(56, 189, 248, 0.25)', name: '95 % interval of the mean (bootstrap)', hoverinfo: 'skip' });
   }
-  traces.push({ type: 'scatter', mode: 'lines', x: c.m, y: c.mean, name: `Mean of ${c.n} profiles`,
+  traces.push({ type: 'scatter', mode: 'lines', x: c.m, y: c.mean, name: `Mean of ${nProfiles(c.n)}`,
     line: { width: 2.5, color: plotColors().ink }, hovertemplate: 'm %{x:.3g} cycles/km (λ %{customdata:.3g} km)<br>PSD %{y:.3g}<extra></extra>',
     customdata: c.m.map(m => 1 / m) });
   if (c.slope != null && c.slope_band) {
@@ -1853,15 +1863,16 @@ function renderCrossSection() {
     colorscale: show === 'mean' ? 'RdBu' : 'Viridis', reversescale: show === 'mean', connectgaps: false,
     colorbar: { title: { text: title }, thickness: 12, len: 0.8 }, xgap: 1 };
   const layout = {
-    title: { text: `Zonal mean in ${xs.width}° bands (${data.profile_count} profiles)`, ...TITLE_BELOW_MODEBAR },
+    title: { text: `Zonal mean in ${xs.width}° bands (${nProfiles(data.profile_count)})`, ...TITLE_BELOW_MODEBAR },
     margin: { l: 75, r: 25, t: 78, b: 60 },
     xaxis: { title: { text: 'Latitude (°)' }, range: [-90, 90], dtick: 30 },
     yaxis: byPressure ? { title: { text: 'Pressure (hPa)' }, type: 'log', autorange: 'reversed' }
       : { title: { text: altitudeAxisTitle((data.profiles || []).map(p => p.altitude_reference)) } },
   };
   Plotly.newPlot(plotDiv, [trace], themedLayout(layout), { responsive: true, displayModeBar: true });
-  if (status) status.textContent = `${xs.latitude_centers.length} latitude bands with profiles`
-    + (xs.without_latitude ? `; ${xs.without_latitude} profiles without a latitude left out` : '')
+  const nb = xs.latitude_centers.length;
+  if (status) status.textContent = `${nb} latitude band${nb === 1 ? '' : 's'} with profiles`
+    + (xs.without_latitude ? `; ${nProfiles(xs.without_latitude)} without a latitude left out` : '')
     + '. A band with one profile shows that profile; the standard error needs two.';
 }
 
@@ -2083,7 +2094,7 @@ function renderComparisonPlot() {
     if (condensed) {
       styled.legendgroup = `mission-${who}`;
       styled.showlegend = !numericKey && !listed.has(who);
-      if (styled.showlegend) styled.name = `${who} (${perWho[who]} profiles)`;
+      if (styled.showlegend) styled.name = `${who} (${nProfiles(perWho[who])})`;
       listed.add(who);
     }
     traces.push(styled);
@@ -2198,7 +2209,7 @@ function renderUncertaintyBudget(plotDiv, data, varCfg) {
   const saved = plotStyle.vertical;
   plotStyle.vertical = byPressure ? 'pressure' : 'altitude';
   const layout = styleLayout({
-    title: { text: cleanPlotlyMath(`${(data.body_name || data.body_id || '').toUpperCase()} • ${varCfg.label}: uncertainty budget (${data.profile_count} profiles)`) },
+    title: { text: cleanPlotlyMath(`${(data.body_name || data.body_id || '').toUpperCase()} • ${varCfg.label}: uncertainty budget (${nProfiles(data.profile_count)})`) },
     hovermode: 'closest', margin: { l: 70, r: 25, t: 56, b: 60 },
   }, { xLog: false, varTitle: b.percent ? '1σ (%: 100 × the 1σ of ln of the value)' : `1σ (${units})`,
        coordTitle: byPressure ? 'Pressure (hPa)' : altitudeAxisTitle((data.profiles || []).map(p => p.altitude_reference)) });
@@ -2261,11 +2272,11 @@ function renderSampling() {
   if (stacked) plotDiv.style.height = `${Math.max(plotDiv.clientHeight, 620)}px`;
   const lat = { title: { text: 'Latitude (°)' }, range: [-90, 90], dtick: 30, zeroline: false };
   const layout = {
-    title: { text: `${(data.body_name || data.body_id || '').toUpperCase()} • where and when the ${profs.length} profiles were taken`, ...TITLE_BELOW_MODEBAR },
+    title: { text: `${(data.body_name || data.body_id || '').toUpperCase()} • where and when the ${profs.length === 1 ? 'profile was' : `${profs.length} profiles were`} taken`, ...TITLE_BELOW_MODEBAR },
     hovermode: 'closest', margin: { l: 64, r: 20, t: 78, b: 60 }, legend: { orientation: 'h', y: stacked ? -0.16 : -0.2 },
     xaxis: { anchor: 'y', domain: stacked ? [0, 1] : [0, 0.46],
              ...(useLs ? { title: { text: 'Mars season, solar longitude Ls (°)' }, range: [0, 360], dtick: 90 }
-                       : { title: { text: 'Date (UTC)' }, type: 'date' }) },
+                       : { title: { text: 'Date (UTC)' }, type: 'date', ...dayAround(profs.map(p => p.time_utc)) }) },
     yaxis: { ...lat, anchor: 'x', domain: stacked ? [0.62, 1] : [0, 1] },
     xaxis2: { anchor: 'y2', domain: stacked ? [0, 1] : [0.54, 1], title: { text: 'Local solar time (h)' }, range: [0, 24], dtick: 3 },
     yaxis2: { ...lat, anchor: 'x2', domain: stacked ? [0, 0.36] : [0, 1] },
@@ -2432,7 +2443,7 @@ function renderComparisonTable() {
       <td>${p.time_utc ? p.time_utc.split('T')[0] : 'N/A'}</td>
       <td>${p.latitude != null ? p.latitude.toFixed(1) + '°' : '-'} / ${p.longitude != null ? p.longitude.toFixed(1) + '°' : '-'}</td>
       <td>${p.z_range_km ? `${p.z_range_km[0]} to ${p.z_range_km[1]} km` : '-'}</td>
-      <td><button class="ghost small btn-dive-deep" data-mission="${p.mission_id}" data-obs="${p.observation_id}" title="Jump to Mission mode for detailed profile and provenance">🔍 Deep Dive</button></td>
+      <td><button class="ghost small btn-dive-deep" data-mission="${p.mission_id}" data-obs="${p.observation_id}" title="Open this profile with all its quantities, uncertainties and where it comes from">🔍 Open profile</button></td>
     </tr>
   `).join('');
 
@@ -2880,16 +2891,11 @@ async function inspectProfileObservation(obs) {
     let bestVar = candidateVars.find(k => hasValidData(k)) || 'temperature_k';
 
     // with units: temperature in K and in degrees C both have the label "Temperature"
-    const optionsHtml = candidateVars.filter(k => {
-      const cfg = VARIABLE_CONFIGS[k];
-      return !cfg || !cfg.bodies || !prof.body_id || cfg.bodies.includes(prof.body_id) || hasValidData(k);
-    }).map(k => {
-      const available = hasValidData(k);
+    // only the quantities this profile has (the others were listed as "(not in profile)")
+    const optionsHtml = candidateVars.filter(hasValidData).map(k => {
       const cfg = VARIABLE_CONFIGS[k] || { label: k, units: '' };
       const selected = (k === bestVar) ? ' selected' : '';
-      const disabled = !available ? ' disabled' : '';
-      const statusText = available ? '' : ' (not in profile)';
-      return `<option value="${k}"${selected}${disabled}>${cfg.label}${cfg.units ? ` (${cfg.units})` : ''}${statusText}</option>`;
+      return `<option value="${k}"${selected}${cfg.hint ? ` title="${escHtml(cfg.hint)}"` : ''}>${cfg.label}${cfg.units ? ` (${cfg.units})` : ''}</option>`;
     }).join('');
 
     // the derived quantities shown: gravity, equation of state, CO2 frost point (Cite panel)
@@ -2925,7 +2931,7 @@ async function inspectProfileObservation(obs) {
         </div>
 
         <div class="diagnostics-bar">
-          <div class="diag-chip"><strong>Sounding Points:</strong> ${prof.n_points || 0}</div>
+          <div class="diag-chip" title="Number of heights at which the profile has values"><strong>Levels:</strong> ${prof.n_points || 0}</div>
           <div class="diag-chip"><strong>Time UTC:</strong> ${timeTag}</div>
           <div class="diag-chip"><strong>Lat/Lon:</strong> ${latStr}, ${lonStr}</div>
           ${prof.provenance ? `<div class="diag-chip"><strong>Archive:</strong> ${escHtml(prof.provenance.archive_source)}</div>` : ''}
@@ -2939,6 +2945,7 @@ async function inspectProfileObservation(obs) {
             <select id="veda-profile-var-select">
               ${optionsHtml}
             </select>
+            <span class="hint" id="veda-profile-var-hint">${escHtml((VARIABLE_CONFIGS[bestVar] || {}).hint || '')}</span>
           </label>
           <div class="panel-picker" role="group" aria-label="Side-by-side panels">
             <span class="hint">Side-by-side panels:</span>
@@ -2975,7 +2982,11 @@ async function inspectProfileObservation(obs) {
     const varSelect = document.getElementById('veda-profile-var-select');
     if (varSelect) {
       varSelect.value = bestVar;
-      varSelect.onchange = () => renderSingleProfilePlot(prof, varSelect.value);
+      varSelect.onchange = () => {
+        const hint = document.getElementById('veda-profile-var-hint');
+        if (hint) hint.textContent = (VARIABLE_CONFIGS[varSelect.value] || {}).hint || '';
+        renderSingleProfilePlot(prof, varSelect.value);
+      };
     }
 
     // Connect Quick Unit Switcher buttons
@@ -3148,12 +3159,13 @@ function trackChips(prof) {
   };
   const chips = [];
   if (rng(t.latitude)) chips.push(`<div class="diag-chip" title="The tangent point of the ray for occultations; the spacecraft or probe for accelerometer passes and descents"><strong>Latitude along the profile:</strong> ${rng(t.latitude)}°</div>`);
-  if (rng(t.sza)) chips.push(`<div class="diag-chip"><strong>SZA:</strong> ${rng(t.sza)}°</div>`);
+  const SZA = 'title="Solar zenith angle: the angle of the Sun from overhead; 0° noon overhead, 90° at the horizon, more is night"';
+  if (rng(t.sza)) chips.push(`<div class="diag-chip" ${SZA}><strong>Solar zenith angle:</strong> ${rng(t.sza)}°</div>`);
   if (rng(t.lst)) chips.push(`<div class="diag-chip"><strong>Local time:</strong> ${rng(t.lst, 2)} h</div>`);
   const g = prof.geometry || {};
   const how = g.computed ? 'Computed by VEDA from the time and position (no archive value)' : 'From the archive';
   if (!rng(t.lst) && g.lst != null) chips.push(`<div class="diag-chip" title="${how}"><strong>Local time:</strong> ${g.lst.toFixed(2)} h${g.computed ? '*' : ''}</div>`);
-  if (!rng(t.sza) && g.sza != null) chips.push(`<div class="diag-chip" title="${how}"><strong>SZA:</strong> ${g.sza.toFixed(1)}°${g.computed ? '*' : ''}</div>`);
+  if (!rng(t.sza) && g.sza != null) chips.push(`<div class="diag-chip" title="${how}"><strong>Solar zenith angle:</strong> ${g.sza.toFixed(1)}°${g.computed ? '*' : ''}</div>`);
   if (g.ls != null) chips.push(`<div class="diag-chip" title="Mars solar longitude: 0 northern spring equinox, 90 summer solstice, 180 autumn, 270 winter"><strong>Ls:</strong> ${g.ls.toFixed(1)}°</div>`);
   if (g.computed && (rng(t.lst) || rng(t.sza))) chips.push(`<div class="diag-chip" title="${how}"><strong>Geometry:</strong> computed*</div>`);
   if (g.label_time) {
