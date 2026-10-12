@@ -12,6 +12,14 @@ All data shown in VEDA come straight from the mission archives (NASA PDS, ESA PS
 
 > **VEDA is public and updated continuously** (version 0.2.0; changes go to the main branch continuously, and a new build is released about once a month). It is ready for use and for testing; please report problems, wrong results and suggestions through **Feedback** in the app or on the [issue tracker](https://github.com/jovian-explorer/VEDA/issues/new/choose).
 
+## Quick start
+
+1. **Download** the archive for your computer from the [latest release](https://github.com/jovian-explorer/VEDA/releases/latest) (Windows, macOS or Linux; no Python needed), unzip it and start `VEDA` (details under [Installation](#installation)).
+2. **Look around.** VEDA opens on Venus: its physical constants, and further down a temperature profile of the Akatsuki orbiter that comes with the app, so there is real data on screen before anything is downloaded. The cards at the top switch to Mars, Jupiter, Titan and the other bodies.
+3. **Try one thing**: under *Find observations*, set two dates and press *Search all missions*; open a row to plot it, or tick several profiles to compare them. The *Workflow Guide* tab walks through a first session.
+
+**What is this for?** Spacecraft measure how temperature, pressure, density and charged particles change with height in the atmospheres of other worlds. VEDA finds those measurements in the space agencies' public archives, draws them, works out quantities such as how stable the air is, and lets you compare missions, seasons and places side by side. It is meant for researchers, but students and anyone curious about other planets can use it too: every quantity has a short explanation in *Variables*, and *Help* explains the terms.
+
 ---
 
 ## Documentation
