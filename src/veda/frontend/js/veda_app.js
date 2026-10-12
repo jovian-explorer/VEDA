@@ -797,9 +797,13 @@ function renderSelectionReport(sel, filters) {
     const parts = [`<strong>${escHtml(name(mid))}</strong>: ${r.kept} kept`,
       r.note ? escHtml(r.note) : `${r.in_date_range} in the date range${rows}, ${r.tried} read`];
     if (out.length) parts.push(`left out: ${out.join(', ')}`);
-    if (r.not_indexed?.length) parts.push(`not indexed yet: open the mission's archive data to index ${r.not_indexed.map(escHtml).join(', ')}`);
+    if (r.not_indexed?.length) {
+      const n = r.not_indexed.length;
+      parts.push(`<span title="${escHtml(r.not_indexed.join(', '))}">${n === 1 ? 'its profile data set is' : `${n} of its profile data sets are`} not catalogued yet `
+        + `(open the mission's Archive data once to read ${n === 1 ? 'its' : 'their'} catalogue)</span>`);
+    }
     return `<div>${parts.join('; ')}</div>`;
-  }).join('') + (vedaState.compareFilter ? limits : '<div>Showing downloaded profiles only. Set dates or ranges and press Apply to search the whole archive.</div>');
+  }).join('') + (vedaState.compareFilter ? limits : '<div>Showing the profiles already on this computer. Set dates or ranges and press Apply to search the whole archive.</div>');
 }
 
 // The comparison choices (which profiles, grouping, grid, vertical, view) are kept on this
