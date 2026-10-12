@@ -78,7 +78,7 @@
     <!-- Left Column: Multi-Mission Checkboxes & Controls -->
     <div class="card">
       <h2>2. Select Missions to Compare</h2>
-      <p class="hint">Toggle multiple missions simultaneously to compare aligned profiles and evaluate composite variance:</p>
+      <p class="hint">Tick the missions whose profiles to draw together. VEDA puts them on common heights and shows their mean and spread:</p>
       <div id="veda-missions-checkboxes" class="mission-checkboxes-list">
         <!-- Checkboxes with encounter classification badges -->
       </div>
@@ -91,15 +91,15 @@
         <div class="compare-filter-grid">
           <label>From <input type="date" id="cf-start" /></label>
           <label>To <input type="date" id="cf-end" /></label>
-          <label>Latitude from <input type="number" id="cf-lat-min" min="-90" max="90" step="any" placeholder="-90" /></label>
+          <label title="Latitude of the profile: -90 south pole, 0 equator, 90 north pole">Latitude from <input type="number" id="cf-lat-min" min="-90" max="90" step="any" placeholder="-90" /></label>
           <label>to <input type="number" id="cf-lat-max" min="-90" max="90" step="any" placeholder="90" />&deg;</label>
-          <label title="Local solar time in hours; 22 to 2 wraps through midnight">Local time from <input type="number" id="cf-lst-min" min="0" max="24" step="any" placeholder="0" /></label>
+          <label title="Local solar time in hours, the time of day where the profile was taken (12 noon, the Sun highest; 0 midnight); 22 to 2 wraps through midnight">Local time from <input type="number" id="cf-lst-min" min="0" max="24" step="any" placeholder="0" /></label>
           <label>to <input type="number" id="cf-lst-max" min="0" max="24" step="any" placeholder="24" /> h</label>
-          <label>Solar zenith angle from <input type="number" id="cf-sza-min" min="0" max="180" step="any" placeholder="0" /></label>
+          <label title="Angle of the Sun from straight overhead where the profile was taken: 0 Sun overhead (noon), 90 at the horizon (sunrise or sunset), over 90 night">Solar zenith angle from <input type="number" id="cf-sza-min" min="0" max="180" step="any" placeholder="0" /></label>
           <label>to <input type="number" id="cf-sza-max" min="0" max="180" step="any" placeholder="180" />&deg;</label>
           <label title="Mars solar longitude (season): 0 northern spring equinox, 90 northern summer solstice, 180 autumn, 270 winter; 330 to 30 wraps through 0. Other bodies: leave empty">Mars season Ls from <input type="number" id="cf-ls-min" min="0" max="360" step="any" placeholder="0" /></label>
           <label>to <input type="number" id="cf-ls-max" min="0" max="360" step="any" placeholder="360" />&deg;</label>
-          <label>Profiles per mission <input type="number" id="cf-per-mission" min="1" max="100" value="10" /></label>
+          <label title="At most this many profiles of each mission are read and drawn (more take longer)">Profiles per mission <input type="number" id="cf-per-mission" min="1" max="100" value="10" /></label>
           <label title="Keep only profiles in which the compared variable reaches down to this altitude">Must cover from <input type="number" id="cf-cover-min" step="any" placeholder="km" /></label>
           <label title="... and up to this altitude">to <input type="number" id="cf-cover-max" step="any" placeholder="km" /> km</label>
           <label title="Keep only profiles whose levels are at most this far apart (median spacing)">Level spacing at most <input type="number" id="cf-max-spacing" min="0" step="any" placeholder="km" /> km</label>
