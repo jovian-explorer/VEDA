@@ -952,3 +952,7 @@ def test_default_series_skips_quality_columns_and_packet_counts():
               Field("PKT_COUNT", "", "The packet count"), Field("RADIANCE", "W/m2/sr/cm-1", "Calibrated radiance")]
     obj = DataObject(name="TABLE", kind="table", shape=(3, 3), fields=fields)
     assert default_y(obj, None) == "RADIANCE"
+    # SPICAM records: a header vector before the detector values
+    obj = DataObject(name="R", kind="table", shape=(3, 2),
+                     fields=[Field("HEADER ARRAY", "", "", items=128), Field("DATA ARRAY", "", "", items=2040)])
+    assert default_y(obj, None) == "DATA ARRAY"

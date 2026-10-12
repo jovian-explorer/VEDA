@@ -96,7 +96,7 @@ def minmax_indices(y: np.ndarray, max_points: int) -> np.ndarray:
 _NOT_A_MEASUREMENT = re.compile(
     r"(^|[ _.])(SAMPLE|RECORD|ROW|INDEX|PACKET|PKT|SEQUENCE|FRAME|COUNTER)([ _]?(NUMBER|NO|ID|COUNT))?$|"
     r"EPHEMERIS|SCLK|SPACECRAFT[ _]CLOCK|(^|[ _])(ET|TIME|UTC|JD|MJD|DOY|YEAR|MONTH|DAY|HOUR|MINUTE|SECOND)"
-    r"([ _]|$)|^(ET|UTC|SCET|ERT|OBT|SCLK)([A-Z]{0,4}|[ _].*)$|(^|[ _])(ID|TYPE|VERSION|COUNTER|ORBIT)$|QUALITY|FLAG|MODE|STATUS|CHECKSUM|SPARE", re.I)
+    r"([ _]|$)|^(ET|UTC|SCET|ERT|OBT|SCLK)([A-Z]{0,4}|[ _].*)$|(^|[ _])(ID|TYPE|VERSION|COUNTER|ORBIT)$|QUALITY|FLAG|MODE|STATUS|CHECKSUM|SPARE|HEADER", re.I)
 
 
 def _as_numbers(values) -> Optional[np.ndarray]:
