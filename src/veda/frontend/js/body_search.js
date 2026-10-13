@@ -37,11 +37,14 @@ export async function showBodySearch(bodyId, bodyName) {
     const real = ds.filter(d => !d.portal_only);
     st.liveCount = real.filter(d => d.live).length;
     const missions = [...new Set(real.map(d => d.mission_id))];
-    const span = real.filter(d => d.indexed_volumes && d.first_time);
+    // the years with observations: from each data set's dates (open-ended: still growing)
+    const now = String(new Date().getFullYear());
+    const years = real.flatMap(d => (d.coverage || []).length ? [d.coverage[0].slice(0, 4), d.coverage[1].slice(0, 4) || now]
+      : d.indexed_volumes && d.first_time ? [d.first_time.slice(0, 4), d.last_time.slice(0, 4)] : []).sort();
     $('bs-coverage').textContent = real.length
       ? `${real.length} data set${real.length > 1 ? 's' : ''} from ${missions.length} mission${missions.length > 1 ? 's' : ''}` +
         (st.liveCount ? ` (${st.liveCount} searched live on the archive servers when you give dates)` : '') +
-        (span.length ? `; indexed coverage ${span.map(d => d.first_time.slice(0, 4)).sort()[0]} to ${span.map(d => d.last_time.slice(0, 4)).sort().slice(-1)[0]}` : '')
+        (years.length ? `; observations from ${years[0]} to ${years[years.length - 1]}` : '')
       : 'No archive data set is connected for this body yet.';
     $('bs-form').hidden = !real.length;
     if (!st.results.length) $('bs-results').innerHTML = real.length
@@ -75,7 +78,8 @@ async function ensureIndexed(start, end) {
   // for the large ones); later searches use the local copy
   for (const [i, d] of ds.entries()) {
     const { job_id } = await api.archiveIndex(d.id);
-    await poll(job_id, `First search on this computer: reading the archive catalogue of ${d.mission_id.toUpperCase()} `
+    await poll(job_id, `First search on this computer: reading the archive catalogue of `
+      + `${d.instrument.toUpperCase().startsWith(d.mission_id.toUpperCase()) ? '' : `${d.mission_id.toUpperCase()} `}`
       + `${d.instrument}, ${i + 1} of ${ds.length}; later searches are instant`, true);
   }
 }

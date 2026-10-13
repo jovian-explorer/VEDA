@@ -603,3 +603,17 @@ def test_attached_label_pointers_stop_at_end(tmp_path):
     f.write_bytes(b'PDS_VERSION_ID = PDS3\r\n^QUBE = 14\r\n^INSTRUMENT_DESC = "VIRTIS_EAICD.TXT"\r\nEND\r\n'
                   + b"\x00\x12\n^ZZ = &\x12\xf0=.\xc0\xaa\n" + bytes(1000))
     assert label_pointers(_label_text(f)) == [("INSTRUMENT_DESC", "VIRTIS_EAICD.TXT")]
+
+
+def test_first_search_data_sets_have_their_dates():
+    """The first search on a computer reads the catalogue of every data set of the body
+    (minutes for some); with each data set's dates it skips those outside the search."""
+    import datetime as dt
+    for d in DATASETS:
+        if d.portal_only or d.service or not d.auto_index:
+            continue
+        assert d.coverage, d.id
+        first, last = d.coverage
+        dt.date.fromisoformat(first)
+        assert not last or dt.date.fromisoformat(last) >= dt.date.fromisoformat(first), d.id
+        assert d.to_dict()["coverage"] == [first, last]

@@ -1073,8 +1073,62 @@ _REFS = {
     "issdc-ch2": (),
 }
 # First and last observation dates of the data sets read on a first search, from their
-# archive indexes (October 2026); "" for data sets still growing
+# archive indexes (October 2026); "" for data sets still growing.  The mission's own data:
+# ancillary files dated decades earlier are left out
 COVERAGE = {
+    "cassini-uvis-saturn-thermosphere": ("2005-04-13", "2017-08-04"),
+    "co-s-inms-3-l1a-u-v1.0": ("2004-01-01", "2017-09-15"),
+    "corss-saturn-ionosphere": ("2005-05-03", "2013-05-31"),
+    "corss-titan-neutral-profiles": ("2006-03-19", "2016-05-06"),
+    "corss_occul_el_dens": ("2006-03-19", "2016-05-06"),
+    "gp-j-entry-v1.0": ("1995-12-07", "1995-12-07"),
+    "hp-ssa-hasi-2-3-4-mission-v1.1": ("2005-01-14", "2005-01-14"),
+    "insight-edl-atmosphere": ("2018-11-26", "2018-11-26"),
+    "jno-fgm-3-cal-v1.0": ("2011-08-25", ""),
+    "jno-j-jnc-2-3-edr-rdr-v1.0": ("2011-08-26", ""),
+    "jno-x-mwr": ("2014-01-01", ""),
+    "maven-acc-profile": ("2014-10-07", ""),
+    "maven-rose-edp": ("2016-07-05", ""),
+    "mer-m-imu-5-edl-derived-v1.0": ("2004-01-04", "2004-01-25"),
+    "mex-m-mrs-5-occ": ("2004-04-02", ""),
+    "mgn-v-rss-1-rocc-v2.0": ("1991-10-05", "1994-10-12"),
+    "mgn-v-rss-5-occ-prof-abs-h2so4-v1.0": ("1991-10-05", "1991-10-06"),
+    "mgn-v-rss-5-occ-prof-rtpd-v1.0": ("1991-10-05", "1991-10-06"),
+    "mgs-m-rss-5-sdp-v1.0": ("1997-09-12", "2006-09-19"),  # (gravity models dated from Mariner 9, 1971)
+    "mro-crism-guzewich-aerosol": ("2010-12-06", "2017-02-14"),
+    "mro-crism-smith2013-aerosol": ("2009-07-10", "2012-04-26"),
+    "mro-m-accel-5-profile-v1.0": ("2006-04-02", "2006-08-30"),
+    "mro-m-mcs-2-edr-v1.0": ("2006-09-15", ""),
+    "mro-m-mcs-4-rdr-v1.0": ("2006-09-24", ""),
+    "mro-m-mcs-5-ddr-v1.0": ("2006-09-24", ""),
+    "mro-m-rss-5-tps-v1.0": ("2008-08-01", ""),
+    "msl-edl-atmosphere": ("2012-08-06", "2012-08-06"),
+    "ody-m-accel-5-derived-v1.0": ("2001-10-26", "2002-01-11"),
+    "phx-m-ase-5-edl-rdr-v1.0": ("2008-05-25", "2008-05-25"),
+    "pvo-v-onms": ("1978-12-05", "1980-03-15"),
+    "pvoro-nssdc": ("1978-12-05", "1989-10-18"),
+    "vco-uvi-pds4": ("2010-05-21", "2024-03-24"),
+    "vco-v-ir1-2-edr-v1.0": ("2010-05-21", "2016-12-09"),
+    "vco-v-ir1-3-cdr-v1.0": ("2010-05-21", "2016-12-09"),
+    "vco-v-ir1-3-sedr-v1.0": ("2010-05-21", "2016-12-09"),
+    "vco-v-ir2-2-edr-v1.0": ("2010-05-21", "2016-12-09"),
+    "vco-v-ir2-3-cdr-v1.0": ("2010-05-21", "2016-12-09"),
+    "vco-v-ir2-3-sedr-v1.0": ("2010-05-21", "2016-12-09"),
+    "vco-v-lir-2-edr-v1.0": ("2010-05-21", "2021-12-02"),
+    "vco-v-lir-3-cdr-v1.0": ("2010-05-21", "2021-12-02"),
+    "vco-v-lir-3-sedr-v1.0": ("2010-05-21", "2021-12-02"),
+    "vco-v-rs-3-occ-v1.0": ("2016-03-03", "2024-04-24"),
+    "vco-v-rs-5-occ-v1.0": ("2016-03-03", "2024-04-24"),
+    "vco-v-uvi-2-edr-v1.0": ("2010-05-21", "2021-12-02"),
+    "vco-v-uvi-3-cdr-v1.0": ("2010-05-21", "2021-12-02"),
+    "vco-v-uvi-3-sedr-v1.0": ("2010-05-21", "2021-12-02"),
+    "vega1-vega2-v-2-3-venus-v1.0": ("1985-06-11", "1985-06-15"),
+    "vex-soir-co2-temperature": ("2006-05-12", "2014-11-27"),
+    "vex-v-vra-1-2-3": ("2006-07-11", "2012-08-27"),
+    "vco-lir-pds4": ("2010-05-21", ""),      # (DARTS refused its listing: Akatsuki's launch day, open end)
+    "vex-v-rss-1-ent-v1.0": ("2005-11-09", "2013-12-19"),  # (Earth orientation and kernel files from 1962)
+    "vex-vera-fsi-imamura": ("2006-07-15", "2009-09-13"),
+    "vex-vera-gramigna2023": ("2014-01-20", "2014-03-11"),
 }
 import dataclasses as _dc  # noqa: E402
 for _i, _d in enumerate(DATASETS):
