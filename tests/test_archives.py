@@ -654,3 +654,23 @@ def test_date_search_counts_products_without_a_time():
     finally:
         with catalog._db_lock, catalog._connect() as conn:
             conn.execute("DELETE FROM products WHERE volume='TESTVOL'")
+
+
+def test_pds4_listing_refused_by_a_busy_server_is_not_skipped(monkeypatch):
+    """A product folder whose listing the server refused (HTTP 503) was taken as empty, so
+    its products were left out of the catalogue without a word; a missing one (404) is."""
+    import pytest
+    from veda.archives import catalog
+    from veda.archives import net
+    ds = get_dataset("vco-lir-pds4")
+
+    def refuse(url, *a, **k):
+        raise net.ArchiveError("data.darts.isas.jaxa.jp refused the request (HTTP 503).")
+    monkeypatch.setattr(net, "list_directory", refuse)
+    with pytest.raises(net.ArchiveError):
+        catalog.index_pds4(ds, "vco_lir")
+
+    def missing(url, *a, **k):
+        raise net.ArchiveError("x does not have /y (HTTP 404).")
+    monkeypatch.setattr(net, "list_directory", missing)
+    assert catalog.index_pds4(ds, "vco_lir") == []

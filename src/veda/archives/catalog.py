@@ -238,8 +238,12 @@ def index_pds4(ds: Dataset, volume: str) -> List[Dict[str, Any]]:
             return [f"{d}{s}/" for s in http.list_directory(root + d, dirs_only=True, login_url=ds.login_url)]
         except http.LoginRequired:
             raise
-        except http.ArchiveError:
-            return []
+        except http.ArchiveError as exc:
+            # a folder the bundle does not have; a busy server's refusal fails the indexing
+            # (to be tried again) instead of leaving the folder's products out unsaid
+            if "HTTP 404" in str(exc):
+                return []
+            raise
     # as many parallel listings as downloads (4 by default): with 8, the JAXA server
     # refused the Akatsuki LIR listings (HTTP 503) and the data set could not be indexed
     from ..parallel import download_workers
