@@ -215,6 +215,9 @@ def test_upload_pds3_label_with_companion_table(client):
     body = r.json()
     assert body["type"] == "profile" and body["data"]["n_points"] > 10
     assert "local_path" not in body
+    # the label's time is kept with the upload (date-filtered comparisons need it)
+    item = next(i for i in client.get("/api/veda/uploads").json() if i["filename"] == lbl.name)
+    assert item["time_utc"] == "2004-04-02T11:44:14.100"
 
 
 def test_upload_label_without_table_explains_what_to_do(client):
@@ -555,7 +558,8 @@ def test_comparison_filters_by_date_and_latitude(client):
     lat = client.get(f"/api/veda/archive/profile/mex-m-mrs-5-occ/{sample}").json()["latitude"]
     base = {"missions": ["mex"], "variable": "temperature_k"}
     inside = client.post("/api/veda/compare/body/mars", json={**base, "filter": {
-        "start": "2004-04-01", "end": "2004-04-03", "lat_min": lat - 1, "lat_max": lat + 1, "download": False}}).json()
+        "start": "2004-04-01", "end": "2004-04-03", "lat_min": lat - 1, "lat_max": lat + 1, "download": False,
+        "include_uploads": False}}).json()          # (another test loads this sample as a file)
     assert sample in [p["observation_id"] for p in inside["profiles"]]
     # each compared profile names its archive data set, for the Cite panel
     assert {p["dataset_id"] for p in inside["profiles"]} == {"mex-m-mrs-5-occ"}

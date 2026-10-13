@@ -1020,6 +1020,9 @@ def parse_generic_file_endpoint(req: ParseFileRequest) -> dict:
         except Exception as exc:  # noqa: BLE001
             discard_upload(staged)
             raise HTTPException(status_code=422, detail=_friendly_ingest_error(name, exc))
+        # the time read from the file, when none was entered: date-filtered comparisons
+        # left such files out as "time unknown"
+        info["time_utc"] = info["time_utc"] or res.get("time_utc") or (res.get("data") or {}).get("time_utc") or ""
         commit_upload(staged, req.body_id, info)
         res.pop("local_path", None)
         return res
