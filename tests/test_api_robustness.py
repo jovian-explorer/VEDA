@@ -618,6 +618,20 @@ def test_pressure_label_units_hpa_is_not_pascal():
     assert unit_from_label("altitude", "M") == "m"
 
 
+def test_units_at_the_end_of_column_names(tmp_path):
+    """alt_m was read as kilometres and press_Pa as hPa (1000 km, 600 hPa on Mars)."""
+    from veda.core.registry import get_body
+    from veda.pipeline.ingest import build_profile, suggest_roles
+    from veda.readers.pds3_reader import read_any_table
+    f = tmp_path / "m.csv"
+    f.write_text("alt_m,temp_C,press_Pa\n0,-50,600\n1000,-55,550\n")
+    roles = suggest_roles(read_any_table(str(f)))
+    assert [roles[k]["unit"] for k in ("ALT_M", "TEMP_C", "PRESS_PA")] == ["m", "C", "Pa"]
+    for r in (roles, None):
+        prof, _ = build_profile(f, get_body("mars"), roles=r)
+        assert list(prof.altitude_km) == [0.0, 1.0] and list(prof.pressure_hpa) == [6.0, 5.5]
+
+
 def test_fill_values_in_text_tables_are_missing_not_celsius(tmp_path):
     """-999 in a Kelvin temperature column made the load dialog (and the guessed load)
     take the column for degrees Celsius, adding 273 K to every level."""

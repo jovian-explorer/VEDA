@@ -214,6 +214,14 @@ def to_standard(role: str, values: np.ndarray, unit: str, body) -> np.ndarray:
     return v
 
 
+def _name_unit(role: str, column: str) -> Optional[str]:
+    """A unit at the end of a column name (ALT_M, PRESS_PA, T_K), if it is one of the role's:
+    ALT_M was read as kilometres and PRESS_PA as hPa."""
+    name = column.upper().strip('"').replace(" ", "_")
+    tail = name.rsplit("_", 1)[1] if "_" in name else ""
+    return next((u for u in ROLE_UNITS.get(role, ()) if u.upper() == tail), None)
+
+
 def suggest_roles(tbl: Pds3Table) -> Dict[str, Dict[str, Optional[str]]]:
     """Column -> {role, unit} guessed from names and label units (a starting point the
     user can change)."""
@@ -244,6 +252,8 @@ def suggest_roles(tbl: Pds3Table) -> Dict[str, Dict[str, Optional[str]]]:
             if role in taken or not _re.search(rx, name):
                 continue
             unit = unit_from_label(role, tbl.units.get(col, "")) if role in ROLE_UNITS else None
+            if unit is None and role in ROLE_UNITS:
+                unit = _name_unit(role, name)
             vals = np.asarray(tbl.columns[col], dtype=float)
             finite = vals[np.isfinite(vals)]
             if unit is None and finite.size:
@@ -320,6 +330,8 @@ def build_profile(file_path: Path, b, mission_id: Optional[str] = None,
         raise ValueError(
             "No altitude column found (looked for ALTITUDE, ALT, HEIGHT, Z or RADIUS; "
             f"columns in the file: {found}).{hint}")
+    if _name_unit("altitude", alt_col) == "m":
+        z_arr = z_arr / 1000.0
     if ("RADIUS" in alt_col.upper() or "RAD" in alt_col.upper()) and np.nanmean(z_arr) > 400.0:
         z_arr = z_arr - b.radius_km
 
@@ -329,7 +341,7 @@ def build_profile(file_path: Path, b, mission_id: Optional[str] = None,
     if temp_col:
         t_raw = tbl.series(temp_col)
         if t_raw is not None and t_raw.size > 0:
-            unit = unit_from_label("temperature", tbl.units.get(temp_col, ""))
+            unit = unit_from_label("temperature", tbl.units.get(temp_col, "")) or _name_unit("temperature", temp_col)
             if unit == "C" or (unit is None and np.nanmin(t_raw[np.isfinite(t_raw)], initial=0) < 0):
                 t_k = t_raw + 273.15
                 t_c = t_raw
@@ -342,7 +354,7 @@ def build_profile(file_path: Path, b, mission_id: Optional[str] = None,
     if pres_col:
         p_raw = tbl.series(pres_col)
         if p_raw is not None and p_raw.size > 0:
-            unit = unit_from_label("pressure", tbl.units.get(pres_col, ""))
+            unit = unit_from_label("pressure", tbl.units.get(pres_col, "")) or _name_unit("pressure", pres_col)
             if unit is None:
                 unit = "Pa" if np.nanmean(p_raw) > 20000.0 else "hPa"      # no unit given: guess
             p_hpa = to_standard("pressure", p_raw, unit, b)
