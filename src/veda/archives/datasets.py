@@ -179,6 +179,9 @@ class Dataset:
     # First and last observation date in the archive ("" last: still growing), so that a
     # first search for other dates need not read the data set's catalogue (COVERAGE below)
     coverage: Tuple[str, str] = ()
+    # Index rows without a time take the earliest time of the other files in their folder
+    # (MRO aerobraking: each pass folder's orbital elements file has START_TIME = N/A)
+    folder_time: bool = False
 
     def classify(self, file_name: str) -> Tuple[str, str]:
         name = file_name.lower()
@@ -788,6 +791,7 @@ DATASETS: List[Dataset] = [
                                           "LOCAL_SOLAR_TIME", "SOLAR_ZENITH_ANGLE")},
         value_factor={"density_measured": 1e-9},       # labelled KG/KM^3
         pass_legs="TIME_FROM_PERIAPSIS",
+        folder_time=True,
         citation=("Tolson, R. H., Keating, G. M., Bougher, S. W., Brown, S. P., & Murphy, J. M. (2010). "
                   "MRO-M-ACCEL-5-PROFILE-V1.0, NASA Planetary Data System; Tolson, R. H., et al. (2008). "
                   "Atmospheric modeling using accelerometer data during Mars Reconnaissance Orbiter aerobraking "

@@ -108,6 +108,7 @@ async function run(reset) {
     if (token !== st.token) return;
     st.results = reset ? res.products : st.results.concat(res.products);
     st.total = res.total;
+    st.undated = res.undated || 0;
     rows();
   } catch (err) {
     $('bs-results').innerHTML = `<tr><td colspan="8" class="empty-state">Search failed: ${esc(err.message)}</td></tr>`;
@@ -141,7 +142,8 @@ function rows() {
   const missions = new Set(st.results.map(p => p.mission_id));
   const noDates = !($('bs-start').value && $('bs-end').value);
   $('bs-count').textContent = (st.total ? `${st.results.length.toLocaleString()} of ${st.total.toLocaleString()} from ${missions.size} mission${missions.size > 1 ? 's' : ''}` : '') +
-    (noDates && st.liveCount ? `${st.total ? ' · ' : ''}Give From and To dates to include the ${st.liveCount} live data sets` : '');
+    (noDates && st.liveCount ? `${st.total ? ' · ' : ''}Give From and To dates to include the ${st.liveCount} live data sets` : '') +
+    (st.undated ? ` · ${st.undated.toLocaleString()} product${st.undated > 1 ? 's' : ''} without a time in the archive index ${st.undated > 1 ? 'are' : 'is'} not listed for dates; clear the dates to see ${st.undated > 1 ? 'them' : 'it'}` : '');
   $('bs-more').hidden = st.results.length >= st.total;
   buttons();
 }

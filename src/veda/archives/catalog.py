@@ -288,8 +288,22 @@ def index_volume(ds: Dataset, volume: str) -> List[Dict[str, Any]]:
     label = _with_structure(label, tab_url.rsplit("/", 1)[0] + "/", ds.login_url)
     table = http.get_text(tab_url, login_url=ds.login_url)
     rows = [r for r in (_index_row(ds, volume, vol_url, row) for row in parse_index(label, table)) if r]
+    if ds.folder_time:
+        _times_from_folder(rows)
     _unique_product_ids(rows)
     return [leg for r in rows for leg in _pass_legs(ds, r)]
+
+
+def _times_from_folder(rows: List[Dict[str, Any]]) -> None:
+    """Rows without a start time take the earliest start time in their folder."""
+    first: Dict[str, str] = {}
+    for r in rows:
+        folder = r["path"].rsplit("/", 1)[0]
+        if r["start_time"] and (folder not in first or r["start_time"] < first[folder]):
+            first[folder] = r["start_time"]
+    for r in rows:
+        if not r["start_time"]:
+            r["start_time"] = first.get(r["path"].rsplit("/", 1)[0], "")
 
 
 def _unique_product_ids(rows: List[Dict[str, Any]]) -> None:
@@ -649,18 +663,21 @@ def search(q: SearchQuery) -> Dict[str, Any]:
     args: List[Any] = list(ds_ids)
     if q.target:
         where.append("target = ?"); args.append(q.target.upper())
+    # products whose index gives no time cannot be placed in a date range: counted apart
+    undated_where, undated_args = list(where) + ["start_time = ''"], list(args)
     if q.start:
         where.append("start_time >= ?"); args.append(q.start)
     if q.end:
         end = q.end + ("T23:59:59.999" if len(q.end) == 10 else "")
         where.append("start_time <= ?"); args.append(end)
-    if q.kind:
-        where.append("kind = ?"); args.append(q.kind)
-    if q.product_type:
-        where.append("product_type = ?"); args.append(q.product_type)
-    if q.text:
-        where.append("(product_id LIKE ? OR path LIKE ? OR extra LIKE ?)")
-        args += [f"%{q.text}%"] * 3
+    for w, a in ((where, args), (undated_where, undated_args)):
+        if q.kind:
+            w.append("kind = ?"); a.append(q.kind)
+        if q.product_type:
+            w.append("product_type = ?"); a.append(q.product_type)
+        if q.text:
+            w.append("(product_id LIKE ? OR path LIKE ? OR extra LIKE ?)")
+            a += [f"%{q.text}%"] * 3
     sql_where = " AND ".join(where)
     order = "DESC" if q.newest_first else "ASC"
     with _db_lock, _connect() as conn:
@@ -674,10 +691,12 @@ def search(q: SearchQuery) -> Dict[str, Any]:
             total = conn.execute(f"SELECT COUNT(*) FROM products WHERE {sql_where}", args).fetchone()[0]
             rows = conn.execute(f"SELECT * FROM products WHERE {sql_where} ORDER BY start_time {order} "
                                 "LIMIT ? OFFSET ?", args + [q.limit, q.offset]).fetchall()
+        undated = conn.execute(f"SELECT COUNT(*) FROM products WHERE {' AND '.join(undated_where)}",
+                               undated_args).fetchone()[0] if (q.start or q.end) else 0
         types = conn.execute(f"SELECT product_type, COUNT(*) n FROM products WHERE "
                              f"dataset_id IN ({','.join('?' * len(all_ds_ids))}) GROUP BY product_type",
                              all_ds_ids).fetchall()
-    return {"total": total, "products": [product_dict(r) for r in rows],
+    return {"total": total, "products": [product_dict(r) for r in rows], "undated": undated,
             "product_types": {t["product_type"]: t["n"] for t in types}}
 
 

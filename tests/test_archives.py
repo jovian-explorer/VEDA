@@ -617,3 +617,40 @@ def test_first_search_data_sets_have_their_dates():
         dt.date.fromisoformat(first)
         assert not last or dt.date.fromisoformat(last) >= dt.date.fromisoformat(first), d.id
         assert d.to_dict()["coverage"] == [first, last]
+
+
+def test_mro_aerobraking_orbital_elements_take_their_pass_time():
+    """The index gives START_TIME = N/A for each pass's ORBELEM.TAB: 428 products that no
+    date search could find.  They take the time of their pass folder."""
+    from veda.archives.catalog import _index_row, _times_from_folder
+    ds = get_dataset("mro-m-accel-5-profile-v1.0")
+    rows = [_index_row(ds, "MROA_0001", "https://x/MROA_0001/",
+                       {"PATH_NAME": "DATA/RAW_DATA/P001_099/P023/", "FILE_NAME": f, "PRODUCT_ID": f[:-4],
+                        "START_TIME": t, "STOP_TIME": t})
+            for f, t in (("ACCEL.TAB", "2006-04-12T07:51:10.00"), ("ORBELEM.TAB", "N/A"),
+                         ("THRUSTER.TAB", "2006-04-12T07:49:02.95"))]
+    assert rows[1]["start_time"] == ""
+    _times_from_folder(rows)
+    assert rows[1]["start_time"] == rows[2]["start_time"] and rows[1]["start_time"].startswith("2006-04-12T07:49")
+    assert ds.folder_time
+
+
+def test_date_search_counts_products_without_a_time():
+    """Products the index gives no time are left out of a date search, and the search
+    says how many, instead of hiding them silently."""
+    from veda.archives import catalog
+    row = {"dataset_id": "mro-m-accel-5-profile-v1.0", "volume": "TESTVOL", "stop_time": "", "target": "MARS",
+           "product_type": "Calibration", "kind": "other", "extra": "{}"}
+    with catalog._db_lock, catalog._connect() as conn:
+        conn.executemany("INSERT OR REPLACE INTO products VALUES (:dataset_id,:product_id,:volume,:path,"
+                         ":start_time,:stop_time,:target,:product_type,:kind,:extra)",
+                         [{**row, "product_id": "UNDATED_T", "path": "a/u.tab", "start_time": ""},
+                          {**row, "product_id": "DATED_T", "path": "a/d.tab", "start_time": "2006-05-01T00:00:00"}])
+    try:
+        q = dict(dataset_ids=["mro-m-accel-5-profile-v1.0"], text="_T")
+        res = catalog.search(catalog.SearchQuery(start="2006-04-01", end="2006-06-01", **q))
+        assert [p["product_id"] for p in res["products"]] == ["DATED_T"] and res["undated"] == 1
+        assert catalog.search(catalog.SearchQuery(**q))["undated"] == 0
+    finally:
+        with catalog._db_lock, catalog._connect() as conn:
+            conn.execute("DELETE FROM products WHERE volume='TESTVOL'")
