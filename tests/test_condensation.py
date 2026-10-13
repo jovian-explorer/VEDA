@@ -73,3 +73,11 @@ def test_diagnostic_labels_leave_the_parentheses_to_the_unit():
     for key, (label, unit, *hint) in PROFILE_DIAGNOSTICS.items():
         assert "(" not in label and ")" not in label, key
     assert "condense" in PROFILE_DIAGNOSTICS["co2_margin_min_k"][2]
+
+
+def test_no_frost_point_above_the_triple_point():
+    """The frost-point curve ends at CO2's triple point (5.18 bar): deep in Venus'
+    atmosphere it gave 258 K at 60 bar, where CO2 boils at 295 K."""
+    tc = co2_condensation_temperature(np.array([5000.0, 60000.0, 92000.0]), 1.0)
+    assert tc[0] == pytest.approx(3182.48 / (23.3494 - np.log(5000.0)))
+    assert np.isnan(tc[1:]).all()

@@ -66,8 +66,11 @@ async function poll(jobId, label, keepLabel = false) {
   }
 }
 
-async function ensureIndexed() {
-  const ds = ((await api.archiveDatasets(null, st.bodyId)).datasets || []).filter(d => !d.portal_only && !d.indexed_volumes && !d.live && d.auto_index !== false);
+async function ensureIndexed(start, end) {
+  // (a data set whose observations all lie outside the dates is not read)
+  const outside = ([first, last] = []) => (first && end && end < first) || (last && start && start > last);
+  const ds = ((await api.archiveDatasets(null, st.bodyId)).datasets || []).filter(d =>
+    !d.portal_only && !d.indexed_volumes && !d.live && d.auto_index !== false && !outside(d.coverage));
   // the first search on a computer reads each data set's archive catalogue once (minutes
   // for the large ones); later searches use the local copy
   for (const [i, d] of ds.entries()) {
@@ -83,7 +86,7 @@ async function run(reset) {
   if (start && end && end < start) return toast('The end date is before the start date', 'bad');
   const token = ++st.token;
   try {
-    if (reset) await ensureIndexed();
+    if (reset) await ensureIndexed(start, end);
     if (reset && start && end && st.liveCount) {
       const key = `${st.bodyId}|${start}|${end}`;
       if (key !== st.liveKey) {

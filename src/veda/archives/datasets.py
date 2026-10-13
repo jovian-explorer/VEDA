@@ -176,6 +176,9 @@ class Dataset:
     service_query: Dict[str, object] = field(default_factory=dict)
     # Reference keys (veda/archives/references.json): instrument papers first, then the mission paper.
     refs: Tuple[str, ...] = ()
+    # First and last observation date in the archive ("" last: still growing), so that a
+    # first search for other dates need not read the data set's catalogue (COVERAGE below)
+    coverage: Tuple[str, str] = ()
 
     def classify(self, file_name: str) -> Tuple[str, str]:
         name = file_name.lower()
@@ -216,7 +219,7 @@ class Dataset:
             "live": bool(self.service), "service": self.service, "refs": list(self.refs),
             "auto_index": self.auto_index, "index_note": self.index_note,
             "has_profiles": any(kind == "profile" for _, _, kind in self.rules) or bool(self.profile_rows),
-            "profile_rows": self.profile_rows,
+            "profile_rows": self.profile_rows, "coverage": list(self.coverage),
         }
 
 
@@ -1069,10 +1072,16 @@ _REFS = {
     "issdc-mom": ("arunan2015",),
     "issdc-ch2": (),
 }
+# First and last observation dates of the data sets read on a first search, from their
+# archive indexes (October 2026); "" for data sets still growing
+COVERAGE = {
+}
+import dataclasses as _dc  # noqa: E402
 for _i, _d in enumerate(DATASETS):
     if _d.id in _REFS and not _d.refs:
-        import dataclasses as _dc
-        DATASETS[_i] = _dc.replace(_d, refs=_REFS[_d.id])
+        _d = DATASETS[_i] = _dc.replace(_d, refs=_REFS[_d.id])
+    if _d.id in COVERAGE:
+        DATASETS[_i] = _dc.replace(_d, coverage=COVERAGE[_d.id])
 
 
 def get_dataset(dataset_id: str) -> Optional[Dataset]:

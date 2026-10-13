@@ -15,6 +15,12 @@ supersaturated: CO2 ice clouds and snowfall in the Martian polar night (Colapret
 2003, JGR 108(E7), 5081; Hu et al. 2012, JGR 117, E07002) and the cold layer near 125 km at
 the Venus terminator (Mahieux et al. 2012, JGR 117, E07001).  Its uncertainty follows from
 those of T and p: d T_CO2 / d ln p = T_CO2^2 / b.
+
+The relation is the solid-vapour (frost-point) curve, which ends at the triple point of CO2
+(216.59 K, 5.18 bar; Span & Wagner 1996, J. Phys. Chem. Ref. Data 25, 1509): at higher
+CO2 pressures (Venus below about 42 km) there is no frost point and no value is given.
+Extrapolated, the relation gave 258 K at 60 bar, where CO2 boils at 295 K, and values
+past the critical point (73.8 bar), where CO2 does not condense at all.
 """
 from __future__ import annotations
 
@@ -24,6 +30,7 @@ import numpy as np
 
 A_CO2 = 23.3494
 B_CO2 = 3182.48            # K
+TRIPLE_POINT_HPA = 5185.0  # Span & Wagner (1996)
 
 
 def co2_volume_fraction(body) -> Optional[float]:
@@ -35,10 +42,12 @@ def co2_volume_fraction(body) -> Optional[float]:
 
 def co2_condensation_temperature(p_hpa, x_co2: float) -> np.ndarray:
     """Frost-point temperature (K) of CO2 at total pressure ``p_hpa`` (hPa) and CO2 volume
-    fraction ``x_co2`` (module docstring); NaN where the pressure is not positive."""
+    fraction ``x_co2`` (module docstring); NaN where the pressure is not positive or the CO2
+    pressure is above the triple point."""
     p = np.asarray(p_hpa, dtype=float)
     with np.errstate(invalid="ignore", divide="ignore"):
-        lp = np.log(np.where(p > 0, p * x_co2, np.nan))
+        pc = p * x_co2
+        lp = np.log(np.where((pc > 0) & (pc <= TRIPLE_POINT_HPA), pc, np.nan))
         return B_CO2 / (A_CO2 - lp)
 
 
