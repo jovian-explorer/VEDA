@@ -217,7 +217,7 @@ def test_upload_pds3_label_with_companion_table(client):
     assert "local_path" not in body
     # the label's time is kept with the upload (date-filtered comparisons need it)
     item = next(i for i in client.get("/api/veda/uploads").json() if i["filename"] == lbl.name)
-    assert item["time_utc"] == "2004-04-02T11:44:14.100"
+    assert item["time_utc"].startswith("2004-04-02T11:29")       # (at Mars; the label's is at Earth)
 
 
 def test_upload_label_without_table_explains_what_to_do(client):
@@ -1017,9 +1017,12 @@ def test_time_from_the_file_object_of_a_label():
     from veda.core.registry import get_body
     from veda.pipeline.ingest import build_profile
     prof, _ = build_profile(SAMPLES / "mars_express" / "M32ICL2L04_AIX_040931105_60.LBL", get_body("mars"))
-    assert prof.time_utc == "2004-04-02T11:44:14.100"
-    # and, as for archive profiles, the local time and Ls follow from it (loaded files had none)
-    assert prof.raw_attributes["LS"] == pytest.approx(13.6, abs=0.1) and np.isfinite(prof.track["lst"]).all()
+    assert prof.raw_attributes["LABEL_TIME"] == "2004-04-02T11:44:14.100"
+    # and, as for archive profiles, the local time and Ls follow from it (loaded files had
+    # none), at the time of the occultation: the label gives the time the signal reached
+    # Earth, 16 min later (the team's file gives 4.39 h at the lowest level)
+    assert prof.raw_attributes["LS"] == pytest.approx(13.59, abs=0.02)
+    assert prof.time_utc.startswith("2004-04-02T11:29") and prof.track["lst"][0] == pytest.approx(4.39, abs=0.05)
 
 
 def test_loaded_radio_occultation_uses_the_radius_not_geopotential_height():

@@ -82,11 +82,26 @@ def _profile_from_roles(file_path: Path, b, tbl: Pds3Table, roles: Dict[str, Dic
         if "mass_density_sigma" in by_role:
             prof.uncertainty["density_measured"] = by_role["mass_density_sigma"]
     # local time, zenith angle and Ls from the time and position, as for archive profiles:
-    # loaded files had none, and comparisons filtered on them left loaded files out
+    # loaded files had none, and comparisons filtered on them left loaded files out.  A
+    # product of a data set VEDA knows is timed as from the archive: Mars Express labels
+    # give the time the signal reached Earth, 16 min after the occultation in April 2004
+    # (0.28 h of local time)
     from ..archives.profiles import _add_solar_geometry
-    _add_solar_geometry(prof, None)
+    ds = None if time_utc else _known_dataset(tbl)
+    et_col = ds.profile_columns.get("et") if ds else None
+    if isinstance(et_col, str) and et_col in tbl.columns:
+        prof.track["et"] = np.asarray(tbl.columns[et_col], dtype=float)
+    _add_solar_geometry(prof, ds)
     prof.derived.update(compute_atmospheric_diagnostics(prof, b))
     return prof, tbl
+
+
+def _known_dataset(tbl: Pds3Table):
+    """The VEDA data set whose id begins the label's DATA_SET_ID (MEX-M-MRS-5-OCC-9101-V1.0
+    -> mex-m-mrs-5-occ), or None."""
+    from ..archives.datasets import DATASETS
+    sid = str(tbl.metadata.get("DATA_SET_ID") or "").strip('"').lower()
+    return next((d for d in DATASETS if sid and sid.startswith(d.id)), None)
 
 
 def _file_time(tbl: Pds3Table) -> str:
