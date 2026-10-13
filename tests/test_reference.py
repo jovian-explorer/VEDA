@@ -18,8 +18,11 @@ def test_venus_reference_values_and_interpolation():
     p = reference_profile("venus", "pressure_hpa", [50.0, 55.0])
     assert p[0] == pytest.approx(1070.0) and p[1] == pytest.approx(np.sqrt(1070.0 * 236.0))
     venus = get_body("venus")
-    h = reference_profile("venus", "scale_height", [50.0])[0]
-    assert h == pytest.approx(venus.gas_constant_r * 350.5 / (8.87 * (6051.8 / 6101.8) ** 2 * 1000), rel=1e-6)
+    h = reference_profile("venus", "scale_height", [50.0, 150.0])
+    assert h[0] == pytest.approx(venus.gas_constant_r * 350.5 / (8.87 * (6051.8 / 6101.8) ** 2 * 1000), rel=0.01)
+    # in the thermosphere with the table's own gas constant (lighter gas), not CO2's: 4.4 km before
+    assert h[1] == pytest.approx(9.55e-6 / (1.61e-10 * 8.87 * (6051.8 / 6201.8) ** 2 * 1000), rel=1e-6)
+    assert h[1] > 6.9
     assert reference_profile("jupiter", "temperature_k", [10.0]) is None
     tp = reference_on_pressure("venus", "temperature_k", [1070.0])
     assert tp[0] == pytest.approx(350.5, rel=1e-3)

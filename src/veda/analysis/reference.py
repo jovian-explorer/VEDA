@@ -142,11 +142,16 @@ def reference_profile(body_id: str, variable: str, z_km, body=None) -> Optional[
         out = np.exp(np.interp(z, t[:, 0], np.log(t[:, 2])))
     elif variable == "density":
         out = np.exp(np.interp(z, t[:, 0], np.log(t[:, 3])))
-    else:                                                    # scale height R T / g(z), km
+    else:
+        # scale height p / (rho g(z)) = R T / g, km, with the reference's own gas constant:
+        # the body's (CO2) one made the Venus thermosphere's 4.4 km at 150 km, where the
+        # table's p / (rho T) gives 306 J/(kg K) (CO2 giving way to O) and 7.0 km
         from ..core.registry import get_body
         b = body or get_body(body_id)
         g = b.surface_gravity * (b.radius_km / (b.radius_km + z)) ** 2
-        out = b.gas_constant_r * temp / (g * 1000.0)
+        p_pa = 100.0 * np.exp(np.interp(z, t[:, 0], np.log(t[:, 2])))
+        rho = np.exp(np.interp(z, t[:, 0], np.log(t[:, 3])))
+        out = p_pa / (rho * g * 1000.0)
     return np.where(inside, out, np.nan)
 
 
