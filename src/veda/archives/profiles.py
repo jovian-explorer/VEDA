@@ -347,20 +347,7 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
     if s is not None:
         sig_key = next((k for k in tbl.columns if k.upper().strip('"').startswith(("SIGMA ELECTRON", "NOISE LEVEL ELECTRON"))), None)
         unc["electron_density_cm3"] = _to_per_cm3(s, (tbl.units.get(sig_key, "") or ne_unit).upper())
-    lowest = _info_number(label, *ds.ne_lowest_valid_info) if ds.ne_lowest_valid_info and ne_cm3 is not None else None
-    if lowest is not None:
-        # the team's lowest valid radius of the electron densities (the altitudes are radius - R)
-        with np.errstate(invalid="ignore"):
-            below = z < lowest - body.radius_km
-        ne_cm3 = np.where(below, np.nan, ne_cm3)
-        if unc.get("electron_density_cm3") is not None:
-            unc["electron_density_cm3"] = np.where(below, np.nan, unc["electron_density_cm3"])
-    elif ds.neutral_below_km is not None and ne_cm3 is not None and unc.get("electron_density_cm3") is not None:
-        ne_cm3, unc["electron_density_cm3"] = _without_neutral_region(z, ne_cm3, unc["electron_density_cm3"],
-                                                                      ds.neutral_below_km)
-    if ds.topside_min_snr and ne_cm3 is not None and unc.get("electron_density_cm3") is not None:
-        ne_cm3, unc["electron_density_cm3"] = _without_topside_noise(z, ne_cm3, unc["electron_density_cm3"],
-                                                                     ds.topside_min_snr, ds.peak_below_km)
+    ne_cm3 = clean_electron_density(ds, label, z, ne_cm3, unc, body.radius_km)
 
     for key, (ca, cb) in ds.sigma_from_bracket.items():
         a, b = _col(tbl, ca), _col(tbl, cb)
@@ -496,6 +483,30 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
     _add_solar_geometry(prof, ds)
     prof.derived.update(compute_atmospheric_diagnostics(prof, body))
     return prof
+
+
+def clean_electron_density(ds: Dataset, label: Optional[Path], z, ne_cm3, unc: Dict[str, Any],
+                           radius_km: float):
+    """The data set's electron densities without the levels its team or VEDA leaves out:
+    below the team's lowest valid radius (^ION_INFO) or the neutral region, and the noise
+    above the peak; ``unc["electron_density_cm3"]`` is cut alike."""
+    if ne_cm3 is None:
+        return None
+    lowest = _info_number(label, *ds.ne_lowest_valid_info) if ds.ne_lowest_valid_info and label else None
+    if lowest is not None:
+        # the team's lowest valid radius of the electron densities (the altitudes are radius - R)
+        with np.errstate(invalid="ignore"):
+            below = z < lowest - radius_km
+        ne_cm3 = np.where(below, np.nan, ne_cm3)
+        if unc.get("electron_density_cm3") is not None:
+            unc["electron_density_cm3"] = np.where(below, np.nan, unc["electron_density_cm3"])
+    elif ds.neutral_below_km is not None and unc.get("electron_density_cm3") is not None:
+        ne_cm3, unc["electron_density_cm3"] = _without_neutral_region(z, ne_cm3, unc["electron_density_cm3"],
+                                                                      ds.neutral_below_km)
+    if ds.topside_min_snr and unc.get("electron_density_cm3") is not None:
+        ne_cm3, unc["electron_density_cm3"] = _without_topside_noise(z, ne_cm3, unc["electron_density_cm3"],
+                                                                     ds.topside_min_snr, ds.peak_below_km)
+    return ne_cm3
 
 
 def _info_number(label: Path, pointer: str, name: str) -> Optional[float]:

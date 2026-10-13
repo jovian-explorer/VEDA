@@ -51,6 +51,14 @@ def _profile_from_roles(file_path: Path, b, tbl: Pds3Table, roles: Dict[str, Dic
             "electron_density": "electron_density_cm3"}[k]: v for k, v in unc.items()}
     if "temperature_k" in unc:
         unc["temperature_c"] = unc["temperature_k"]
+    # a product of a data set VEDA knows is cleaned as when read from the archive: Mars
+    # Express electron densities below the team's lowest valid radius and above the peak
+    # in the noise (a loaded product put its peak at 954 km)
+    ds = _known_dataset(tbl)
+    ne = by_role.get("electron_density")
+    if ds is not None and ne is not None:
+        from ..archives.profiles import clean_electron_density
+        ne = clean_electron_density(ds, Path(tbl.label_path) if tbl.label_path else None, z, ne, unc, b.radius_km)
     track = {k: by_role[k] for k in ("latitude", "longitude", "lst", "sza") if k in by_role}
     med = lambda a: float(np.nanmedian(a)) if a is not None and np.isfinite(a).any() else None  # noqa: E731
     z_ref = (f"a sphere of radius {b.radius_km:g} km (from the radius column)" if "radius" in by_role
@@ -61,7 +69,7 @@ def _profile_from_roles(file_path: Path, b, tbl: Pds3Table, roles: Dict[str, Dic
         latitude=med(track.get("latitude")), longitude=circular_median(track.get("longitude"), 360.0),
         altitude_km=z, pressure_hpa=p, temperature_k=t_k,
         temperature_c=t_k - 273.15 if t_k is not None else None,
-        electron_density_cm3=by_role.get("electron_density"), refractivity=by_role.get("refractivity"),
+        electron_density_cm3=ne, refractivity=by_role.get("refractivity"),
         provenance=ProvenanceRecord(
             mission_id=mission_id or "user_imported", instrument=instrument or "Loaded file",
             product_level="User file", original_file=file_path.name, archive_source="Loaded from this computer",
@@ -87,7 +95,7 @@ def _profile_from_roles(file_path: Path, b, tbl: Pds3Table, roles: Dict[str, Dic
     # give the time the signal reached Earth, 16 min after the occultation in April 2004
     # (0.28 h of local time)
     from ..archives.profiles import _add_solar_geometry
-    ds = None if time_utc else _known_dataset(tbl)
+    ds = None if time_utc else ds
     et_col = ds.profile_columns.get("et") if ds else None
     if isinstance(et_col, str) and et_col in tbl.columns:
         prof.track["et"] = np.asarray(tbl.columns[et_col], dtype=float)

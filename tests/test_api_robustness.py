@@ -1049,3 +1049,18 @@ def test_loaded_product_matches_the_archive_profile():
     for k in ("number_density_m3", "temperature_from_density", "temperature_k"):
         np.testing.assert_allclose(loaded.uncertainty[k], archive.uncertainty[k])
     np.testing.assert_allclose(loaded.temperature_k, archive.temperature_k)
+
+
+def test_loaded_ionosphere_product_is_cleaned_as_from_the_archive():
+    """A Mars Express electron density product loaded as a file kept the levels below the
+    team's lowest valid radius and the noise above the peak: its peak came out at 954 km
+    (145 km when read from the archive)."""
+    from veda.core.registry import get_body
+    from veda.missions.manager import get_mission_manager
+    from veda.pipeline.ingest import build_profile
+    name = "M32ICL2L04_IIX_040931105_60"
+    loaded, _ = build_profile(SAMPLES / "mars_express" / f"{name}.LBL", get_body("mars"))
+    archive = get_mission_manager().load_profile("mex", name)
+    np.testing.assert_allclose(loaded.electron_density_cm3, archive.electron_density_cm3)
+    assert loaded.raw_attributes["hmf2_km"] == pytest.approx(archive.raw_attributes["hmf2_km"])
+    assert loaded.raw_attributes["hmf2_km"] < 200
