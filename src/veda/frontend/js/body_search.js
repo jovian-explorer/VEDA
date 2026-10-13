@@ -52,12 +52,13 @@ export async function showBodySearch(bodyId, bodyName) {
   }
 }
 
-async function poll(jobId, label) {
+async function poll(jobId, label, keepLabel = false) {
   progress(true, 0, label);
   for (;;) {
     await new Promise(r => setTimeout(r, 700));
     const j = await api.archiveJob(jobId);
-    progress(true, j.total ? Math.round(100 * j.done / j.total) : 5, j.message || label);
+    progress(true, j.total ? Math.round(100 * j.done / j.total) : 5,
+      keepLabel ? `${label}${j.message ? ` (${j.message})` : ''}` : (j.message || label));
     if (j.status === 'running') continue;
     progress(false);
     if (j.status !== 'completed') toast(j.message || `${label} failed`, 'bad');
@@ -67,9 +68,12 @@ async function poll(jobId, label) {
 
 async function ensureIndexed() {
   const ds = ((await api.archiveDatasets(null, st.bodyId)).datasets || []).filter(d => !d.portal_only && !d.indexed_volumes && !d.live && d.auto_index !== false);
-  for (const d of ds) {
+  // the first search on a computer reads each data set's archive catalogue once (minutes
+  // for the large ones); later searches use the local copy
+  for (const [i, d] of ds.entries()) {
     const { job_id } = await api.archiveIndex(d.id);
-    await poll(job_id, `Indexing ${d.mission_id.toUpperCase()} ${d.instrument} (${d.level})`);
+    await poll(job_id, `First search on this computer: reading the archive catalogue of ${d.mission_id.toUpperCase()} `
+      + `${d.instrument}, ${i + 1} of ${ds.length}; later searches are instant`, true);
   }
 }
 
