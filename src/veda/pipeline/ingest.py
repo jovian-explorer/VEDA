@@ -71,6 +71,8 @@ def _profile_from_roles(file_path: Path, b, tbl: Pds3Table, roles: Dict[str, Dic
     )
     if "number_density" in by_role:
         prof.derived["number_density_m3"] = by_role["number_density"]
+        if "number_density_sigma" in by_role:
+            prof.uncertainty["number_density_m3"] = by_role["number_density_sigma"]
     if "mass_density" in by_role:
         # measured mass density (accelerometer, entry and occultation profiles): compared as
         # "Mass density (archive)", like the archive data sets that publish one
@@ -152,6 +154,7 @@ ROLE_UNITS: Dict[str, Tuple[str, ...]] = {
     "electron_density": ("cm-3", "m-3"),
     "electron_density_sigma": ("cm-3", "m-3"),
     "number_density": ("m-3", "cm-3"),
+    "number_density_sigma": ("m-3", "cm-3"),
     "refractivity": ("N-units",),
     "mass_density": ("kg/m3", "g/cm3", "kg/km3"),
     "mass_density_sigma": ("kg/m3", "g/cm3", "kg/km3"),
@@ -215,7 +218,7 @@ def to_standard(role: str, values: np.ndarray, unit: str, body) -> np.ndarray:
         return v * {"Pa": 0.01, "kPa": 10.0, "bar": 1000.0, "mbar": 1.0, "hPa": 1.0}[unit]
     if role.startswith("electron_density"):
         return v * 1e-6 if unit == "m-3" else v
-    if role == "number_density":
+    if role.startswith("number_density"):
         return v * 1e6 if unit == "cm-3" else v
     if role.startswith("mass_density"):
         return v * {"kg/m3": 1.0, "g/cm3": 1000.0, "kg/km3": 1e-9}[unit]
@@ -239,6 +242,7 @@ def suggest_roles(tbl: Pds3Table) -> Dict[str, Dict[str, Optional[str]]]:
         ("pressure_sigma", r"(SIGMA|ERR|DEV|UNC).*PRES|PRES.*(SIGMA|ERR|DEV|UNC)"),
         ("electron_density_sigma", r"(SIGMA|ERR|DEV|UNC|NOISE).*(ELEC|NE\b)|(ELEC|EDEN).*(SIGMA|ERR|DEV|UNC)"),
         ("electron_density", r"ELECTRON|^NE$|^N_E$|EDEN|ELECDEN"),
+        ("number_density_sigma", r"(SIGMA|ERR|DEV|UNC).*(NUMBER|NUM|TOTAL).?DENS|(NUMBER|NUM|TOTAL).?DENS.*(SIGMA|ERR|DEV|UNC)"),
         ("number_density", r"NUMBER.?DENS|^N$|NUM.?DENS|TOTAL.?DENS"),
         ("refractivity", r"REFRACTIV|^N_UNITS$"),
         ("mass_density_sigma", r"(SIGMA|ERR|DEV|UNC).*(RHO|MASS.?DENS)|(RHO|MASS.?DENS).*(SIGMA|ERR|DEV|UNC)"),

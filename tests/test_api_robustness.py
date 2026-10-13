@@ -1032,3 +1032,17 @@ def test_loaded_radio_occultation_uses_the_radius_not_geopotential_height():
     loaded, _ = build_profile(SAMPLES / "venus_akatsuki" / f"{name}.lbl", get_body("venus"))
     archive = get_mission_manager().load_profile("akatsuki", name)
     np.testing.assert_allclose(loaded.altitude_km, archive.altitude_km)
+
+
+def test_loaded_product_matches_the_archive_profile():
+    """A Mars Express product loaded as a file gives the archive profile's values and
+    1-sigma (the number density 1-sigma was not a loadable column)."""
+    from veda.core.registry import get_body
+    from veda.missions.manager import get_mission_manager
+    from veda.pipeline.ingest import build_profile
+    name = "M32ICL2L04_AIX_040931105_60"
+    loaded, _ = build_profile(SAMPLES / "mars_express" / f"{name}.LBL", get_body("mars"))
+    archive = get_mission_manager().load_profile("mex", name)
+    for k in ("number_density_m3", "temperature_from_density", "temperature_k"):
+        np.testing.assert_allclose(loaded.uncertainty[k], archive.uncertainty[k])
+    np.testing.assert_allclose(loaded.temperature_k, archive.temperature_k)
