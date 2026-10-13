@@ -1129,7 +1129,7 @@ COVERAGE = {
     "vega1-vega2-v-2-3-venus-v1.0": ("1985-06-11", "1985-06-15"),
     "vex-soir-co2-temperature": ("2006-05-12", "2014-11-27"),
     "vex-v-vra-1-2-3": ("2006-07-11", "2012-08-27"),
-    "vco-lir-pds4": ("2010-05-21", ""),      # (DARTS refused its listing: Akatsuki's launch day, open end)
+    "vco-lir-pds4": ("2010-05-21", "2024-03-24"),   # (from the file names: DARTS refused its index listing)
     "vex-v-rss-1-ent-v1.0": ("2005-11-09", "2013-12-19"),  # (Earth orientation and kernel files from 1962)
     "vex-vera-fsi-imamura": ("2006-07-15", "2009-09-13"),
     "vex-vera-gramigna2023": ("2014-01-20", "2014-03-11"),
