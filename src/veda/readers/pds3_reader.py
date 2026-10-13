@@ -533,6 +533,14 @@ def read_any_table(file_path: str) -> Pds3Table:
     except ValueError:
         has_header = True
 
+    if not has_header:
+        # Column names in the comment line just above the data ("# alt(km) T(K) p(mbar)"),
+        # as many text tools write them; without this the columns were COL_1, COL_2, ...
+        i0 = all_lines.index(data_lines[0])
+        above = _split(all_lines[i0 - 1].lstrip("#%; ")) if i0 > 0 and all_lines[i0 - 1].startswith(("#", "%")) else []
+        if len(above) == len(first_row) and "=" not in all_lines[i0 - 1] and not any(_re.fullmatch(r"[-+0-9.eE]+", t) for t in above):
+            first_row, has_header, data_lines = above, True, [all_lines[i0 - 1]] + data_lines
+
     header_units: Dict[str, str] = {}
     if has_header:
         # "name [unit]" or "name (unit)": the unit goes to the units table

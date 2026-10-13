@@ -974,3 +974,16 @@ def test_default_series_skips_quality_columns_and_packet_counts():
     obj = DataObject(name="R", kind="table", shape=(3, 2),
                      fields=[Field("HEADER ARRAY", "", "", items=128), Field("DATA ARRAY", "", "", items=2040)])
     assert default_y(obj, None) == "DATA ARRAY"
+
+
+def test_column_names_in_the_comment_line_above_the_data(tmp_path):
+    """'# alt(km) T(K) p(mbar)' above whitespace-separated data gave columns COL_1 to COL_3,
+    so the file could only be loaded by assigning every column by hand."""
+    from veda.readers.pds3_reader import read_any_table
+    f = tmp_path / "prof.txt"
+    f.write_text("# Mars profile\n# alt(km) T(K) p(mbar)\n0 210 6\n10 200 4\n")
+    t = read_any_table(str(f))
+    assert list(t.columns) == ["ALT", "T", "P"] and t.units["P"] == "mbar" and list(t.columns["T"]) == [210.0, 200.0]
+    g = tmp_path / "plain.txt"
+    g.write_text("# a = 1\n0 210 6\n10 200 4\n")
+    assert list(read_any_table(str(g)).columns) == ["COL_1", "COL_2", "COL_3"]
