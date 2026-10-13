@@ -987,3 +987,21 @@ def test_column_names_in_the_comment_line_above_the_data(tmp_path):
     g = tmp_path / "plain.txt"
     g.write_text("# a = 1\n0 210 6\n10 200 4\n")
     assert list(read_any_table(str(g)).columns) == ["COL_1", "COL_2", "COL_3"]
+
+
+def test_guessed_load_is_the_load_dialog_suggestion():
+    """One loading path: a file read without the dialog gets the dialog's suggestion.
+    The suggestion offered 'PRESSURE (LOWER TEMPERATURE AT BOUNDARY)' as the temperature,
+    read '1 PER CUBIC METER' as cm-3, and the guessed load dropped refractivity and SZA."""
+    from veda.core.registry import get_body
+    from veda.pipeline.ingest import build_profile, suggest_roles
+    from veda.readers.pds3_reader import read_any_table
+    lbl = SAMPLES / "venus_akatsuki" / "rs_20160303_223100_udsc64_l4_ae_v10.lbl"
+    roles = suggest_roles(read_any_table(str(lbl)))
+    t = next(c for c, r in roles.items() if r["role"] == "temperature")
+    assert t == "TEMPERATURE (MEDIUM TEMPERATURE AT BOUNDARY)"
+    assert roles["NUMBER_DENSITY"]["unit"] == "m-3"
+    mex = SAMPLES / "mars_express" / "M32ICL2L04_IIX_040931105_60.TAB"
+    prof, _ = build_profile(mex, get_body("mars"), time_utc="2004-04-02T11:05:00")
+    assert prof.refractivity is not None and prof.track.get("sza") is not None
+    assert prof.time_utc == "2004-04-02T11:05:00"
