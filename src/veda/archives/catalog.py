@@ -240,14 +240,18 @@ def index_pds4(ds: Dataset, volume: str) -> List[Dict[str, Any]]:
             raise
         except http.ArchiveError:
             return []
+    # as many parallel listings as downloads (4 by default): with 8, the JAXA server
+    # refused the Akatsuki LIR listings (HTTP 503) and the data set could not be indexed
+    from ..parallel import download_workers
+    workers = download_workers()
     for _ in range(int(ds.pds4_walk)):              # True: one level; MAVEN accelerometer: year/month
-        with ThreadPoolExecutor(8) as pool:
+        with ThreadPoolExecutor(workers) as pool:
             dirs = [s for subs in pool.map(subdirs, dirs) for s in subs]
 
     def labels(d):
         names = http.list_directory(root + d, login_url=ds.login_url)
         return [d + n for n in names if n.lower().endswith((".xml", ".lblx")) and not n.lower().startswith("collection")]
-    with ThreadPoolExecutor(8 if len(dirs) > 1 else 1) as pool:
+    with ThreadPoolExecutor(workers if len(dirs) > 1 else 1) as pool:
         paths = [p for ps in pool.map(labels, dirs) for p in ps]
     out = []
     for path in paths:
