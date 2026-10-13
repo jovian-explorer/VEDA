@@ -79,6 +79,10 @@ def _profile_from_roles(file_path: Path, b, tbl: Pds3Table, roles: Dict[str, Dic
         prof.derived["density_measured"] = rho
         if "mass_density_sigma" in by_role:
             prof.uncertainty["density_measured"] = by_role["mass_density_sigma"]
+    # local time, zenith angle and Ls from the time and position, as for archive profiles:
+    # loaded files had none, and comparisons filtered on them left loaded files out
+    from ..archives.profiles import _add_solar_geometry
+    _add_solar_geometry(prof, None)
     prof.derived.update(compute_atmospheric_diagnostics(prof, b))
     return prof, tbl
 

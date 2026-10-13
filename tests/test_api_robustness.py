@@ -1009,8 +1009,10 @@ def test_guessed_load_is_the_load_dialog_suggestion():
 
 def test_time_from_the_file_object_of_a_label():
     """Mars Express labels give START_TIME inside OBJECT = FILE: a loaded product had no
-    time, so no local time, zenith angle or Ls."""
+    time, so no local time, zenith angle or Ls; nor did any loaded file."""
     from veda.core.registry import get_body
     from veda.pipeline.ingest import build_profile
     prof, _ = build_profile(SAMPLES / "mars_express" / "M32ICL2L04_AIX_040931105_60.LBL", get_body("mars"))
     assert prof.time_utc == "2004-04-02T11:44:14.100"
+    # and, as for archive profiles, the local time and Ls follow from it (loaded files had none)
+    assert prof.raw_attributes["LS"] == pytest.approx(13.6, abs=0.1) and np.isfinite(prof.track["lst"]).all()

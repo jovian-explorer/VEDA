@@ -578,12 +578,13 @@ def _trim_leg(prof: ObservationProfile, t: np.ndarray, min_snr: float) -> None:
         d["density_measured"] = a
 
 
-def _add_solar_geometry(prof: ObservationProfile, ds: Dataset) -> None:
+def _add_solar_geometry(prof: ObservationProfile, ds: Optional[Dataset]) -> None:
     """Local true solar time and solar zenith angle (per level along the ray path when the
     track has positions) where the archive does not give them, and Mars' Ls, computed
     from the time and position (analysis/solar_geometry.py).  The measurement time is
     the lowest level's; when the archive's times are ground received times the light
-    time is subtracted, and that time becomes the profile's time."""
+    time is subtracted, and that time becomes the profile's time.  ``ds`` is None for a
+    loaded file."""
     from ..analysis import solar_geometry as sg
     if not sg.supported(prof.body_id):
         return
@@ -606,7 +607,7 @@ def _add_solar_geometry(prof: ObservationProfile, ds: Dataset) -> None:
         ok = np.isfinite(et) & np.isfinite(z) if z.size == et.size else np.isfinite(et)
         i = int(np.nanargmin(np.where(ok, z, np.nan))) if z.size == et.size and ok.any() else int(np.nanargmin(et))
         time = sg.et_to_utc(et[i])
-        if ds.times_earth_received:
+        if ds is not None and ds.times_earth_received:
             lt = sg.light_time_s(prof.body_id, time)
             if lt:
                 time = sg.et_to_utc(et[i] - lt)
