@@ -60,3 +60,14 @@ def test_spectra_endpoint(monkeypatch):
     t = c.post("/api/veda/analysis/vertical-spectra/venus", json={"z_min": 50, "z_max": 90, "csv": True})
     assert t.text.splitlines()[3].startswith("m_cycles_per_km,wavelength_km,mean_psd")
     assert c.post("/api/veda/analysis/vertical-spectra/venus", json={"z_min": 90, "z_max": 50}).status_code == 422
+
+
+def test_profiles_with_a_gap_in_the_layer_are_skipped():
+    """Across a gap the profile was interpolated as a straight line, which took the waves
+    out: a 7 km gap in a 60 km layer passed the 90 % coverage test and lowered the
+    variance by 8 %."""
+    z = np.arange(50.0, 110.001, 0.2)
+    t = 200.0 * (1 + 0.01 * np.sin(2 * np.pi * z / 3))
+    assert profile_spectrum(z, t, 50.0, 110.0) is not None
+    keep = (z < 70.0) | (z > 77.0)
+    assert profile_spectrum(z[keep], t[keep], 50.0, 110.0) is None
