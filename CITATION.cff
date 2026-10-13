@@ -13,10 +13,13 @@ identifiers:
   - type: doi
     value: 10.5281/zenodo.23215291
     description: "Concept DOI (all versions; resolves to the newest release)"
+  - type: doi
+    value: 10.5281/zenodo.23215292
+    description: "Version DOI of release v0.2.0-build.144"
   - type: url
     value: "https://zenodo.org/records/23215292"
     description: "Zenodo record of the first archived release (v0.2.0-build.144)"
-date-released: 2026-10-02
+date-released: 2026-10-07
 license: MIT
 abstract: >-
   VEDA is a desktop laboratory for planetary atmosphere and ionosphere profiles. It
