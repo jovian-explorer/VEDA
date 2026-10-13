@@ -1005,3 +1005,12 @@ def test_guessed_load_is_the_load_dialog_suggestion():
     prof, _ = build_profile(mex, get_body("mars"), time_utc="2004-04-02T11:05:00")
     assert prof.refractivity is not None and prof.track.get("sza") is not None
     assert prof.time_utc == "2004-04-02T11:05:00"
+
+
+def test_time_from_the_file_object_of_a_label():
+    """Mars Express labels give START_TIME inside OBJECT = FILE: a loaded product had no
+    time, so no local time, zenith angle or Ls."""
+    from veda.core.registry import get_body
+    from veda.pipeline.ingest import build_profile
+    prof, _ = build_profile(SAMPLES / "mars_express" / "M32ICL2L04_AIX_040931105_60.LBL", get_body("mars"))
+    assert prof.time_utc == "2004-04-02T11:44:14.100"

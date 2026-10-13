@@ -218,6 +218,12 @@ def parse_pds3_label(label_text: str) -> Tuple[Dict[str, Any], List[ColumnDef]]:
             if not stack:
                 continue
             name, attrs = stack.pop()
+            if name == "FILE" and not stack:
+                # a label describing several files gives the observation time per file
+                # (Mars Express radio science): loaded products had no time
+                for k in ("START_TIME", "STOP_TIME"):
+                    if k in attrs:
+                        metadata.setdefault(k, attrs[k])
             if name == "COLUMN":
                 try:
                     columns.append(ColumnDef(
