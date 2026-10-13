@@ -497,34 +497,47 @@ def _finite(x: Any) -> Optional[float]:
 # key -> (label, unit)
 # key: (label, unit) or (label, unit, what the values mean); the unit is added to the label
 # in parentheses, so labels have none of their own
+_COLD = "The coldest level of the profile, where the temperature stops falling with height."
+_CHAPMAN = ("A Chapman layer is the textbook shape of an ionospheric layer made by sunlight; "
+            "the fit gives its peak and thickness.")
+_HYDROSTATIC = ("In hydrostatic balance the pressure at each level carries the weight of the gas above it; "
+                "large departures point to errors or strong vertical motion.")
 PROFILE_DIAGNOSTICS: Dict[str, Tuple[str, ...]] = {
-    "cpt_alt_km": ("Cold-point tropopause altitude", "km"),
-    "cpt_temp_k": ("Cold-point tropopause temperature", "K"),
-    "cpt_pressure_hpa": ("Cold-point tropopause pressure", "hPa"),
-    "ne_peak_cm3": ("Peak electron density", "cm^-3"),
-    "ne_peak_alt_km": ("Altitude of the electron density peak", "km"),
-    "chapman_nm_cm3": ("Chapman fit peak density", "cm^-3"),
-    "chapman_hm_km": ("Chapman fit peak altitude", "km"),
-    "chapman_h_km": ("Chapman fit scale height", "km"),
-    "chapman_r2": ("Chapman fit R^2", ""),
+    "cpt_alt_km": ("Cold-point tropopause altitude", "km", _COLD),
+    "cpt_temp_k": ("Cold-point tropopause temperature", "K", _COLD),
+    "cpt_pressure_hpa": ("Cold-point tropopause pressure", "hPa", _COLD),
+    "ne_peak_cm3": ("Peak electron density", "cm^-3",
+        "The largest electron density in the profile: the main layer of the ionosphere."),
+    "ne_peak_alt_km": ("Altitude of the electron density peak", "km",
+        "The height of the main layer of the ionosphere."),
+    "chapman_nm_cm3": ("Chapman fit peak density", "cm^-3", _CHAPMAN),
+    "chapman_hm_km": ("Chapman fit peak altitude", "km", _CHAPMAN),
+    "chapman_h_km": ("Chapman fit scale height", "km",
+        _CHAPMAN + " The scale height sets how fast the density falls above the peak."),
+    "chapman_r2": ("Chapman fit R^2", "",
+        "How well the Chapman shape fits the profile: 1 is a perfect fit."),
     "chapman_nm_sigma_cm3": ("1-sigma of the Chapman fit peak density", "cm^-3"),
     "chapman_hm_sigma_km": ("1-sigma of the Chapman fit peak altitude", "km"),
     "chapman_h_sigma_km": ("1-sigma of the Chapman fit scale height", "km"),
-    "tec_tecu": ("Electron content of the profile", "TECU"),
+    "tec_tecu": ("Electron content of the profile", "TECU",
+        "Electrons in a column of 1 m^2 along the profile; 1 TECU is 10^16 electrons per m^2."),
     "tec_sigma_tecu": ("Lower bound of the 1-sigma of the electron content", "TECU",
-                       "From the archived density errors, correlated over the shortest length the profile allows; "
-                       "errors correlated over longer distances would give a larger 1-sigma."),
-    "gw_mean_ep_j_kg": ("Mean gravity-wave potential energy", "J/kg"),
-    "gw_wavelength_km": ("Dominant vertical wavelength", "km"),
-    "hydrostatic_max_pct": ("Largest departure of the pressure from hydrostatic balance", "%"),
-    "hydrostatic_median_pct": ("Median departure of the pressure from hydrostatic balance", "%"),
+        "From the archived density errors, correlated over the shortest length the profile allows; "
+        "errors correlated over longer distances would give a larger 1-sigma."),
+    "gw_mean_ep_j_kg": ("Mean gravity-wave potential energy", "J/kg",
+        "Energy of the small temperature ripples left after removing the smooth profile: "
+        "a measure of how active atmospheric waves are."),
+    "gw_wavelength_km": ("Dominant vertical wavelength", "km",
+        "Vertical spacing of the strongest ripples in the temperature profile."),
+    "hydrostatic_max_pct": ("Largest departure of the pressure from hydrostatic balance", "%", _HYDROSTATIC),
+    "hydrostatic_median_pct": ("Median departure of the pressure from hydrostatic balance", "%", _HYDROSTATIC),
     "hydrostatic_max_km": ("Altitude of the largest departure from hydrostatic balance", "km"),
     "hydrostatic_noise_median_pct": ("Median departure expected from the profile's errors alone", "%"),
     "hydrostatic_noise_max_pct": ("Largest departure expected from the errors alone, 95th percentile", "%"),
     "hydrostatic_top_temperature_k": ("Top temperature of the hydrostatic retrieval from density", "K"),
     "co2_margin_min_k": ("Smallest T minus CO₂ frost point", "K",
-                         "Below 0 K the temperature is under the CO₂ frost point somewhere in the profile: "
-                         "CO₂ can condense there (supersaturated)."),
+        "Below 0 K the temperature is under the CO₂ frost point somewhere in the profile: "
+        "CO₂ can condense there (supersaturated)."),
     "co2_margin_min_km": ("Altitude of the smallest T minus CO₂ frost point", "km"),
     "co2_margin_min_sigma_k": ("1-sigma of the smallest T minus CO₂ frost point", "K"),
 }
