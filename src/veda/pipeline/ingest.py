@@ -51,14 +51,6 @@ def _profile_from_roles(file_path: Path, b, tbl: Pds3Table, roles: Dict[str, Dic
             "electron_density": "electron_density_cm3"}[k]: v for k, v in unc.items()}
     if "temperature_k" in unc:
         unc["temperature_c"] = unc["temperature_k"]
-    # a product of a data set VEDA knows is cleaned as when read from the archive: Mars
-    # Express electron densities below the team's lowest valid radius and above the peak
-    # in the noise (a loaded product put its peak at 954 km)
-    ds = _known_dataset(tbl)
-    ne = by_role.get("electron_density")
-    if ds is not None and ne is not None:
-        from ..archives.profiles import clean_electron_density
-        ne = clean_electron_density(ds, Path(tbl.label_path) if tbl.label_path else None, z, ne, unc, b.radius_km)
     track = {k: by_role[k] for k in ("latitude", "longitude", "lst", "sza") if k in by_role}
     med = lambda a: float(np.nanmedian(a)) if a is not None and np.isfinite(a).any() else None  # noqa: E731
     z_ref = (f"a sphere of radius {b.radius_km:g} km (from the radius column)" if "radius" in by_role
@@ -69,7 +61,7 @@ def _profile_from_roles(file_path: Path, b, tbl: Pds3Table, roles: Dict[str, Dic
         latitude=med(track.get("latitude")), longitude=circular_median(track.get("longitude"), 360.0),
         altitude_km=z, pressure_hpa=p, temperature_k=t_k,
         temperature_c=t_k - 273.15 if t_k is not None else None,
-        electron_density_cm3=ne, refractivity=by_role.get("refractivity"),
+        electron_density_cm3=by_role.get("electron_density"), refractivity=by_role.get("refractivity"),
         provenance=ProvenanceRecord(
             mission_id=mission_id or "user_imported", instrument=instrument or "Loaded file",
             product_level="User file", original_file=file_path.name, archive_source="Loaded from this computer",
@@ -90,16 +82,9 @@ def _profile_from_roles(file_path: Path, b, tbl: Pds3Table, roles: Dict[str, Dic
         if "mass_density_sigma" in by_role:
             prof.uncertainty["density_measured"] = by_role["mass_density_sigma"]
     # local time, zenith angle and Ls from the time and position, as for archive profiles:
-    # loaded files had none, and comparisons filtered on them left loaded files out.  A
-    # product of a data set VEDA knows is timed as from the archive: Mars Express labels
-    # give the time the signal reached Earth, 16 min after the occultation in April 2004
-    # (0.28 h of local time)
+    # loaded files had none, and comparisons filtered on them left loaded files out
     from ..archives.profiles import _add_solar_geometry
-    ds = None if time_utc else ds
-    et_col = ds.profile_columns.get("et") if ds else None
-    if isinstance(et_col, str) and et_col in tbl.columns:
-        prof.track["et"] = np.asarray(tbl.columns[et_col], dtype=float)
-    _add_solar_geometry(prof, ds)
+    _add_solar_geometry(prof, None)
     prof.derived.update(compute_atmospheric_diagnostics(prof, b))
     return prof, tbl
 
@@ -110,6 +95,32 @@ def _known_dataset(tbl: Pds3Table):
     from ..archives.datasets import DATASETS
     sid = str(tbl.metadata.get("DATA_SET_ID") or "").strip('"').lower()
     return next((d for d in DATASETS if sid and sid.startswith(d.id)), None)
+
+
+def _as_archive_product(file_path: Path, tbl: Pds3Table, mission_id, instrument, time_utc):
+    """A product of a data set VEDA reads from the archive, read the same way (its units,
+    fill values, altitude reference, timing and cleaning), or None.  Read with the columns
+    chosen when loading, a Mars Express product was timed at Earth (local time 0.28 h
+    late) and kept its ionospheric noise (peak at 954 km), and an Odyssey or MRO
+    aerobraking product would take densities labelled kg/m^3 but given in kg/km^3."""
+    ds = _known_dataset(tbl)
+    if ds is None or not ds.profile_columns or ds.repository or not tbl.label_path:
+        return None
+    from ..archives.profiles import profile_from_label
+    try:
+        prof = profile_from_label(ds, {"product_id": file_path.stem, "start_time": _file_time(tbl), "volume": "",
+                                       "url": "", "product_type": "Loaded file"}, Path(tbl.label_path))
+    except Exception:  # noqa: BLE001  (read as an ordinary table instead)
+        return None
+    if prof.altitude_km is None or not np.isfinite(prof.altitude_km).any():
+        return None
+    prof.mission_id = prof.provenance.mission_id = mission_id or "user_imported"
+    prof.instrument = prof.provenance.instrument = instrument or prof.instrument
+    prof.provenance.archive_source = "Loaded from this computer"
+    prof.provenance.retrieval_method = f"Recognised as a product of {ds.id} and read as from the archive"
+    if time_utc and not prof.time_utc:
+        prof.time_utc = time_utc
+    return prof
 
 
 def _file_time(tbl: Pds3Table) -> str:
@@ -335,6 +346,9 @@ def build_profile(file_path: Path, b, mission_id: Optional[str] = None,
     tbl = read_any_table(str(file_path))
     if not tbl.columns:
         raise ValueError(f"No numeric columns could be extracted from {file_path.name}")
+    known = _as_archive_product(file_path, tbl, mission_id, instrument, time_utc)
+    if known is not None:
+        return known, tbl
     if roles is not None:
         return _profile_from_roles(file_path, b, tbl, roles, mission_id, instrument, time_utc)
     roles = suggest_roles(tbl)

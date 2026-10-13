@@ -3655,6 +3655,8 @@ async function openLoadDialog(file, companions = [], queue = []) {
     <p class="hint">${escHtml(file.name)}${companions.length ? ` with ${companions.map(c => escHtml(c.name)).join(', ')}` : ''}${queue.length ? ` (${queue.length} more file${queue.length > 1 ? 's' : ''} after this)` : ''}.
       Say what the file is and what each column holds; choices are kept for the next file.</p>
     ${labelNote ? `<p class="hint">From the label: ${labelNote}</p>` : ''}
+    ${pv.known_dataset ? `<p class="hint"><strong>Recognised as a product of ${escHtml(pv.known_dataset.title)}.</strong>
+      VEDA reads it as it reads this data set from the archive (its units, missing-value codes, timing and corrections), so the column choices below are not used.</p>` : ''}
     <fieldset><legend>What it is</legend>
       <label class="settings-field"><span class="settings-label">Body</span><select name="body">${bodyOpts}</select></label>
       <label class="settings-field"><span class="settings-label">Mission</span><select name="mission"></select></label>

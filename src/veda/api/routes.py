@@ -1089,8 +1089,12 @@ def preview_upload(req: ParseFileRequest) -> dict:
         target = (meta.get("TARGET_NAME") or "").lower()
         body = next((b for b in ("venus", "mars", "jupiter", "saturn", "titan", "pluto", "mercury", "moon",
                                  "ceres", "vesta") if b in target), None)
+        from ..pipeline.ingest import _known_dataset
+        ds = _known_dataset(tbl)
+        known = ({"id": ds.id, "title": ds.title}
+                 if ds and ds.profile_columns and not ds.repository and tbl.label_path else None)
         return {"type": "table", "filename": name, "columns": cols, "suggested_roles": suggest_roles(tbl),
-                "role_units": ROLE_UNITS, "label": meta,
+                "role_units": ROLE_UNITS, "label": meta, "known_dataset": known,
                 "suggested": {"body_id": body, "mission_id": mission,
                               "instrument": meta.get("INSTRUMENT_ID") or meta.get("INSTRUMENT_NAME") or "",
                               "time_utc": meta.get("START_TIME") or ""}}

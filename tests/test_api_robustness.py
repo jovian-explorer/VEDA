@@ -1006,9 +1006,8 @@ def test_guessed_load_is_the_load_dialog_suggestion():
     assert t == "TEMPERATURE (MEDIUM TEMPERATURE AT BOUNDARY)"
     assert roles["NUMBER_DENSITY"]["unit"] == "m-3"
     mex = SAMPLES / "mars_express" / "M32ICL2L04_IIX_040931105_60.TAB"
-    prof, _ = build_profile(mex, get_body("mars"), time_utc="2004-04-02T11:05:00")
-    assert prof.refractivity is not None and prof.track.get("sza") is not None
-    assert prof.time_utc == "2004-04-02T11:05:00"
+    tbl = read_any_table(str(mex))
+    assert {r["role"] for r in suggest_roles(tbl).values()} >= {"refractivity", "sza", "electron_density"}
 
 
 def test_time_from_the_file_object_of_a_label():
@@ -1064,3 +1063,27 @@ def test_loaded_ionosphere_product_is_cleaned_as_from_the_archive():
     np.testing.assert_allclose(loaded.electron_density_cm3, archive.electron_density_cm3)
     assert loaded.raw_attributes["hmf2_km"] == pytest.approx(archive.raw_attributes["hmf2_km"])
     assert loaded.raw_attributes["hmf2_km"] < 200
+
+
+def test_loaded_product_of_a_known_data_set_is_read_as_from_the_archive(client):
+    """Whatever columns are chosen, a product of a data set VEDA reads from the archive is
+    read the same way (units, fill values, timing, cleaning), and says so."""
+    lbl = SAMPLES / "venus_akatsuki" / "rs_20160303_223100_udsc64_l4_ae_v10.lbl"
+    tab = lbl.with_suffix(".tab")
+    roles = {"GEOPOTENTIAL_HEIGHT": {"role": "altitude", "unit": "km"},
+             "PRESSURE (LOWER TEMPERATURE AT BOUNDARY)": {"role": "temperature", "unit": "K"}}
+    r = _upload(client, lbl.name, _text(lbl), body_id="venus", roles=roles,
+                companion_files=[{"filename": tab.name, "file_content": _text(tab)}])
+    assert r.status_code == 200, r.text[:300]
+    data = r.json()["data"]
+    assert "read as from the archive" in data["provenance"]["retrieval_method"]
+    t = [v for v in data["temperature_k"] if v is not None]
+    assert 100 < min(t) and max(t) < 400            # not the pressure column, as chosen
+
+
+def test_preview_says_a_product_is_recognised(client):
+    lbl = SAMPLES / "venus_akatsuki" / "rs_20160303_223100_udsc64_l4_ae_v10.lbl"
+    tab = lbl.with_suffix(".tab")
+    pv = client.post("/api/veda/upload/preview", json={"filename": lbl.name, "file_content": _text(lbl),
+                     "companion_files": [{"filename": tab.name, "file_content": _text(tab)}]}).json()
+    assert pv["known_dataset"]["id"] == "vco-v-rs-5-occ-v1.0"
