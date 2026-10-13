@@ -330,8 +330,8 @@ def build_profile(file_path: Path, b, mission_id: Optional[str] = None,
         raise ValueError(
             "No altitude column found (looked for ALTITUDE, ALT, HEIGHT, Z or RADIUS; "
             f"columns in the file: {found}).{hint}")
-    if _name_unit("altitude", alt_col) == "m":
-        z_arr = z_arr / 1000.0
+    if (unit_from_label("altitude", tbl.units.get(alt_col, "")) or _name_unit("altitude", alt_col)) == "m":
+        z_arr = z_arr / 1000.0             # "Altitude [m]" was taken for kilometres
     if ("RADIUS" in alt_col.upper() or "RAD" in alt_col.upper()) and np.nanmean(z_arr) > 400.0:
         z_arr = z_arr - b.radius_km
 

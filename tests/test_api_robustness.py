@@ -630,6 +630,10 @@ def test_units_at_the_end_of_column_names(tmp_path):
     for r in (roles, None):
         prof, _ = build_profile(f, get_body("mars"), roles=r)
         assert list(prof.altitude_km) == [0.0, 1.0] and list(prof.pressure_hpa) == [6.0, 5.5]
+    g = tmp_path / "b.csv"                     # the unit in brackets after the name
+    g.write_text("Altitude [m],Temperature [C],Pressure [Pa]\n0,-50,600\n1000,-55,550\n")
+    prof, _ = build_profile(g, get_body("mars"))
+    assert list(prof.altitude_km) == [0.0, 1.0] and list(prof.pressure_hpa) == [6.0, 5.5]
 
 
 def test_fill_values_in_text_tables_are_missing_not_celsius(tmp_path):
