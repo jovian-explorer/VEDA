@@ -287,8 +287,12 @@ def suggest_roles(tbl: Pds3Table) -> Dict[str, Dict[str, Optional[str]]]:
             if base in ROLE_UNITS[r["role"]]:
                 r["unit"] = base
     if "radius" in taken and "altitude" in taken:          # one vertical coordinate
+        # the geometric one: a geopotential height is not an altitude (3 km lower at 100 km
+        # on Mars) and would not line up with the archive profiles, which use the radius
+        alt = next(c for c, r in out.items() if r["role"] == "altitude")
+        drop = "altitude" if "GEOPOTENTIAL" in alt.upper() else "radius"
         for col, r in list(out.items()):
-            if r["role"] == "radius":
+            if r["role"] == drop:
                 del out[col]
     return {c: out[c] for c in tbl.columns if c in out}
 

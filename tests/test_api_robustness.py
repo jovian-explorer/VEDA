@@ -1020,3 +1020,15 @@ def test_time_from_the_file_object_of_a_label():
     assert prof.time_utc == "2004-04-02T11:44:14.100"
     # and, as for archive profiles, the local time and Ls follow from it (loaded files had none)
     assert prof.raw_attributes["LS"] == pytest.approx(13.6, abs=0.1) and np.isfinite(prof.track["lst"]).all()
+
+
+def test_loaded_radio_occultation_uses_the_radius_not_geopotential_height():
+    """A loaded Akatsuki or Mars Express product took GEOPOTENTIAL HEIGHT for the altitude,
+    so it did not line up with the same profile read from the archive (from RADIUS)."""
+    from veda.core.registry import get_body
+    from veda.missions.manager import get_mission_manager
+    from veda.pipeline.ingest import build_profile
+    name = "rs_20160303_223100_udsc64_l4_ae_v10"
+    loaded, _ = build_profile(SAMPLES / "venus_akatsuki" / f"{name}.lbl", get_body("venus"))
+    archive = get_mission_manager().load_profile("akatsuki", name)
+    np.testing.assert_allclose(loaded.altitude_km, archive.altitude_km)
