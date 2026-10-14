@@ -81,6 +81,7 @@ def test_profile_gets_geometry_and_measurement_time():
     assert p.track["lst"][0] == pytest.approx(17.02, abs=0.01)
     geom = profile_geometry(p)
     assert geom["sza"] == pytest.approx(69.9, abs=0.1) and geom["ls"] == pytest.approx(35.07, abs=0.05)
+    assert p.to_dict()["geometry"]["ls_computed"]          # marked as VEDA's in the profile view
 
 
 def test_archive_geometry_is_kept_and_dates_alone_give_none():

@@ -122,6 +122,7 @@ left off the maps and counted.
 - **What:** when the archive gives no Ls, VEDA computes it (checked against SPICE above). Local time
   and zenith angle carry the "computed*" mark; Ls does not.
 - **Fix:** mark it the same way.
+- **Status:** fixed.
 
 ### M4. Body quick-card values without sources
 - **Where:** `frontend/js/veda_app.js:168-301` (`BODY_PHYSICAL_CONSTANTS`).

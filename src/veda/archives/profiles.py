@@ -646,6 +646,7 @@ def _add_solar_geometry(prof: ObservationProfile, ds: Optional[Dataset]) -> None
     attrs["SUBSOLAR_LONGITUDE"] = round(ss["subsolar_longitude"], 3)
     if "ls" in ss and archive_ls is None:
         attrs["LS"] = round(ss["ls"], 3)
+        attrs["LS_COMPUTED"] = True                  # (from the time; within 0.013 deg of SPICE)
     if have_lst and have_sza:
         return
     if lat is not None and lon is not None and np.size(lat) == np.size(lon):

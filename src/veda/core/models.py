@@ -172,6 +172,7 @@ class ObservationProfile:
                 **{k: v for k, v in (("lst", self.raw_attributes.get("LST")), ("sza", self.raw_attributes.get("SZA")),
                                      ("ls", self.raw_attributes.get("LS"))) if isinstance(v, (int, float))},
                 "computed": bool(self.raw_attributes.get("GEOMETRY_COMPUTED")),
+                "ls_computed": bool(self.raw_attributes.get("LS_COMPUTED")),
                 "label_time": self.raw_attributes.get("LABEL_TIME"),
                 "light_time_s": self.raw_attributes.get("LIGHT_TIME_S"),
             },

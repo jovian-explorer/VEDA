@@ -3166,7 +3166,7 @@ function trackChips(prof) {
   const how = g.computed ? 'Computed by VEDA from the time and position (no archive value)' : 'From the archive';
   if (!rng(t.lst) && g.lst != null) chips.push(`<div class="diag-chip" title="${how}"><strong>Local time:</strong> ${g.lst.toFixed(2)} h${g.computed ? '*' : ''}</div>`);
   if (!rng(t.sza) && g.sza != null) chips.push(`<div class="diag-chip" title="${how}"><strong>Solar zenith angle:</strong> ${g.sza.toFixed(1)}°${g.computed ? '*' : ''}</div>`);
-  if (g.ls != null) chips.push(`<div class="diag-chip" title="Mars solar longitude: 0 northern spring equinox, 90 summer solstice, 180 autumn, 270 winter"><strong>Ls:</strong> ${g.ls.toFixed(1)}°</div>`);
+  if (g.ls != null) chips.push(`<div class="diag-chip" title="Mars solar longitude: 0 northern spring equinox, 90 summer solstice, 180 autumn, 270 winter. ${g.ls_computed ? 'Computed by VEDA from the time (no archive value)' : 'From the archive'}"><strong>Ls:</strong> ${g.ls.toFixed(1)}°${g.ls_computed ? '*' : ''}</div>`);
   if (g.computed && (rng(t.lst) || rng(t.sza))) chips.push(`<div class="diag-chip" title="${how}"><strong>Geometry:</strong> computed*</div>`);
   if (g.label_time) {
     const lt = g.light_time_s ? `; the one-way light time (${(g.light_time_s / 60).toFixed(1)} min) was subtracted` : '';
