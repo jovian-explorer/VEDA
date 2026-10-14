@@ -54,8 +54,9 @@ left off the maps and counted.
   thousands of km from the orbiter.
 - **Verify:** the probe's own SPK (Huygens: `huygens_*.bsp` in the Cassini kernels) against the
   drawn track.
-- **Fix:** refuse orbit geometry for descent-probe data sets and say why. Their positions are in
-  the profile itself.
+- **Fix:** refuse orbit geometry for descent-probe data sets (also the Pioneer Venus probes) and
+  say why. Their positions are in the profile itself.
+- **Status:** fixed (see CHANGELOG, "Geometry").
 
 ### H2. Date-only times drawn as the observation (CRISM limb profiles)
 - **Where:** `api/archive_routes.py:306-313`, `geometry/compute.py:184` (`orbit_geometry`). Data sets
@@ -65,6 +66,7 @@ left off the maps and counted.
   midnight as "the observation".
 - **Wrong:** this is a real MRO position at an invented time.
 - **Fix:** refuse orbit geometry when the product's time has no clock time.
+- **Status:** fixed with H1.
 
 ### H3. Earth-reception times treated as spacecraft times in orbit geometry
 - **Where:** `geometry/compute.py:184-245` (`time_convention: "spacecraft"`), called for every

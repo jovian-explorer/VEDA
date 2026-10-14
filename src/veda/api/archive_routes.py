@@ -256,6 +256,10 @@ def target_body(ds, prod) -> str:
     return ds.body_ids[0]
 
 
+_PROBE_DATA_SETS = {"gp-j-entry-v1.0": "the Galileo probe", "hp-ssa-hasi-2-3-4-mission-v1.1": "the Huygens probe",
+                    "pds-pvo-pioneervenusprobeslaslnm": "the Pioneer Venus probes"}
+
+
 def _geometry_inputs(dataset_id: str, product_id: str):
     import datetime as dt
     from ..geometry import kernels
@@ -268,6 +272,15 @@ def _geometry_inputs(dataset_id: str, product_id: str):
                                  "cannot be computed")
     if not prod.get("start_time"):
         raise HTTPException(422, "This product has no observation time")
+    # SPICE gives the mission's spacecraft: for a descent probe that is the orbiter, not the
+    # observation, and a time without a clock time puts it at midnight (CRISM limb dates)
+    if ds.id in _PROBE_DATA_SETS:
+        raise HTTPException(422, f"These data were taken by {_PROBE_DATA_SETS[ds.id]}, not by the {ds.mission_id.upper()} "
+                                 "spacecraft whose orbit VEDA can draw; the probe's positions along its descent are in "
+                                 "the profile itself")
+    if len(prod["start_time"]) < 13:
+        raise HTTPException(422, "This product's time is a date without a clock time, so where the spacecraft was "
+                                 "during the observation is not known")
     try:
         plan = kernels.plan(ds.mission_id, target_body(ds, prod), dt.date.fromisoformat(prod["start_time"][:10]))
     except LookupError as exc:

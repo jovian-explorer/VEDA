@@ -1088,3 +1088,25 @@ def test_preview_says_a_product_is_recognised(client):
                      "companion_files": [{"filename": tab.name, "file_content": _text(tab)}]}).json()
     assert pv["known_dataset"]["id"] == "vco-v-rs-5-occ-v1.0"
     assert pv["suggested"]["mission_id"] == "akatsuki"        # (the label says VENUS CLIMATE ORBITER)
+
+
+def test_no_orbit_geometry_for_probes_or_dates_without_a_clock_time(client):
+    """SPICE draws the mission's spacecraft: for the Huygens probe that was Cassini's orbit,
+    and a CRISM limb profile dated to the day put MRO's position at midnight; both were
+    shown as the observation."""
+    from veda.archives import catalog
+    row = {"volume": "TESTVOL", "path": "x/p.lbl", "stop_time": "", "target": "", "product_type": "Profile",
+           "kind": "profile", "extra": "{}"}
+    rows = [{**row, "dataset_id": "hp-ssa-hasi-2-3-4-mission-v1.1", "product_id": "GEO_T1", "start_time": "2005-01-14T09:00:00"},
+            {**row, "dataset_id": "mro-crism-smith2013-aerosol", "product_id": "GEO_T2", "start_time": "2010-03-01"}]
+    with catalog._db_lock, catalog._connect() as conn:
+        conn.executemany("INSERT OR REPLACE INTO products VALUES (:dataset_id,:product_id,:volume,:path,"
+                         ":start_time,:stop_time,:target,:product_type,:kind,:extra)", rows)
+    try:
+        r = client.get("/api/veda/geometry/hp-ssa-hasi-2-3-4-mission-v1.1/GEO_T1")
+        assert r.status_code == 422 and "Huygens probe" in r.json()["detail"]
+        r = client.get("/api/veda/geometry/mro-crism-smith2013-aerosol/GEO_T2")
+        assert r.status_code == 422 and "without a clock time" in r.json()["detail"]
+    finally:
+        with catalog._db_lock, catalog._connect() as conn:
+            conn.execute("DELETE FROM products WHERE volume='TESTVOL'")
