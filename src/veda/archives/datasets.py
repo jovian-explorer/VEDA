@@ -113,9 +113,10 @@ class Dataset:
     # this many times its 1-sigma, and left out beyond (MAVEN accelerometer files run to
     # 300 s from periapsis, 200-230 km, where the density is noise).  0: all levels.
     leg_min_snr: float = 0.0
-    # The per-sample times ("et" column) are when the signal reached the ground station,
-    # not when it crossed the atmosphere (Mars Express MaRS: EPHEMERIS_SECONDS is the
-    # ground received time); VEDA subtracts the one-way light time for the geometry.
+    # The times (the "et" column, else the catalogue's) are when the signal reached the
+    # ground station, not when it crossed the atmosphere (Mars Express MaRS, Akatsuki:
+    # "UTC receiver date and time", Magellan: ERT); VEDA subtracts the one-way light time
+    # for the profile's time, its local time and the Geometry tab.
     times_earth_received: bool = False
     # Profiles published in a research data repository (Zenodo, BIRA-IASB) without PDS
     # labels: how to list and read them (see archives/repositories.py)
@@ -379,7 +380,7 @@ DATASETS: List[Dataset] = [
         citation="Hausler, B., et al. (2006). Radio science investigations by VeRa onboard the Venus Express spacecraft. PSS, 54, 1315-1335.",
     ),
     Dataset(
-        id="mgn-v-rss-5-occ-prof-rtpd-v1.0", mission_id="magellan", instrument="RSS (Radio Science)", level="L5",
+        id="mgn-v-rss-5-occ-prof-rtpd-v1.0", times_earth_received=True, mission_id="magellan", instrument="RSS (Radio Science)", level="L5",
         title="Magellan radio occultation, October 1991: refractivity, temperature, pressure and density profiles",
         body_ids=("venus",), archive="NASA PDS Atmospheres Node",
         base_url="https://pds-atmospheres.nmsu.edu/PDS/data/",
@@ -397,7 +398,7 @@ DATASETS: List[Dataset] = [
         citation=MGN_CITATION,
     ),
     Dataset(
-        id="mgn-v-rss-5-occ-prof-abs-h2so4-v1.0", mission_id="magellan", instrument="RSS (Radio Science)", level="L5",
+        id="mgn-v-rss-5-occ-prof-abs-h2so4-v1.0", times_earth_received=True, mission_id="magellan", instrument="RSS (Radio Science)", level="L5",
         title="Magellan radio occultation, October 1991: microwave absorptivity and H2SO4 vapour profiles",
         body_ids=("venus",), archive="NASA PDS Atmospheres Node",
         base_url="https://pds-atmospheres.nmsu.edu/PDS/data/",
@@ -414,7 +415,7 @@ DATASETS: List[Dataset] = [
         citation=MGN_CITATION,
     ),
     Dataset(
-        id="mgn-v-rss-1-rocc-v2.0", mission_id="magellan", instrument="RSS (Radio Science)", level="L1",
+        id="mgn-v-rss-1-rocc-v2.0", times_earth_received=True, mission_id="magellan", instrument="RSS (Radio Science)", level="L1",
         title="Magellan radio occultation raw data: open-loop (ODR) and tracking (TDF) records",
         body_ids=("venus",), archive="NASA PDS Atmospheres Node",
         base_url="https://pds-atmospheres.nmsu.edu/PDS/data/",
@@ -999,7 +1000,7 @@ DATASETS: List[Dataset] = [
         time_from_name=r"_(?P<yy>\d{2})(?P<doy>\d{3})(?P<hh>\d{2})(?P<mm>\d{2})_\d+\.",
     ),
     Dataset(
-        id="vco-v-rs-5-occ-v1.0", mission_id="akatsuki", instrument="RS (Radio Science)", level="L3/L4",
+        id="vco-v-rs-5-occ-v1.0", times_earth_received=True, mission_id="akatsuki", instrument="RS (Radio Science)", level="L3/L4",
         title="Akatsuki radio occultation: refractivity (L3) and atmospheric profiles (L4)",
         body_ids=("venus",), archive="JAXA DARTS",
         base_url="https://data.darts.isas.jaxa.jp/pub/pds3/vco-v-rs-5-occ-v1.0/",
@@ -1020,7 +1021,7 @@ DATASETS: List[Dataset] = [
         citation=AKATSUKI_CITATION,
     ),
     Dataset(
-        id="vco-v-rs-3-occ-v1.0", mission_id="akatsuki", instrument="RS (Radio Science)", level="L2",
+        id="vco-v-rs-3-occ-v1.0", times_earth_received=True, mission_id="akatsuki", instrument="RS (Radio Science)", level="L2",
         title="Akatsuki radio occultation: received frequency and power (L2)",
         body_ids=("venus",), archive="JAXA DARTS",
         base_url="https://data.darts.isas.jaxa.jp/pub/pds3/vco-v-rs-3-occ-v1.0/",

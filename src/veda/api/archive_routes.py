@@ -298,6 +298,7 @@ def geometry(dataset_id: str, product_id: str, span_min: float = Query(90, ge=5,
     (tangent points, view from Earth); every other product gets the spacecraft's
     orbit and the sub-spacecraft geometry over the observation.
     """
+    import datetime as dt
     from ..config import SETTINGS
     from ..core.registry import get_body
     from ..geometry import kernels
@@ -320,9 +321,16 @@ def geometry(dataset_id: str, product_id: str, span_min: float = Query(90, ge=5,
         except (LookupError, ValueError, net.ArchiveError):
             prof = None
     if "et" not in tr:
+        start, stop = prod["start_time"], prod.get("stop_time") or prod["start_time"]
+        if ds.times_earth_received:
+            # ground-station times: the spacecraft was there one light time earlier (4-22 min
+            # at Mars), which the arc drawn as the observation was shifted by
+            from ..analysis.solar_geometry import light_time_s, parse_utc
+            lt = light_time_s(body_id, start) or 0.0
+            start, stop = ((parse_utc(t) - dt.timedelta(seconds=lt)).isoformat() if parse_utc(t) else t
+                           for t in (start, stop))
         try:
-            g = orbit_geometry(plan, kernels.MISSION_SPICE[ds.mission_id].naif_id, body_id,
-                               prod["start_time"], prod.get("stop_time") or prod["start_time"])
+            g = orbit_geometry(plan, kernels.MISSION_SPICE[ds.mission_id].naif_id, body_id, start, stop)
         except (LookupError, ValueError) as exc:
             raise HTTPException(422, str(exc))
         g["kernels"] = [u.rsplit("/", 1)[1] for u in plan.urls]

@@ -625,6 +625,15 @@ def _add_solar_geometry(prof: ObservationProfile, ds: Optional[Dataset]) -> None
                 attrs["LIGHT_TIME_S"] = round(lt, 1)
                 attrs.setdefault("LABEL_TIME", prof.time_utc)
                 prof.time_utc = time             # the time of the measurement at the planet
+    elif ds is not None and ds.times_earth_received and sg.parse_utc(time or ""):
+        # no per-sample times: the label's ground-station time, less the light time
+        lt = sg.light_time_s(prof.body_id, time)
+        if lt:
+            import datetime as _dt
+            attrs.setdefault("LABEL_TIME", prof.time_utc)
+            attrs["LIGHT_TIME_S"] = round(lt, 1)
+            time = (sg.parse_utc(time) - _dt.timedelta(seconds=lt)).isoformat(timespec="milliseconds")
+            prof.time_utc = time
     if len(time or "") < 13:
         return                                   # a date without a clock time gives no local time
     lat, lon = track.get("latitude"), track.get("longitude")

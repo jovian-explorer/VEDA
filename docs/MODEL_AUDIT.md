@@ -82,6 +82,7 @@ left off the maps and counted.
   that has ephemeris seconds.
 - **Fix:** for data sets whose times are Earth-received, subtract the light time before computing.
   The convention lives in one data set flag, used by both the profile reader and the geometry.
+- **Status:** fixed (Magellan and Akatsuki flagged; the orbit arc uses the time at the planet).
 
 ### H4. Sub-Earth point evaluated two light times early
 - **Where:** `geometry/compute.py:138`,
@@ -112,6 +113,7 @@ left off the maps and counted.
 - **Wrong:** profile times are 2-14 min after the measurement at Venus. Local time and zenith angle
   are not affected (they come from the files).
 - **Fix:** set `times_earth_received`; the label time is kept as LABEL_TIME.
+- **Status:** fixed with H3.
 
 ### M3. Computed Ls not marked as computed
 - **Where:** `frontend/js/veda_app.js:3169`; `archives/profiles.py:638-639`.

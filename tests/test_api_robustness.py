@@ -1110,3 +1110,36 @@ def test_no_orbit_geometry_for_probes_or_dates_without_a_clock_time(client):
     finally:
         with catalog._db_lock, catalog._connect() as conn:
             conn.execute("DELETE FROM products WHERE volume='TESTVOL'")
+
+
+def test_orbit_geometry_of_ground_station_times_is_one_light_time_earlier(client, monkeypatch):
+    """Magellan, Akatsuki and Mars Express times are when the signal reached Earth; the arc
+    drawn as the observation was the spacecraft's position 4-14 min later at Venus."""
+    import types
+    from veda.archives import catalog
+    from veda.geometry import compute, kernels
+    seen = {}
+    monkeypatch.setattr(kernels, "plan", lambda *a, **k: types.SimpleNamespace(missing=[], urls=[]))
+    monkeypatch.setattr(compute, "orbit_geometry", lambda plan, sc, body, a, b: seen.update(start=a) or {})
+    row = {"dataset_id": "mgn-v-rss-1-rocc-v2.0", "product_id": "GEO_T3", "volume": "TESTVOL", "path": "x/q.lbl",
+           "start_time": "1991-10-05T20:20:56", "stop_time": "", "target": "", "product_type": "Raw",
+           "kind": "other", "extra": "{}"}
+    with catalog._db_lock, catalog._connect() as conn:
+        conn.execute("INSERT OR REPLACE INTO products VALUES (:dataset_id,:product_id,:volume,:path,"
+                     ":start_time,:stop_time,:target,:product_type,:kind,:extra)", row)
+    try:
+        assert client.get("/api/veda/geometry/mgn-v-rss-1-rocc-v2.0/GEO_T3").status_code == 200
+        assert seen["start"].startswith("1991-10-05T20:16:53")        # 243.0 s earlier (SPICE: 242.96 s)
+    finally:
+        with catalog._db_lock, catalog._connect() as conn:
+            conn.execute("DELETE FROM products WHERE volume='TESTVOL'")
+
+
+def test_akatsuki_time_is_at_venus_not_at_the_ground_station():
+    """Akatsuki labels give "the UTC receiver date and time": the measurement at Venus was
+    one light time earlier (751.7 s on 3 March 2016; SPICE DE440: 751.67 s)."""
+    from veda.missions.manager import get_mission_manager
+    prof = get_mission_manager().load_profile("akatsuki", "rs_20160303_223100_udsc64_l4_ae_v10")
+    assert prof.raw_attributes["LABEL_TIME"] == "2016-03-03T23:17:09.324"
+    assert prof.raw_attributes["LIGHT_TIME_S"] == pytest.approx(751.7, abs=0.5)
+    assert prof.time_utc.startswith("2016-03-03T23:04:37")
