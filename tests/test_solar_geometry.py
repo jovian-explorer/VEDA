@@ -166,3 +166,12 @@ def test_loaded_file_track_crossing_the_meridian(tmp_path):
              "LON": {"role": "longitude", "unit": "deg"}}
     prof, _ = build_profile(f, get_body("venus"), roles=roles)
     assert prof.longitude == pytest.approx(0.0, abs=1e-9)                # plain median: 180
+
+
+def test_ephemeris_seconds_to_utc_with_the_dates_leap_seconds():
+    """A fixed TDB - UTC of 69.184 s (right since 2017) put 2004 times 5 s and 1991 times
+    11 s early.  Expected values from SPICE et2utc with naif0012.tls."""
+    from veda.analysis.solar_geometry import et_to_utc
+    assert et_to_utc(134178318.285657) == "2004-04-02T11:44:14.101"      # SPICE: 11:44:14.100
+    assert et_to_utc(-258000000.0) == "1991-10-29T09:19:01.816"          # SPICE: 09:19:01.818
+    assert et_to_utc(510319097.508951) == "2016-03-03T23:17:09.324"

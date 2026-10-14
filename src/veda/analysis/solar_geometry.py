@@ -14,7 +14,8 @@ Sun is in the body's own rotating frame:
   rotation models (Archinal et al. 2011, Celest. Mech. Dyn. Astr. 109, 101).
 
 Light travel time from the Sun (minutes) is ignored: it shifts the subsolar
-point by less than 0.01 deg.  Times are UTC; TDB - UTC is taken as 69.2 s.
+point by less than 0.01 deg.  Times are UTC; TDB - UTC is 32.184 s plus the leap seconds
+of the date.
 Longitudes are planetocentric, east-positive (the PDS convention), latitudes
 planetocentric.
 """
@@ -28,7 +29,22 @@ from typing import Dict, Optional
 import numpy as np
 
 _J2000 = _dt.datetime(2000, 1, 1, 12, 0, 0)
-_TDB_MINUS_UTC_S = 69.184            # 32.184 s + 37 leap seconds (since 2017; 32-36 before)
+# TDB - UTC = 32.184 s + the leap seconds (TAI - UTC) of the date; the dates TAI - UTC
+# went up by one second from 10 s in 1972 (IERS Bulletin C; NAIF leapseconds kernel
+# naif0012.tls).  A fixed 69.184 s, right only since 2017, put times computed from the
+# ephemeris seconds of 2004 profiles 5 s early and of 1991 ones 11 s early.
+_LEAP_DATES = ("1972-07-01", "1973-01-01", "1974-01-01", "1975-01-01", "1976-01-01", "1977-01-01",
+               "1978-01-01", "1979-01-01", "1980-01-01", "1981-07-01", "1982-07-01", "1983-07-01",
+               "1985-07-01", "1988-01-01", "1990-01-01", "1991-01-01", "1992-07-01", "1993-07-01",
+               "1994-07-01", "1996-01-01", "1997-07-01", "1999-01-01", "2006-01-01", "2009-01-01",
+               "2012-07-01", "2015-07-01", "2017-01-01")
+_TDB_MINUS_UTC_S = 69.184            # today's value (37 leap seconds)
+
+
+def _tdb_minus_utc(t: _dt.datetime) -> float:
+    """TDB - UTC (s) at UTC time ``t`` (the periodic TDB - TT terms, < 2 ms, left out)."""
+    import bisect
+    return 32.184 + 10 + bisect.bisect_right(_LEAP_DATES, t.strftime("%Y-%m-%d"))
 _OBLIQUITY = math.radians(23.43928)  # J2000 ecliptic to equator
 
 # a (au), e, I, L, long. perihelion, long. ascending node (deg) and their rates per
@@ -89,7 +105,7 @@ def _days_tdb(time_utc: str) -> Optional[float]:
     t = parse_utc(time_utc)
     if t is None:
         return None
-    return (t - _J2000).total_seconds() / 86400.0 + _TDB_MINUS_UTC_S / 86400.0
+    return (t - _J2000).total_seconds() / 86400.0 + _tdb_minus_utc(t) / 86400.0
 
 
 def parse_utc(time_utc: str) -> Optional[_dt.datetime]:
@@ -232,6 +248,7 @@ def light_time_s(body_id: str, time_utc: str) -> Optional[float]:
 def et_to_utc(et: float) -> str:
     """Ephemeris seconds past J2000 (TDB) -> UTC ISO time (to 1 ms; TDB - UTC as above)."""
     t = _J2000 + _dt.timedelta(seconds=float(et) - _TDB_MINUS_UTC_S)
+    t -= _dt.timedelta(seconds=_tdb_minus_utc(t) - _TDB_MINUS_UTC_S)       # that date's leap seconds
     return t.isoformat(timespec="milliseconds")
 
 

@@ -30,7 +30,7 @@ import numpy as np
 
 A_CO2 = 23.3494
 B_CO2 = 3182.48            # K
-TRIPLE_POINT_HPA = 5185.0  # Span & Wagner (1996)
+TRIPLE_POINT_HPA = 5179.5  # 0.51795 MPa, Span & Wagner (1996), Table 1
 
 
 def co2_volume_fraction(body) -> Optional[float]:
