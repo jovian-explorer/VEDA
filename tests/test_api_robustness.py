@@ -1087,3 +1087,4 @@ def test_preview_says_a_product_is_recognised(client):
     pv = client.post("/api/veda/upload/preview", json={"filename": lbl.name, "file_content": _text(lbl),
                      "companion_files": [{"filename": tab.name, "file_content": _text(tab)}]}).json()
     assert pv["known_dataset"]["id"] == "vco-v-rs-5-occ-v1.0"
+    assert pv["suggested"]["mission_id"] == "akatsuki"        # (the label says VENUS CLIMATE ORBITER)

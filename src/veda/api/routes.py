@@ -1086,13 +1086,14 @@ def preview_upload(req: ParseFileRequest) -> dict:
         host = " ".join(meta.get(k, "") for k in ("INSTRUMENT_HOST_NAME", "SPACECRAFT_NAME", "MISSION_NAME")).upper()
         mission = next((m.id for m in MISSIONS.values()
                         if host and (m.id.upper() in host.split() or m.name.upper().split(" (")[0] in host)), None)
-        target = (meta.get("TARGET_NAME") or "").lower()
-        body = next((b for b in ("venus", "mars", "jupiter", "saturn", "titan", "pluto", "mercury", "moon",
-                                 "ceres", "vesta") if b in target), None)
         from ..pipeline.ingest import _known_dataset
         ds = _known_dataset(tbl)
         known = ({"id": ds.id, "title": ds.title}
                  if ds and ds.profile_columns and not ds.repository and tbl.label_path else None)
+        mission = mission or (ds.mission_id if ds else None)   # (Akatsuki labels say VENUS CLIMATE ORBITER)
+        target = (meta.get("TARGET_NAME") or "").lower()
+        body = next((b for b in ("venus", "mars", "jupiter", "saturn", "titan", "pluto", "mercury", "moon",
+                                 "ceres", "vesta") if b in target), None)
         return {"type": "table", "filename": name, "columns": cols, "suggested_roles": suggest_roles(tbl),
                 "role_units": ROLE_UNITS, "label": meta, "known_dataset": known,
                 "suggested": {"body_id": body, "mission_id": mission,
