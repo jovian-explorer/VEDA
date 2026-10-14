@@ -292,7 +292,7 @@ function orbit3d(div, frame) {
   if (profSc) {
     traces.push({ type: 'scatter3d', mode: 'lines', x: col(profSc, 0), y: col(profSc, 1), z: col(profSc, 2),
       name: 'During the profile', line: { color: '#ef4444', width: 9 } });
-    const p = g.profile, r = p.tangent_alt_km.map(a => R + Math.max(a, 0));
+    const p = g.profile, r = p.tangent_alt_km.map(a => (g.reference_radius_km || R) + Math.max(a, 0));
     const lat = p.tangent_lat.map(v => v * Math.PI / 180), lon = p.tangent_lon.map(v => v * Math.PI / 180);
     traces.push({ type: 'scatter3d', mode: 'markers', name: 'Tangent points',
       x: lat.map((la, i) => r[i] * Math.cos(la) * Math.cos(lon[i])), y: lat.map((la, i) => r[i] * Math.cos(la) * Math.sin(lon[i])),

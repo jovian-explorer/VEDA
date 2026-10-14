@@ -94,6 +94,7 @@ left off the maps and counted.
 - **Verify:** `subpnt` at `mid` against the planet-fixed direction to Earth already computed at
   line 96 (`earth_fixed`).
 - **Fix:** call it at `mid`.
+- **Status:** fixed; test against SPICE with real kernels.
 
 ## Medium
 
@@ -105,6 +106,7 @@ left off the maps and counted.
 - **Wrong:** on Mars the Geometry tab's tangent altitude is 6.7 km lower than the profile's
   altitude.
 - **Fix:** take altitudes above the body's reference radius, as the profile view does, and say so.
+- **Status:** fixed.
 
 ### M2. Akatsuki times are ground-station times
 - **Where:** `archives/datasets.py:1002, 1023` (no `times_earth_received`).
@@ -178,6 +180,7 @@ left off the maps and counted.
 - **What:** `LT+S` with the planet as observer adds stellar aberration from the planet's own orbital
   motion: 1-10 km at 10^5 km.
 - **Fix:** use `LT`.
+- **Status:** fixed.
 
 ### L4. One molar mass for each atmosphere
 - **Where:** `analysis/atmospheric.py:430-444` (`density_gas_constant`), `thermo.py:107`.

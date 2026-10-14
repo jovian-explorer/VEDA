@@ -506,3 +506,29 @@ def test_pds_search_refused_for_a_long_window_is_split(monkeypatch):
                         lambda *a: (_ for _ in ()).throw(services.ServiceError("HTTP 500")))
     with pytest.raises(services.ServiceError):                # other errors are not split
         services.query_pds({}, dt.datetime(2012, 1, 1), dt.datetime(2012, 1, 2), 100)
+
+
+def test_occultation_geometry_against_spice_with_real_kernels(monkeypatch):
+    """With the generic kernels on this computer (else skipped): the sub-Earth point is
+    where the planet-fixed direction to Earth points (it was taken two light times back,
+    3.9 deg of longitude off on Mars in April 2004), and tangent altitudes are above the
+    body's reference radius.  Phobos stands in for the spacecraft."""
+    import os
+    from pathlib import Path
+    import numpy as np
+    import spiceypy as sp
+    from veda.geometry import compute
+    src = Path(os.environ.get("LOCALAPPDATA", "")) / "VEDA" / "cache" / "spice"
+    names = ("naif0012.tls", "pck00011.tpc", "de440s.bsp", "mar099s.bsp")
+    if not all((src / n).is_file() for n in names):
+        pytest.skip("generic SPICE kernels not on this computer")
+    monkeypatch.setattr(kernels, "KERNEL_DIR", src)
+    plan = kernels.KernelPlan(urls=[f"https://x/{n}" for n in names])
+    compute._furnsh(plan)
+    mid = sp.str2et("2004-04-02T11:44:14")
+    g = compute.observation_geometry(plan, 401, "mars", np.array([mid - 30.0, mid, mid + 30.0]))
+    pl, lt = sp.spkpos("499", mid, "J2000", "CN", "399")
+    _, lon, lat = sp.reclat(sp.pxform("J2000", "IAU_MARS", mid - lt) @ (-pl))
+    assert g["subearth"]["lon"] == pytest.approx(np.degrees(lon) % 360, abs=0.01)
+    assert g["subearth"]["lat"] == pytest.approx(np.degrees(lat), abs=0.01)
+    assert g["reference_radius_km"] == 3389.5

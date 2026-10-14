@@ -135,7 +135,9 @@ def observation_geometry(plan: KernelPlan, sc_id: int, body_id: str, et_profile:
             sep = [np.degrees(sp.vsep(sp.spkpos("10", float(t), "J2000", "NONE", "399")[0],
                                       sp.spkpos(sc, float(t), "J2000", "CN", "399")[0])) for t in et_prof]
             _, ss_lon, ss_lat = sp.reclat(sp.subslr("INTERCEPT/ELLIPSOID", bname, mid - lt_mid, fixed, "NONE", "10")[0])
-            _, se_lon, se_lat = sp.reclat(sp.subpnt("INTERCEPT/ELLIPSOID", bname, mid - lt_mid, fixed, "CN", "399")[0])
+            # (subpnt's epoch is the observer's: at mid - lt with CN the planet was taken two
+            # light times back, 3.9 deg of longitude off on Mars in April 2004)
+            _, se_lon, se_lat = sp.reclat(sp.subpnt("INTERCEPT/ELLIPSOID", bname, mid, fixed, "CN", "399")[0])
             utc_range = [sp.et2utc(t0, "ISOC", 0), sp.et2utc(t1, "ISOC", 0)]
         except sp.stypes.SpiceyError as exc:
             text = str(exc)
@@ -161,6 +163,7 @@ def observation_geometry(plan: KernelPlan, sc_id: int, body_id: str, et_profile:
     return {
         "mode": "occultation",
         "body_id": body_id, "body_name": body.name, "radius_km": r_eq, "frame_fixed": fixed,
+        "reference_radius_km": body.radius_km,
         "utc_range": utc_range, "light_time_s": float(lt_mid), "time_convention": "Earth reception",
         "tangent_source": source, "straight_line_minus_product_radius": bending,
         "orbit": {"t_s": (et_orbit - (mid - lt_mid)).round(1).tolist(), "fixed": _vec(orbit_fixed),
@@ -169,7 +172,9 @@ def observation_geometry(plan: KernelPlan, sc_id: int, body_id: str, et_profile:
             "t_s": (et_prof - t0).round(2).tolist(),
             "sc_fixed": _vec(sc_fixed), "sc_sky": _vec(sky(sc_j2000)),
             "tangent_lat": np.round(lat_t, 4).tolist(), "tangent_lon": np.round(lon_t, 4).tolist(),
-            "tangent_alt_km": np.round(r_t - r_eq, 3).tolist(),
+            # above the body's reference radius, as the profile's altitudes (the equatorial
+            # radius put Mars tangent points 6.7 km lower than the profile)
+            "tangent_alt_km": np.round(r_t - body.radius_km, 3).tolist(),
             "sza": np.round(sza, 3).tolist(), "lst_h": np.round(lst, 4).tolist(), "sep_deg": np.round(sep, 4).tolist(),
         },
         "directions_fixed": {"earth": _unit(earth_fixed[len(earth_fixed) // 2]),
@@ -213,7 +218,7 @@ def orbit_geometry(plan: KernelPlan, sc_id: int, body_id: str, utc_start: str, u
             r_eq = float(radii[0])
             pos, lat, lon, alt, lst, sza, emi, pha, inside = [], [], [], [], [], [], [], [], []
             for e in ets:
-                p = sp.spkpos(sc, float(e), fixed, "LT+S", bname)[0]
+                p = sp.spkpos(sc, float(e), fixed, "LT", bname)[0]      # (no aberration of the planet's own motion)
                 pos.append(p)
                 spoint, trgepc, srfvec = sp.subpnt("INTERCEPT/ELLIPSOID", bname, float(e), fixed, "LT+S", sc)
                 _, lo, la = sp.reclat(spoint)
