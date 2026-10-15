@@ -1248,3 +1248,8 @@ def test_body_map_gets_the_descent_track(monkeypatch):
     pos = archive_adapter._loaded_position({"dataset_id": "hp-ssa-dtwg-6-trajectory-v1.0", "product_id": "X"})
     assert len(pos["track"]) == 60 and pos["track"][-1] == pytest.approx([-10.251, 167.675], abs=1e-3)
     assert "track" not in archive_adapter._loaded_position({"dataset_id": "mex-m-mrs-5-occ", "product_id": "X"})
+    # a downloaded descent not yet read is read for its track (the map listing has no other source)
+    monkeypatch.setattr(profiles, "cached_profile", lambda ds, pid: None)
+    monkeypatch.setattr(profiles, "load_profile_cached", lambda ds, pid: dtwg)
+    assert len(archive_adapter._loaded_position({"dataset_id": "hp-ssa-dtwg-6-trajectory-v1.0", "product_id": "X"})["track"]) == 60
+    assert archive_adapter._loaded_position({"dataset_id": "mex-m-mrs-5-occ", "product_id": "X"}) == {}

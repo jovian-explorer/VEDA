@@ -113,12 +113,19 @@ def _indexed_position(p: Dict[str, Any]) -> Dict[str, float]:
 
 def _loaded_position(p: Dict[str, Any]) -> Dict[str, float]:
     """Latitude and longitude of a profile already loaded in memory (by a comparison)."""
-    from ..archives.profiles import cached_profile
+    from ..archives.datasets import DESCENT_DATA_SETS
+    from ..archives.profiles import cached_profile, load_profile_cached
     prof = cached_profile(p["dataset_id"], p["product_id"])
+    if prof is None and p["dataset_id"] in DESCENT_DATA_SETS:
+        # a probe's descent (downloaded, a few small files): read it for its track, which the
+        # listing has no other way to give; other profiles are placed once a comparison reads them
+        try:
+            prof = load_profile_cached(p["dataset_id"], p["product_id"])
+        except Exception:  # noqa: BLE001
+            prof = None
     if prof is None or prof.latitude is None or prof.longitude is None:
         return {}
     out: Dict[str, Any] = {"latitude": float(prof.latitude), "longitude": float(prof.longitude)}
-    from ..archives.datasets import DESCENT_DATA_SETS
     tr = prof.track or {}
     if p["dataset_id"] in DESCENT_DATA_SETS and "latitude" in tr and "longitude" in tr:
         # an entry or descent probe: its track, drawn as a line on the body map
