@@ -93,7 +93,8 @@ MISSION_SPICE: Dict[str, MissionSpice] = {
         Source(ESA + "MARS-EXPRESS/kernels/spk/", "range", r"^MEX_ROB_(?P<start>\d{6})_(?P<end>\d{6})_\d+\.BSP$"),
         Source(ESA + "MARS-EXPRESS/kernels/spk/", "month", r"^ORMM_T19_(?P<start>\d{6})\d{6}_\d+\.BSP$"),
         Source(ESA + "MARS-EXPRESS/kernels/spk/", "month", r"^ORMM__(?P<start>\d{6})\d{6}_\d+\.BSP$"),
-        Source(ESA + "MARS-EXPRESS/kernels/spk/", "range", r"^ORMF_(?P<start>\d{6})_(?P<end>\d{6})_\d+\.BSP$"),
+        # (not ORMF: the long-term planning ephemeris, "for data analysis ORMM files ... should
+        # be used" (the SPK aareadme); a date no reconstructed file covers is reported)
     ), "ESA SPICE service (MARS-EXPRESS)"),
     "vex": MissionSpice(-248, (
         Source(NAIF + "VEX/kernels/spk/", "next", r"^ORVV_T19_(?P<start>\d{12})_\d{5}\.BSP$"),

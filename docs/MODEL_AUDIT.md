@@ -245,8 +245,12 @@ They are listed so a user can see them.
 - **Where:** `geometry/kernels.py`.
 - **What:** only the `dsindex` sources drop predicted kernels. Regex sources such as the BepiColombo
   and Mars Express monthly files could include predicted arcs.
-- **Fix:** none needed for past observations, which are covered by reconstructed files. To check,
-  compare the kernel's comment area.
+- **Checked against the ESA SPICE service's aareadme files:**
+  - Mars Express ORMF is the long-term planning ephemeris. It was the last fallback and is removed;
+    MEX_ROB (Royal Observatory of Belgium) and ORMM (monthly, reconstructed for past dates) are used.
+  - BepiColombo bc_mpo_fcp files hold reconstructed and predicted data and are "final for the period
+    they cover"; the newest file covering a date is taken.
+- **Status:** fixed.
 
 ### L9. Small inconsistencies found in the audit (fixed)
 - `gravity_profile` said it applied to Jupiter and Saturn; Mars uses it too (GM, J2 and rotation;

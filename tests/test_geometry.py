@@ -33,6 +33,12 @@ def test_spk_chosen_by_coverage_in_file_name(listings, mission, date, expected):
     assert kernels.mission_spks_for(mission, date)[0].endswith("/" + expected)
 
 
+def test_mex_planning_ephemeris_is_not_used(listings):
+    """ORMF is ESOC's long-term planning ephemeris ("for data analysis ORMM files ... should
+    be used", the ESA SPK aareadme): a date only ORMF covers gets no spacecraft SPK."""
+    assert kernels.mission_spks_for("mex", dt.date(2003, 12, 25)) == []
+
+
 def test_no_spk_for_uncovered_date(listings):
     assert kernels.mission_spks_for("akatsuki", dt.date(2030, 1, 1)) == []
     with pytest.raises(LookupError):
