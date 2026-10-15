@@ -170,7 +170,10 @@ function descentPlot(div) {
       marker: { size: 11, color: '#f59e0b', symbol: 'star' } },
   ], themedLayout({
     title: { text: `${g.body_name}: probe descent (planetocentric, east longitude)` },
-    geo: { ...geoLayout(t.lat[n], lon[n]), projection: { type: 'orthographic', rotation: { lat: t.lat[n], lon: lon[n] } } },
+    // zoomed to the track: a descent covers a few degrees at most
+    geo: { ...geoLayout(t.lat[n], lon[n]), projection: { type: 'orthographic', rotation: { lat: t.lat[n], lon: lon[n] },
+      scale: Math.min(40, Math.max(1, 30 / Math.max(1, Math.max(...t.lat) - Math.min(...t.lat), Math.max(...lon) - Math.min(...lon)))) },
+      lataxis: { showgrid: true, gridcolor: plotColors().grid, dtick: 1 }, lonaxis: { showgrid: true, gridcolor: plotColors().grid, dtick: 1 } },
     legend: { orientation: 'h', y: -0.05 }, margin: { l: 10, r: 10, t: 50, b: 40 },
   }), { responsive: true });
 }
