@@ -169,20 +169,15 @@ def test_planetary_quick_card_and_constants_present():
     app_js = (FRONTEND / "js" / "veda_app.js").read_text(encoding="utf-8")
 
     assert 'id="veda-body-quick-card"' in index_html
-    assert "BODY_PHYSICAL_CONSTANTS" in app_js
     assert "renderPlanetaryBodyQuickCard" in app_js
-
-    # Check key celestial bodies covered in quick-card catalog
-    for body_id in ["venus", "mars", "earth", "jupiter", "saturn", "titan", "pluto"]:
-        assert f"{body_id}:" in app_js, f"Body {body_id} missing in BODY_PHYSICAL_CONSTANTS"
-
-    # Check the 6 physical constants are displayed
+    # the card shows VEDA's own values, not hard-coded strings without a source
+    assert "BODY_PHYSICAL_CONSTANTS" not in app_js
     metrics = [
         "Surface gravity g",
         "Atmospheric scale height H",
-        "Surface pressure P",
+        "Reference pressure p",
         "Dominant atmospheric composition",
-        "Mean surface temperature T_surf",
+        "Surface temperature (K)",
         "Solar distance",
     ]
     for m in metrics:
@@ -262,3 +257,17 @@ def test_clean_plotly_math_and_katex_integration():
     assert "\\\\frac" not in index_html, "Double backslash \\frac detected in index.html"
 
 
+
+
+def test_body_card_values_come_from_veda_sources():
+    """Surface temperature and scale height from the reference atmosphere, solar distance
+    from the orbital elements; none for bodies without them."""
+    from fastapi.testclient import TestClient
+    from veda.api.app import create_app
+    c = TestClient(create_app())
+    v = c.get("/api/veda/bodies/venus").json()
+    assert v["reference_surface"]["temperature_k"] == 735.3                 # Venus-GRAM / VIRA at 0 km
+    assert abs(v["reference_surface"]["scale_height_km"] - 15.9) < 0.2
+    assert abs(v["semi_major_axis_au"]["value"] - 0.7233) < 1e-3
+    t = c.get("/api/veda/bodies/titan").json()
+    assert "reference_surface" not in t and t["semi_major_axis_au"]["of"] == "saturn"

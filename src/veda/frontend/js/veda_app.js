@@ -165,156 +165,30 @@ const BODY_EMOJIS = {
 };
 
 // Planetary Body Physical Constants Quick-Card Catalog
-export const BODY_PHYSICAL_CONSTANTS = {
-  venus: {
-    name: 'Venus',
-    category: 'Terrestrial Planet',
-    gravity: '8.87 m/s²',
-    scale_height: '15.9 km (surface, 737 K)',
-    pressure_bar: '92.0 bar (92,000 hPa)',
-    composition: '96.5% CO2, 3.5% N2, 0.015% SO2',
-    mean_temp_k: '737 K (464 °C)',
-    solar_dist_au: '0.723 AU (108.2 million km)',
-    notes: 'Superrotating thick CO2 atmosphere, runaway greenhouse effect'
-  },
-  mars: {
-    name: 'Mars',
-    category: 'Terrestrial Planet',
-    gravity: '3.72 m/s²',
-    scale_height: '11.0 km (surface, 214 K)',
-    pressure_bar: '0.0061 bar (6.1 hPa)',
-    composition: '95.1% CO2, 2.59% N2, 1.94% Ar, 0.16% O2',
-    mean_temp_k: '214 K (-59 °C)',
-    solar_dist_au: '1.524 AU (227.9 million km)',
-    notes: 'Rarefied CO2 atmosphere with seasonal polar caps and dust storms'
-  },
-  earth: {
-    name: 'Earth',
-    category: 'Terrestrial Planet',
-    gravity: '9.81 m/s²',
-    scale_height: '8.5 km',
-    pressure_bar: '1.013 bar (1013.25 hPa)',
-    composition: '78.1% N2, 20.9% O2, 0.93% Ar',
-    mean_temp_k: '288 K (15 °C)',
-    solar_dist_au: '1.000 AU (149.6 million km)',
-    notes: 'Nitrogen-oxygen atmosphere supporting liquid hydrosphere and biosphere'
-  },
-  jupiter: {
-    name: 'Jupiter',
-    category: 'Gas Giant',
-    gravity: '24.79 m/s²',
-    scale_height: '23.9 km (1 bar, 165 K)',
-    pressure_bar: '1.000 bar (1 bar ref level)',
-    composition: '86.2% H2, 13.6% He, 0.2% CH4',
-    mean_temp_k: '165 K (-108 °C at 1 bar)',
-    solar_dist_au: '5.204 AU (778.5 million km)',
-    notes: 'Massive hydrogen-helium envelope with ammonia ice clouds and Great Red Spot'
-  },
-  saturn: {
-    name: 'Saturn',
-    category: 'Gas Giant',
-    gravity: '10.44 m/s²',
-    scale_height: '46.4 km (1 bar, 134 K)',
-    pressure_bar: '1.000 bar (1 bar ref level)',
-    composition: '88.55% H2, 11% He, 0.45% CH4',
-    mean_temp_k: '134 K (-139 °C at 1 bar)',
-    solar_dist_au: '9.582 AU (1.433 billion km)',
-    notes: 'Hydrogen-helium atmosphere with equatorial jets and northern polar hexagon'
-  },
-  titan: {
-    name: 'Titan',
-    category: 'Planetary Moon',
-    gravity: '1.352 m/s²',
-    scale_height: '20.8 km (surface, 94 K), ~40 km aloft',
-    pressure_bar: '1.467 bar (1467 hPa)',
-    composition: '98.4% N2, 1.48% CH4 (5.65% near the surface), 0.1% H2',
-    mean_temp_k: '94 K (-179 °C)',
-    solar_dist_au: '9.582 AU (Saturn orbit, 1.433 billion km)',
-    notes: 'Dense nitrogen atmosphere with photochemical tholin haze and liquid methane hydrologic cycle'
-  },
-  pluto: {
-    name: 'Pluto',
-    category: 'Dwarf Planet',
-    gravity: '0.62 m/s²',
-    scale_height: '17.7 km (surface, 37 K), ~50 km aloft (100 K)',
-    pressure_bar: '1.15e-5 bar (1.15 Pa / 0.0115 hPa)',
-    composition: '99.65% N2, 0.30% CH4, 0.05% CO (near the surface)',
-    mean_temp_k: '37 K (-236 °C)',
-    solar_dist_au: '39.48 AU (5.906 billion km)',
-    notes: 'Tenuous nitrogen atmosphere with steep temperature inversion and blue haze'
-  },
-  mercury: {
-    name: 'Mercury',
-    category: 'Terrestrial Planet',
-    gravity: '3.70 m/s²',
-    scale_height: 'Exosphere (Surface-boundary)',
-    pressure_bar: '~1e-15 bar (Surface exosphere)',
-    composition: '42% O, 29% Na, 22% H, 6% He',
-    mean_temp_k: '440 K (167 °C mean; diurnal 100 to 700 K)',
-    solar_dist_au: '0.387 AU (57.9 million km)',
-    notes: 'Sputtered surface-boundary exosphere with dipolar magnetic field'
-  },
-  moon: {
-    name: 'Moon',
-    category: 'Planetary Moon',
-    gravity: '1.62 m/s²',
-    scale_height: 'Exosphere (Surface-boundary)',
-    pressure_bar: '~1e-14 bar (Surface exosphere)',
-    composition: '40% He, 40% Ne, 20% Ar',
-    mean_temp_k: '220 K (-53 °C mean; diurnal 100 to 390 K)',
-    solar_dist_au: '1.000 AU (Earth orbit, 149.6 million km)',
-    notes: 'Ultra-tenuous exosphere with permanently shadowed polar volatile deposits'
-  },
-  ceres: {
-    name: 'Ceres',
-    category: 'Dwarf Planet',
-    gravity: '0.28 m/s²',
-    scale_height: 'Transient exosphere',
-    pressure_bar: '~1e-13 bar (Transient)',
-    composition: 'Transient H2O vapor',
-    mean_temp_k: '168 K (-105 °C)',
-    solar_dist_au: '2.767 AU (413.9 million km)',
-    notes: 'Water-rich dwarf planet with carbonate deposits and transient water outgassing'
-  },
-  vesta: {
-    name: 'Vesta',
-    category: 'Protoplanet / Asteroid',
-    gravity: '0.25 m/s²',
-    scale_height: 'None (Airless body)',
-    pressure_bar: '0 bar (Negligible vacuum)',
-    composition: 'None (Airless basaltic crust)',
-    mean_temp_k: '160 K (-113 °C)',
-    solar_dist_au: '2.362 AU (353.4 million km)',
-    notes: 'Differentiated basaltic protoplanet with metallic iron core and impact basins'
-  },
-  comet_67p: {
-    name: 'Comet 67P/C-G',
-    category: 'Comet',
-    gravity: '0.0001 m/s²',
-    scale_height: 'Coma expansion (~100 km)',
-    pressure_bar: '~1e-11 bar (Inner coma)',
-    composition: '70% H2O, 15% CO, 10% CO2',
-    mean_temp_k: '200 K (-73 °C mean)',
-    solar_dist_au: '3.46 AU (Perihelion: 1.24 AU, Aphelion: 5.68 AU)',
-    notes: 'Bi-lobed nucleus with active gas sublimation jets and dust coma'
-  }
-};
-
 export function renderPlanetaryBodyQuickCard(bodyId, bodyDetails) {
   const card = document.getElementById('veda-body-quick-card');
   if (!card) return;
 
+  // Everything from VEDA's own sources (registry, reference atmosphere, orbital
+  // elements); the card used to show hard-coded values without sources
   const bKey = (bodyId || '').toLowerCase();
-  const c = BODY_PHYSICAL_CONSTANTS[bKey] || {
-    name: bodyDetails?.name || bodyId,
-    category: (bodyDetails?.category || 'Celestial Body').replace('_', ' '),
-    gravity: bodyDetails?.surface_gravity ? `${fmtGravity(bodyDetails.surface_gravity)} m/s²` : 'N/A',
-    scale_height: 'N/A',
-    pressure_bar: bodyDetails?.reference_pressure_hpa ? `${(bodyDetails.reference_pressure_hpa / 1000).toFixed(4)} bar` : 'N/A',
-    composition: Object.entries(bodyDetails?.atmospheric_composition || {}).map(([g, pct]) => `${g}: ${pct}%`).join(', ') || 'Trace',
-    mean_temp_k: 'N/A',
-    solar_dist_au: 'N/A',
-    notes: bodyDetails?.description || ''
+  const d = bodyDetails || {};
+  const ref = d.reference_surface;
+  const giant = ['jupiter', 'saturn', 'uranus', 'neptune'].includes(bKey);
+  const sma = d.semi_major_axis_au;
+  const c = {
+    name: d.name || bodyId,
+    category: (d.category || 'Celestial Body').replace('_', ' '),
+    gravity: d.surface_gravity ? `${fmtGravity(d.surface_gravity)} m/s²` : 'N/A',
+    scale_height: ref ? `${ref.scale_height_km.toFixed(1)} km` : 'N/A',
+    scale_sub: ref ? `At the surface of the ${escHtml(ref.name)}` : 'No reference atmosphere in VEDA for this body',
+    pressure_bar: d.reference_pressure_hpa ? `${(d.reference_pressure_hpa / 1000).toPrecision(3)} bar (${d.reference_pressure_hpa.toLocaleString()} hPa)` : 'N/A',
+    pressure_sub: giant ? 'The 1-bar level altitudes are counted from (no solid surface)' : 'Mean surface pressure, the reference for potential temperature',
+    composition: Object.entries(d.atmospheric_composition || {}).map(([g, pct]) => `${pct}% ${g}`).join(', ') || 'N/A',
+    temp: ref ? `${ref.temperature_k.toFixed(0)} K (${(ref.temperature_k - 273.15).toFixed(0)} °C)` : 'N/A',
+    temp_sub: ref ? `${escHtml(ref.name)}` : 'No reference atmosphere in VEDA for this body',
+    sma: sma ? `${sma.value.toFixed(3)} AU (${(sma.value * 149.5978707).toFixed(1)} million km)` : 'N/A',
+    sma_sub: sma ? `Semi-major axis of ${sma.of === bKey ? 'its' : `${sma.of[0].toUpperCase()}${sma.of.slice(1)}'s`} orbit (JPL approximate elements)` : 'Not in VEDA',
   };
 
   const emoji = BODY_EMOJIS[bKey] || '🪐';
@@ -335,7 +209,7 @@ export function renderPlanetaryBodyQuickCard(bodyId, bodyDetails) {
           <span class="tile-label">Surface gravity g (m/s²)</span>
         </div>
         <div class="tile-value">${c.gravity}</div>
-        <div class="tile-sub">Reference surface acceleration</div>
+        <div class="tile-sub">${giant ? 'Effective gravity at the 1-bar level at the equator' : 'At the reference radius'}</div>
       </div>
       <div class="quick-card-tile">
         <div class="tile-head">
@@ -343,15 +217,15 @@ export function renderPlanetaryBodyQuickCard(bodyId, bodyDetails) {
           <span class="tile-label">Atmospheric scale height H (km)</span>
         </div>
         <div class="tile-value">${c.scale_height}</div>
-        <div class="tile-sub">Pressure e-folding vertical scale</div>
+        <div class="tile-sub">${c.scale_sub}</div>
       </div>
       <div class="quick-card-tile">
         <div class="tile-head">
           <span class="tile-icon">⏲️</span>
-          <span class="tile-label">Surface pressure P₀ (bar)</span>
+          <span class="tile-label">Reference pressure p₀ (bar)</span>
         </div>
         <div class="tile-value">${c.pressure_bar}</div>
-        <div class="tile-sub">Baseline hydrostatic pressure</div>
+        <div class="tile-sub">${c.pressure_sub}</div>
       </div>
       <div class="quick-card-tile">
         <div class="tile-head">
@@ -364,18 +238,18 @@ export function renderPlanetaryBodyQuickCard(bodyId, bodyDetails) {
       <div class="quick-card-tile">
         <div class="tile-head">
           <span class="tile-icon">🌡️</span>
-          <span class="tile-label">Mean surface temperature T_surf (K)</span>
+          <span class="tile-label">Surface temperature (K)</span>
         </div>
-        <div class="tile-value">${c.mean_temp_k}</div>
-        <div class="tile-sub">Planetary surface thermal state</div>
+        <div class="tile-value">${c.temp}</div>
+        <div class="tile-sub">${c.temp_sub}</div>
       </div>
       <div class="quick-card-tile">
         <div class="tile-head">
           <span class="tile-icon">☀️</span>
           <span class="tile-label">Solar distance (AU)</span>
         </div>
-        <div class="tile-value">${c.solar_dist_au}</div>
-        <div class="tile-sub">Semi-major orbital distance</div>
+        <div class="tile-value">${c.sma}</div>
+        <div class="tile-sub">${c.sma_sub}</div>
       </div>
     </div>
   `;

@@ -167,7 +167,27 @@ def get_body_details(body_id: str) -> dict:
         "mission_page_url": b.mission_page_url,
         "data_page_url": b.data_page_url,
         "missions": missions,
+        **_quick_values(b),
     }
+
+
+def _quick_values(b) -> dict:
+    """Surface temperature and scale height of the body's reference atmosphere (Venus-GRAM,
+    Mars-GRAM; none for other bodies), and the semi-major axis of its (or its planet's)
+    orbit from the JPL approximate elements VEDA uses for local times.  These replace
+    hard-coded display strings without sources."""
+    from ..analysis.reference import REFERENCES, reference_profile
+    from ..analysis.solar_geometry import _ELEMENTS, _PARENT
+    out: dict = {}
+    ref = REFERENCES.get(b.id)
+    if ref:
+        out["reference_surface"] = {"name": ref["name"],                 # (at 0 km)
+                                    "temperature_k": float(reference_profile(b.id, "temperature_k", [0.0])[0]),
+                                    "scale_height_km": float(reference_profile(b.id, "scale_height", [0.0])[0])}
+    planet = _PARENT.get(b.id, b.id)
+    if planet in _ELEMENTS:
+        out["semi_major_axis_au"] = {"value": _ELEMENTS[planet][0][0], "of": planet}
+    return out
 
 
 # ---------------------------------------------------------------------------

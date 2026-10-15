@@ -131,6 +131,8 @@ left off the maps and counted.
   temperatures have no source and are shown as facts.
 - **Fix:** compute what can be computed from the registry, and label the rest as typical values
   with a source, or remove them.
+- **Status:** fixed: every value comes from the registry, the reference atmosphere or the
+  orbital elements, or reads N/A.
 
 ### M5. Giant-planet gravity without a latitude
 - **Where:** `core/registry.py:70-71, 98-99`; `analysis/atmospheric.py:58-107`.
