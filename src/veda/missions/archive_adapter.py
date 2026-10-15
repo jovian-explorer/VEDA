@@ -117,4 +117,14 @@ def _loaded_position(p: Dict[str, Any]) -> Dict[str, float]:
     prof = cached_profile(p["dataset_id"], p["product_id"])
     if prof is None or prof.latitude is None or prof.longitude is None:
         return {}
-    return {"latitude": float(prof.latitude), "longitude": float(prof.longitude)}
+    out: Dict[str, Any] = {"latitude": float(prof.latitude), "longitude": float(prof.longitude)}
+    from ..archives.datasets import DESCENT_DATA_SETS
+    tr = prof.track or {}
+    if p["dataset_id"] in DESCENT_DATA_SETS and "latitude" in tr and "longitude" in tr:
+        # an entry or descent probe: its track, drawn as a line on the body map
+        import numpy as np
+        lat, lon = np.asarray(tr["latitude"], float), np.asarray(tr["longitude"], float)
+        idx = np.flatnonzero(np.isfinite(lat) & np.isfinite(lon))
+        idx = idx[np.linspace(0, idx.size - 1, min(idx.size, 60)).round().astype(int)] if idx.size else idx
+        out["track"] = [[round(float(lat[i]), 3), round(float(lon[i]) % 360, 3)] for i in idx]
+    return out

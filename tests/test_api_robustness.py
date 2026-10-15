@@ -1228,3 +1228,14 @@ def _no_track_profile():
     return ObservationProfile(observation_id="VG2LR", mission_id="vega", body_id="venus", instrument="METEO",
                               time_utc="1985-06-15T02:06:16", altitude_km=np.array([60.0, 0.0]),
                               temperature_k=np.array([250.0, 740.0]))
+
+
+def test_body_map_gets_the_descent_track(monkeypatch):
+    """The body map draws an entry or descent probe's track as a line, not only its median point."""
+    from veda.archives import profiles
+    from veda.missions import archive_adapter
+    dtwg = _dtwg_profile()
+    monkeypatch.setattr(profiles, "cached_profile", lambda ds, pid: dtwg)
+    pos = archive_adapter._loaded_position({"dataset_id": "hp-ssa-dtwg-6-trajectory-v1.0", "product_id": "X"})
+    assert len(pos["track"]) == 60 and pos["track"][-1] == pytest.approx([-10.251, 167.675], abs=1e-3)
+    assert "track" not in archive_adapter._loaded_position({"dataset_id": "mex-m-mrs-5-occ", "product_id": "X"})

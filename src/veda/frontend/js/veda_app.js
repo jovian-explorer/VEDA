@@ -2448,6 +2448,14 @@ export function renderPlanetaryMap(projection = '2d') {
       });
     });
 
+    // entry and descent probes: their tracks as lines (the point is the profile's median position)
+    located.filter(o => Array.isArray(o.track) && o.track.length > 1).forEach(o => {
+      const lon = o.track.map(([, l]) => (l > 180 ? l - 360 : l));
+      traces.push({ x: lon.map((v, i) => (i && Math.abs(v - lon[i - 1]) > 180 ? null : v)), y: o.track.map(([la]) => la),
+        type: 'scatter', mode: 'lines', line: { color: MISSION_COLORS[o.mission_id.toLowerCase()] || '#38bdf8', width: 2.5 },
+        name: `${o.observation_id} descent`, hoverinfo: 'name', showlegend: false });
+    });
+
     const layout = {
       title: {
         text: `${(body.name || '').toUpperCase()} • Spatial Distribution of Observations`,

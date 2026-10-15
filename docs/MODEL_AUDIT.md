@@ -74,7 +74,8 @@ left off the maps and counted.
     file.
 - **Status:** fixed.
 - **Still open:**
-  - The body map still draws one point per profile, not the descent line.
+  - The body map now draws the descent line of profiles that carry positions (2D map; the 3D globe
+    still shows points).
 
 ### H2. Date-only times drawn as the observation (CRISM limb profiles)
 - **Where:** `api/archive_routes.py:306-313`, `geometry/compute.py:184` (`orbit_geometry`). Data sets
