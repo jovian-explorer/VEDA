@@ -696,3 +696,23 @@ def test_phoenix_entry_profile_as_in_the_teams_report():
     assert lat[i] == pytest.approx(68.265, abs=0.03) and lon[i] == pytest.approx(234.034, abs=0.06)
     j = int(np.nanargmin(r))
     assert lat[j] == pytest.approx(68.237, abs=0.03) and lon[j] == pytest.approx(234.311, abs=0.06)
+
+
+def test_spirit_entry_profile_as_published():
+    """Withers & Smith (2006), in the archive volume (merimu_2001 DOCUMENT/WS2006PUB):
+    Spirit entered at radius 3522.2 km, 17.7 S, 161.8 E, and deployed its parachute 7.5 km
+    above the landing site (radius 3392.3 km) at 14.528 S, 175.411 E."""
+    from pathlib import Path
+    import numpy as np
+    from veda.archives.profiles import profile_from_label
+    ds = get_dataset("mer-m-imu-5-edl-derived-v1.0")
+    p = profile_from_label(ds, {"product_id": "MER2PROFILES", "start_time": "2004-01-04T04:19:53.974",
+                                "volume": "merimu_2001", "url": "", "product_type": "Entry profile"},
+                           Path(__file__).parent / "data" / "mer_edl" / "MER2PROFILES.LBL")
+    r = p.altitude_km + 3389.5
+    lat, lon = p.track["latitude"], p.track["longitude"]
+    j, i = int(np.nanargmax(r)), int(np.nanargmin(r))
+    assert r[j] == pytest.approx(3522.2, abs=0.05) and lat[j] == pytest.approx(-17.7, abs=0.01)
+    assert lon[j] == pytest.approx(161.8, abs=0.01)
+    assert r[i] - 3392.3 == pytest.approx(7.5, abs=0.05)
+    assert lat[i] == pytest.approx(-14.528, abs=0.001) and lon[i] == pytest.approx(175.411, abs=0.001)
