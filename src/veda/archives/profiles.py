@@ -619,6 +619,7 @@ def _add_solar_geometry(prof: ObservationProfile, ds: Optional[Dataset]) -> None
         attrs["LS"] = float(archive_ls)
     et = track.get("et")
     z = np.asarray(prof.altitude_km, float)
+    lt_used = 0.0
     if et is not None and np.isfinite(et).any():
         ok = np.isfinite(et) & np.isfinite(z) if z.size == et.size else np.isfinite(et)
         i = int(np.nanargmin(np.where(ok, z, np.nan))) if z.size == et.size and ok.any() else int(np.nanargmin(et))
@@ -628,6 +629,7 @@ def _add_solar_geometry(prof: ObservationProfile, ds: Optional[Dataset]) -> None
         if ds is not None and ds.times_earth_received:
             lt = sg.light_time_s(prof.body_id, time)
             if lt:
+                lt_used = lt
                 time = sg.et_to_utc(et[i] - lt)
                 attrs["LIGHT_TIME_S"] = round(lt, 1)
                 attrs.setdefault("LABEL_TIME", prof.time_utc)
@@ -657,8 +659,16 @@ def _add_solar_geometry(prof: ObservationProfile, ds: Optional[Dataset]) -> None
     if have_lst and have_sza:
         return
     if lat is not None and lon is not None and np.size(lat) == np.size(lon):
-        g = [sg.solar_geometry(prof.body_id, time, a, o) if np.isfinite(a) and np.isfinite(o) else None
-             for a, o in zip(np.asarray(lat, float), np.asarray(lon, float))]
+        # each level at its own time where the archive gives one: one time for the whole
+        # profile put the local time at 130 km 0.05 h off on a Mars Express ionosphere
+        # profile measured 3 min before its lowest level (Mars turns 0.25 deg a minute)
+        # (to the nearest 10 s, 0.04 deg of Mars' rotation, so that the planet's position is
+        # computed a few times per profile, not at every level)
+        times = ([sg.et_to_utc(10.0 * round((float(e) - lt_used) / 10.0))[:19] if np.isfinite(e) else time
+                  for e in np.asarray(et, float)] if et is not None and np.size(et) == np.size(lat)
+                 else [time] * np.size(lat))
+        g = [sg.solar_geometry(prof.body_id, tt, a, o) if np.isfinite(a) and np.isfinite(o) else None
+             for tt, a, o in zip(times, np.asarray(lat, float), np.asarray(lon, float))]
         if any(g):
             if not have_lst:
                 track["lst"] = np.array([x["lst"] if x else np.nan for x in g])

@@ -176,3 +176,25 @@ def test_ephemeris_seconds_to_utc_with_the_dates_leap_seconds():
     assert et_to_utc(134178318.285657) == "2004-04-02T11:44:14.101"      # SPICE: 11:44:14.100
     assert et_to_utc(-258000000.0) == "1991-10-29T09:19:01.816"          # SPICE: 09:19:01.818
     assert et_to_utc(510319097.508951) == "2016-03-03T23:17:09.324"
+
+
+def test_mars_express_team_values_at_130_km_reproduced():
+    """The MaRS team's information file of the bundled ionosphere profile gives values "at 130
+    km altitude above aeroid" (aeroid radius 3392.205 km): electron density 4916.43 x 10^6 m^-3,
+    measurement time 11:26:00.761 (ERT - OWLT), subsolar point 5.74 N 171.72 E, local true solar
+    time 4.43 h, Ls 13.59.  VEDA at the same radius gives them back; the local time was 4.48 h
+    when every level took the lowest level's time."""
+    from veda.missions.manager import get_mission_manager
+    p = get_mission_manager().load_profile("mex", "M32ICL2L04_IIX_040931105_60")
+    z, t = p.altitude_km, p.track
+    a = 3392.205 + 130.0 - 3389.5
+    o = np.argsort(z)
+    ok = np.isfinite(p.electron_density_cm3[o])
+    assert np.interp(a, z[o][ok], p.electron_density_cm3[o][ok]) == pytest.approx(4916.43, rel=1e-3)
+    assert np.interp(a, z[o], np.asarray(t["lst"], float)[o]) == pytest.approx(4.43, abs=0.005)
+    et = np.interp(a, z[o], np.asarray(t["et"], float)[o]) - p.raw_attributes["LIGHT_TIME_S"]
+    tm = sg.et_to_utc(et)
+    assert tm.startswith("2004-04-02T11:26:00")
+    ss = sg.subsolar_point("mars", tm)
+    assert ss["subsolar_latitude"] == pytest.approx(5.74, abs=0.01)
+    assert ss["subsolar_longitude"] == pytest.approx(171.72, abs=0.02) and ss["ls"] == pytest.approx(13.59, abs=0.02)

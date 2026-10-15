@@ -288,6 +288,11 @@ def _read_rows(lines: List[str], cols: List[ColumnDef]) -> Dict[str, np.ndarray]
     first = lines[0] if lines else ""
     import csv
     rows = list(csv.reader(lines)) if ("," in first and len(first.split(",")) >= len(cols)) else None
+    if rows is None and lines and all(ln.count(";") == len(cols) - 1 for ln in lines):
+        # semicolon-separated with the byte positions of the first rows only: the Huygens
+        # HASI descent profile's pressure gains a digit below 46 km (10000 Pa), every later
+        # field moves one byte, and 1268 of its 1816 temperatures were lost
+        rows = [ln.split(";") for ln in lines]
     if rows is None and _byte_positions_cut_numbers(lines, cols):
         rows = [ln.split() for ln in lines]
     for idx, c in enumerate(cols):

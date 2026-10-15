@@ -215,3 +215,18 @@ def test_label_statements_with_comments_and_quotes():
             '/* multi\nline */ C =\n  2\n'
             'D = "left open')
     assert _label_lines(text) == ['A = 1', 'B = "x /* not a comment */ y"', 'C = 2', 'D = "left open"']
+
+
+def test_semicolon_table_whose_fields_move_by_a_byte():
+    """The Huygens HASI descent profile is semicolon-separated with the byte positions of
+    its first rows: below 46 km the pressure gains a digit (10000 Pa) and every later field
+    moves one byte; 1268 of its 1816 temperatures were lost, down to the surface, where the
+    file gives 93.50 K at 1466.45 hPa (Fulchignoni et al. 2005: 93.65 +- 0.25 K, 1467 +- 1 hPa)."""
+    from pathlib import Path
+    import numpy as np
+    from veda.readers.pds3_reader import read_pds3_table
+    t = read_pds3_table(str(Path(__file__).parent / "data" / "huygens_hasi" / "HASI_L4_ATMO_PROFILE_DESCEN.LBL"))
+    T, p = np.asarray(t.columns["Temperature"], float), np.asarray(t.columns["Pressure"], float)
+    assert not np.isnan(T).any()
+    assert T[-1] == 93.5027 and p[-1] == 146645.0 and abs(T[-1] - 93.65) < 0.25
+    assert abs(p[-1] / 100.0 - 1467.0) <= 1.0
