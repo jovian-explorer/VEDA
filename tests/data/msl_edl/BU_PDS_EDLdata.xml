@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="http://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1301.sch" schematypens="http://purl.oclc.org/dsdl/schematron" ?>
+<!-- VEDA test copy: every 50th record, the 40 around the mesopause and the last of msledl_bundle/data/BU_PDS_EDLdata.tab -->
+<Product_Observational
+    xmlns="http://pds.nasa.gov/pds4/pds/v1"
+    xmlns:pds="http://pds.nasa.gov/pds4/pds/v1"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pds.nasa.gov/pds4/pds/v1
+	http://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1301.xsd">
+    <Identification_Area>
+        <logical_identifier>urn:nasa:pds:msledl:data:bu_pds_edldata</logical_identifier>
+        <version_id>1.0</version_id>
+        <title>MSL EDL Atmospheric Reconstruction</title>
+        <information_model_version>1.3.0.1</information_model_version>
+        <product_class>Product_Observational</product_class>
+    </Identification_Area>
+    <Observation_Area>
+        <Time_Coordinates>
+            <start_date_time>2012-08-06T05:10:42.924Z</start_date_time>
+            <stop_date_time>2012-08-06T05:15:03.925Z</stop_date_time>
+        </Time_Coordinates>
+        <Primary_Result_Summary>
+            <purpose>Science</purpose>
+            <processing_level>Derived</processing_level>
+      		<Science_Facets>
+                <domain>Atmosphere</domain>
+                <discipline_name>Atmospheres</discipline_name>
+      		    <facet1>Structure</facet1>
+      		</Science_Facets>
+        </Primary_Result_Summary>
+        <Investigation_Area>
+            <name>Mars Science Laboratory</name>
+            <type>Mission</type>
+            <Internal_Reference>
+                <lid_reference>urn:nasa:pds:context:investigation:mission.mars_science_laboratory</lid_reference>
+                <reference_type>data_to_investigation</reference_type>
+            </Internal_Reference>
+        </Investigation_Area>
+        <Observing_System>
+            <name>MSL Accelerometer</name>
+            <Observing_System_Component>
+                <name>Accelerometer</name>
+                <type>Instrument</type>
+                <Internal_Reference>
+                     <lid_reference>urn:nasa:pds:context:instrument:accel.msl</lid_reference>
+                     <reference_type>is_instrument</reference_type>
+                </Internal_Reference>
+            </Observing_System_Component>
+            <Observing_System_Component>
+                <name>Mars Science Laboratory</name>
+                <type>Spacecraft</type>
+                <Internal_Reference>
+                    <lid_reference>urn:nasa:pds:context:instrument_host:spacecraft.msl</lid_reference>
+                    <reference_type>is_instrument_host</reference_type>
+                </Internal_Reference>                
+            </Observing_System_Component>
+        </Observing_System>
+        <Target_Identification>
+            <name>Mars</name>
+            <type>Planet</type>
+            <Internal_Reference>
+                <lid_reference>urn:nasa:pds:context:target:planet.mars</lid_reference>
+                <reference_type>data_to_target</reference_type>
+            </Internal_Reference>
+        </Target_Identification>
+    </Observation_Area>
+    <Reference_List>
+        <Internal_Reference>
+            <lid_reference>urn:nasa:pds:msledl:document:reconstruction</lid_reference>
+            <reference_type>data_to_document</reference_type>
+        </Internal_Reference>
+    </Reference_List>
+    <File_Area_Observational>
+        <File>
+            <file_name>BU_PDS_EDLdata.tab</file_name>
+            <local_identifier>BU_PDS_EDLdata</local_identifier>
+            <creation_date_time>2015-10-05T14:10:00</creation_date_time>
+            <records>1084</records>
+        </File>
+        <Table_Character>
+            <name>MSL EDL Atmospheric Reconstruction Results</name>
+            <local_identifier>Table</local_identifier>
+            <offset unit="byte">0</offset>
+            <records>1084</records>
+            <description>
+                Atmospheric density, pressure and temperature from given times and altitudes
+            </description>
+            <record_delimiter>Carriage-Return Line-Feed</record_delimiter>
+            <Record_Character>
+                <fields>12</fields>
+                <groups>0</groups>
+                <record_length unit="byte">108</record_length>
+                <Field_Character>
+                    <name>Time [s]</name>
+                    <field_number>1</field_number>
+                    <field_location unit="byte">1</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">10</field_length>
+                    <description>
+                        Time [s] since  data was first collected at Spacecraft Clock Time 397501174.997338 s
+                    </description>
+                </Field_Character>
+                <Field_Character>
+                    <name>Radial distance [km]</name>
+                    <field_number>2</field_number>
+                    <field_location unit="byte">12</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">9</field_length>
+                    <unit>kilometer</unit>
+                    <description>
+                        Radial distance [km] from the center of mass of Mars
+                    </description>
+                </Field_Character>
+                <Field_Character>
+                    <name>Height [km]</name>
+                    <field_number>3</field_number>
+                    <field_location unit="byte">22</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">9</field_length>
+                    <description>
+                        Height [km] above the MSL landing site at radial distance 3391.1 km
+                    </description>
+                </Field_Character>
+                <Field_Character>
+                    <name>Latitude</name>
+                    <field_number>4</field_number>
+                    <field_location unit="byte">32</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">6</field_length>
+                    <description>
+                        Latitude [degrees North]
+                    </description>
+                </Field_Character>
+                <Field_Character>
+                    <name>Longitude</name>
+                    <field_number>5</field_number>
+                    <field_location unit="byte">39</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">6</field_length>
+                    <description>
+                        Longitude [degrees East]
+                    </description>
+                </Field_Character>
+                <Field_Character>
+                    <name>Atmospheric Density</name>
+                    <field_number>6</field_number>
+                    <field_location unit="byte">46</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">9</field_length>
+                    <description>
+                        Atmospheric density [kg m-3]
+                    </description>
+                </Field_Character>
+                <Field_Character>
+                    <name>Density uncertainty</name>
+                    <field_number>7</field_number>
+                    <field_location unit="byte">56</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">9</field_length>
+                    <description>
+                        1 sigma uncertainty in density [kg m-3]
+                    </description>
+                </Field_Character>
+                <Field_Character>
+                    <name>Atmospheric pressure</name>
+                    <field_number>8</field_number>
+                    <field_location unit="byte">66</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">9</field_length>
+                    <description>
+                        Atmospheric pressure [Pa]
+                    </description>
+                </Field_Character>
+                <Field_Character>
+                    <name>Atmospheric pressure uncertainty</name>
+                    <field_number>9</field_number>
+                    <field_location unit="byte">76</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">9</field_length>
+                    <description>
+                        Uncertainty on pressure [Pa]
+                    </description>
+                </Field_Character>
+                <Field_Character>
+                    <name>Atmospheric temperature</name>
+                    <field_number>10</field_number>
+                    <field_location unit="byte">86</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">9</field_length>
+                    <description>
+                        Atmospheric temperature [K]
+                    </description>
+                </Field_Character>
+                <Field_Character>
+                    <name>Temperature uncertainty</name>
+                    <field_number>11</field_number>
+                    <field_location unit="byte">96</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">9</field_length>
+                    <description>
+                        Uncertainty on temperature [K]
+                    </description>
+                </Field_Character>
+                <Field_Character>
+                    <name>Source</name>
+                    <field_number>12</field_number>
+                    <field_location unit="byte">106</field_location>
+                    <data_type>ASCII_Integer</data_type>
+                    <field_length unit="byte">1</field_length>
+                    <description>
+                        1 if temperatures were derived from JPL reconstruction, 0 if not.
+                    </description>
+                </Field_Character>
+            </Record_Character>
+        </Table_Character>
+    </File_Area_Observational>
+</Product_Observational>

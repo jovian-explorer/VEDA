@@ -716,3 +716,26 @@ def test_spirit_entry_profile_as_published():
     assert lon[j] == pytest.approx(161.8, abs=0.01)
     assert r[i] - 3392.3 == pytest.approx(7.5, abs=0.05)
     assert lat[i] == pytest.approx(-14.528, abs=0.001) and lon[i] == pytest.approx(175.411, abs=0.001)
+
+
+def test_curiosity_entry_profile_as_in_the_teams_document():
+    """msledl_bundle document/reconstruction (Holstein-Rathlou et al.): heights above the
+    landing site at radius 3391.13 km; parachute deployment at 12.1 km; a mesopause of
+    99.9 +- 0.2 K at 81.1 km; an isothermal thermosphere of 130.0 +- 1.4 K between
+    1.14e-2 Pa (90.5 km) and 1.89e-3 Pa (103.2 km)."""
+    from pathlib import Path
+    import numpy as np
+    from veda.archives.profiles import profile_from_label
+    ds = get_dataset("msl-edl-atmosphere")
+    p = profile_from_label(ds, {"product_id": "BU_PDS_EDLdata", "start_time": "2012-08-06T05:10:42.924",
+                                "volume": "msledl_bundle", "url": "", "product_type": "Entry profile"},
+                           Path(__file__).parent / "data" / "msl_edl" / "BU_PDS_EDLdata.xml")
+    h = p.altitude_km + 3389.5 - 3391.13
+    T, P = p.temperature_k, p.pressure_hpa * 100.0
+    assert np.nanmin(h) == pytest.approx(12.1, abs=0.05)
+    sel = np.isfinite(T) & (h > 70) & (h < 90)
+    i = np.flatnonzero(sel)[np.argmin(T[sel])]
+    assert h[i] == pytest.approx(81.1, abs=0.15) and T[i] == pytest.approx(99.9, abs=0.5)
+    th = np.isfinite(T) & (P <= 1.14e-2) & (P >= 1.89e-3)
+    # (130.0 and 1.4 K on the full file; this copy keeps every 50th level)
+    assert T[th].mean() == pytest.approx(130.0, abs=0.5) and T[th].std() == pytest.approx(1.4, abs=0.4)
