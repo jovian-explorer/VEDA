@@ -183,6 +183,13 @@ class Dataset:
     # Index rows without a time take the earliest time of the other files in their folder
     # (MRO aerobraking: each pass folder's orbital elements file has START_TIME = N/A)
     folder_time: bool = False
+    # The longitude column is west-positive (Huygens DTWG): VEDA uses east
+    west_longitude: bool = False
+    # Where the instrument was during a probe's descent, when its own files have no
+    # position: (data set id, product id) of the trajectory (Huygens HASI -> DTWG), or the
+    # probe's NAIF id and SPK file (Galileo probe), for the Geometry tab
+    descent_trajectory: Tuple[str, str] = ()
+    probe_spk: Tuple[int, str] = ()
 
     def classify(self, file_name: str) -> Tuple[str, str]:
         name = file_name.lower()
@@ -447,6 +454,9 @@ DATASETS: List[Dataset] = [
         citation=GP_CITATION,
         label_from_data=True,
         fixed_time="1995-12-07T22:04:44",    # probe entry (Young et al. 1996, Science 272)
+        # the probe's own SPK (NAIF -344, Galileo navigation team): separation to entry,
+        # ending at 22:05:59, before the descent
+        probe_spk=(-344, "https://naif.jpl.nasa.gov/pub/naif/GLL/kernels/spk/s960730a.bsp"),
     ),
     Dataset(
         id="hp-ssa-hasi-2-3-4-mission-v1.1", mission_id="cassini", instrument="Huygens HASI", level="L2-L4",
@@ -467,6 +477,27 @@ DATASETS: List[Dataset] = [
         profile_columns={"altitude": "ALTITUDE", "temperature": "TEMPERATURE", "pressure": "PRESSURE"},
         citation=HASI_CITATION,
         times_from_labels=True,
+        descent_trajectory=("hp-ssa-dtwg-6-trajectory-v1.0", "HUY_DTWG_DESCENT_POS"),
+    ),
+    Dataset(
+        id="hp-ssa-dtwg-6-trajectory-v1.0", mission_id="cassini", instrument="Huygens DTWG (descent trajectory)",
+        level="L6 (reconstructed)",
+        title="Huygens probe descent trajectory at Titan, 14 January 2005: reconstructed latitude, longitude, "
+              "altitude and pressure every second",
+        body_ids=("titan",), archive="NASA PDS Atmospheres Node",
+        base_url="https://pds-atmospheres.nmsu.edu/PDS/data/",
+        volume_pattern=r"^hpdtwg_\d{4}$",
+        rules=((r"descent_pos", "Descent trajectory: position and pressure", "profile"),
+               (r"(^|/)data/", "Entry trajectory, velocity and aerodynamics", "other")),
+        # REF_ALT: "with respect to the reference sphere of 2575 km from planet center";
+        # WEST_LON is west longitude (the landing site 192.3 W = 167.7 E, 10.3 S)
+        profile_columns={"altitude": "REF_ALT", "pressure": "ATMOSPHERIC PRESSURE",
+                         "pressure_sigma": "ATMOSPHERIC_PRESSURE_ERROR", "latitude": "LAT",
+                         "longitude": "WEST_LON", "et": "ET_EPOCH"},
+        altitude_reference_km=2575.0, west_longitude=True, times_from_labels=True,
+        citation=("Kazeminejad, B., et al. (2007). Huygens' entry and descent through Titan's atmosphere: "
+                  "Methodology and results of the trajectory reconstruction. Planet. Space Sci., 55, 1845-1876."),
+        doi="10.1016/j.pss.2007.04.013",
     ),
     Dataset(
         id="mgs-m-rss-5-sdp-v1.0", mission_id="mgs", instrument="RS (Radio Science)", level="L5 (SDP)",
@@ -1054,6 +1085,7 @@ _REFS = {
     "mgn-v-rss-1-rocc-v2.0": ("jenkins1994", "saunders1992"),
     "gp-j-entry-v1.0": ("seiff1998", "johnson1992"),
     "hp-ssa-hasi-2-3-4-mission-v1.1": ("fulchignoni2005", "fulchignoni2002", "matson2002"),
+    "hp-ssa-dtwg-6-trajectory-v1.0": ("kazeminejad2007", "matson2002"),
     "mgs-m-rss-5-sdp-v1.0": ("tyler2001", "hinson1999", "albee2001"),
     "mro-m-rss-5-tps-v1.0": ("hinson2008", "hinson1999", "zurek2007"),
     "mer-m-imu-5-edl-derived-v1.0": ("withers2006",),
@@ -1077,6 +1109,12 @@ _REFS = {
     "issdc-mom": ("arunan2015",),
     "issdc-ch2": (),
 }
+# Entry and descent probes and landers: the Geometry tab draws the probe's own descent
+# (its reconstructed positions, its trajectory data set or its SPK), not the orbiter's orbit
+DESCENT_DATA_SETS = {"gp-j-entry-v1.0", "hp-ssa-hasi-2-3-4-mission-v1.1", "hp-ssa-dtwg-6-trajectory-v1.0",
+                     "vega1-vega2-v-2-3-venus-v1.0", "mer-m-imu-5-edl-derived-v1.0", "phx-m-ase-5-edl-rdr-v1.0",
+                     "msl-edl-atmosphere", "insight-edl-atmosphere", "pds-pvo-pioneervenusprobeslaslnm"}
+
 # First and last observation dates of the data sets read on a first search, from their
 # archive indexes (October 2026); "" for data sets still growing.  The mission's own data:
 # ancillary files dated decades earlier are left out
@@ -1088,6 +1126,7 @@ COVERAGE = {
     "corss_occul_el_dens": ("2006-03-19", "2016-05-06"),
     "gp-j-entry-v1.0": ("1995-12-07", "1995-12-07"),
     "hp-ssa-hasi-2-3-4-mission-v1.1": ("2005-01-14", "2005-01-14"),
+    "hp-ssa-dtwg-6-trajectory-v1.0": ("2005-01-14", "2005-01-14"),
     "insight-edl-atmosphere": ("2018-11-26", "2018-11-26"),
     "jno-fgm-3-cal-v1.0": ("2011-08-25", ""),
     "jno-j-jnc-2-3-edr-rdr-v1.0": ("2011-08-26", ""),

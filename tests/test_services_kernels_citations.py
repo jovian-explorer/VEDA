@@ -532,3 +532,27 @@ def test_occultation_geometry_against_spice_with_real_kernels(monkeypatch):
     assert g["subearth"]["lon"] == pytest.approx(np.degrees(lon) % 360, abs=0.01)
     assert g["subearth"]["lat"] == pytest.approx(np.degrees(lat), abs=0.01)
     assert g["reference_radius_km"] == 3389.5
+
+
+def test_galileo_probe_track_from_its_own_spk(monkeypatch):
+    """The Galileo probe's own SPK (NAIF -344, s960730a.bsp) puts it at 6.53 N, 4.94 W at
+    the data set's entry time 22:04:44; the mission catalogue (gp_0001 MISSION.CAT) gives
+    the entry point as 6.54 N, 4.46 W (0.5 deg apart: about 12 s along the 47 km/s entry
+    track).  The kernel ends at 22:05:59, before the descent.  Skipped without the kernels."""
+    import os
+    from pathlib import Path
+    from veda.archives.datasets import get_dataset
+    from veda.geometry import compute
+    src = Path(os.environ.get("LOCALAPPDATA", "")) / "VEDA" / "cache" / "spice"
+    ds = get_dataset("gp-j-entry-v1.0")
+    names = ("naif0012.tls", "pck00011.tpc", "de440s.bsp", ds.probe_spk[1].rsplit("/", 1)[1])
+    if not all((src / n).is_file() for n in names):
+        pytest.skip("SPICE kernels not on this computer")
+    monkeypatch.setattr(kernels, "KERNEL_DIR", src)
+    plan = kernels.KernelPlan(urls=[f"https://x/{n}" for n in names])
+    t = compute.probe_track(plan, ds.probe_spk[0], "jupiter", ds.fixed_time)
+    i = min(range(len(t["utc"])), key=lambda k: abs(dt.datetime.fromisoformat(t["utc"][k]) -
+                                                     dt.datetime(1995, 12, 7, 22, 4, 44)))
+    assert t["lat"][i] == pytest.approx(6.54, abs=0.05)
+    assert (360.0 - t["lon"][i]) == pytest.approx(4.46, abs=0.6)
+    assert t["utc"][-1] <= "1995-12-07T22:05:59"

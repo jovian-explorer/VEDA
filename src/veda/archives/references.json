@@ -6585,6 +6585,33 @@
     }
    ],
    "note": "Ortho-para conversion times and the equilibrium, normal and intermediate heat capacities of hydrogen. Checked on Crossref."
+  },
+  {
+   "key": "kazeminejad2007",
+   "authors": [
+    "Kazeminejad, B.",
+    "Atkinson, D. H.",
+    "Pérez-Ayúcar, M.",
+    "Lebreton, J.-P.",
+    "Sollazzo, C."
+   ],
+   "et_al": false,
+   "year": 2007,
+   "title": "Huygens' entry and descent through Titan's atmosphere: Methodology and results of the trajectory reconstruction",
+   "journal": "Planetary and Space Science",
+   "volume": "55",
+   "issue": "13",
+   "pages": "1845-1876",
+   "doi": "10.1016/j.pss.2007.04.013",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "huygens",
+     "payload": "DTWG"
+    }
+   ],
+   "note": "Reconstructed Huygens entry and descent trajectory (HP-SSA-DTWG-6-TRAJECTORY-V1.0)."
   }
  ]
 }

@@ -1090,26 +1090,62 @@ def test_preview_says_a_product_is_recognised(client):
     assert pv["suggested"]["mission_id"] == "akatsuki"        # (the label says VENUS CLIMATE ORBITER)
 
 
-def test_no_orbit_geometry_for_probes_or_dates_without_a_clock_time(client):
-    """SPICE draws the mission's spacecraft: for the Huygens probe that was Cassini's orbit,
-    and a CRISM limb profile dated to the day put MRO's position at midnight; both were
-    shown as the observation."""
+def test_no_orbit_geometry_for_dates_without_a_clock_time(client):
+    """A CRISM limb profile dated to the day put MRO's position at midnight, shown as the
+    observation."""
     from veda.archives import catalog
     row = {"volume": "TESTVOL", "path": "x/p.lbl", "stop_time": "", "target": "", "product_type": "Profile",
-           "kind": "profile", "extra": "{}"}
-    rows = [{**row, "dataset_id": "hp-ssa-hasi-2-3-4-mission-v1.1", "product_id": "GEO_T1", "start_time": "2005-01-14T09:00:00"},
-            {**row, "dataset_id": "mro-crism-smith2013-aerosol", "product_id": "GEO_T2", "start_time": "2010-03-01"}]
+           "kind": "profile", "extra": "{}", "dataset_id": "mro-crism-smith2013-aerosol", "product_id": "GEO_T2",
+           "start_time": "2010-03-01"}
     with catalog._db_lock, catalog._connect() as conn:
-        conn.executemany("INSERT OR REPLACE INTO products VALUES (:dataset_id,:product_id,:volume,:path,"
-                         ":start_time,:stop_time,:target,:product_type,:kind,:extra)", rows)
+        conn.execute("INSERT OR REPLACE INTO products VALUES (:dataset_id,:product_id,:volume,:path,"
+                     ":start_time,:stop_time,:target,:product_type,:kind,:extra)", row)
     try:
-        r = client.get("/api/veda/geometry/hp-ssa-hasi-2-3-4-mission-v1.1/GEO_T1")
-        assert r.status_code == 422 and "Huygens probe" in r.json()["detail"]
         r = client.get("/api/veda/geometry/mro-crism-smith2013-aerosol/GEO_T2")
         assert r.status_code == 422 and "without a clock time" in r.json()["detail"]
     finally:
         with catalog._db_lock, catalog._connect() as conn:
             conn.execute("DELETE FROM products WHERE volume='TESTVOL'")
+
+
+def _dtwg_profile():
+    from pathlib import Path
+    from veda.archives.datasets import get_dataset
+    from veda.archives.profiles import profile_from_label
+    lbl = Path(__file__).parent / "data" / "huygens_dtwg" / "HUY_DTWG_DESCENT_POS.LBL"
+    return profile_from_label(get_dataset("hp-ssa-dtwg-6-trajectory-v1.0"),
+                              {"product_id": "HUY_DTWG_DESCENT_POS", "start_time": "2005-01-14T09:10:20.999",
+                               "volume": "hpdtwg_0001", "url": "", "product_type": "Descent trajectory"}, lbl)
+
+
+def test_huygens_descent_trajectory_from_the_dtwg_file():
+    """The reconstructed Huygens descent (HP-SSA-DTWG-6-TRAJECTORY-V1.0): west longitudes
+    turned east, altitudes from the 2575 km sphere to VEDA's 2574.7 km; it lands at
+    10.25 S, 167.68 E (Kazeminejad et al. 2007: 10.3 S, 167.7 E)."""
+    p = _dtwg_profile()
+    lon, lat = p.track["longitude"], p.track["latitude"]
+    assert lat[-1] == pytest.approx(-10.2507, abs=1e-3) and lon[-1] == pytest.approx(167.6753, abs=1e-3)
+    assert lon[0] == pytest.approx(360.0 - 195.943, abs=1e-3)          # 195.943 W
+    assert p.altitude_km[-1] == pytest.approx(0.3, abs=1e-6) and p.altitude_km[0] > 140
+    assert p.pressure_hpa[-1] == pytest.approx(1466.45)
+
+
+def test_descent_probe_geometry_is_the_probes_own_track(client, monkeypatch):
+    """The Geometry tab of a Huygens HASI profile draws the probe's measured descent
+    (DTWG), not Cassini's orbit; HASI's own files have no position."""
+    from veda.api import archive_routes
+    from veda.core.models import ObservationProfile
+    hasi = ObservationProfile(observation_id="H", mission_id="cassini", body_id="titan",
+                              instrument="HASI", time_utc="2005-01-14T09:10:00",
+                              altitude_km=np.array([100.0, 50.0]), temperature_k=np.array([150.0, 80.0]))
+    dtwg = _dtwg_profile()
+    monkeypatch.setattr(archive_routes, "load_profile",
+                        lambda ds, pid: dtwg if ds.startswith("hp-ssa-dtwg") else hasi)
+    monkeypatch.setattr(archive_routes.catalog, "get_product", lambda ds, pid: {"product_id": pid})
+    g = client.get("/api/veda/geometry/hp-ssa-hasi-2-3-4-mission-v1.1/HASI_X").json()
+    assert g["mode"] == "descent" and "hp-ssa-dtwg-6-trajectory-v1.0" in g["source"]
+    assert g["track"]["lat"][-1] == pytest.approx(-10.2507, abs=1e-3)
+    assert g["track"]["utc"][0].startswith("2005-01-14T09:1")
 
 
 def test_orbit_geometry_of_ground_station_times_is_one_light_time_earlier(client, monkeypatch):

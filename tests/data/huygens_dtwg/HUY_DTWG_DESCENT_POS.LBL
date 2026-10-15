@@ -1,0 +1,168 @@
+PDS_VERSION_ID                 = PDS3
+/* VEDA test copy: every 25th row (and the last) of the archive table hpdtwg_0001/DATA */
+
+RECORD_TYPE                    = FIXED_LENGTH
+RECORD_BYTES                   = 167
+FILE_RECORDS                   = 354
+LABEL_RECORDS                  = NULL
+DESCRIPTION                    = "Reconstructed probe position during descent in 
+                                 Titan fixed spherical coordinates"
+^TABLE                         = "HUY_DTWG_DESCENT_POS.TAB"
+
+DATA_SET_ID                    = "HP-SSA-DTWG-6-TRAJECTORY-V1.0"
+
+FILE_NAME                      = "HUY_DTWG_DESCENT_POS.TAB"
+PRODUCT_ID                     = "HUY_DTWG_DESCENT_POS"
+MISSION_NAME                   = "CASSINI-HUYGENS"
+MISSION_PHASE_NAME             = "ENTRY"
+INSTRUMENT_HOST_NAME           = "HUYGENS PROBE"
+INSTRUMENT_HOST_ID             =  HP
+INSTRUMENT_ID                  = "DTWG"
+INSTRUMENT_TYPE                = "UNK"
+PRODUCT_NAME                   = "HUY_DTWG_DESCENT_POS"
+PRODUCT_TYPE                   = "DDR"
+TARGET_NAME                    = "TITAN"
+
+START_TIME                     = 2005-01-14T09:10:20.999     
+STOP_TIME                      = 2005-01-14T11:38:10.769   
+
+PRODUCT_CREATION_TIME          = 2006-07-10T00:00:00.000 
+PRODUCER_ID                    = "DTWG_TEAM"
+PRODUCER_FULL_NAME             = "BOBBY KAZEMINEJAD"
+PRODUCER_INSTITUTION_NAME      = "AUSTRIAN ACADEMY OF SCIENCES"
+
+OBJECT                         = TABLE
+  INTERCHANGE_FORMAT           = ASCII
+  ROWS                         = 354
+  COLUMNS                      = 11
+  ROW_BYTES                    = 167
+  DESCRIPTION                  = "N/A"
+
+OBJECT                         = COLUMN
+  COLUMN_NUMBER                = 1
+  NAME                         = ET_EPOCH
+  DATA_TYPE                    = ASCII_REAL
+  START_BYTE                   = 1
+  BYTES                        = 15
+  FORMAT                       = "F15.2"	
+  UNIT                         = SECOND 
+  DESCRIPTION                  = "Ephemeris Time in seconds past J2000"	
+END_OBJECT                     = COLUMN 
+
+
+OBJECT                         = COLUMN
+  COLUMN_NUMBER                = 2
+  NAME                         = ELAPSED_TIME
+  DATA_TYPE                    = ASCII_REAL
+  START_BYTE                   = 19
+  BYTES                        = 10
+  FORMAT                       = "N/A"
+  UNIT                         = SECOND 
+  DESCRIPTION                  = "Elapsed time from T0 (initiation of parachute Sequence) 
+                                 in seconds. "	
+END_OBJECT                     = COLUMN 
+
+OBJECT                         = COLUMN
+     COLUMN_NUMBER             = 3
+     NAME                      = "(MISSION) TIME"
+     UNIT                      = "N/A" 
+     DATA_TYPE                 = TIME
+     START_BYTE                = 33
+     BYTES                     = 23
+     FORMAT                    = A23
+ END_OBJECT                    = COLUMN
+
+
+OBJECT                         = COLUMN
+     COLUMN_NUMBER             = 4
+     NAME                      = "ATMOSPHERIC PRESSURE"
+     UNIT                      = "MILLIBAR" 
+     DATA_TYPE                 = ASCII_REAL
+     START_BYTE                = 58
+     BYTES                     = 13
+     FORMAT                    = A23
+ END_OBJECT                    = COLUMN
+
+
+
+OBJECT                         = COLUMN
+  COLUMN_NUMBER                = 5
+  NAME                         = REF_ALT
+  DATA_TYPE                    = ASCII_REAL
+  START_BYTE                   = 74
+  BYTES                        = 12
+  FORMAT                       = "N/A"  
+  UNIT                         = KILOMETERS 
+  DESCRIPTION                  = "Huygens probe entry altitude with respect to the
+                                  reference sphere of 2575 km from planet center"
+END_OBJECT                     = COLUMN 
+
+ OBJECT                        = COLUMN
+  COLUMN_NUMBER                = 6
+  NAME                         = WEST_LON
+  DATA_TYPE                    = ASCII_REAL
+  START_BYTE                   = 89
+  BYTES                        = 12
+  FORMAT                       = "N/A"  
+  UNIT                         = DEGREES 
+  DESCRIPTION                  = "Huygens probe descent phase west longitude"
+END_OBJECT                     = COLUMN 
+
+
+ OBJECT                        = COLUMN
+  COLUMN_NUMBER                = 7
+  NAME                         = LAT
+  DATA_TYPE                    = ASCII_REAL
+  START_BYTE                   = 104
+  BYTES                        = 12
+  FORMAT                       = "N/A"  
+  UNIT                         = DEGREES 
+  DESCRIPTION                  = "Huygens probe descent phase latitude"
+END_OBJECT                     = COLUMN 
+
+OBJECT                         = COLUMN
+     COLUMN_NUMBER             = 8
+     NAME                      = "ATMOSPHERIC_PRESSURE_ERROR"
+     UNIT                      = "MILLIBAR" 
+     DATA_TYPE                 = ASCII_REAL
+     START_BYTE                = 120
+     BYTES                     = 10
+     FORMAT                    = A23
+ END_OBJECT                    = COLUMN
+
+OBJECT                         = COLUMN
+  COLUMN_NUMBER                = 9
+  NAME                         = REF_ALT_ERROR
+  DATA_TYPE                    = ASCII_REAL
+  START_BYTE                   = 132
+  BYTES                        = 10
+  FORMAT                       = "N/A"  
+  UNIT                         = KILOMETER 
+  DESCRIPTION                  = "1-sigma error of probe reference altitude"
+END_OBJECT                     = COLUMN 
+
+
+OBJECT                         = COLUMN
+  COLUMN_NUMBER                = 10
+  NAME                         = "WEST_LON_ERROR"
+  DATA_TYPE                    = ASCII_REAL
+  START_BYTE                   = 144
+  BYTES                        = 10
+  FORMAT                       = "F13.2"	
+  UNIT                         = DEGREE 
+  DESCRIPTION                  = "Descent phase west longitude 1-sigma error"	
+END_OBJECT                     = COLUMN 
+
+OBJECT                         = COLUMN
+  COLUMN_NUMBER                = 11
+  NAME                         = "LAT_ERROR"
+  DATA_TYPE                    = ASCII_REAL
+  START_BYTE                   = 156
+  BYTES                        = 10
+  FORMAT                       = "F13.2"	
+  UNIT                         = DEGREE 
+  DESCRIPTION                  = "Descent phase latitude 1-sigma error"	
+END_OBJECT                     = COLUMN 
+
+END_OBJECT                     = TABLE 
+END

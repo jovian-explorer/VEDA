@@ -44,19 +44,32 @@ left off the maps and counted.
 ## High
 
 ### H1. Probe data sets drawn with the orbiter's orbit
-- **Where:** `api/archive_routes.py:306-313` with `geometry/kernels.py` `MISSION_SPICE`.
-  Data sets: `gp-j-entry-v1.0` (`archives/datasets.py:427`, mission `galileo`) and
-  `hp-ssa-hasi-2-3-4-mission-v1.1` (`:451`, mission `cassini`).
-- **What:** the Geometry tab draws the mission's NAIF spacecraft: the Galileo orbiter (-77) and
-  Cassini (-82), not the Galileo probe (-344) or Huygens (-150). The tab labels it as "the
-  observation".
-- **Wrong:** this is the wrong vehicle. The probe descended through the atmosphere hundreds to
-  thousands of km from the orbiter.
-- **Verify:** the probe's own SPK (Huygens: `huygens_*.bsp` in the Cassini kernels) against the
-  drawn track.
-- **Fix:** refuse orbit geometry for descent-probe data sets (also the Pioneer Venus probes) and
-  say why. Their positions are in the profile itself.
-- **Status:** fixed (see CHANGELOG, "Geometry").
+- **Where:** `api/archive_routes.py` (geometry), `geometry/compute.py`. Data sets: Galileo probe
+  `gp-j-entry-v1.0`, Huygens HASI `hp-ssa-hasi-2-3-4-mission-v1.1`, VEGA 2 lander, Pioneer Venus
+  probes, and the Mars entry profiles (MER, Phoenix, MSL, InSight).
+- **What:** the Geometry tab drew the mission's NAIF spacecraft, Galileo orbiter (-77) and Cassini
+  (-82), not the probe, and labelled it as the observation.
+- **Wrong:** this is the wrong vehicle. A first fix refused geometry for probes; the owner pointed
+  out that descent probes have their own trajectories.
+- **Fix:** each probe gets its own track, in this order:
+  1. the profile's own reconstructed positions (MER, Phoenix, MSL, InSight);
+  2. the probe's trajectory data set: Huygens, the reconstructed descent
+     HP-SSA-DTWG-6-TRAJECTORY-V1.0 (Kazeminejad et al. 2007, doi:10.1016/j.pss.2007.04.013), added as
+     a data set;
+  3. the probe's own SPK: Galileo probe, NAIF -344, s960730a.bsp, which ends at entry.
+  Without any of these (VEGA 2 lander, Pioneer Venus probes) the tab says that no position is known.
+- **Verify:**
+  - DTWG landing site 10.25 S, 167.68 E against Kazeminejad et al. (10.3 S, 167.7 E), tested on the
+    archive file.
+  - Galileo probe SPK at the data set's entry time 22:04:44: 6.53 N, 4.94 W. The mission catalogue
+    (gp_0001 MISSION.CAT) gives 6.54 N, 4.46 W: 0.5 deg apart, about 12 s along the 47 km/s entry
+    track. Tested with the kernel.
+- **Status:** fixed.
+- **Still open:**
+  - The Galileo probe's descent drift is in the DWE trajectory file (`dwe/probetrj.tab`, EME50 vectors
+    with local unit vectors), not yet read.
+  - The Pioneer Venus and VEGA entry sites are given in their documents, not as data.
+  - The body map still draws one point per profile, not the descent line.
 
 ### H2. Date-only times drawn as the observation (CRISM limb profiles)
 - **Where:** `api/archive_routes.py:306-313`, `geometry/compute.py:184` (`orbit_geometry`). Data sets

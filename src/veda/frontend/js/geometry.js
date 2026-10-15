@@ -55,7 +55,7 @@ export async function showGeometry(box, { dataset_id, product_id }) {
     state.data = r.data;
     import('./citations.js').then(m => m.recordFeature('geometry')).catch(() => {});
     if (state.data.mode === 'orbit' && !ORBIT_VIEWS.some(([k]) => k === state.view)) state.view = 'orbit-fixed';
-    if (state.data.mode !== 'orbit' && !VIEWS.some(([k]) => k === state.view)) state.view = 'orbit-fixed';
+    if (state.data.mode === 'occultation' && !VIEWS.some(([k]) => k === state.view)) state.view = 'orbit-fixed';
     render(box);
   } catch (err) {
     box.innerHTML = `<div class="hint text-danger">Geometry unavailable: ${esc(err.message)}</div>`;
@@ -128,8 +128,56 @@ function renderOrbit(box) {
 
 const fmtKm = (v) => (v >= 1e5 ? `${(v / 1e3).toFixed(0)} thousand km` : `${v.toFixed(v < 100 ? 1 : 0)} km`);
 
+// An entry or descent probe: its own track (reconstructed positions, its trajectory data
+// set or its SPK), never the orbiter's orbit
+function renderDescent(box) {
+  const g = state.data, t = g.track, n = t.lat.length - 1;
+  const views = [['map', 'Descent track'], ['alt', 'Altitude along the descent']];
+  if (!views.some(([k]) => k === state.view)) state.view = 'map';
+  box.innerHTML = `
+    <div class="geo-head"><div class="geo-tabs" role="tablist">
+      ${views.map(([k, l]) => `<button type="button" class="view-subtab-btn ${state.view === k ? 'active' : ''}" data-view="${k}">${l}</button>`).join('')}
+    </div></div>
+    <div id="geo-plot" class="geo-plot"></div>
+    <div class="diagnostics-bar geo-facts">
+      ${t.utc ? `<div class="diag-chip"><strong>Time (UTC):</strong> ${esc(t.utc[0])} to ${esc(t.utc[n].slice(11))}</div>` : ''}
+      <div class="diag-chip"><strong>Start:</strong> ${t.lat[0].toFixed(2)}°, ${t.lon[0].toFixed(2)}°E, ${fmtKm(t.alt_km[0])}</div>
+      <div class="diag-chip"><strong>End:</strong> ${t.lat[n].toFixed(2)}°, ${t.lon[n].toFixed(2)}°E, ${fmtKm(t.alt_km[n])}</div>
+    </div>
+    <p class="hint">Positions: ${esc(g.source)}. Latitudes planetocentric, longitudes east.</p>`;
+  box.querySelectorAll('[data-view]').forEach(btn => btn.addEventListener('click', () => { state.view = btn.dataset.view; renderDescent(box); }));
+  draw();
+}
+
+function descentPlot(div) {
+  const g = state.data, t = g.track;
+  const hover = t.lat.map((la, i) => `${t.utc ? `${t.utc[i]}<br>` : ''}${la.toFixed(3)}°, ${t.lon[i].toFixed(3)}°E<br>${fmtKm(t.alt_km[i])}`);
+  if (state.view === 'alt') {
+    window.Plotly.newPlot(div, [{ type: 'scatter', mode: 'lines', x: t.utc || t.lon, y: t.alt_km, text: hover, hoverinfo: 'text',
+      line: { color: '#ef4444', width: plotStyle.lineWidth }, name: 'Probe' }], themedLayout({
+      title: { text: `${g.body_name}: probe altitude` },
+      xaxis: t.utc ? { type: 'date', title: { text: 'UTC' } } : { title: { text: 'Longitude (°E)' } },
+      yaxis: { title: { text: 'Altitude (km)' } }, margin: { l: 70, r: 20, t: 50, b: 60 },
+    }), { responsive: true });
+    return;
+  }
+  const lon = t.lon.map(v => ((v + 540) % 360) - 180), n = t.lat.length - 1;
+  window.Plotly.newPlot(div, [
+    { type: 'scattergeo', mode: 'lines+markers', lat: t.lat, lon, name: 'Descent', text: hover, hoverinfo: 'text',
+      line: { color: '#ef4444', width: 3 }, marker: { size: 3, color: t.alt_km, colorscale: 'Viridis', showscale: true,
+        colorbar: { title: { text: 'Altitude (km)' }, thickness: 12, len: 0.6 } } },
+    { type: 'scattergeo', mode: 'markers', lat: [t.lat[n]], lon: [lon[n]], name: 'Last position',
+      marker: { size: 11, color: '#f59e0b', symbol: 'star' } },
+  ], themedLayout({
+    title: { text: `${g.body_name}: probe descent (planetocentric, east longitude)` },
+    geo: { ...geoLayout(t.lat[n], lon[n]), projection: { type: 'orthographic', rotation: { lat: t.lat[n], lon: lon[n] } } },
+    legend: { orientation: 'h', y: -0.05 }, margin: { l: 10, r: 10, t: 50, b: 40 },
+  }), { responsive: true });
+}
+
 function render(box) {
   const g = state.data;
+  if (g.mode === 'descent') return renderDescent(box);
   if (g.mode === 'orbit') return renderOrbit(box);
   const b = g.straight_line_minus_product_radius;
   box.innerHTML = `
@@ -161,6 +209,7 @@ const avg = (a) => a.reduce((s, v) => s + v, 0) / Math.max(1, a.length);
 function draw() {
   const div = document.getElementById('geo-plot');
   if (!div || !window.Plotly || !state.data) return;
+  if (state.data.mode === 'descent') return descentPlot(div);
   if (state.data.mode === 'orbit') {
     ({ 'orbit-fixed': () => orbitTrack3d(div), map: () => groundTrack(div), timeline: () => timeline(div) })[state.view]();
     return;

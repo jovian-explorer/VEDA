@@ -401,6 +401,11 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
             track[key] = a
         elif _meta_value(tbl, cols.get(key)) is not None:
             header[key] = _meta_value(tbl, cols.get(key))      # one value per profile (header table)
+    if ds.west_longitude:
+        if "longitude" in track:
+            track["longitude"] = np.mod(-np.asarray(track["longitude"], dtype=float), 360.0)
+        if "longitude" in header:
+            header["longitude"] = (-header["longitude"]) % 360.0
     et = _col(tbl, cols.get("et"))
     if et is not None:
         track["et"] = et
@@ -618,6 +623,8 @@ def _add_solar_geometry(prof: ObservationProfile, ds: Optional[Dataset]) -> None
         ok = np.isfinite(et) & np.isfinite(z) if z.size == et.size else np.isfinite(et)
         i = int(np.nanargmin(np.where(ok, z, np.nan))) if z.size == et.size and ok.any() else int(np.nanargmin(et))
         time = sg.et_to_utc(et[i])
+        if not prof.time_utc:
+            prof.time_utc = time                     # (a catalogue without times)
         if ds is not None and ds.times_earth_received:
             lt = sg.light_time_s(prof.body_id, time)
             if lt:

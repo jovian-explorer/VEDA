@@ -256,10 +256,6 @@ def target_body(ds, prod) -> str:
     return ds.body_ids[0]
 
 
-_PROBE_DATA_SETS = {"gp-j-entry-v1.0": "the Galileo probe", "hp-ssa-hasi-2-3-4-mission-v1.1": "the Huygens probe",
-                    "pds-pvo-pioneervenusprobeslaslnm": "the Pioneer Venus probes"}
-
-
 def _geometry_inputs(dataset_id: str, product_id: str):
     import datetime as dt
     from ..geometry import kernels
@@ -272,12 +268,12 @@ def _geometry_inputs(dataset_id: str, product_id: str):
                                  "cannot be computed")
     if not prod.get("start_time"):
         raise HTTPException(422, "This product has no observation time")
-    # SPICE gives the mission's spacecraft: for a descent probe that is the orbiter, not the
-    # observation, and a time without a clock time puts it at midnight (CRISM limb dates)
-    if ds.id in _PROBE_DATA_SETS:
-        raise HTTPException(422, f"These data were taken by {_PROBE_DATA_SETS[ds.id]}, not by the {ds.mission_id.upper()} "
-                                 "spacecraft whose orbit VEDA can draw; the probe's positions along its descent are in "
-                                 "the profile itself")
+    if ds.probe_spk:            # the probe's own ephemeris (Galileo probe), not the orbiter's
+        p = kernels.base_plan(target_body(ds, prod))
+        p.urls = list(dict.fromkeys(p.urls + [ds.probe_spk[1]]))
+        p.missing = [u for u in p.urls if not p.local(u).is_file()]
+        return ds, prod, p
+    # a time without a clock time would put the spacecraft at midnight (CRISM limb dates)
     if len(prod["start_time"]) < 13:
         raise HTTPException(422, "This product's time is a date without a clock time, so where the spacecraft was "
                                  "during the observation is not known")
@@ -303,6 +299,10 @@ def geometry(dataset_id: str, product_id: str, span_min: float = Query(90, ge=5,
     from ..core.registry import get_body
     from ..geometry import kernels
     from ..geometry.compute import observation_geometry, orbit_geometry
+    from ..archives.datasets import DESCENT_DATA_SETS
+    ds0 = get_dataset(dataset_id)
+    if ds0 is not None and ds0.id in DESCENT_DATA_SETS and not ds0.probe_spk:
+        return _descent_geometry(ds0, product_id)
     ds, prod, plan = _geometry_inputs(dataset_id, product_id)
     if plan.missing:
         files = [{"name": u.rsplit("/", 1)[1], "url": u, "bytes": kernels.remote_size(u)} for u in plan.missing]
@@ -320,6 +320,15 @@ def geometry(dataset_id: str, product_id: str, span_min: float = Query(90, ge=5,
             tr = prof.track or {}
         except (LookupError, ValueError, net.ArchiveError):
             prof = None
+    if ds.probe_spk:
+        from ..geometry.compute import probe_track
+        try:
+            t = probe_track(plan, ds.probe_spk[0], body_id, prod["start_time"])
+        except LookupError as exc:
+            raise HTTPException(422, str(exc))
+        return _descent_result(ds, body_id, t, f"SPICE: the probe's own ephemeris ({ds.probe_spk[1].rsplit('/', 1)[1]}, "
+                               f"NAIF {ds.probe_spk[0]}), which ends at entry, {t['utc'][-1]}; the descent after it is "
+                               "not in the kernel (the probe drifted with the winds)")
     if "et" not in tr:
         start, stop = prod["start_time"], prod.get("stop_time") or prod["start_time"]
         if ds.times_earth_received:
@@ -347,6 +356,56 @@ def geometry(dataset_id: str, product_id: str, span_min: float = Query(90, ge=5,
     g["kernels"] = [u.rsplit("/", 1)[1] for u in plan.urls]
     g["ephemeris_source"] = kernels.MISSION_SPICE[ds.mission_id].source
     return g
+
+
+def _descent_result(ds, body_id: str, t: Dict[str, Any], source: str) -> Dict[str, Any]:
+    from ..core.registry import get_body
+    b = get_body(body_id)
+    return {"mode": "descent", "body_id": body_id, "body_name": b.name, "radius_km": b.radius_km,
+            "dataset_id": ds.id, "source": source, "track": t}
+
+
+def _descent_geometry(ds, product_id: str) -> Dict[str, Any]:
+    """Where an entry or descent probe was: its own reconstructed positions per level, or
+    its trajectory data set (Huygens: DTWG), as measured; no SPICE, no orbiter."""
+    import numpy as np
+    from ..analysis.solar_geometry import et_to_utc
+    body_id = ds.body_ids[0]
+    try:
+        prof = load_profile(ds.id, product_id)
+    except (LookupError, ValueError, net.ArchiveError) as exc:
+        raise HTTPException(422, f"The profile could not be read: {exc}")
+    tr, label = prof.track or {}, f"its own reconstructed positions ({ds.id})"
+    if not ("latitude" in tr and "longitude" in tr) and ds.descent_trajectory:
+        tid, tpid = ds.descent_trajectory
+        try:
+            if catalog.get_product(tid, tpid) is None:
+                catalog.refresh_dataset(get_dataset(tid))
+            prof = load_profile(tid, tpid)
+        except (LookupError, ValueError, net.ArchiveError) as exc:
+            raise HTTPException(422, f"The probe's trajectory ({tid}) could not be read: {exc}")
+        tr, label = prof.track or {}, f"the reconstructed descent trajectory {tid} ({tpid})"
+    if not ("latitude" in tr and "longitude" in tr):
+        raise HTTPException(422, "These files give no position of the probe along its descent, and VEDA has no "
+                                 "trajectory for it")
+    lat = np.asarray(tr["latitude"], float)
+    lon = np.mod(np.asarray(tr["longitude"], float), 360.0)
+    alt = np.asarray(prof.altitude_km, float)
+    ok = np.isfinite(lat) & np.isfinite(lon) & np.isfinite(alt)
+    idx = np.flatnonzero(ok)
+    if idx.size > 600:
+        idx = idx[np.linspace(0, idx.size - 1, 600).round().astype(int)]
+
+    def rnd(a, d):
+        return [None if not np.isfinite(v) else round(float(v), d) for v in a]
+    t = {"lat": rnd(lat[idx], 4), "lon": rnd(lon[idx], 4), "alt_km": rnd(alt[idx], 3)}
+    if "et" in tr:
+        t["utc"] = [et_to_utc(float(e)) for e in np.asarray(tr["et"], float)[idx]]
+    for k in ("lst", "sza"):
+        if k in tr and np.shape(tr[k]) == alt.shape:
+            t[k] = rnd(np.asarray(tr[k], float)[idx], 3)
+    ref = prof.raw_attributes.get("ALTITUDE_REFERENCE") or "as in the profile"
+    return _descent_result(ds, body_id, t, f"Measured: {label}; altitudes above {ref}")
 
 
 @geometry_router.post("/{dataset_id}/{product_id}/prepare")
