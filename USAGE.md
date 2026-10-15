@@ -283,6 +283,8 @@ VEDA was checked against numbers the instrument teams published from the same fi
 
 One row agrees only in part: the CRISM aphelion-belt ice below 20 km has a median of 2.35 um, under the paper's ">3 um". The paper describes specific belt profiles, and the values grow towards 3 um and above in the upper decile. The archive values are read unchanged.
 
+The Curiosity mesopause is 0.44 K colder in the archived file (99.46 K, read unchanged) than the document's 99.9 +- 0.2 K; its height and pressure agree. The document's value may be smoothed; the file has no other temperature there.
+
 Two of these comparisons found errors, both fixed:
 - **HASI temperatures lost.** The HASI table is semicolon-separated. Below 46 km its pressure gains a digit and every later field moves one byte, so VEDA, reading by byte position, lost 1268 of the 1816 temperatures, including the surface.
 - **Local time off by 0.05 h.** Mars Express local times along the ray path used the lowest level's time for every level, which was 0.05 h off at 130 km.
