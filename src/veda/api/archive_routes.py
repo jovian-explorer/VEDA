@@ -372,7 +372,7 @@ def _descent_geometry(ds, product_id: str) -> Dict[str, Any]:
     from ..archives.trajectories import READERS
     from ..analysis.solar_geometry import et_to_utc
     body_id = ds.body_ids[0]
-    prod = catalog.get_product(ds.id, product_id) or {"kind": "profile"}
+    prod = catalog.get_product(ds.id, product_id) or {}
     reader = next((f for key, f in READERS.items() if key in product_id.upper()), None)
     if reader is not None:                                   # the product is a trajectory itself
         try:
