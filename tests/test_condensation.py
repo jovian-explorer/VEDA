@@ -81,3 +81,19 @@ def test_no_frost_point_above_the_triple_point():
     tc = co2_condensation_temperature(np.array([5000.0, 60000.0, 92000.0]), 1.0)
     assert tc[0] == pytest.approx(3182.48 / (23.3494 - np.log(5000.0)))
     assert np.isnan(tc[1:]).all()
+
+
+def test_frost_point_with_the_archives_co2_fraction_per_level():
+    """SOIR gives the CO2 volume mixing ratio at each level (0.904 at 125 km, 0.755 at 140 km
+    on orbit 335); the frost point used the bulk 0.965 everywhere (0.5 K too warm at 140 km)."""
+    from veda.analysis.atmospheric import compute_atmospheric_diagnostics
+    from veda.core.models import ObservationProfile
+    from veda.core.registry import get_body
+    p = np.array([1e-2, 1e-3, 1e-4])
+    prof = ObservationProfile(observation_id="S", mission_id="vex", body_id="venus", instrument="SOIR",
+                              time_utc="2007-03-29T00:00:00", altitude_km=np.array([110.0, 125.0, 140.0]),
+                              pressure_hpa=p, temperature_k=np.array([170.0, 180.0, 200.0]))
+    prof.derived["co2_fraction"] = np.array([0.947, 0.904, 0.755])
+    d = compute_atmospheric_diagnostics(prof, get_body("venus"))
+    np.testing.assert_allclose(d["co2_condensation_temperature"],
+                               co2_condensation_temperature(p, np.array([0.947, 0.904, 0.755])))

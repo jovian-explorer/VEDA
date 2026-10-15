@@ -363,7 +363,13 @@ def _diagnostics(profile: ObservationProfile, body: BodyInfo) -> Dict[str, np.nd
         # CO2 atmospheres (Mars, Venus): the CO2 frost point and how close T comes to it
         from .condensation import co2_condensation_temperature, co2_volume_fraction
         x_co2 = co2_volume_fraction(body)
-        if x_co2:
+        # the CO2 fraction at each level where the archive gives one (SOIR: 0.90 at 125 km,
+        # 0.43 at 156 km on orbit 335, where the bulk 0.965 put the frost point too warm)
+        x_lev = (profile.derived or {}).get("co2_fraction")
+        if x_co2 and x_lev is not None and np.shape(x_lev) == np.shape(p_hpa):
+            x_lev = np.asarray(x_lev, dtype=float)
+            x_co2 = np.where(np.isfinite(x_lev) & (x_lev > 0) & (x_lev <= 1), x_lev, x_co2)
+        if x_co2 is not None and np.any(x_co2):
             t_co2 = co2_condensation_temperature(p_hpa, x_co2)
             margin = t_k - t_co2
             if np.isfinite(margin).any():

@@ -40,7 +40,7 @@ def co2_volume_fraction(body) -> Optional[float]:
     return float(x) / 100.0 if x else None
 
 
-def co2_condensation_temperature(p_hpa, x_co2: float) -> np.ndarray:
+def co2_condensation_temperature(p_hpa, x_co2) -> np.ndarray:
     """Frost-point temperature (K) of CO2 at total pressure ``p_hpa`` (hPa) and CO2 volume
     fraction ``x_co2`` (module docstring); NaN where the pressure is not positive or the CO2
     pressure is above the triple point."""

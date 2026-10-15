@@ -576,7 +576,7 @@ DATASETS: List[Dataset] = [
         # The mean molar mass at each level (total_molar_mass, g/mol) is kept: it falls from
         # 43.4 below 120 km to about 20 at 175 km (CO2 giving way to O and CO), and the mass
         # density, scale height and the temperature retrieved from the total density use it.
-        repository={"kind": "votable_split", "revision": 4,
+        repository={"kind": "votable_split", "revision": 5,
                     "mask_constant": ("temperature", ("err_temperature", "pressure", "err_pressure")),
                     "mask_zero_sigma": ("err_temperature", ("temperature", "err_temperature", "pressure", "err_pressure")),
                     "url": "https://data.aeronomie.be/dataset/bc9068b4-00c0-41fd-a1fa-54a3afaa14a4/resource/0d385c08-73bc-4106-89da-47e9282d2cad/download/co2_soir_w23.zip",
@@ -585,7 +585,8 @@ DATASETS: List[Dataset] = [
                     "geometry": {"LATITUDE": ("latitude_min", "latitude_max"), "LONGITUDE": ("longitude_min", "longitude_max"),
                                  "LST": ("local_time_min", "local_time_max"), "LS": ("solar_longitude_min", "solar_longitude_max")},
                     "keep": ("altitude", "pressure", "err_pressure", "temperature", "err_temperature",
-                             "total_density", "err_total_density", "total_molar_mass", "err_total_molar_mass")},
+                             "total_density", "err_total_density", "total_molar_mass", "err_total_molar_mass",
+                             "volume_mixing_ratio_SmoothingFactor=1.0")},
         rules=((r"^soir_co2", "Mesosphere and thermosphere profile at the terminator (T, p, n)", "profile"),),
         profile_columns={"altitude": "altitude", "temperature": "temperature", "temperature_sigma": "err_temperature",
                          "pressure": "pressure", "pressure_sigma": "err_pressure", "number_density": "total_density",
@@ -594,7 +595,10 @@ DATASETS: List[Dataset] = [
         column_units={"altitude": "KM", "pressure": "MBAR", "err_pressure": "MBAR", "temperature": "K",
                       "err_temperature": "K", "total_density": "1/CM**3", "total_molar_mass": "G/MOL",
                       "err_total_molar_mass": "G/MOL"},
-        extra_variables={"molar_mass": ("total_molar_mass", "err_total_molar_mass")},
+        # and the CO2 volume mixing ratio at each level (the same for every smoothing factor:
+        # the composition the team's total density and molar mass follow), for the frost point
+        extra_variables={"molar_mass": ("total_molar_mass", "err_total_molar_mass"),
+                         "co2_fraction": ("volume_mixing_ratio_SmoothingFactor=1.0", None)},
         altitude_reference="the Venus surface at the tangent point, as given by the SOIR team",
         citation=("Mahieux, A., et al. (2015). Update of the Venus density and temperature profiles at high altitude measured "
                   "by SOIR on board Venus Express. PSS, 113-114, 309-320. Data: BIRA-IASB, doi:10.18758/71021089 (CC-BY-4.0)."),

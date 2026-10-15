@@ -255,6 +255,12 @@ They are listed so a user can see them.
   now, the CODATA 2018 one (differences of 3e-7).
 - **Status:** fixed.
 
+### L11. CO2 frost point with the bulk CO2 fraction (fixed)
+- **Where:** `analysis/atmospheric.py` (frost point), `archives/datasets.py` (SOIR).
+- **What:** SOIR gives the CO2 volume mixing ratio at each level; the frost point used the bulk 0.965.
+- **Status:** fixed: the per-level fraction is used where the archive gives one (0.5 K at 140 km on
+  orbit 335).
+
 ### L10. Per-level gas constant with a bulk heat capacity (SOIR)
 - **Where:** `analysis/atmospheric.py` (speed of sound, adiabatic lapse rate).
 - **What:** where the archive gives a molar mass per level (SOIR, Venus thermosphere), R follows
