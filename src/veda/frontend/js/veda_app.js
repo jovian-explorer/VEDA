@@ -2184,7 +2184,7 @@ const DIAG_SIGMA = {
   co2_margin_min_k: 'co2_margin_min_sigma_k', tec_tecu: 'tec_sigma_tecu',
 };
 
-// Quantities that depend on gravity (Mars: effective gravity of the MRO120D field) or on the
+// Quantities that depend on gravity (Mars: effective gravity from the MRO120D GM and J2 with rotation) or on the
 // equation of state (Titan: real-gas compressibility)
 const GRAVITY_VARIABLES = new Set(['scale_height', 'buoyancy_freq_sq', 'buoyancy_period', 'dry_adiabatic_lapse_rate',
   'temperature_from_density', 'pressure_from_density', 'wave_potential_energy', 't_prime']);

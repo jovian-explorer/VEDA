@@ -17,6 +17,7 @@ from .. import __version__
 from ..core.models import BodyInfo, ObservationProfile
 from ..core.registry import get_body
 from .uncertainty import error_correlation_from_scatter
+from .thermo import R_MOLAR
 
 
 # Vertical derivatives (lapse rate, N^2, d(theta)/dz) are central differences over at
@@ -59,8 +60,9 @@ def gravity_profile(body: BodyInfo, z_km: np.ndarray, latitude_deg: Optional[flo
                     altitude_reference: str = "") -> Tuple[np.ndarray, str]:
     """Gravity (m/s^2) at the altitudes of a profile, and a description of the model.
 
-    Spherical bodies: g0 (R / (R + z))^2.  Rotating oblate planets with a gravity field
-    in the registry (Jupiter, Saturn), at a known latitude: the magnitude of the
+    Spherical bodies: g0 (R / (R + z))^2.  Rotating oblate planets with GM, J2 and a
+    rotation period in the registry (Mars, Jupiter, Saturn; J2 only, no higher terms), at
+    a known latitude: the magnitude of the
     effective gravity (gravitation with J2, minus the centrifugal acceleration),
         g_r = GM/r^2 [1 - 3 J2 (a/r)^2 P2(sin phi)] - w^2 r cos^2 phi
         g_t = 3 GM J2 a^2 / r^4 sin phi cos phi + w^2 r sin phi cos phi
@@ -432,7 +434,7 @@ def gas_constant_levels(profile: ObservationProfile, body: BodyInfo):
         return body.gas_constant_r
     mu = np.asarray(mu, dtype=float)
     with np.errstate(invalid="ignore", divide="ignore"):
-        return np.where(np.isfinite(mu) & (mu > 0), 8314.46 / mu, body.gas_constant_r)
+        return np.where(np.isfinite(mu) & (mu > 0), 1000.0 * R_MOLAR / mu, body.gas_constant_r)
 
 
 def density_gas_constant(profile: ObservationProfile, body: BodyInfo):
@@ -449,7 +451,7 @@ def density_gas_constant(profile: ObservationProfile, body: BodyInfo):
         mu = float(mu)
     except (TypeError, ValueError):
         return body.gas_constant_r
-    return 8314.46 / mu if mu > 0 else body.gas_constant_r
+    return 1000.0 * R_MOLAR / mu if mu > 0 else body.gas_constant_r
 
 
 def _hydrostatic_retrieval(profile: ObservationProfile, body: BodyInfo, z: np.ndarray, rho: np.ndarray,

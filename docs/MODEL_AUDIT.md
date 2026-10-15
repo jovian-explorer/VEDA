@@ -248,6 +248,21 @@ They are listed so a user can see them.
 - **Fix:** none needed for past observations, which are covered by reconstructed files. To check,
   compare the kernel's comment area.
 
+### L9. Small inconsistencies found in the audit (fixed)
+- `gravity_profile` said it applied to Jupiter and Saturn; Mars uses it too (GM, J2 and rotation;
+  J2 only). The docstring and the interface text now say so.
+- The gas constant was 8314.46 in two places and 8.314462618 in the heat-capacity code: one value
+  now, the CODATA 2018 one (differences of 3e-7).
+- **Status:** fixed.
+
+### L10. Per-level gas constant with a bulk heat capacity (SOIR)
+- **Where:** `analysis/atmospheric.py` (speed of sound, adiabatic lapse rate).
+- **What:** where the archive gives a molar mass per level (SOIR, Venus thermosphere), R follows
+  it, but cp(T) is the bulk CO2-N2 mixture's.
+- **Wrong:** gamma and the adiabatic lapse rate are inconsistent above about 120 km, where atomic O
+  matters.
+- **Fix:** none without the composition per level; documented.
+
 ## Not models: conversions of archive values (for completeness)
 
 The following convert or tidy archive values rather than model anything:
