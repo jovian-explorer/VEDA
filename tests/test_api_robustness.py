@@ -1253,3 +1253,13 @@ def test_body_map_gets_the_descent_track(monkeypatch):
     monkeypatch.setattr(profiles, "load_profile_cached", lambda ds, pid: dtwg)
     assert len(archive_adapter._loaded_position({"dataset_id": "hp-ssa-dtwg-6-trajectory-v1.0", "product_id": "X"})["track"]) == 60
     assert archive_adapter._loaded_position({"dataset_id": "mex-m-mrs-5-occ", "product_id": "X"}) == {}
+
+
+def test_cassini_titan_ionosphere_peak_as_published():
+    """Kliore et al. (2008): the first Cassini radio occultations of Titan's ionosphere
+    (March 2006 - May 2007, zenith angles 86-96 deg) show the main peak near 1200 km with
+    1-3 x 10^3 cm^-3.  The bundled profile of 19 March 2006 (T12)."""
+    from veda.missions.manager import get_mission_manager
+    p = get_mission_manager().load_profile("cassini", "s19tioc2006078_0107_n_sx_14_titan_edp_v01_r00")
+    assert 1150 < p.raw_attributes["hmf2_km"] < 1250 and 1000 < p.raw_attributes["nmf2_cm3"] < 3000
+    assert 86 <= np.nanmedian(p.track["sza"]) <= 96
