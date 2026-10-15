@@ -2438,7 +2438,8 @@ export function renderPlanetaryMap(projection = '2d') {
         type: 'scatter',
         mode: 'markers',
         marker: {
-          size: 11,
+          // a probe with a track: a small marker, so the track drawn over it shows
+          size: obsList.map(o => (Array.isArray(o.track) && o.track.length > 1 ? 5 : 11)),
           color: color,
           symbol: 'circle',
           line: { width: 1.8, color: '#ffffff' },
@@ -2452,7 +2453,7 @@ export function renderPlanetaryMap(projection = '2d') {
     located.filter(o => Array.isArray(o.track) && o.track.length > 1).forEach(o => {
       const lon = o.track.map(([, l]) => (l > 180 ? l - 360 : l));
       traces.push({ x: lon.map((v, i) => (i && Math.abs(v - lon[i - 1]) > 180 ? null : v)), y: o.track.map(([la]) => la),
-        type: 'scatter', mode: 'lines', line: { color: MISSION_COLORS[o.mission_id.toLowerCase()] || '#38bdf8', width: 2.5 },
+        type: 'scatter', mode: 'lines', line: { color: MISSION_COLORS[o.mission_id.toLowerCase()] || '#38bdf8', width: 4 },
         name: `${o.observation_id} descent`, hoverinfo: 'name', showlegend: false });
     });
 
@@ -2565,7 +2566,7 @@ export function renderPlanetaryMap(projection = '2d') {
         type: 'scatter3d',
         mode: 'markers',
         marker: {
-          size: 6,
+          size: obsList.map(o => (Array.isArray(o.track) && o.track.length > 1 ? 3 : 6)),
           color: color,
           symbol: 'circle',
           line: { width: 1.5, color: '#ffffff' }
@@ -2582,7 +2583,7 @@ export function renderPlanetaryMap(projection = '2d') {
         x: o.track.map(([la, lo]) => R * Math.cos(la * rad) * Math.cos(lo * rad)),
         y: o.track.map(([la, lo]) => R * Math.cos(la * rad) * Math.sin(lo * rad)),
         z: o.track.map(([la]) => R * Math.sin(la * rad)),
-        line: { color: MISSION_COLORS[o.mission_id.toLowerCase()] || '#38bdf8', width: 5 } });
+        line: { color: MISSION_COLORS[o.mission_id.toLowerCase()] || '#38bdf8', width: 8 } });
     });
 
     const layout = {
