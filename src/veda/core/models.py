@@ -36,6 +36,10 @@ class BodyInfo:
     rotation_period_h: Optional[float] = None
     equatorial_radius_km: Optional[float] = None
     polar_radius_km: Optional[float] = None
+    # Bodies without a collisional atmosphere (Mercury, Moon, Ceres, Vesta, comets): their
+    # gas constants are placeholders, never used or shown; the composition's source
+    exosphere: bool = False
+    composition_source: str = ""
 
 
 @dataclass

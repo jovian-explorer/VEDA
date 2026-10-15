@@ -271,3 +271,15 @@ def test_body_card_values_come_from_veda_sources():
     assert abs(v["semi_major_axis_au"]["value"] - 0.7233) < 1e-3
     t = c.get("/api/veda/bodies/titan").json()
     assert "reference_surface" not in t and t["semi_major_axis_au"]["of"] == "saturn"
+
+
+def test_exosphere_bodies_show_no_placeholder_gas_constants():
+    """Mercury, the Moon, Ceres, Vesta and 67P carried placeholder molar masses (20 g/mol),
+    heat capacities (1000 J/(kg K)) and uncited compositions, shown as constants."""
+    from fastapi.testclient import TestClient
+    from veda.api.app import create_app
+    c = TestClient(create_app())
+    for b in ("mercury", "moon", "ceres", "vesta", "comet_67p"):
+        d = c.get(f"/api/veda/bodies/{b}").json()
+        assert d["exosphere"] and d["atmospheric_composition"] == {} and d["composition_source"] != "" or b == "vesta"
+    assert not c.get("/api/veda/bodies/mars").json()["exosphere"]

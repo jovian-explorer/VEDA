@@ -171,6 +171,8 @@ left off the maps and counted.
   temperature infinite.
 - **Fix:** mark them as having no atmosphere for derived quantities (none are computed) and say so
   in the interface. VEDA has no profiles of these bodies.
+- **Status:** fixed: flagged as exospheres; the placeholders are no longer shown, and the
+  compositions are replaced by the NSSDCA fact-sheet descriptions.
 
 ## Low
 

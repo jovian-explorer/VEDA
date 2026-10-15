@@ -160,6 +160,7 @@ def get_body_details(body_id: str) -> dict:
         "gas_constant_r": b.gas_constant_r,
         "isobaric_heat_capacity_cp": b.isobaric_heat_capacity_cp,
         "cp_model": cp_model(b),
+        "exosphere": b.exosphere, "composition_source": b.composition_source,
         "reference_pressure_hpa": b.reference_pressure_hpa,
         "atmospheric_composition": b.atmospheric_composition,
         "description": b.description,

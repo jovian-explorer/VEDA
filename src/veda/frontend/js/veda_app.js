@@ -182,9 +182,9 @@ export function renderPlanetaryBodyQuickCard(bodyId, bodyDetails) {
     gravity: d.surface_gravity ? `${fmtGravity(d.surface_gravity)} m/s²` : 'N/A',
     scale_height: ref ? `${ref.scale_height_km.toFixed(1)} km` : 'N/A',
     scale_sub: ref ? `At the surface of the ${escHtml(ref.name)}` : 'No reference atmosphere in VEDA for this body',
-    pressure_bar: d.reference_pressure_hpa ? `${(d.reference_pressure_hpa / 1000).toPrecision(3)} bar (${d.reference_pressure_hpa.toLocaleString()} hPa)` : 'N/A',
+    pressure_bar: d.exosphere ? 'None (exosphere)' : d.reference_pressure_hpa ? `${(d.reference_pressure_hpa / 1000).toPrecision(3)} bar (${d.reference_pressure_hpa.toLocaleString()} hPa)` : 'N/A',
     pressure_sub: giant ? 'The 1-bar level altitudes are counted from (no solid surface)' : 'Mean surface pressure, the reference for potential temperature',
-    composition: Object.entries(d.atmospheric_composition || {}).map(([g, pct]) => `${pct}% ${g}`).join(', ') || 'N/A',
+    composition: Object.entries(d.atmospheric_composition || {}).map(([g, pct]) => `${pct}% ${g}`).join(', ') || escHtml(d.composition_source || 'N/A'),
     temp: ref ? `${ref.temperature_k.toFixed(0)} K (${(ref.temperature_k - 273.15).toFixed(0)} °C)` : 'N/A',
     temp_sub: ref ? `${escHtml(ref.name)}` : 'No reference atmosphere in VEDA for this body',
     sma: sma ? `${sma.value.toFixed(3)} AU (${(sma.value * 149.5978707).toFixed(1)} million km)` : 'N/A',
@@ -499,11 +499,12 @@ export async function loadAndRenderCelestialBody(bodyId) {
       <div class="physics-metrics-row">
         <div class="phys-badge"><strong>Radius:</strong> ${bodyDetails.radius_km.toLocaleString()} km</div>
         <div class="phys-badge"><strong>Gravity g₀:</strong> ${fmtGravity(bodyDetails.surface_gravity)} m/s²</div>
+        ${bodyDetails.exosphere ? `<div class="phys-badge" title="An exosphere: too thin for its molecules to collide, so it has no gas constant, heat capacity or pressure scale"><strong>No collisional atmosphere</strong></div>` : `
         <div class="phys-badge"><strong>Molar mass μ:</strong> ${bodyDetails.mean_molecular_weight} g/mol</div>
         <div class="phys-badge"><strong>Gas Const R:</strong> ${bodyDetails.gas_constant_r} J/(kg K)</div>
         <div class="phys-badge" title="${String(bodyDetails.cp_model || '').startsWith('temperature') ? 'Derived quantities use cp(T) from the JANAF tables of the main gases; this reference value sets the potential-temperature exponent R/cp (Venus: the potential temperature follows the cp(T) fit of Lebonnois et al. 2010, and this is its cp0 at 460 K).' : 'Constant cp used for derived quantities.'}"><strong>c<sub>p</sub>:</strong> ${bodyDetails.isobaric_heat_capacity_cp} J/(kg K)${String(bodyDetails.cp_model || '').startsWith('temperature') ? ' (reference; varies with T)' : ''}</div>
-        <div class="phys-badge"><strong>Ref Pressure:</strong> ${bodyDetails.reference_pressure_hpa >= 1 ? bodyDetails.reference_pressure_hpa.toLocaleString() + ' hPa' : bodyDetails.reference_pressure_hpa + ' hPa'}</div>
-        <div class="phys-badge"><strong>Atmosphere:</strong> ${compStr}</div>
+        <div class="phys-badge"><strong>Ref Pressure:</strong> ${bodyDetails.reference_pressure_hpa >= 1 ? bodyDetails.reference_pressure_hpa.toLocaleString() + ' hPa' : bodyDetails.reference_pressure_hpa + ' hPa'}</div>`}
+        <div class="phys-badge"><strong>Atmosphere:</strong> ${bodyDetails.composition_source && !Object.keys(bodyDetails.atmospheric_composition || {}).length ? escHtml(bodyDetails.composition_source) : compStr}</div>
       </div>
     `;
   }
