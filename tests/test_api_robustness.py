@@ -1194,5 +1194,37 @@ def test_galileo_probe_geometry_is_its_reconstructed_trajectory(client, monkeypa
     lbl = Path(__file__).parent / "data" / "galileo_probe" / "PROBETRJ.LBL"
     monkeypatch.setattr(archive_routes.catalog, "fetch_product", lambda ds, pid: lbl)
     g = client.get("/api/veda/geometry/gp-j-entry-v1.0/DESCENT").json()
-    assert g["mode"] == "descent" and "PROBETRJ" in g["source"] and "winds" in g["source"]
+    assert g["mode"] == "descent" and "probetrj" in g["source"] and "winds" in g["source"]
     assert g["track"]["lat"][0] == pytest.approx(6.53, abs=0.01)
+
+
+def test_vega_balloon_track_and_published_probe_sites(client, monkeypatch):
+    """VEGA balloons carry their VLBI-tracked positions; the Pioneer Venus probes and the
+    VEGA landers give none, so the published sites are shown, labelled as such."""
+    from pathlib import Path
+    from veda.api import archive_routes
+    from veda.archives.trajectories import read_vega_balloon_track
+    lbl = Path(__file__).parent / "data" / "vega_balloon" / "vg1bl_rdr.lbl"
+    t = read_vega_balloon_track(lbl)
+    # deployed near 8.1 N, 176.9 E (vega_host.cat); drifts west at nearly constant latitude
+    assert t["lat"][0] == pytest.approx(8.32, abs=0.01) and t["lon"][0] == pytest.approx(176.16, abs=0.01)
+    assert t["lon"][-1] < 80 and abs(t["lat"][-1] - t["lat"][0]) < 1.5
+    assert 50 < t["alt_km"][0] < 56
+    monkeypatch.setattr(archive_routes.catalog, "get_product", lambda ds, pid: {"product_id": pid, "kind": "other"})
+    monkeypatch.setattr(archive_routes.catalog, "fetch_product", lambda ds, pid: lbl)
+    g = client.get("/api/veda/geometry/vega1-vega2-v-2-3-venus-v1.0/VG1BL_RDR").json()
+    assert g["mode"] == "descent" and "VLBI" in g["source"] and len(g["track"]["lat"]) == 61
+    monkeypatch.setattr(archive_routes.catalog, "get_product", lambda ds, pid: {"product_id": pid, "kind": "other"})
+    g = client.get("/api/veda/geometry/pds-pvo-pioneervenusprobeslaslnm/LP_NMS_X").json()
+    assert g["source"].startswith("Published impact sites") and len(g["sites"]) == 4
+    monkeypatch.setattr(archive_routes, "load_profile", lambda ds, pid: _no_track_profile())
+    monkeypatch.setattr(archive_routes.catalog, "get_product", lambda ds, pid: {"product_id": pid, "kind": "profile"})
+    g = client.get("/api/veda/geometry/vega1-vega2-v-2-3-venus-v1.0/VG2LR").json()
+    assert [s["name"] for s in g["sites"]] == ["VEGA 2 lander"] and g["sites"][0]["lat"] == -7.14
+
+
+def _no_track_profile():
+    from veda.core.models import ObservationProfile
+    return ObservationProfile(observation_id="VG2LR", mission_id="vega", body_id="venus", instrument="METEO",
+                              time_utc="1985-06-15T02:06:16", altitude_km=np.array([60.0, 0.0]),
+                              temperature_k=np.array([250.0, 740.0]))

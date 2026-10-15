@@ -344,54 +344,79 @@ def geometry(dataset_id: str, product_id: str, span_min: float = Query(90, ge=5,
     return g
 
 
-def _descent_result(ds, body_id: str, t: Dict[str, Any], source: str) -> Dict[str, Any]:
+def get_body_info(body_id: str):
     from ..core.registry import get_body
-    b = get_body(body_id)
+    return get_body(body_id)
+
+
+def _descent_result(ds, body_id: str, t: Dict[str, Any], source: str) -> Dict[str, Any]:
+    b = get_body_info(body_id)
     return {"mode": "descent", "body_id": body_id, "body_name": b.name, "radius_km": b.radius_km,
             "dataset_id": ds.id, "source": source, "track": t}
 
 
-def _descent_geometry(ds, product_id: str) -> Dict[str, Any]:
-    """Where an entry or descent probe was: its own reconstructed positions per level, or
-    its trajectory (Huygens: DTWG; Galileo probe: the DWE trajectory file); no orbiter."""
+def _thin(t: Dict[str, List], n_max: int = 600) -> Dict[str, List]:
     import numpy as np
-    from ..archives.trajectories import READERS as TRAJECTORY_READERS
+    n = len(t["lat"])
+    idx = sorted(set(np.linspace(0, n - 1, min(n, n_max)).round().astype(int).tolist())) if n else []
+    return {k: [v[i] for i in idx] for k, v in t.items()}
+
+
+def _descent_geometry(ds, product_id: str) -> Dict[str, Any]:
+    """Where an entry or descent probe was, in this order: its own reconstructed positions
+    per level; its trajectory file (Huygens: DTWG; Galileo probe: the DWE trajectory; VEGA
+    balloons: their tracked positions); else the published landing or impact sites, so
+    labelled.  Never the orbiter's orbit."""
+    import numpy as np
+    from ..archives.datasets import PUBLISHED_SITES
+    from ..archives.trajectories import READERS
     from ..analysis.solar_geometry import et_to_utc
     body_id = ds.body_ids[0]
-    try:
-        prof = load_profile(ds.id, product_id)
-    except (LookupError, ValueError, net.ArchiveError) as exc:
-        raise HTTPException(422, f"The profile could not be read: {exc}")
-    tr, label = prof.track or {}, f"its own reconstructed positions ({ds.id})"
-    if not ("latitude" in tr and "longitude" in tr) and ds.descent_trajectory[1:] and             ds.descent_trajectory[1] in TRAJECTORY_READERS:
-        tid, tpid = ds.descent_trajectory
+    prod = catalog.get_product(ds.id, product_id) or {"kind": "profile"}
+    reader = next((f for key, f in READERS.items() if key in product_id.upper()), None)
+    if reader is not None:                                   # the product is a trajectory itself
         try:
-            t = TRAJECTORY_READERS[tpid](catalog.fetch_product(tid, tpid))
+            t = reader(catalog.fetch_product(ds.id, product_id))
         except (LookupError, ValueError, OSError, net.ArchiveError) as exc:
-            raise HTTPException(422, f"The probe's trajectory ({tid} {tpid}) could not be read: {exc}")
-        n = len(t["utc"])
-        idx = sorted(set(np.linspace(0, n - 1, min(n, 600)).round().astype(int).tolist()))
-        t = {k: [v[i] for i in idx] for k, v in t.items()}
-        return _descent_result(ds, body_id, t, f"Reconstructed: the navigation team's post-entry trajectory "
-                               f"({tid} {tpid}); latitudes planetocentric, System III longitudes; it leaves out the "
-                               "eastward drift with the winds during the descent (about 0.4 deg)")
-    if not ("latitude" in tr and "longitude" in tr) and ds.descent_trajectory:
+            raise HTTPException(422, f"The track could not be read: {exc}")
+        src = t.pop("source", "") or f"Measured: {product_id}"
+        return _descent_result(ds, body_id, _thin(t), src)
+    prof, tr, label = None, {}, f"its own reconstructed positions ({ds.id})"
+    if prod.get("kind") == "profile":
+        try:
+            prof = load_profile(ds.id, product_id)
+            tr = prof.track or {}
+        except (LookupError, ValueError, net.ArchiveError) as exc:
+            raise HTTPException(422, f"The profile could not be read: {exc}")
+    has_track = "latitude" in tr and "longitude" in tr
+    if not has_track and ds.descent_trajectory:
         tid, tpid = ds.descent_trajectory
         try:
             if catalog.get_product(tid, tpid) is None:
                 catalog.refresh_dataset(get_dataset(tid))
+            if tpid in READERS:
+                t = READERS[tpid](catalog.fetch_product(tid, tpid))
+                src = t.pop("source", "")
+                return _descent_result(ds, body_id, _thin(t), src)
             prof = load_profile(tid, tpid)
-        except (LookupError, ValueError, net.ArchiveError) as exc:
-            raise HTTPException(422, f"The probe's trajectory ({tid}) could not be read: {exc}")
+        except (LookupError, ValueError, OSError, net.ArchiveError) as exc:
+            raise HTTPException(422, f"The probe's trajectory ({tid} {tpid}) could not be read: {exc}")
         tr, label = prof.track or {}, f"the reconstructed descent trajectory {tid} ({tpid})"
-    if not ("latitude" in tr and "longitude" in tr):
-        raise HTTPException(422, "These files give no position of the probe along its descent, and VEDA has no "
-                                 "trajectory for it")
+        has_track = "latitude" in tr and "longitude" in tr
+    if not has_track:
+        sites = PUBLISHED_SITES.get(ds.id)
+        if not sites:
+            raise HTTPException(422, "These files give no position of the probe, and VEDA has no trajectory for it")
+        chosen = [x for x in sites["sites"] if x.get("product") and x["product"] in product_id.lower()] or \
+            [x for x in sites["sites"] if not x.get("product")] or sites["sites"]
+        b = get_body_info(body_id)
+        return {"mode": "descent", "body_id": body_id, "body_name": b.name, "radius_km": b.radius_km,
+                "dataset_id": ds.id, "sites": chosen,
+                "source": f"Published {sites['kind']} ({sites['source']}): the files themselves give no position"}
     lat = np.asarray(tr["latitude"], float)
     lon = np.mod(np.asarray(tr["longitude"], float), 360.0)
     alt = np.asarray(prof.altitude_km, float)
-    ok = np.isfinite(lat) & np.isfinite(lon) & np.isfinite(alt)
-    idx = np.flatnonzero(ok)
+    idx = np.flatnonzero(np.isfinite(lat) & np.isfinite(lon) & np.isfinite(alt))
     if idx.size > 600:
         idx = idx[np.linspace(0, idx.size - 1, 600).round().astype(int)]
 

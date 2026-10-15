@@ -60,7 +60,11 @@ left off the maps and counted.
      vectors turned into latitude and System III longitude with the file's pole and prime meridian;
      `archives/trajectories.py`). It leaves out the drift with the winds, about 0.4 deg
      (Atkinson et al. 1998, doi:10.1029/98JE00060), which the tab says.
-  Without any of these (VEGA 2 lander, Pioneer Venus probes) the tab says that no position is known.
+  The VEGA balloons' records carry their VLBI-tracked positions (drawn as the flight track). Without
+  any of these (VEGA landers, Pioneer Venus probes) the tab shows the published sites, labelled as
+  published: PV impact sites from the NASA NSSDCA probe pages (Colin 1980,
+  doi:10.1029/JA085iA13p07575), VEGA landing sites from the data set's catalogue vega_host.cat
+  (Lorenz et al. 2018).
 - **Verify:**
   - DTWG landing site 10.25 S, 167.68 E against Kazeminejad et al. (10.3 S, 167.7 E), tested on the
     archive file.
@@ -70,7 +74,6 @@ left off the maps and counted.
     file.
 - **Status:** fixed.
 - **Still open:**
-  - The Pioneer Venus and VEGA entry sites are given in their documents, not as data.
   - The body map still draws one point per profile, not the descent line.
 
 ### H2. Date-only times drawn as the observation (CRISM limb profiles)

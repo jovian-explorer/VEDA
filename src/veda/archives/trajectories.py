@@ -59,8 +59,30 @@ def read_galileo_probe_trajectory(label: Path) -> Dict[str, List]:
     # entry epoch: ephemeris time (seconds past 1950 ET) -> UTC (ET - UTC = 61.184 s in 1995)
     entry = _dt.datetime(1950, 1, 1) + _dt.timedelta(seconds=et1950 - 61.184)
     utc = [(entry + _dt.timedelta(seconds=float(s))).isoformat(timespec="milliseconds") for s in t]
-    return {"utc": utc, "lat": lat.tolist(), "lon": lon.tolist(), "alt_km": alt.tolist()}
+    return {"utc": utc, "lat": lat.tolist(), "lon": lon.tolist(), "alt_km": alt.tolist(),
+            "source": ("Reconstructed: the navigation team's post-entry trajectory (Doppler wind data, "
+                       "probetrj.tab); planetocentric latitude, System III longitude; it leaves out the eastward "
+                       "drift with the winds during the descent (about 0.4 deg, Atkinson et al. 1998)")}
 
 
-# product id -> reader, for Dataset.descent_trajectory entries in these formats
-READERS = {"PROBETRJ": read_galileo_probe_trajectory}
+def read_vega_balloon_track(label: Path) -> Dict[str, List]:
+    """A VEGA balloon's tracked position (VEGA1/VEGA2-V-2/3-VENUS-V1.0 vg1bl_rdr, vg2bl_rdr):
+    radius (km), latitude and east longitude (radians) "estimated" from VLBI tracking,
+    zero where there is no position; time in seconds from 0 h UT on the label's start date."""
+    from ..readers.pds3_reader import read_pds3_table
+    tbl = read_pds3_table(str(label))
+    col = lambda name: np.asarray(next(v for k, v in tbl.columns.items()            # noqa: E731
+                                       if k.strip('"').lower() == name), dtype=float)
+    r, lat, lon, t = col("radius"), col("latitude"), col("longitude"), col("time")
+    ok = np.isfinite(r) & (r > 0) & np.isfinite(lat) & np.isfinite(lon)
+    from ..core.registry import get_body
+    day = _dt.datetime.fromisoformat(str(tbl.metadata.get("START_TIME", "1985-06-11"))[:10])
+    return {"utc": [(day + _dt.timedelta(seconds=float(s))).isoformat(timespec="seconds") for s in t[ok]],
+            "lat": np.round(np.degrees(lat[ok]), 4).tolist(), "lon": np.round(np.degrees(lon[ok]) % 360, 4).tolist(),
+            "alt_km": np.round(r[ok] - get_body("venus").radius_km, 3).tolist(),
+            "source": ("Measured: the balloon's position from VLBI tracking in its record "
+                       f"({label.stem}; Lorenz et al. 2018); altitudes above the 6051.8 km sphere")}
+
+
+# product id (or part of it) -> reader of a probe's or balloon's track in its own format
+READERS = {"PROBETRJ": read_galileo_probe_trajectory, "BL_RDR": read_vega_balloon_track}

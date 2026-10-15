@@ -1113,6 +1113,22 @@ DESCENT_DATA_SETS = {"gp-j-entry-v1.0", "hp-ssa-hasi-2-3-4-mission-v1.1", "hp-ss
                      "vega1-vega2-v-2-3-venus-v1.0", "mer-m-imu-5-edl-derived-v1.0", "phx-m-ase-5-edl-rdr-v1.0",
                      "msl-edl-atmosphere", "insight-edl-atmosphere", "pds-pvo-pioneervenusprobeslaslnm"}
 
+# Published landing and impact sites, for probes whose files give no position
+# (planetocentric latitude, east longitude, as published)
+PUBLISHED_SITES = {
+    "pds-pvo-pioneervenusprobeslaslnm": {
+        "kind": "impact sites", "source": "NASA NSSDCA probe pages; Colin 1980, doi:10.1029/JA085iA13p07575",
+        "sites": [{"name": "Large (Sounder) probe", "lat": 4.4, "lon": 304.0},
+                  {"name": "North probe", "lat": 59.3, "lon": 4.8},
+                  {"name": "Day probe", "lat": -31.3, "lon": 317.0},
+                  {"name": "Night probe", "lat": -28.7, "lon": 56.7}]},
+    "vega1-vega2-v-2-3-venus-v1.0": {
+        "kind": "landing sites",
+        "source": "the data set's own catalogue, vega_host.cat; Lorenz et al. 2018, doi:10.1016/j.icarus.2017.12.044",
+        "sites": [{"name": "VEGA 2 lander", "lat": -7.14, "lon": 177.67, "product": "vg2lr"},
+                  {"name": "VEGA 1 lander", "lat": 8.10, "lon": 175.85, "product": "vg1lr"}]},
+}
+
 # First and last observation dates of the data sets read on a first search, from their
 # archive indexes (October 2026); "" for data sets still growing.  The mission's own data:
 # ancillary files dated decades earlier are left out

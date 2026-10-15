@@ -131,7 +131,9 @@ const fmtKm = (v) => (v >= 1e5 ? `${(v / 1e3).toFixed(0)} thousand km` : `${v.to
 // An entry or descent probe: its own track (reconstructed positions, its trajectory data
 // set or its SPK), never the orbiter's orbit
 function renderDescent(box) {
-  const g = state.data, t = g.track, n = t.lat.length - 1;
+  const g = state.data;
+  if (g.sites) return renderSites(box);
+  const t = g.track, n = t.lat.length - 1;
   const views = [['map', 'Descent track'], ['alt', 'Altitude along the descent']];
   if (!views.some(([k]) => k === state.view)) state.view = 'map';
   box.innerHTML = `
@@ -149,8 +151,28 @@ function renderDescent(box) {
   draw();
 }
 
+// Published landing or impact sites, for probes whose files give no position
+function renderSites(box) {
+  const g = state.data;
+  box.innerHTML = `
+    <div id="geo-plot" class="geo-plot"></div>
+    <div class="diagnostics-bar geo-facts">${g.sites.map(x => `<div class="diag-chip"><strong>${esc(x.name)}:</strong> ${x.lat.toFixed(2)}°, ${x.lon.toFixed(2)}°E</div>`).join('')}</div>
+    <p class="hint">${esc(g.source)}. Latitudes planetocentric, longitudes east.</p>`;
+  draw();
+}
+
 function descentPlot(div) {
   const g = state.data, t = g.track;
+  if (g.sites) {
+    const lon = g.sites.map(x => ((x.lon + 540) % 360) - 180);
+    window.Plotly.newPlot(div, [{ type: 'scattergeo', mode: 'markers+text', lat: g.sites.map(x => x.lat), lon,
+      text: g.sites.map(x => x.name), textposition: 'top center', name: 'Published site',
+      marker: { size: 11, color: '#f59e0b', symbol: 'star' } }], themedLayout({
+      title: { text: `${g.body_name}: published sites (planetocentric, east longitude)` },
+      geo: geoLayout(0, 0), legend: { orientation: 'h', y: -0.05 }, margin: { l: 10, r: 10, t: 50, b: 40 },
+    }), { responsive: true });
+    return;
+  }
   const hover = t.lat.map((la, i) => `${t.utc ? `${t.utc[i]}<br>` : ''}${la.toFixed(3)}°, ${t.lon[i].toFixed(3)}°E<br>${fmtKm(t.alt_km[i])}`);
   if (state.view === 'alt') {
     window.Plotly.newPlot(div, [{ type: 'scatter', mode: 'lines', x: t.utc || t.lon, y: t.alt_km, text: hover, hoverinfo: 'text',
