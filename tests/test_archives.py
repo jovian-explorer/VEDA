@@ -674,3 +674,25 @@ def test_pds4_listing_refused_by_a_busy_server_is_not_skipped(monkeypatch):
         raise net.ArchiveError("x does not have /y (HTTP 404).")
     monkeypatch.setattr(net, "list_directory", missing)
     assert catalog.index_pds4(ds, "vco_lir") == []
+
+
+def test_phoenix_entry_profile_as_in_the_teams_report():
+    """phxase_0002 DOCUMENT/REPORT (Withers & Catling): temperatures from about 130 km to
+    13.5 km above the landing site (radius 3376.3 km); entry at radius 3522.2 km; parachute
+    deployment at 68.265 N, 234.034 E; first ground contact at 68.237 N, 234.311 E."""
+    from pathlib import Path
+    import numpy as np
+    from veda.archives.profiles import profile_from_label
+    ds = get_dataset("phx-m-ase-5-edl-rdr-v1.0")
+    p = profile_from_label(ds, {"product_id": "PHXPROFILES", "start_time": "2008-05-25T23:30:57.733", "volume": "phxase_0002",
+                                "url": "", "product_type": "Entry profile"},
+                           Path(__file__).parent / "data" / "phoenix_ase" / "PHXPROFILES.LBL")
+    r = p.altitude_km + 3389.5
+    ok = np.isfinite(p.temperature_k)
+    assert np.nanmax(r) == pytest.approx(3522.2, abs=0.05)
+    assert r[ok].min() - 3376.3 == pytest.approx(13.5, abs=0.1) and 128 < r[ok].max() - 3376.3 < 134
+    i = np.flatnonzero(ok)[np.argmin(r[ok])]
+    lat, lon = p.track["latitude"], p.track["longitude"]
+    assert lat[i] == pytest.approx(68.265, abs=0.03) and lon[i] == pytest.approx(234.034, abs=0.06)
+    j = int(np.nanargmin(r))
+    assert lat[j] == pytest.approx(68.237, abs=0.03) and lon[j] == pytest.approx(234.311, abs=0.06)

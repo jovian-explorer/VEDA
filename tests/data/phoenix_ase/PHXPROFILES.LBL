@@ -1,0 +1,596 @@
+PDS_VERSION_ID               = PDS3                                           
+/* VEDA test copy: every 1000th row, the first and last rows with a temperature and their neighbours, and the last row of phxase_0002/DATA/PHXPROFILES.TAB */
+                                                                              
+RECORD_TYPE                  = FIXED_LENGTH                                   
+RECORD_BYTES                 = 590                                            
+FILE_RECORDS                 = 97                                          
+^TABLE                       = "PHXPROFILES.TAB"                              
+                                                                              
+DATA_SET_ID                  = "PHX-M-ASE-5-EDL-RDR-V1.0"                     
+MISSION_NAME                 = "PHOENIX"                                      
+INSTRUMENT_HOST_NAME         = "PHOENIX"                                      
+INSTRUMENT_NAME              = "ATMOSPHERIC STRUCTURE EXPERIMENT"             
+PRODUCT_ID                   = "PHXPROFILES"                                  
+TARGET_NAME                  = "MARS"                                         
+SPACECRAFT_CLOCK_START_COUNT = "896225513.881"                                
+SPACECRAFT_CLOCK_STOP_COUNT  = "896225982.871"                                
+START_TIME                   = 2008-05-25T23:30:47.918                        
+STOP_TIME                    = 2008-05-25T23:38:36.899                        
+PRODUCT_CREATION_TIME        = 2010-02-22                                     
+                                                                              
+OBJECT                       = TABLE                                          
+  INTERCHANGE_FORMAT         = ASCII                                          
+  ROW_BYTES                  = 590                                            
+  ROWS                       = 97                                          
+  COLUMNS                    = 52                                             
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "UTC_TIME"                                     
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 1                                              
+    BYTES                    = 9                                              
+    FORMAT                   = "F9.4"                                         
+    UNIT                     = "SECOND"                                       
+    DESCRIPTION              = "Time after reference time,                    
+                               as defined in DATASET.CAT."                    
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "SIGMA_UTC_TIME"                               
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 10                                             
+    BYTES                    = 9                                              
+    FORMAT                   = "F9.4"                                         
+    UNIT                     = "SECOND"                                       
+    DESCRIPTION              = "1-sigma uncertainty in                        
+                               UTC_TIME."                                     
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "RADIAL_DISTANCE"                              
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 19                                             
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "METER"                                        
+    DESCRIPTION              = "Distance between the spacecraft               
+                               and the center of mass of Mars."               
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "SIGMA_RADIAL_DISTANCE"                        
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 31                                             
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "METER"                                        
+    DESCRIPTION              = "1-sigma uncertainty in                        
+                               RADIAL_DISTANCE."                              
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "LATITUDE"                                     
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 43                                             
+    BYTES                    = 9                                              
+    FORMAT                   = "F9.4"                                         
+    UNIT                     = "DEGREE"                                       
+    DESCRIPTION              = "Areocentric latitude, degrees north."         
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "SIGMA_LATITUDE"                               
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 52                                             
+    BYTES                    = 9                                              
+    FORMAT                   = "F9.4"                                         
+    UNIT                     = "DEGREE"                                       
+    DESCRIPTION              = "1-sigma uncertainty in                        
+                               LATITUDE."                                     
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "LONGITUDE"                                    
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 61                                             
+    BYTES                    = 9                                              
+    FORMAT                   = "F9.4"                                         
+    UNIT                     = "DEGREE"                                       
+    DESCRIPTION              = "Areocentric longitude, degrees east."         
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "SIGMA_LONGITUDE"                              
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 70                                             
+    BYTES                    = 9                                              
+    FORMAT                   = "F9.4"                                         
+    UNIT                     = "DEGREE"                                       
+    DESCRIPTION              = "1-sigma uncertainty in                        
+                               LONGITUDE."                                    
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "X_POSITION"                                   
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 79                                             
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "METER"                                        
+    DESCRIPTION              = "X component of position,                      
+                               as defined in DATASET.CAT."                    
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "SIGMA_X_POSITION"                             
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 91                                             
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "METER"                                        
+    DESCRIPTION              = "1-sigma uncertainty in                        
+                               X_POSITION."                                   
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "Y_POSITION"                                   
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 103                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "METER"                                        
+    DESCRIPTION              = "Y component of position,                      
+                               as defined in DATASET.CAT."                    
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "SIGMA_Y_POSITION"                             
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 115                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "METER"                                        
+    DESCRIPTION              = "1-sigma uncertainty in                        
+                               Y_POSITION."                                   
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "Z_POSITION"                                   
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 127                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "METER"                                        
+    DESCRIPTION              = "Z component of position,                      
+                               as defined in DATASET.CAT."                    
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "SIGMA_Z_POSITION"                             
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 139                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "METER"                                        
+    DESCRIPTION              = "1-sigma uncertainty in                        
+                               Z_POSITION."                                   
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "Q0"                                           
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 151                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "N/A"                                          
+    DESCRIPTION              = "Element 0 of quaternion,                      
+                               as defined in DATASET.CAT."                    
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "SIGMA_Q0"                                     
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 163                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "N/A"                                          
+    DESCRIPTION              = "1-sigma uncertainty in                        
+                               Q0."                                           
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "Q1"                                           
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 175                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "N/A"                                          
+    DESCRIPTION              = "Element 1 of quaternion,                      
+                               as defined in DATASET.CAT."                    
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "SIGMA_Q1"                                     
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 187                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "N/A"                                          
+    DESCRIPTION              = "1-sigma uncertainty in                        
+                               Q1."                                           
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "Q2"                                           
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 199                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "N/A"                                          
+    DESCRIPTION              = "Element 2 of quaternion,                      
+                               as defined in DATASET.CAT."                    
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "SIGMA_Q2"                                     
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 211                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "N/A"                                          
+    DESCRIPTION              = "1-sigma uncertainty in                        
+                               Q2."                                           
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "Q3"                                           
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 223                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "N/A"                                          
+    DESCRIPTION              = "Element 3 of quaternion,                      
+                               as defined in DATASET.CAT."                    
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "SIGMA_Q3"                                     
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 235                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "N/A"                                          
+    DESCRIPTION              = "1-sigma uncertainty in                        
+                               Q3."                                           
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "X_VELOCITY"                                   
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 247                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "METERS/SECOND"                                
+    DESCRIPTION              = "X component of velocity,                      
+                               as defined in DATASET.CAT."                    
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "SIGMA_X_VELOCITY"                             
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 259                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "METERS/SECOND"                                
+    DESCRIPTION              = "1-sigma uncertainty in                        
+                               X_VELOCITY."                                   
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "Y_VELOCITY"                                   
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 271                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "METERS/SECOND"                                
+    DESCRIPTION              = "Y component of velocity,                      
+                               as defined in DATASET.CAT."                    
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "SIGMA_Y_VELOCITY"                             
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 283                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "METERS/SECOND"                                
+    DESCRIPTION              = "1-sigma uncertainty in                        
+                               Y_VELOCITY."                                   
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "Z_VELOCITY"                                   
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 295                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "METERS/SECOND"                                
+    DESCRIPTION              = "Z component of velocity,                      
+                               as defined in DATASET.CAT."                    
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "SIGMA_Z_VELOCITY"                             
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 307                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "METERS/SECOND"                                
+    DESCRIPTION              = "1-sigma uncertainty in                        
+                               Z_VELOCITY."                                   
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "VREL"                                         
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 319                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "METERS/SECOND"                                
+    DESCRIPTION              = "Speed of spacecraft relative to atmosphere."  
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "SIGMA_VREL"                                   
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 331                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "METERS/SECOND"                                
+    DESCRIPTION              = "1-sigma uncertainty in                        
+                               VREL."                                         
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "X_ACCELERATION"                               
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 343                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "METERS/SECOND/SECOND"                         
+    DESCRIPTION              = "X component of acceleration,                  
+                               as defined in DATASET.CAT."                    
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "SIGMA_X_ACCELERATION"                         
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 355                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "METERS/SECOND/SECOND"                         
+    DESCRIPTION              = "1-sigma uncertainty in                        
+                               X_ACCELERATION."                               
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "Y_ACCELERATION"                               
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 367                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "METERS/SECOND/SECOND"                         
+    DESCRIPTION              = "Y component of acceleration,                  
+                               as defined in DATASET.CAT."                    
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "SIGMA_Y_ACCELERATION"                         
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 379                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "METERS/SECOND/SECOND"                         
+    DESCRIPTION              = "1-sigma uncertainty in                        
+                               Y_ACCELERATION."                               
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "Z_ACCELERATION"                               
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 391                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "METERS/SECOND/SECOND"                         
+    DESCRIPTION              = "Z component of acceleration,                  
+                               as defined in DATASET.CAT."                    
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "SIGMA_Z_ACCELERATION"                         
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 403                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "METERS/SECOND/SECOND"                         
+    DESCRIPTION              = "1-sigma uncertainty in                        
+                               Z_ACCELERATION."                               
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "ALPHA"                                        
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 415                                            
+    BYTES                    = 9                                              
+    FORMAT                   = "F9.4"                                         
+    UNIT                     = "DEGREE"                                       
+    DESCRIPTION              = "Angle of attack, angle between spacecraft     
+                               symmetry axis and the velocity of              
+                               the spacecraft relative to the atmosphere."    
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "SIGMA_ALPHA"                                  
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 424                                            
+    BYTES                    = 9                                              
+    FORMAT                   = "F9.4"                                         
+    UNIT                     = "DEGREE"                                       
+    DESCRIPTION              = "1-sigma uncertainty in                        
+                               ALPHA."                                        
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "CA"                                           
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 433                                            
+    BYTES                    = 9                                              
+    FORMAT                   = "F9.4"                                         
+    UNIT                     = "N/A"                                          
+    DESCRIPTION              = "Dimensionless axial force coefficient,        
+                               as defined in DATASET.CAT."                    
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "SIGMA_CA"                                     
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 442                                            
+    BYTES                    = 9                                              
+    FORMAT                   = "F9.4"                                         
+    UNIT                     = "N/A"                                          
+    DESCRIPTION              = "1-sigma uncertainty in                        
+                               CA."                                           
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "CN"                                           
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 451                                            
+    BYTES                    = 9                                              
+    FORMAT                   = "F9.4"                                         
+    UNIT                     = "N/A"                                          
+    DESCRIPTION              = "Dimensionless normal force coefficient,       
+                               as defined in DATASET.CAT."                    
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "SIGMA_CN"                                     
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 460                                            
+    BYTES                    = 9                                              
+    FORMAT                   = "F9.4"                                         
+    UNIT                     = "N/A"                                          
+    DESCRIPTION              = "1-sigma uncertainty in                        
+                               CN."                                           
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "MA"                                           
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 469                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "N/A"                                          
+    DESCRIPTION              = "Mach number,                                  
+                               as defined in DATASET.CAT."                    
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "SIGMA_MA"                                     
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 481                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "F12.4"                                        
+    UNIT                     = "N/A"                                          
+    DESCRIPTION              = "1-sigma uncertainty in                        
+                               MA."                                           
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "KN"                                           
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 493                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "N/A"                                          
+    DESCRIPTION              = "Knudsen number,                               
+                               as defined in DATASET.CAT."                    
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "SIGMA_KN"                                     
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 505                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "N/A"                                          
+    DESCRIPTION              = "1-sigma uncertainty in                        
+                               KN."                                           
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "RHO"                                          
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 517                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "KILOGRAM PER CUBIC METER"                     
+    DESCRIPTION              = "Atmospheric density."                         
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "SIGMA_RHO"                                    
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 529                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "KILOGRAM PER CUBIC METER"                     
+    DESCRIPTION              = "1-sigma uncertainty in                        
+                               RHO."                                          
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "PRESS"                                        
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 541                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "PASCAL"                                       
+    DESCRIPTION              = "Atmospheric pressure."                        
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "SIGMA_PRESS"                                  
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 553                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "PASCAL"                                       
+    DESCRIPTION              = "1-sigma uncertainty in                        
+                               PRESS."                                        
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "TEMP"                                         
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 565                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "KELVIN"                                       
+    DESCRIPTION              = "Atmospheric temperature."                     
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+  OBJECT                     = COLUMN                                         
+    NAME                     = "SIGMA_TEMP"                                   
+    DATA_TYPE                = ASCII_REAL                                     
+    START_BYTE               = 577                                            
+    BYTES                    = 12                                             
+    FORMAT                   = "E12.4"                                        
+    UNIT                     = "KELVIN"                                       
+    DESCRIPTION              = "1-sigma uncertainty in                        
+                               TEMP."                                         
+  END_OBJECT                 = COLUMN                                         
+                                                                              
+END_OBJECT                   = TABLE                                          
+                                                                              
+END                                                                           
