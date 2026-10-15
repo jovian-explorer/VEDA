@@ -199,6 +199,22 @@ Set `VEDA_HOME` to use a different folder. Deleting the cache folder is safe; VE
 
 An internet connection is needed to search an archive for the first time, to download products and to fetch SPICE kernels. The bundled sample products (Akatsuki, Mars Express, Cassini) work offline. Turn **Settings > Network > Allow downloads** off to work fully offline.
 
+### Using VEDA from Python (no window)
+The readers, the archive catalogue and the analysis are plain functions, usable in scripts and notebooks without starting the app. [`examples/headless_basics.py`](examples/headless_basics.py) runs offline on the bundled samples (add `--online` to index, search and download a Magellan data set from the archive):
+```python
+from veda.archives import catalog
+from veda.archives.profiles import load_profile
+from veda.analysis.atmospheric import compare_profiles_on_body, profile_diagnostics
+from veda.core.registry import get_body
+
+venus = load_profile("vco-v-rs-5-occ-v1.0", "rs_20160303_223100_udsc64_l4_ae_v10")   # Akatsuki, bundled
+venus.temperature_k, venus.derived["scale_height"], venus.derived["buoyancy_freq_sq"]
+profile_diagnostics(load_profile("mex-m-mrs-5-occ", "M32ICL2L04_IIX_040931105_60"))  # ionosphere peak, Chapman fit, TEC
+catalog.search(catalog.SearchQuery(body_id="mars", start="2004-01-01", end="2004-12-31", kind="profile"))
+compare_profiles_on_body([venus], get_body("venus"), variable_name="temperature_k")
+```
+`load_profile` downloads a product first if it is not in the cache; `catalog.refresh_dataset(get_dataset(id))` reads a data set's archive index. Your own tables load with `veda.pipeline.ingest.build_profile(path, get_body("mars"))`. The CI runs the example on Windows, macOS and Linux.
+
 ## Building the standalone app
 
 ```bash
