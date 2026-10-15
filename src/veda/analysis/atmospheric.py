@@ -91,7 +91,15 @@ def gravity_profile(body: BodyInfo, z_km: np.ndarray, latitude_deg: Optional[flo
     # (altitudes below the reference level, e.g. the Hellas basin below the Mars reference sphere or the
     # Galileo probe below 1 bar, are valid: gravity is slightly larger there)
     g = body.surface_gravity * (r_body / np.maximum(r_body + z, 1e-3 * r_body)) ** 2
-    return g, f"g0 (R/(R+z))^2, g0 = {body.surface_gravity:g} m/s^2, R = {r_body:g} km"
+    model = f"g0 (R/(R+z))^2, g0 = {body.surface_gravity:g} m/s^2, R = {r_body:g} km"
+    if body.gm_km3_s2 and body.rotation_period_h:
+        # an oblate, fast-rotating planet without the profile's latitude: the effective
+        # gravity lies between its equator and pole values (Jupiter 23.1-26.9 m/s^2 at 1 bar)
+        g_eq, _ = gravity_profile(body, np.zeros(1), 0.0, altitude_reference)
+        g_po, _ = gravity_profile(body, np.zeros(1), 90.0, altitude_reference)
+        model += (f" (latitude unknown: the effective gravity at this level is {g_eq[0]:.2f} at the equator to "
+                  f"{g_po[0]:.2f} at the poles)")
+    return g, model
 
 
 def profile_gravity(profile: ObservationProfile, body: BodyInfo, z: np.ndarray) -> Tuple[np.ndarray, str]:

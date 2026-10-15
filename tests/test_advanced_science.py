@@ -531,3 +531,14 @@ def test_archive_gravity_column_is_used():
     assert hydrostatic_consistency(z, p, t, g, jup.gas_constant_r)["hydrostatic_max_pct"] < 0.01
     prof.track = {}
     assert profile_gravity(prof, jup, z)[0][0] > 24.0                 # the model without a latitude
+
+
+def test_giant_planet_gravity_without_a_latitude_says_so():
+    """Without the profile's latitude Jupiter's gravity is a constant 24.79 m/s^2 at 1 bar,
+    while the effective gravity runs from 23.1 (equator) to 26.9 (poles): the model text
+    the profile view shows says so."""
+    from veda.analysis.atmospheric import gravity_profile
+    from veda.core.registry import get_body
+    g, model = gravity_profile(get_body("jupiter"), np.zeros(1))
+    assert g[0] == pytest.approx(24.79) and "latitude unknown" in model and "23.12" in model and "26.92" in model
+    assert "latitude unknown" not in gravity_profile(get_body("venus"), np.zeros(1))[1]

@@ -166,6 +166,9 @@ class ObservationProfile:
             "n_points": int(self.altitude_km.size) if self.altitude_km is not None else 0,
             "dataset_id": self.raw_attributes.get("DATASET_ID"),
             "altitude_reference": self.raw_attributes.get("ALTITUDE_REFERENCE", ""),
+            # the gravity and heat capacity the derived quantities use
+            "gravity_model": self.raw_attributes.get("gravity_model", ""),
+            "cp_model": self.raw_attributes.get("cp_model", ""),
             # profile-level local time, zenith angle and Ls (archive or computed), and how
             # the time was obtained
             "geometry": {

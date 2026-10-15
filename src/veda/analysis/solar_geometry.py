@@ -8,8 +8,10 @@ Sun is in the body's own rotating frame:
 
 * the body's heliocentric position from the JPL approximate Keplerian elements
   (Standish, "Keplerian Elements for Approximate Positions of the Major Planets",
-  valid 1800-2050; error well under 0.1 deg for Venus and Mars).  A moon uses its
-  planet's position: the direction to the Sun differs by less than 0.01 deg;
+  valid 1800-2050).  A moon uses its planet's position (for Titan the direction to
+  the Sun differs by up to 0.05 deg).  Checked against SPICE (DE440, PCK00011) at nine
+  epochs 1979-2024: subsolar longitude within 0.01 deg (Venus), 0.07 (Mars), 0.2
+  (Jupiter, Saturn, Titan), Mars Ls within 0.013 deg (docs/MODEL_AUDIT.md);
 * the body's orientation (north pole and prime meridian) from the IAU WGCCRE
   rotation models (Archinal et al. 2011, Celest. Mech. Dyn. Astr. 109, 101).
 

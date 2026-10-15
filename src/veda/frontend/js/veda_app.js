@@ -2363,7 +2363,7 @@ export function renderPlanetaryMap(projection = '2d') {
   const unplaced = activeObs.length - located.length;
   const statusEl = document.getElementById('veda-map-status');
   if (statusEl) {
-    statusEl.textContent = `${body.name || 'Planetary'} Observation Footprints & Ground Tracks (${located.length} points`
+    statusEl.textContent = `${body.name || 'Planetary'} observations, one point per profile (${located.length} points`
       + (unplaced ? `; ${unplaced} without a position not shown)` : ')');
   }
 
@@ -2456,14 +2456,14 @@ export function renderPlanetaryMap(projection = '2d') {
       plot_bgcolor: 'rgba(15, 23, 42, 0.8)',
       font: { color: '#b0bec5', family: 'Segoe UI, sans-serif' },
       xaxis: {
-        title: 'Planetary Longitude (deg)',
+        title: 'Longitude (° east, planetocentric)',
         range: [-180, 180],
         dtick: 30,
         gridcolor: 'rgba(51, 65, 85, 0.4)',
         zerolinecolor: 'rgba(56, 189, 248, 0.4)',
       },
       yaxis: {
-        title: 'Planetary Latitude (deg)',
+        title: 'Latitude (°, planetocentric)',
         range: [-90, 90],
         dtick: 30,
         gridcolor: 'rgba(51, 65, 85, 0.4)',
@@ -2811,6 +2811,7 @@ async function inspectProfileObservation(obs) {
           ${prof.provenance ? `<div class="diag-chip"><strong>Archive:</strong> ${escHtml(prof.provenance.archive_source)}</div>` : ''}
           ${prof.filename ? `<div class="diag-chip"><strong>File:</strong> ${escHtml(prof.filename)}</div>` : ''}
           ${prof.altitude_reference ? `<div class="diag-chip" title="Altitude is measured from ${escHtml(prof.altitude_reference)}"><strong>Altitude from:</strong> ${escHtml(prof.altitude_reference.replace(/ \(.*\)$/, ''))}</div>` : ''}
+          ${prof.gravity_model ? `<div class="diag-chip" title="Gravity used for the derived quantities (scale height, N², hydrostatic checks): ${escHtml(prof.gravity_model)}${prof.cp_model ? `. Heat capacity: ${escHtml(prof.cp_model)}` : ''}"><strong>Gravity:</strong> ${escHtml(prof.gravity_model.replace(/ \(.*$/, ''))}${/latitude unknown/.test(prof.gravity_model) ? ' (latitude unknown)' : ''}</div>` : ''}
           ${trackChips(prof)}
         </div>
 

@@ -154,8 +154,9 @@ left off the maps and counted.
   a profile has no latitude.
 - **Wrong:** at mid-latitudes the gravity is up to 5 % too low (GM / R^2 at the mean radius is 25.9
   and 11.2). With a latitude, VEDA's J2-and-rotation model is used, which is right.
-- **Fix:** without a latitude, use the gravity model at the equator rather than g0 at the mean
-  radius, and say so in `gravity_model`.
+- **Fix:** say so: without the latitude the model text gives the equator-to-pole range of the
+  effective gravity, and the profile view shows the gravity model.
+- **Status:** fixed (labelled). No latitude is guessed.
 
 ### M6. Exosphere bodies carry made-up gas constants
 - **Where:** `core/registry.py:165-244` (Mercury, Moon, Ceres, Vesta, comet 67P).
@@ -189,7 +190,7 @@ left off the maps and counted.
 - **Where:** `analysis/solar_geometry.py:12, 49`.
 - **What:** Titan uses Saturn's position. The docstring says the Sun's direction changes by less
   than 0.01 deg; for Titan it is up to 0.05 deg.
-- **Status:** measured against SPICE: 0.16 deg in all. Fix the docstring.
+- **Status:** measured against SPICE: 0.16 deg in all; docstring corrected.
 
 ### L3. Aberration on a planet-centred track
 - **Where:** `geometry/compute.py:216`.
@@ -219,6 +220,7 @@ left off the maps and counted.
 - **What:** the status line says "Footprints & Ground Tracks", but one point per profile is drawn.
   The axis says "Longitude" without east. Longitudes are planetocentric east.
 - **Fix:** say so.
+- **Status:** fixed ("one point per profile"; axes "east, planetocentric").
 
 ### L7. Empirical thresholds
 These are tuning choices, each explained in a comment, with no literature value behind them:
