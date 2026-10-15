@@ -2575,6 +2575,16 @@ export function renderPlanetaryMap(projection = '2d') {
       });
     });
 
+    // entry and descent probes: their tracks as lines on the globe
+    located.filter(o => Array.isArray(o.track) && o.track.length > 1).forEach(o => {
+      const rad = Math.PI / 180, R = 1.03;
+      traces.push({ type: 'scatter3d', mode: 'lines', name: `${o.observation_id} descent`, hoverinfo: 'name', showlegend: false,
+        x: o.track.map(([la, lo]) => R * Math.cos(la * rad) * Math.cos(lo * rad)),
+        y: o.track.map(([la, lo]) => R * Math.cos(la * rad) * Math.sin(lo * rad)),
+        z: o.track.map(([la]) => R * Math.sin(la * rad)),
+        line: { color: MISSION_COLORS[o.mission_id.toLowerCase()] || '#38bdf8', width: 5 } });
+    });
+
     const layout = {
       title: {
         text: `${(body.name || '').toUpperCase()} • 3D Planetary Coordinates Globe`,

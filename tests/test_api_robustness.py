@@ -1215,11 +1215,16 @@ def test_vega_balloon_track_and_published_probe_sites(client, monkeypatch):
     g = client.get("/api/veda/geometry/vega1-vega2-v-2-3-venus-v1.0/VG1BL_RDR").json()
     assert g["mode"] == "descent" and "VLBI" in g["source"] and len(g["track"]["lat"]) == 61
     monkeypatch.setattr(archive_routes.catalog, "get_product", lambda ds, pid: {"product_id": pid, "kind": "other"})
-    g = client.get("/api/veda/geometry/pds-pvo-pioneervenusprobeslaslnm/LP_NMS_X").json()
+    g = client.get("/api/veda/geometry/pds-pvo-pioneervenusprobeslaslnm/PV_PRODUCT_X").json()
     assert g["source"].startswith("Published impact sites") and len(g["sites"]) == 4
+    # the product's name says which probe (PDS4 pv_sed_bundle: sas_day_..., lir_descent)
+    g = client.get("/api/veda/geometry/pds-pvo-pioneervenusprobeslaslnm/sas_day_low_atm_state").json()
+    assert [s["name"] for s in g["sites"]] == ["Day probe"] and "match" not in g["sites"][0]
+    g = client.get("/api/veda/geometry/pds-pvo-pioneervenusprobeslaslnm/lir_descent").json()
+    assert [s["name"] for s in g["sites"]] == ["Large (Sounder) probe"]
     # a product of the live (uncatalogued) Pioneer Venus search is not taken for a profile
     monkeypatch.setattr(archive_routes.catalog, "get_product", lambda ds, pid: None)
-    g = client.get("/api/veda/geometry/pds-pvo-pioneervenusprobeslaslnm/LP_NMS_Y").json()
+    g = client.get("/api/veda/geometry/pds-pvo-pioneervenusprobeslaslnm/PV_PRODUCT_Y").json()
     assert len(g["sites"]) == 4
     monkeypatch.setattr(archive_routes, "load_profile", lambda ds, pid: _no_track_profile())
     monkeypatch.setattr(archive_routes.catalog, "get_product", lambda ds, pid: {"product_id": pid, "kind": "profile"})

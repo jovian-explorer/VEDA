@@ -407,8 +407,10 @@ def _descent_geometry(ds, product_id: str) -> Dict[str, Any]:
         sites = PUBLISHED_SITES.get(ds.id)
         if not sites:
             raise HTTPException(422, "These files give no position of the probe, and VEDA has no trajectory for it")
-        chosen = [x for x in sites["sites"] if x.get("product") and x["product"] in product_id.lower()] or \
-            [x for x in sites["sites"] if not x.get("product")] or sites["sites"]
+        # the probe the product's name or path names, else all of them
+        name = f"{product_id} {prod.get('path', '')}".lower()
+        chosen = [x for x in sites["sites"] if any(m in name for m in x.get("match", ()))] or sites["sites"]
+        chosen = [{k: v for k, v in x.items() if k != "match"} for x in chosen]
         b = get_body_info(body_id)
         return {"mode": "descent", "body_id": body_id, "body_name": b.name, "radius_km": b.radius_km,
                 "dataset_id": ds.id, "sites": chosen,
