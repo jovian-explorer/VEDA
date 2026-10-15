@@ -186,10 +186,9 @@ class Dataset:
     # The longitude column is west-positive (Huygens DTWG): VEDA uses east
     west_longitude: bool = False
     # Where the instrument was during a probe's descent, when its own files have no
-    # position: (data set id, product id) of the trajectory (Huygens HASI -> DTWG), or the
-    # probe's NAIF id and SPK file (Galileo probe), for the Geometry tab
+    # position: (data set id, product id) of the probe's trajectory (Huygens HASI -> DTWG;
+    # Galileo probe -> the DWE trajectory file), for the Geometry tab
     descent_trajectory: Tuple[str, str] = ()
-    probe_spk: Tuple[int, str] = ()
 
     def classify(self, file_name: str) -> Tuple[str, str]:
         name = file_name.lower()
@@ -454,9 +453,8 @@ DATASETS: List[Dataset] = [
         citation=GP_CITATION,
         label_from_data=True,
         fixed_time="1995-12-07T22:04:44",    # probe entry (Young et al. 1996, Science 272)
-        # the probe's own SPK (NAIF -344, Galileo navigation team): separation to entry,
-        # ending at 22:05:59, before the descent
-        probe_spk=(-344, "https://naif.jpl.nasa.gov/pub/naif/GLL/kernels/spk/s960730a.bsp"),
+        # the navigation team's post-entry trajectory in the Doppler wind data (archives/trajectories.py)
+        descent_trajectory=("gp-j-entry-v1.0", "PROBETRJ"),
     ),
     Dataset(
         id="hp-ssa-hasi-2-3-4-mission-v1.1", mission_id="cassini", instrument="Huygens HASI", level="L2-L4",
@@ -1083,7 +1081,7 @@ _REFS = {
     "mgn-v-rss-5-occ-prof-rtpd-v1.0": ("jenkins1994", "steffes1994", "saunders1992"),
     "mgn-v-rss-5-occ-prof-abs-h2so4-v1.0": ("jenkins1994", "steffes1994", "saunders1992"),
     "mgn-v-rss-1-rocc-v2.0": ("jenkins1994", "saunders1992"),
-    "gp-j-entry-v1.0": ("seiff1998", "johnson1992"),
+    "gp-j-entry-v1.0": ("seiff1998", "johnson1992", "atkinson1998"),
     "hp-ssa-hasi-2-3-4-mission-v1.1": ("fulchignoni2005", "fulchignoni2002", "matson2002"),
     "hp-ssa-dtwg-6-trajectory-v1.0": ("kazeminejad2007", "matson2002"),
     "mgs-m-rss-5-sdp-v1.0": ("tyler2001", "hinson1999", "albee2001"),

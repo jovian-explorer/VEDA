@@ -1,0 +1,428 @@
+PDS_VERSION_ID               = PDS3
+/* VEDA test copy: every 30th row (and the last) of gp_0001/data/dwe/probetrj.tab */                                           
+RECORD_TYPE                  = FIXED_LENGTH                                   
+RECORD_BYTES                 = 60                                             
+FILE_RECORDS                 = 1086                                           
+^TABLE                       = "PROBETRJ.TAB"                                 
+INSTRUMENT_HOST_NAME         = "GALILEO PROBE"                                
+TARGET_NAME                  = "JUPITER"                                      
+INSTRUMENT_NAME              = "DOPPLER WIND EXPERIMENT"                      
+DATA_SET_ID                  = "GP-J-DWE-3-ENTRY-V1.0"                        
+OBSERVATION_TYPE             = "DOPPLER WIND"                                 
+ORIGINAL_PRODUCT_ID          = "JNEFF"                                        
+PRODUCT_ID                   = "PROBETRJ.TAB"                                 
+DESCRIPTION                  = "This file contains trajectory data for        
+ the Galileo Probe during its descent into Jupiter's atmosphere.              
+ The file consists of one ASCII table: a time-ordered set of vectors          
+ giving Probe position and velocity and the local unit vectors for up,        
+ west, and north.  Data are stored in 60-byte 'physical records' with         
+ an ASCII carriage-return line-feed pair in byte positions 59 and 60.         
+ A single row in the table comprises 6 of these physical records. The         
+ NOTE below contains the ASCII header from the original file."                
+START_TIME                   = 1995-12-07T22:05:44                            
+STOP_TIME                    = 1995-12-07T23:35:44                            
+PRODUCT_CREATION_TIME        = 1996-11-08T13:37:57                            
+PRODUCER_FULL_NAME           = "UNK"                                          
+PRODUCER_INSTITUTION_NAME    = "UNK"                                          
+PRODUCT_VERSION_TYPE         = "FINAL"                                        
+PRODUCER_ID                  = "UNK"                                          
+SOFTWARE_NAME                = "ATMINT E2.0"                                  
+NOTE                         = "The following lines were copied from          
+ the header of the original file.  The second table of Probe Aerodynamic      
+ Characteristics was extracted from between state vectors at 166 and          
+ 167.106 seconds.                                                             
+                                                                              
+ $$GALILEO     PROBE SYSTEM TRAJECTORY FILE - POST-ENTRY                      
+  CREATING PROGRAM     ATMINT E2.0                                            
+  FILE CREATION DATE:      11/ 8/1996   TIME:  13:37:57                       
+  RUN ID:  JNEFF                                                              
+  STATUS     INFO                                                             
+  OD126 WITH 53 SEC LATE PARACHUTE                                            
+                                                                              
+                                                                              
+     PROBE AERODYNAMIC CHARACTERISTICS                                        
+                                                                              
+  TIME PAST     PROBE        TIME PAST   PROBE REF                  COEFF     
+ ENTRY (SEC)  MASS (KG)     ENTRY (SEC)  AREA (M2)    MACH NO.     OF DRAG    
+       .000    262.000            .000     1.000        .0000      1.000000   
+     35.000    262.000       10000.000     1.000      99.0000      1.000000   
+     95.000    165.000            .000      .000        .0000       .000000   
+    115.000    210.000            .000      .000        .0000       .000000   
+  10000.000    210.000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+                                                                              
+                                                                              
+     PROBE AERODYNAMIC CHARACTERISTICS                                        
+                                                                              
+  TIME PAST     PROBE        TIME PAST   PROBE REF                  COEFF     
+ ENTRY (SEC)  MASS (KG)     ENTRY (SEC)  AREA (M2)    MACH NO.     OF DRAG    
+       .000     82.000            .000     1.000        .0000      1.000000   
+    110.000     82.000       10000.000     1.000      99.0000      1.000000   
+    125.000     24.000            .000      .000        .0000       .000000   
+  10000.000     24.000            .000      .000        .0000       .000000   
+  10000.000    210.000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+       .000       .000            .000      .000        .0000       .000000   
+                                                                              
+                                                                              
+  EPOCH OF PROBE ENTRY IN E.T. (YEAR, DAY OF YEAR, HHMMSS.SSSS)=              
+  1995, 341, 220544.9531                                                      
+  EPOCH OF PROBE ENTRY IN E.T. (SECONDS PAST 1950) = 1449525944.9464          
+  PROBE INITIAL STATE (AT ENTRY) - EME50 COORDINATE SYSTEM (KM; X,Y,Z)        
+   -60177.33594       31741.30859       23179.84375                           
+  PROBE INITIAL (ENTRY) VELOCITY (EME50, KM/S ; XDOT, YDOT, ZDOT)             
+  -26.495975494     -46.925086975     -26.029304504                           
+  SATELLITE EPHEMERIS FILE ID   NOT USED                                      
+  JOVIAN ATMOSPHERE MODEL     ORTON III NOMINAL                               
+  JOVIAN 1-BAR RADIUS, KM      71492.00000                                    
+  PLANET ROTATION PERIOD, HRS      9.92492104                                 
+  JOVIAN UNIT POLE VECTOR (X,Y,Z)                                             
+   -.0150432028      -.4301558435       .9026292562                           
+  GRAVITATIONAL CONSTANTS GM (KM3/SEC2), J2, J4                               
+  126686464.0      .014733000     -.000580000                                 
+  UNIT VECTOR THROUGH THE INTERSECTION OF THE VECTOR LIBRARY PRIME MERIDIAN   
+     AND THE JOVIAN EQUATOR IN EME50 AT THE EPOCH OF PROBE ENTRY (X,Y,Z)      
+   -.8839696646       .4276177287       .1890527010                           
+  DESCENT TRAJECTORY PROFILE                                                  
+  ALL COORDINATES GIVEN IN JUPITER-CENTERED EME-50                            
+                                                                              
+  TIME = TIME PAST ENTRY, IN SECONDS                                          
+  ALTITUDE = PROBE ALTITUDE ABOVE 1-BAR PRESSURE LEVEL, IN KM                 
+  R = PROBE POSITION, IN KM                                                   
+  V = PROBE VELOCITY, IN KM/S                                                 
+  UVERT = UNIT LOCAL VERTICAL AT PROBE LOCATION                               
+  UWEST = UNIT WEST DIRECTION AT PROBE LOCATION                               
+  UNORTH = UNIT NORTH DIRECTION AT PROBE LOCATION"                            
+                                                                              
+/* Structure Objects */                                                       
+                                                                              
+OBJECT               = TABLE                                                  
+ROWS                       = 181                                             
+COLUMNS                    = 23                                               
+ROW_BYTES                  = 360                                              
+INTERCHANGE_FORMAT         = ASCII                                            
+DESCRIPTION                = "This table contains time-ordered vector sets    
+ describing position and velocity of the Galileo Probe during its descent     
+ through Jupiter's atmosphere.  Each row in the table has 360 bytes, The      
+ rows are spaced by 1 second except that the rows for 105 and 2186 seconds    
+ are missing and the row for which a time of 167 seconds would be expected    
+ has a time of 167.106 seconds."                                              
+                                                                              
+  OBJECT                   = COLUMN                                           
+    NAME                         = "TIME"                                     
+    COLUMN_NUMBER                = 1                                          
+    DATA_TYPE                    = ASCII_REAL                                 
+    START_BYTE                   = 1                                          
+    BYTES                        = 11                                         
+    FORMAT                       = "F11.3"                                    
+    UNIT                         = "SECOND"                                   
+    DESCRIPTION                  = "The number of seconds since entry into    
+                                    the atmosphere.  The epoch of entry was   
+                                    taken to be 1995-341T22:05:44.9531 E.T.   
+                                    or 1449525944.9464 seconds past 0h on     
+                                    1 January 1950 E.T."                      
+  END_OBJECT               = COLUMN                                           
+                                                                              
+  OBJECT                   = COLUMN                                           
+    NAME                         = "ALTITUDE"                                 
+    COLUMN_NUMBER                = 2                                          
+    DATA_TYPE                    = ASCII_REAL                                 
+    START_BYTE                   = 12                                         
+    BYTES                        = 21                                         
+    FORMAT                       = "F21.5"                                    
+    UNIT                         = "KILOMETER"                                
+    DESCRIPTION                  = "Probe altitude above the 1-bar pressure   
+                                    level."                                   
+  END_OBJECT               = COLUMN                                           
+                                                                              
+  OBJECT                   = COLUMN                                           
+    NAME                         = "SPARE 1"                                  
+    COLUMN_NUMBER                = 3                                          
+    DATA_TYPE                    = CHARACTER                                  
+    START_BYTE                   = 33                                         
+    BYTES                        = 28                                         
+    FORMAT                       = "N/A"                                      
+    UNIT                         = "N/A"                                      
+    DESCRIPTION                  = "26 unassigned bytes followed by an ASCII  
+                                    carriage-return line-feed pair."          
+  END_OBJECT               = COLUMN                                           
+                                                                              
+  OBJECT                   = COLUMN                                           
+    NAME                         = "X"                                        
+    COLUMN_NUMBER                = 4                                          
+    DATA_TYPE                    = ASCII_REAL                                 
+    START_BYTE                   = 61                                         
+    BYTES                        = 15                                         
+    FORMAT                       = "F15.5"                                    
+    UNIT                         = "KILOMETER"                                
+    DESCRIPTION                  = "X position in the Jupiter-centered EME50  
+                                    coordinate frame."                        
+  END_OBJECT               = COLUMN                                           
+                                                                              
+  OBJECT                   = COLUMN                                           
+    NAME                         = "Y"                                        
+    COLUMN_NUMBER                = 5                                          
+    DATA_TYPE                    = ASCII_REAL                                 
+    START_BYTE                   = 76                                         
+    BYTES                        = 18                                         
+    FORMAT                       = "F18.5"                                    
+    UNIT                         = "KILOMETER"                                
+    DESCRIPTION                  = "Y position in the Jupiter-centered EME50  
+                                    coordinate frame."                        
+  END_OBJECT               = COLUMN                                           
+                                                                              
+  OBJECT                   = COLUMN                                           
+    NAME                         = "Z"                                        
+    COLUMN_NUMBER                = 6                                          
+    DATA_TYPE                    = ASCII_REAL                                 
+    START_BYTE                   = 94                                         
+    BYTES                        = 18                                         
+    FORMAT                       = "F18.5"                                    
+    UNIT                         = "KILOMETER"                                
+    DESCRIPTION                  = "Z position in the Jupiter-centered EME50  
+                                    coordinate frame."                        
+  END_OBJECT               = COLUMN                                           
+                                                                              
+  OBJECT                   = COLUMN                                           
+    NAME                         = "SPARE 2"                                  
+    COLUMN_NUMBER                = 7                                          
+    DATA_TYPE                    = CHARACTER                                  
+    START_BYTE                   = 112                                        
+    BYTES                        = 9                                          
+    FORMAT                       = "N/A"                                      
+    UNIT                         = "N/A"                                      
+    DESCRIPTION                  = "7 unassigned bytes followed by an ASCII   
+                                    carriage-return line-feed pair."          
+  END_OBJECT               = COLUMN                                           
+                                                                              
+  OBJECT                   = COLUMN                                           
+    NAME                         = "VX"                                       
+    COLUMN_NUMBER                = 8                                          
+    DATA_TYPE                    = ASCII_REAL                                 
+    START_BYTE                   = 121                                        
+    BYTES                        = 15                                         
+    FORMAT                       = "F15.10"                                   
+    UNIT                         = "KILOMETER PER SECOND"                     
+    DESCRIPTION                  = "X velocity in the Jupiter-centered EME50  
+                                    coordinate frame."                        
+  END_OBJECT               = COLUMN                                           
+                                                                              
+  OBJECT                   = COLUMN                                           
+    NAME                         = "VY"                                       
+    COLUMN_NUMBER                = 9                                          
+    DATA_TYPE                    = ASCII_REAL                                 
+    START_BYTE                   = 136                                        
+    BYTES                        = 18                                         
+    FORMAT                       = "F18.10"                                   
+    UNIT                         = "KILOMETER PER SECOND"                     
+    DESCRIPTION                  = "Y velocity in the Jupiter-centered EME50  
+                                    coordinate frame."                        
+  END_OBJECT               = COLUMN                                           
+                                                                              
+  OBJECT                   = COLUMN                                           
+    NAME                         = "VZ"                                       
+    COLUMN_NUMBER                = 10                                         
+    DATA_TYPE                    = ASCII_REAL                                 
+    START_BYTE                   = 154                                        
+    BYTES                        = 18                                         
+    FORMAT                       = "F18.10"                                   
+    UNIT                         = "KILOMETER PER SECOND"                     
+    DESCRIPTION                  = "Z velocity in the Jupiter-centered EME50  
+                                    coordinate frame."                        
+  END_OBJECT               = COLUMN                                           
+                                                                              
+  OBJECT                   = COLUMN                                           
+    NAME                         = "SPARE 3"                                  
+    COLUMN_NUMBER                = 11                                         
+    DATA_TYPE                    = CHARACTER                                  
+    START_BYTE                   = 172                                        
+    BYTES                        = 9                                          
+    FORMAT                       = "N/A"                                      
+    UNIT                         = "N/A"                                      
+    DESCRIPTION                  = "7 unassigned bytes followed by an ASCII   
+                                    carriage-return line-feed pair."          
+  END_OBJECT               = COLUMN                                           
+                                                                              
+  OBJECT                   = COLUMN                                           
+    NAME                         = "UX"                                       
+    COLUMN_NUMBER                = 12                                         
+    DATA_TYPE                    = ASCII_REAL                                 
+    START_BYTE                   = 181                                        
+    BYTES                        = 15                                         
+    FORMAT                       = "F15.10"                                   
+    UNIT                         = "N/A"                                      
+    DESCRIPTION                  = "X component of the local unit vector in   
+                                    the vertical direction in the Jupiter-    
+                                    centered EME50 frame."                    
+  END_OBJECT               = COLUMN                                           
+                                                                              
+  OBJECT                   = COLUMN                                           
+    NAME                         = "UY"                                       
+    COLUMN_NUMBER                = 13                                         
+    DATA_TYPE                    = ASCII_REAL                                 
+    START_BYTE                   = 196                                        
+    BYTES                        = 18                                         
+    FORMAT                       = "F18.10"                                   
+    UNIT                         = "N/A"                                      
+    DESCRIPTION                  = "Y component of the local unit vector in   
+                                    the vertical direction in the Jupiter-    
+                                    centered EME50 frame."                    
+  END_OBJECT               = COLUMN                                           
+                                                                              
+  OBJECT                   = COLUMN                                           
+    NAME                         = "UZ"                                       
+    COLUMN_NUMBER                = 14                                         
+    DATA_TYPE                    = ASCII_REAL                                 
+    START_BYTE                   = 214                                        
+    BYTES                        = 18                                         
+    FORMAT                       = "F18.10"                                   
+    UNIT                         = "N/A"                                      
+    DESCRIPTION                  = "Z component of the local unit vector in   
+                                    the vertical direction in the Jupiter-    
+                                    centered EME50 frame."                    
+  END_OBJECT               = COLUMN                                           
+                                                                              
+  OBJECT                   = COLUMN                                           
+    NAME                         = "SPARE 4"                                  
+    COLUMN_NUMBER                = 15                                         
+    DATA_TYPE                    = CHARACTER                                  
+    START_BYTE                   = 232                                        
+    BYTES                        = 9                                          
+    FORMAT                       = "N/A"                                      
+    UNIT                         = "N/A"                                      
+    DESCRIPTION                  = "7 unassigned bytes followed by an ASCII   
+                                    carriage-return line-feed pair."          
+  END_OBJECT               = COLUMN                                           
+                                                                              
+  OBJECT                   = COLUMN                                           
+    NAME                         = "WX"                                       
+    COLUMN_NUMBER                = 16                                         
+    DATA_TYPE                    = ASCII_REAL                                 
+    START_BYTE                   = 241                                        
+    BYTES                        = 15                                         
+    FORMAT                       = "F15.10"                                   
+    UNIT                         = "N/A"                                      
+    DESCRIPTION                  = "X component of the local unit vector in   
+                                    the west direction in the Jupiter-        
+                                    centered EME50 frame."                    
+  END_OBJECT               = COLUMN                                           
+                                                                              
+  OBJECT                   = COLUMN                                           
+    NAME                         = "WY"                                       
+    COLUMN_NUMBER                = 17                                         
+    DATA_TYPE                    = ASCII_REAL                                 
+    START_BYTE                   = 256                                        
+    BYTES                        = 18                                         
+    FORMAT                       = "F18.10"                                   
+    UNIT                         = "N/A"                                      
+    DESCRIPTION                  = "Y component of the local unit vector in   
+                                    the west direction in the Jupiter-        
+                                    centered EME50 frame."                    
+  END_OBJECT               = COLUMN                                           
+                                                                              
+  OBJECT                   = COLUMN                                           
+    NAME                         = "WZ"                                       
+    COLUMN_NUMBER                = 18                                         
+    DATA_TYPE                    = ASCII_REAL                                 
+    START_BYTE                   = 274                                        
+    BYTES                        = 18                                         
+    FORMAT                       = "F18.10"                                   
+    UNIT                         = "N/A"                                      
+    DESCRIPTION                  = "Z component of the local unit vector in   
+                                    the west direction in the Jupiter-        
+                                    centered EME50 frame."                    
+  END_OBJECT               = COLUMN                                           
+                                                                              
+  OBJECT                   = COLUMN                                           
+    NAME                         = "SPARE 5"                                  
+    COLUMN_NUMBER                = 19                                         
+    DATA_TYPE                    = CHARACTER                                  
+    START_BYTE                   = 292                                        
+    BYTES                        = 9                                          
+    FORMAT                       = "N/A"                                      
+    UNIT                         = "N/A"                                      
+    DESCRIPTION                  = "7 unassigned bytes followed by an ASCII   
+                                    carriage-return line-feed pair."          
+  END_OBJECT               = COLUMN                                           
+                                                                              
+  OBJECT                   = COLUMN                                           
+    NAME                         = "NX"                                       
+    COLUMN_NUMBER                = 20                                         
+    DATA_TYPE                    = ASCII_REAL                                 
+    START_BYTE                   = 301                                        
+    BYTES                        = 15                                         
+    FORMAT                       = "F15.10"                                   
+    UNIT                         = "N/A"                                      
+    DESCRIPTION                  = "X component of the local unit vector in   
+                                    the north direction in the Jupiter-       
+                                    centered EME50 frame."                    
+  END_OBJECT               = COLUMN                                           
+                                                                              
+  OBJECT                   = COLUMN                                           
+    NAME                         = "NY"                                       
+    COLUMN_NUMBER                = 21                                         
+    DATA_TYPE                    = ASCII_REAL                                 
+    START_BYTE                   = 316                                        
+    BYTES                        = 18                                         
+    FORMAT                       = "F18.10"                                   
+    UNIT                         = "N/A"                                      
+    DESCRIPTION                  = "Y component of the local unit vector in   
+                                    the north direction in the Jupiter-       
+                                    centered EME50 frame."                    
+  END_OBJECT               = COLUMN                                           
+                                                                              
+  OBJECT                   = COLUMN                                           
+    NAME                         = "NZ"                                       
+    COLUMN_NUMBER                = 22                                         
+    DATA_TYPE                    = ASCII_REAL                                 
+    START_BYTE                   = 334                                        
+    BYTES                        = 18                                         
+    FORMAT                       = "F18.10"                                   
+    UNIT                         = "N/A"                                      
+    DESCRIPTION                  = "Z component of the local unit vector in   
+                                    the north direction in the Jupiter-       
+                                    centered EME50 frame."                    
+  END_OBJECT               = COLUMN                                           
+                                                                              
+  OBJECT                   = COLUMN                                           
+    NAME                         = "SPARE 6"                                  
+    COLUMN_NUMBER                = 23                                         
+    DATA_TYPE                    = CHARACTER                                  
+    START_BYTE                   = 352                                        
+    BYTES                        = 9                                          
+    FORMAT                       = "N/A"                                      
+    UNIT                         = "N/A"                                      
+    DESCRIPTION                  = "7 unassigned bytes followed by an ASCII   
+                                    carriage-return line-feed pair."          
+  END_OBJECT               = COLUMN                                           
+                                                                              
+END_OBJECT           = TABLE                                                  
+                                                                              
+END                                                                           

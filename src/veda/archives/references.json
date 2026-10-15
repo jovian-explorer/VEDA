@@ -6612,6 +6612,31 @@
     }
    ],
    "note": "Reconstructed Huygens entry and descent trajectory (HP-SSA-DTWG-6-TRAJECTORY-V1.0)."
+  },
+  {
+   "key": "atkinson1998",
+   "authors": [
+    "Atkinson, D. H.",
+    "Pollack, J. B.",
+    "Seiff, A."
+   ],
+   "et_al": false,
+   "year": 1998,
+   "title": "The Galileo Probe Doppler Wind Experiment: Measurement of the deep zonal winds on Jupiter",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "103",
+   "issue": "E10",
+   "pages": "22911-22928",
+   "doi": "10.1029/98JE00060",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "galileo",
+     "payload": "DWE"
+    }
+   ],
+   "note": "Galileo probe descent trajectory and winds (gp_0001 data/dwe)."
   }
  ]
 }

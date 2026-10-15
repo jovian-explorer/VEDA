@@ -268,11 +268,6 @@ def _geometry_inputs(dataset_id: str, product_id: str):
                                  "cannot be computed")
     if not prod.get("start_time"):
         raise HTTPException(422, "This product has no observation time")
-    if ds.probe_spk:            # the probe's own ephemeris (Galileo probe), not the orbiter's
-        p = kernels.base_plan(target_body(ds, prod))
-        p.urls = list(dict.fromkeys(p.urls + [ds.probe_spk[1]]))
-        p.missing = [u for u in p.urls if not p.local(u).is_file()]
-        return ds, prod, p
     # a time without a clock time would put the spacecraft at midnight (CRISM limb dates)
     if len(prod["start_time"]) < 13:
         raise HTTPException(422, "This product's time is a date without a clock time, so where the spacecraft was "
@@ -301,7 +296,7 @@ def geometry(dataset_id: str, product_id: str, span_min: float = Query(90, ge=5,
     from ..geometry.compute import observation_geometry, orbit_geometry
     from ..archives.datasets import DESCENT_DATA_SETS
     ds0 = get_dataset(dataset_id)
-    if ds0 is not None and ds0.id in DESCENT_DATA_SETS and not ds0.probe_spk:
+    if ds0 is not None and ds0.id in DESCENT_DATA_SETS:
         return _descent_geometry(ds0, product_id)
     ds, prod, plan = _geometry_inputs(dataset_id, product_id)
     if plan.missing:
@@ -320,15 +315,6 @@ def geometry(dataset_id: str, product_id: str, span_min: float = Query(90, ge=5,
             tr = prof.track or {}
         except (LookupError, ValueError, net.ArchiveError):
             prof = None
-    if ds.probe_spk:
-        from ..geometry.compute import probe_track
-        try:
-            t = probe_track(plan, ds.probe_spk[0], body_id, prod["start_time"])
-        except LookupError as exc:
-            raise HTTPException(422, str(exc))
-        return _descent_result(ds, body_id, t, f"SPICE: the probe's own ephemeris ({ds.probe_spk[1].rsplit('/', 1)[1]}, "
-                               f"NAIF {ds.probe_spk[0]}), which ends at entry, {t['utc'][-1]}; the descent after it is "
-                               "not in the kernel (the probe drifted with the winds)")
     if "et" not in tr:
         start, stop = prod["start_time"], prod.get("stop_time") or prod["start_time"]
         if ds.times_earth_received:
@@ -367,8 +353,9 @@ def _descent_result(ds, body_id: str, t: Dict[str, Any], source: str) -> Dict[st
 
 def _descent_geometry(ds, product_id: str) -> Dict[str, Any]:
     """Where an entry or descent probe was: its own reconstructed positions per level, or
-    its trajectory data set (Huygens: DTWG), as measured; no SPICE, no orbiter."""
+    its trajectory (Huygens: DTWG; Galileo probe: the DWE trajectory file); no orbiter."""
     import numpy as np
+    from ..archives.trajectories import READERS as TRAJECTORY_READERS
     from ..analysis.solar_geometry import et_to_utc
     body_id = ds.body_ids[0]
     try:
@@ -376,6 +363,18 @@ def _descent_geometry(ds, product_id: str) -> Dict[str, Any]:
     except (LookupError, ValueError, net.ArchiveError) as exc:
         raise HTTPException(422, f"The profile could not be read: {exc}")
     tr, label = prof.track or {}, f"its own reconstructed positions ({ds.id})"
+    if not ("latitude" in tr and "longitude" in tr) and ds.descent_trajectory[1:] and             ds.descent_trajectory[1] in TRAJECTORY_READERS:
+        tid, tpid = ds.descent_trajectory
+        try:
+            t = TRAJECTORY_READERS[tpid](catalog.fetch_product(tid, tpid))
+        except (LookupError, ValueError, OSError, net.ArchiveError) as exc:
+            raise HTTPException(422, f"The probe's trajectory ({tid} {tpid}) could not be read: {exc}")
+        n = len(t["utc"])
+        idx = sorted(set(np.linspace(0, n - 1, min(n, 600)).round().astype(int).tolist()))
+        t = {k: [v[i] for i in idx] for k, v in t.items()}
+        return _descent_result(ds, body_id, t, f"Reconstructed: the navigation team's post-entry trajectory "
+                               f"({tid} {tpid}); latitudes planetocentric, System III longitudes; it leaves out the "
+                               "eastward drift with the winds during the descent (about 0.4 deg)")
     if not ("latitude" in tr and "longitude" in tr) and ds.descent_trajectory:
         tid, tpid = ds.descent_trajectory
         try:

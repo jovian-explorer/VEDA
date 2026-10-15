@@ -56,18 +56,20 @@ left off the maps and counted.
   2. the probe's trajectory data set: Huygens, the reconstructed descent
      HP-SSA-DTWG-6-TRAJECTORY-V1.0 (Kazeminejad et al. 2007, doi:10.1016/j.pss.2007.04.013), added as
      a data set;
-  3. the probe's own SPK: Galileo probe, NAIF -344, s960730a.bsp, which ends at entry.
+  3. the Galileo probe's post-entry trajectory from its Doppler wind data (`dwe/probetrj.tab`, EME50
+     vectors turned into latitude and System III longitude with the file's pole and prime meridian;
+     `archives/trajectories.py`). It leaves out the drift with the winds, about 0.4 deg
+     (Atkinson et al. 1998, doi:10.1029/98JE00060), which the tab says.
   Without any of these (VEGA 2 lander, Pioneer Venus probes) the tab says that no position is known.
 - **Verify:**
   - DTWG landing site 10.25 S, 167.68 E against Kazeminejad et al. (10.3 S, 167.7 E), tested on the
     archive file.
-  - Galileo probe SPK at the data set's entry time 22:04:44: 6.53 N, 4.94 W. The mission catalogue
-    (gp_0001 MISSION.CAT) gives 6.54 N, 4.46 W: 0.5 deg apart, about 12 s along the 47 km/s entry
-    track. Tested with the kernel.
+  - Galileo probe trajectory file at entry: 6.53 N, 4.88 W. The probe's own SPK (NAIF -344,
+    s960730a.bsp, which ends at entry) gives 6.53 N, 4.94 W; tested with the kernel. The mission
+    catalogue (gp_0001 MISSION.CAT) gives 6.54 N, 4.46 W. The descent ends near 6.41 N, as in the ASI
+    file.
 - **Status:** fixed.
 - **Still open:**
-  - The Galileo probe's descent drift is in the DWE trajectory file (`dwe/probetrj.tab`, EME50 vectors
-    with local unit vectors), not yet read.
   - The Pioneer Venus and VEGA entry sites are given in their documents, not as data.
   - The body map still draws one point per profile, not the descent line.
 

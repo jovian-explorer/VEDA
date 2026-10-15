@@ -534,25 +534,28 @@ def test_occultation_geometry_against_spice_with_real_kernels(monkeypatch):
     assert g["reference_radius_km"] == 3389.5
 
 
-def test_galileo_probe_track_from_its_own_spk(monkeypatch):
-    """The Galileo probe's own SPK (NAIF -344, s960730a.bsp) puts it at 6.53 N, 4.94 W at
-    the data set's entry time 22:04:44; the mission catalogue (gp_0001 MISSION.CAT) gives
-    the entry point as 6.54 N, 4.46 W (0.5 deg apart: about 12 s along the 47 km/s entry
-    track).  The kernel ends at 22:05:59, before the descent.  Skipped without the kernels."""
+def test_galileo_probe_trajectory_file_against_its_spk():
+    """The Galileo probe's post-entry trajectory (gp_0001 data/dwe/probetrj.tab, EME50
+    vectors with Jupiter's pole and prime meridian): at entry, 22:04:43.8 UTC, 6.53 N,
+    4.88 W; the probe's own SPK (NAIF -344, s960730a.bsp) gives 6.53 N, 4.94 W.  The
+    descent ends near 6.41 N (the ASI file: 6.41 N).  The SPK comparison is skipped
+    without the kernels."""
     import os
     from pathlib import Path
-    from veda.archives.datasets import get_dataset
-    from veda.geometry import compute
+    import numpy as np
+    from veda.archives.trajectories import read_galileo_probe_trajectory
+    t = read_galileo_probe_trajectory(Path(__file__).parent / "data" / "galileo_probe" / "PROBETRJ.LBL")
+    assert t["utc"][0].startswith("1995-12-07T22:04:43.7")
+    assert t["lat"][0] == pytest.approx(6.53, abs=0.01) and 360 - t["lon"][0] == pytest.approx(4.88, abs=0.01)
+    assert t["alt_km"][0] == pytest.approx(450.3, abs=0.1) and t["lat"][-1] == pytest.approx(6.41, abs=0.01)
     src = Path(os.environ.get("LOCALAPPDATA", "")) / "VEDA" / "cache" / "spice"
-    ds = get_dataset("gp-j-entry-v1.0")
-    names = ("naif0012.tls", "pck00011.tpc", "de440s.bsp", ds.probe_spk[1].rsplit("/", 1)[1])
+    names = ("naif0012.tls", "pck00011.tpc", "s960730a.bsp")
     if not all((src / n).is_file() for n in names):
         pytest.skip("SPICE kernels not on this computer")
-    monkeypatch.setattr(kernels, "KERNEL_DIR", src)
-    plan = kernels.KernelPlan(urls=[f"https://x/{n}" for n in names])
-    t = compute.probe_track(plan, ds.probe_spk[0], "jupiter", ds.fixed_time)
-    i = min(range(len(t["utc"])), key=lambda k: abs(dt.datetime.fromisoformat(t["utc"][k]) -
-                                                     dt.datetime(1995, 12, 7, 22, 4, 44)))
-    assert t["lat"][i] == pytest.approx(6.54, abs=0.05)
-    assert (360.0 - t["lon"][i]) == pytest.approx(4.46, abs=0.6)
-    assert t["utc"][-1] <= "1995-12-07T22:05:59"
+    import spiceypy as sp
+    for n in names:
+        sp.furnsh(str(src / n))
+    p = sp.spkpos("-344", sp.str2et(t["utc"][0]), "IAU_JUPITER", "NONE", "599")[0]
+    _, lon, lat = sp.reclat(p)
+    assert np.degrees(lat) == pytest.approx(t["lat"][0], abs=0.02)
+    assert (np.degrees(lon) - t["lon"][0] + 180) % 360 - 180 == pytest.approx(0.0, abs=0.1)

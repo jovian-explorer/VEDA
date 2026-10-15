@@ -186,31 +186,6 @@ def observation_geometry(plan: KernelPlan, sc_id: int, body_id: str, et_profile:
     }
 
 
-def probe_track(plan: KernelPlan, naif_id: int, body_id: str, utc: str, samples: int = 120) -> Dict[str, Any]:
-    """A probe's own SPK track (planetocentric latitude, east longitude, altitude above the
-    body's reference radius) from 30 min before ``utc`` to 30 min after it or to the end of
-    the kernel's coverage, whichever is first (Galileo probe: approach and entry)."""
-    body = get_body(body_id)
-    bname, fixed = str(NAIF_BODY[body_id]), body_frame(body_id)
-    with _spice_lock:
-        _furnsh(plan)
-        try:
-            t0 = sp.str2et(utc.replace("Z", ""))
-            ends = [sp.wnfetd(sp.spkcov(str(plan.local(u)), naif_id), 0)[1] for u in plan.urls
-                    if u.lower().endswith(".bsp") and naif_id in sp.spkobj(str(plan.local(u)))]
-            stop = min([t0 + 1800.0] + [e - 1.0 for e in ends])      # (the last second is not interpolable)
-            ets = np.linspace(t0 - 1800.0, stop, samples)
-            ets = np.unique(np.append(ets, t0)) if t0 <= stop else ets     # (the time itself a sample)
-            pos = np.array([sp.spkpos(str(naif_id), float(e), fixed, "NONE", bname)[0] for e in ets])
-            utc_all = [sp.et2utc(float(e), "ISOC", 0) for e in ets]
-        except sp.stypes.SpiceyError as exc:
-            raise LookupError(f"SPICE error: {str(exc).splitlines()[0][:200]}") from exc
-    r = np.linalg.norm(pos, axis=1)
-    return {"utc": utc_all, "lat": np.round(np.degrees(np.arcsin(pos[:, 2] / r)), 4).tolist(),
-            "lon": np.round(np.degrees(np.arctan2(pos[:, 1], pos[:, 0])) % 360, 4).tolist(),
-            "alt_km": np.round(r - body.radius_km, 3).tolist()}
-
-
 def orbit_geometry(plan: KernelPlan, sc_id: int, body_id: str, utc_start: str, utc_stop: str,
                    samples: int = 360) -> Dict[str, Any]:
     """Where the spacecraft was during any observation (in-situ, imaging, spectra...).

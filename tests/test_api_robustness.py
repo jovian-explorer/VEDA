@@ -1179,3 +1179,20 @@ def test_akatsuki_time_is_at_venus_not_at_the_ground_station():
     assert prof.raw_attributes["LABEL_TIME"] == "2016-03-03T23:17:09.324"
     assert prof.raw_attributes["LIGHT_TIME_S"] == pytest.approx(751.7, abs=0.5)
     assert prof.time_utc.startswith("2016-03-03T23:04:37")
+
+
+def test_galileo_probe_geometry_is_its_reconstructed_trajectory(client, monkeypatch):
+    """The Galileo probe profile has no positions: the Geometry tab draws the navigation
+    team's post-entry trajectory from the Doppler wind data, not the orbiter."""
+    from pathlib import Path
+    from veda.api import archive_routes
+    from veda.core.models import ObservationProfile
+    asi = ObservationProfile(observation_id="DESCENT", mission_id="galileo", body_id="jupiter",
+                             instrument="ASI", time_utc="1995-12-07T22:04:44",
+                             altitude_km=np.array([20.0, -100.0]), temperature_k=np.array([140.0, 400.0]))
+    monkeypatch.setattr(archive_routes, "load_profile", lambda ds, pid: asi)
+    lbl = Path(__file__).parent / "data" / "galileo_probe" / "PROBETRJ.LBL"
+    monkeypatch.setattr(archive_routes.catalog, "fetch_product", lambda ds, pid: lbl)
+    g = client.get("/api/veda/geometry/gp-j-entry-v1.0/DESCENT").json()
+    assert g["mode"] == "descent" and "PROBETRJ" in g["source"] and "winds" in g["source"]
+    assert g["track"]["lat"][0] == pytest.approx(6.53, abs=0.01)
