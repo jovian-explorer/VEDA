@@ -19,7 +19,7 @@ import os
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from . import __version__
 
@@ -100,6 +100,11 @@ SETTING_CHOICES: Dict[str, Any] = {
 
 # Options renamed between versions: old name -> new name (settings_migration.py)
 RENAMED_SETTINGS: Dict[str, str] = {}
+
+# Defaults raised since: a stored value equal to the old default was never chosen (every
+# settings.json holds all values), so it takes the new one.  The download timeout went
+# from 30 to 60 s because the PDS PPI node takes 20-30 s to list a folder.
+RAISED_DEFAULTS: Dict[str, Tuple[Any, Any]] = {"network_timeout_s": (30, 60)}
 
 # Whether this start created settings.json (a first start: nothing to migrate)
 SETTINGS_CREATED = False
@@ -213,6 +218,8 @@ class Settings:
                     except ValueError:
                         pass
             for k, v in data.items():
+                if k in RAISED_DEFAULTS and v == RAISED_DEFAULTS[k][0]:
+                    continue                    # the old default: the new one applies
                 try:
                     setattr(s, k, cls.validate(k, v))
                 except ValueError:

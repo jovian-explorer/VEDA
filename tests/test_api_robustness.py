@@ -155,6 +155,18 @@ def test_corrupt_settings_file_is_repaired_on_load():
     SETTINGS.save()
 
 
+def test_old_default_timeout_takes_the_new_default():
+    """settings.json holds every value, so a stored 30 s download timeout is the old default,
+    not a choice: it becomes 60 s (the PDS PPI node takes 20-30 s to list a folder).  A
+    value the user changed stays."""
+    SETTINGS_PATH.write_text(json.dumps({"network_timeout_s": 30}), encoding="utf-8")
+    assert Settings.load().network_timeout_s == 60
+    SETTINGS_PATH.write_text(json.dumps({"network_timeout_s": 45}), encoding="utf-8")
+    assert Settings.load().network_timeout_s == 45
+    SETTINGS.reset()
+    SETTINGS.save()
+
+
 def test_infinite_numbers_in_settings_are_rejected(client):
     """int(inf) raises OverflowError, not ValueError: {"plot_dpi": Infinity} gave a server
     error, and a settings.json holding 1e400 stopped VEDA from starting."""
