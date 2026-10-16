@@ -286,6 +286,19 @@ One row agrees only in part: the CRISM aphelion-belt ice below 20 km has a media
 
 The Curiosity mesopause is 0.44 K colder in the archived file (99.46 K, read unchanged) than the document's 99.9 +- 0.2 K; its height and pressure agree. The document's value may be smoothed; the file has no other temperature there.
 
+**Derived quantities compared with the teams' own values in the same files:**
+
+| File | Value | Result |
+|---|---|---|
+| Magellan rtpd | density | VEDA's p / (R T) is within 0.02 % of the file's density (orbits 3212 X and 3213 S). |
+| Galileo probe ASI descent | density | within 0.3 %. |
+| Galileo probe ASI descent | temperature gradient | VEDA's dT/dz agrees with the file's dT/dz column: median difference 0.0003 K/km, 5-95 % within 0.006 K/km. |
+| Mars Global Surveyor and MRO radio science profiles | p / (k T) | equals the file's number density to 10^-5. |
+| Mars Global Surveyor and MRO radio science profiles | mass density | equals n m with Mars' mean molar mass to 2 x 10^-5. |
+| Huygens HASI | density | VEDA's density is 1-2 % above the file's below 20 km and up to 2 % below it above 80 km. VEDA applies Titan's non-ideal-gas factor (Z = 0.964 at the surface); the file's density implies p / (rho T) = 293.7 J/(kg K) at the surface, where pure N2 would give 296.8 and VEDA's mixture 299.0. The archive does not say how its density was derived. |
+
+VEDA's own temperature retrieved from a density profile differs from the team's at the top, as expected from the different upper boundary conditions, and converges downwards. On a 1998 MGS profile it is 16 K warmer at 46 km, 3 K at 28 km and 1 K at 16 km; on a 2008 MRO profile it is 4.5 K warmer at 41 km and 0.3 K at 17 km.
+
 **Not reproduced from open sources** (after a search of Crossref abstracts, open-access copies and the archives' own documents):
 - **SOIR (Mahieux et al. 2015):** the paper is not open. The data set's own description gives no numbers to check.
 - **MRO Mars Climate Sounder (Kleinböhl et al. 2009):** the paper is listed as open access, but its publisher refuses automated downloads.
