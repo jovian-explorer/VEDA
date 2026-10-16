@@ -280,10 +280,17 @@ VEDA was checked against numbers the instrument teams published from the same fi
 | InSight entry profile (insight_edl_bundle) | the bundle's documents: entry at the inertial position of the ancillary file (radius 3522.2 km); 130 K boundary temperature at 101 km; reconstruction ending at parachute deployment near 5.7 km | entry radius 3522.2 km; top temperature 130.0 K at radius 3497.19 km; lowest level at radius 3401.88 km, 5.69 km above the radius that puts the 130 K level at 101 km | insight_edl_bundle document/reconstruction and ancillary_parameters; Karatekin 2020, doi:10.17189/1518935 |
 | MAVEN accelerometer, periapsis 3302 (deep dip, June 2016) | the bundle's user advisory: peak density 5.065 kg/km^3; bias noise 0.008 kg/km^3 | 5.065 kg/km^3 (5.065 x 10^-9 kg/m^3) with its 1-sigma 4.9 x 10^-11; bias noise in the file 0.0077611 kg/km^3 | acc_bundle user advisory; Zurek et al. 2015, SSR 195, 303, doi:10.1007/s11214-014-0095-x (`test_legs_take_the_periapsis_time_and_go_on_the_mars_sphere`) |
 | Venus Express VeRa radio occultations of 2014 (NASA DSN; Gramigna et al. data set) | maximum temperature 420 +- 0.1 K at 40 km; mean lapse rate about 10 K/km below the tropopause (about 60 km); DOY 032 egress at 50 km: 77.300 S, 240.998 E, SZA 74.5 | 419.9 K at 38.7 km (DOY 064 egress); median lapse rate 9.2 K/km at 45-58 km; DOY 032 egress at 50 km: 77.289 S, 241.030 E; the file's SZA is 75.3 there (74.7 at its lowest level) | Gramigna et al. 2023, ASR 71, 1198, doi:10.1016/j.asr.2022.10.070 (arXiv:2102.08300) |
+| MAVEN ROSE electron density profiles (30 profiles of July 2016 - 2017) | accuracy on the order of 10^9 m^-3 (10^3 cm^-3), vertical resolution on the order of 1 km, vertical range on the order of 100-500 km | median 1-sigma 2.9 x 10^3 cm^-3; level spacing 0.82 km; after VEDA's cuts (neutral region, topside noise) the kept profiles run from 56 to 267 km (medians) | Withers et al. 2020, SSR 216, 61, doi:10.1007/s11214-020-00687-6 |
 
 One row agrees only in part: the CRISM aphelion-belt ice below 20 km has a median of 2.35 um, under the paper's ">3 um". The paper describes specific belt profiles, and the values grow towards 3 um and above in the upper decile. The archive values are read unchanged.
 
 The Curiosity mesopause is 0.44 K colder in the archived file (99.46 K, read unchanged) than the document's 99.9 +- 0.2 K; its height and pressure agree. The document's value may be smoothed; the file has no other temperature there.
+
+**Not reproduced from open sources** (after a search of Crossref abstracts, open-access copies and the archives' own documents):
+- **SOIR (Mahieux et al. 2015):** the paper is not open. The data set's own description gives no numbers to check.
+- **MRO Mars Climate Sounder (Kleinböhl et al. 2009):** the paper is listed as open access, but its publisher refuses automated downloads.
+- **Mars Express SPICAM:** VEDA lists and plots its products but derives nothing from them, so there is no derived number to check.
+- **Mars Odyssey aerobraking (Tolson et al. 2005):** the open paper gives the operational periapsis densities, not those of the archived derived product.
 
 Two of these comparisons found errors, both fixed:
 - **HASI temperatures lost.** The HASI table is semicolon-separated. Below 46 km its pressure gains a digit and every later field moves one byte, so VEDA, reading by byte position, lost 1268 of the 1816 temperatures, including the surface.

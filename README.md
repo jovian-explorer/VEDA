@@ -126,6 +126,9 @@ Heat capacity depends on temperature for Venus, Mars, Titan and Pluto ($c_p(T)$ 
 
 When you open a mission, its generic and body kernels download in the background; when you open an observation, the spacecraft ephemeris for that date follows. VEDA knows each mission's kernel archive (NAIF, ESA SPICE service, JAXA DARTS) and how its files map to dates. Settings > Observation geometry turns this off or sets the size above which VEDA asks first. Kernels are kept and reused.
 
+### Checked against published results
+VEDA's readings of the archive files were checked against numbers the teams published from the same files: the Huygens surface, the Galileo probe's deep atmosphere, Akatsuki, Mars Express, Cassini (Titan), Mars Global Surveyor, CRISM, Pioneer Venus, Venus Express, Phoenix, Spirit and Opportunity, Curiosity, InSight, MAVEN and Magellan. The table, with the papers and the remaining differences, is in [USAGE.md, "Published results reproduced"](USAGE.md#published-results-reproduced); where a file excerpt is small enough, the test suite checks it on every change. These checks found and fixed two reading errors (the Huygens HASI descent profile lost 70 % of its temperatures; local times along a Mars Express ray path were 0.05 h off).
+
 ### What to cite
 **Cite** lists the references for exactly what you used on this computer:
 * the data sets (with the archive data set identifiers of the products you opened);

@@ -118,7 +118,7 @@ class Settings:
     # Download a newer published build once a week and install it on the next start
     # (published builds only; autoupdate.py)
     auto_update: bool = True
-    network_timeout_s: int = 30
+    network_timeout_s: int = 60      # (the PDS PPI node takes 20-30 s to list a folder)
     # Download the SPICE kernels an observation needs without asking (up to the size limit)
     spice_auto_download: bool = True
     spice_auto_limit_mb: int = 400

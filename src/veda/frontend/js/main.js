@@ -535,7 +535,7 @@ function settingsBody() {
         el('span', {}, 'Update VEDA automatically: look for a new build once a week, download it in the background and install it when VEDA next starts (your data, downloads and settings are kept)')),
       autoUpdateRow(),
       field('Download timeout (seconds)',
-        el('input', { type: 'number', id: 's-timeout', value: s.network_timeout_s || 30, min: 5, max: 300, required: true }),
+        el('input', { type: 'number', id: 's-timeout', value: s.network_timeout_s || 60, min: 5, max: 300, required: true }),
         'How long to wait for a slow archive before giving up.'),
       field('Ask before downloading a product file larger than (MB)',
         el('input', { type: 'number', id: 's-product-limit', value: s.product_confirm_mb || 250, min: 10, max: 20000, required: true }),
