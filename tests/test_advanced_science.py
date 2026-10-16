@@ -542,3 +542,14 @@ def test_giant_planet_gravity_without_a_latitude_says_so():
     g, model = gravity_profile(get_body("jupiter"), np.zeros(1))
     assert g[0] == pytest.approx(24.79) and "latitude unknown" in model and "23.12" in model and "26.92" in model
     assert "latitude unknown" not in gravity_profile(get_body("venus"), np.zeros(1))[1]
+
+
+def test_sparser_sampling_is_not_a_gap():
+    """A gap is a step much wider than the steps around it, not than the profile's median
+    step: the Akatsuki sample's continuous levels at 80-83 km (0.6 km apart, 0.1 km
+    elsewhere) were cut out of every comparison."""
+    from veda.analysis.atmospheric import _data_gaps
+    z = np.concatenate([np.arange(0, 10, 0.1), np.arange(10, 20, 0.6)])
+    assert _data_gaps(z) == []
+    z = np.concatenate([np.arange(0, 10, 0.1), np.arange(15, 25, 0.1)])
+    assert [tuple(np.round(g, 1)) for g in _data_gaps(z)] == [(9.9, 15.0)]

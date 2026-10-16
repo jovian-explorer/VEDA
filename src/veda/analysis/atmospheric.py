@@ -1015,6 +1015,23 @@ def _altitude_range(p: ObservationProfile, ok: np.ndarray) -> List[float]:
     return [round(float(z.min()), 2), round(float(z.max()), 2)] if z.size else []
 
 
+def _data_gaps(z: np.ndarray, factor: float = 5.0, window: int = 10):
+    """(bottom, top) of the steps of sorted levels ``z`` more than ``factor`` times the
+    median of the ``window`` steps on either side: a gap, not a change of sampling."""
+    dz = np.diff(z)
+    pos = np.where(dz > 0, dz, np.nan)
+    pad = np.pad(pos, window, mode="constant", constant_values=np.nan)
+    from numpy.lib.stride_tricks import sliding_window_view
+    near = sliding_window_view(pad, 2 * window + 1)
+    near = np.concatenate([near[:, :window], near[:, window + 1:]], axis=1)   # the step's neighbours
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)          # (all-NaN rows: no neighbours)
+        local = np.nanmedian(near, axis=1)
+    gap = np.isfinite(local) & (dz > factor * local)
+    return list(zip(z[:-1][gap], z[1:][gap]))
+
+
 def compare_profiles_on_body(
     profiles: List[ObservationProfile],
     body: BodyInfo,
@@ -1144,15 +1161,15 @@ def compare_profiles_on_body(
         z_clean, v_clean = z_clean[sort_idx], v_clean[sort_idx]
 
         # Interpolate onto the common grid, never extrapolating beyond the profile and
-        # never bridging data gaps wider than five times the profile's typical spacing.
+        # never bridging data gaps: steps wider than five times the spacing around them.
+        # (Against the profile's median spacing, the sparser but continuous levels of an
+        # Akatsuki profile at 80-83 km, 0.6 km apart where the rest are 0.1 km, were cut
+        # out of every comparison.)
         f = np.log(v_clean) if log_like else v_clean
         v_interp = np.interp(z_grid, z_clean, f, left=np.nan, right=np.nan)
         if z_clean.size > 2:
-            dz = np.diff(z_clean)
-            typical = float(np.median(dz[dz > 0])) if np.any(dz > 0) else 0.0
-            if typical > 0:
-                for gap_lo, gap_hi in zip(z_clean[:-1][dz > 5 * typical], z_clean[1:][dz > 5 * typical]):
-                    v_interp[(z_grid > gap_lo) & (z_grid < gap_hi)] = np.nan
+            for gap_lo, gap_hi in _data_gaps(z_clean):
+                v_interp[(z_grid > gap_lo) & (z_grid < gap_hi)] = np.nan
         # the profile's own 1-sigma on the grid (in the variable's units), where it has one
         sig_p = _compared_sigma(p, variable_name)
         s_interp = None

@@ -45,11 +45,12 @@ def profile_spectrum(z_km, t_k, z1: float, z2: float) -> Optional[Dict[str, Any]
     if zs.size < MIN_POINTS:
         return None
     dz = max(float(np.median(np.diff(zs))), 0.05)
-    # gaps (steps over 3 level spacings) do not count as covered: across one the profile
+    # gaps (steps over 3 times the spacing around them) do not count as covered: across one the profile
     # is a straight line, which takes the waves out (a 7 km gap in 60 km lowered the
     # variance by 8 %)
-    steps = np.diff(zs)
-    if steps[steps <= 3.0 * dz].sum() < MIN_COVERAGE * (z2 - z1):
+    from .atmospheric import _data_gaps
+    missing = sum(hi - lo for lo, hi in _data_gaps(zs, 3.0))
+    if (zs[-1] - zs[0]) - missing < MIN_COVERAGE * (z2 - z1):
         return None
     grid = np.arange(zs[0], zs[-1] + 1e-9, dz)
     if grid.size < MIN_POINTS:
