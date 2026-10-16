@@ -690,8 +690,8 @@ function renderSelectionReport(sel, filters) {
     if (out.length) parts.push(`left out: ${out.join(', ')}`);
     if (r.not_indexed?.length) {
       const n = r.not_indexed.length;
-      parts.push(`<span title="${escHtml(r.not_indexed.join(', '))}">${n === 1 ? 'its profile data set is' : `${n} of its profile data sets are`} not catalogued yet `
-        + `(open the mission's Archive data once to read ${n === 1 ? 'its' : 'their'} catalogue)</span>`);
+      parts.push(`<span title="${escHtml(r.not_indexed.join(', '))}">${n === 1 ? 'its profile data set has' : `${n} of its profile data sets have`} not been searched on this computer yet: `
+        + `a search under <em>Find observations</em> below reads ${n === 1 ? 'its' : 'their'} catalogue once</span>`);
     }
     return `<div>${parts.join('; ')}</div>`;
   }).join('') + (vedaState.compareFilter ? limits : '<div>Showing the profiles already on this computer. Set dates or ranges and press Apply to search the whole archive.</div>');
