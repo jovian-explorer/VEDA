@@ -19,10 +19,19 @@ which both the product viewer and the profile loader read like any other table.
   optional ``meta_xlsx``: a spreadsheet listing per-file date, latitude, local time;
   ``mask_constant`` and ``max_lapse`` mask padding and failed levels at the bottom,
   ``revision`` is raised when that changes so that cached CSVs are rewritten);
-* ``zenodo_zip``: profiles are the members of a zip file in a Zenodo record
-  (``record``, ``zip``, ``members`` regex, ``columns``, ``delimiter``);
-* ``votable_split``: one VOTable (inside a zip at ``url``, member ``member``) holding
-  every profile, split into products by ``split`` columns;
+* ``zenodo_zip``: profiles are the members of a zip or .tar.xz file in a Zenodo record
+  (``record``, ``zip``, ``members`` regex, ``columns``, ``delimiter``, None for any
+  whitespace); the time is a column (``time_column``) or the name's ``date`` and
+  ``time`` groups; ``header_ranges`` names the header lines whose midpoints place the
+  profile (NOMAD), ``min_kernel`` (column, threshold) masks levels whose averaging
+  kernel is below the threshold;
+* in both, ``points`` gives each profile's time, latitude and longitude from a table keyed
+  by the name's ``pj`` and ``dir`` groups (``directions`` maps the letters), for files
+  without them (Juno); ``delimiter`` in ``zenodo_files`` reads delimited text with time
+  columns ("UTC") instead of plain numbers;
+* ``votable_files``: one VOTable per profile in a zip (``url``, ``members`` regex with
+  the groups ``product_id`` is formatted from), time and place from its PARAMs (``time``,
+  ``geometry``: key -> PARAM names averaged), columns ``keep``;
 * ``csv_split``: one delimited text table at ``url`` holding every profile (``columns``:
   [(name, unit), ...] in file order, ``header``: whether the first line names them),
   split into products by ``split`` columns.  ``mars_year``/``ls`` name the columns
@@ -244,6 +253,16 @@ _MONTHS = {m: i for i, m in enumerate(["january", "february", "march", "april", 
                                         "september", "october", "november", "december"], 1)}
 
 
+def _point(r: Dict[str, Any], m: Optional[re.Match]) -> Dict[str, Any]:
+    """Time, latitude and longitude from the data set's ``points`` table, keyed by the file
+    name's perijove and direction (Juno: no time or place in the files themselves)."""
+    if not r.get("points") or not m:
+        return {}
+    key = f"{int(m.group('pj'))}{r.get('directions', {}).get(m.group('dir'), m.group('dir'))}"
+    hit = r["points"].get(key)
+    return {"START_TIME": hit[0], "LATITUDE": hit[1], "LONGITUDE": hit[2]} if hit else {}
+
+
 def _row(ds: Dataset, pid: str, path: str, t0: str, extra: Optional[Dict] = None) -> Dict[str, Any]:
     ptype, kind = ds.classify(pid)
     return {"dataset_id": ds.id, "product_id": pid, "volume": "repository", "path": path,
@@ -256,7 +275,8 @@ def _row(ds: Dataset, pid: str, path: str, t0: str, extra: Optional[Dict] = None
 def index_repository(ds: Dataset, progress=None) -> List[Dict[str, Any]]:
     kind = ds.repository["kind"]
     return {"zenodo_files": _index_zenodo_files, "zenodo_zip": _index_zenodo_zip,
-            "votable_split": _index_votable_split, "csv_split": _index_csv_split}[kind](ds, progress)
+            "votable_files": _index_votable_files,
+            "csv_split": _index_csv_split}[kind](ds, progress)
 
 
 def fetch_repository_product(ds: Dataset, prod: Dict[str, Any]) -> Path:
@@ -272,7 +292,7 @@ def fetch_repository_product(ds: Dataset, prod: Dict[str, Any]) -> Path:
     if kind == "csv_split":
         _index_csv_split(ds, None)            # writes every product of the table
     else:
-        _index_votable_split(ds, None)
+        _index_votable_files(ds, None)
     if not out.is_file():
         raise http.ArchiveError(f"{prod['product_id']} is no longer in "
                                 f"{ds.repository.get('member') or ds.repository['url'].rsplit('/', 1)[-1]}")
@@ -310,6 +330,10 @@ def _index_zenodo_files(ds: Dataset, progress=None) -> List[Dict[str, Any]]:
             t0 = (f"20{d[:2]}-{d[2:4]}-{d[4:6]}" if len(d) == 6 else f"{d[:4]}-{d[4:6]}-{d[6:8]}")
         extra = {"url": f["url"], "LATITUDE": meta.get("latitude"), "LST": _hours(meta.get("local_time")),
                  "DIRECTION": meta.get("direction")}
+        pt = _point(r, m)
+        if pt:
+            t0 = pt.pop("START_TIME")
+            extra.update(pt)
         rows.append(_row(ds, pid, f["url"], t0, extra))
     return rows
 
@@ -317,9 +341,15 @@ def _index_zenodo_files(ds: Dataset, progress=None) -> List[Dict[str, Any]]:
 def _fetch_zenodo_file(ds: Dataset, prod: Dict[str, Any], out: Path) -> Path:
     r = ds.repository
     raw = _download(prod["path"], _cache_dir(ds) / (prod["product_id"] + ".src"))
-    data = np.loadtxt(raw, ndmin=2)
     names = r["columns"]
-    cols = {n: data[:, i].astype(float) for i, (n, _) in enumerate(names) if i < data.shape[1]}
+    if "delimiter" in r:                             # delimited text (Juno, Coffin et al.: CSV with times)
+        rows = _parse_rows(raw.read_text(encoding="utf-8", errors="replace"), names, r["delimiter"])
+        names = [(n, "h" if u == "hh:mm:ss" else u) for n, u in names]
+        cols = {n: np.array([row[i] for row in rows], dtype=object if u == "UTC" else float)
+                for i, (n, u) in enumerate(names)}
+    else:
+        data = np.loadtxt(raw, ndmin=2)
+        cols = {n: data[:, i].astype(float) for i, (n, _) in enumerate(names) if i < data.shape[1]}
     if r.get("mask_constant"):
         key, also = r["mask_constant"]
         _mask_constant_runs(cols, key, list(also))
@@ -328,10 +358,43 @@ def _fetch_zenodo_file(ds: Dataset, prod: Dict[str, Any], out: Path) -> Path:
         _mask_unstable_bottom(cols, temperature, altitude, lapse, list(also))
     extra = prod.get("extra") or {}
     extra = json.loads(extra) if isinstance(extra, str) else extra
-    meta = {"START_TIME": prod["start_time"], "LATITUDE": extra.get("LATITUDE"), "LST": extra.get("LST"),
+    meta = {"START_TIME": prod["start_time"], "LATITUDE": extra.get("LATITUDE"), "LONGITUDE": extra.get("LONGITUDE"),
+            "LST": extra.get("LST"),
             "DIRECTION": extra.get("DIRECTION"), "SOURCE": prod["path"], "REVISION": r.get("revision")}
     n = len(next(iter(cols.values())))
     return write_normalised(out, meta, list(names), (tuple(cols[c][i] for c, _ in names) for i in range(n)))
+
+
+def _members(zf: Path):
+    """(name, text) of each file in a zip or .tar.xz archive."""
+    if zf.name.endswith((".tar.xz", ".tar.gz", ".tgz")):
+        import tarfile
+        with tarfile.open(zf) as t:
+            for m in t.getmembers():
+                if m.isfile():
+                    yield m.name, t.extractfile(m).read().decode("utf-8", "replace")
+    else:
+        with zipfile.ZipFile(zf) as z:
+            for name in z.namelist():
+                yield name, z.read(name).decode("utf-8", "replace")
+
+
+def _header_ranges(text: str, keys: Dict[str, str]) -> Dict[str, float]:
+    """Midpoints of header lines "<min> <max> <name> (...)" (NOMAD: lats, longit, lct, L_s)."""
+    out = {}
+    for line in text.splitlines()[:30]:
+        p = line.split()
+        for key, name in keys.items():
+            if len(p) >= 3 and p[2] == name:
+                try:
+                    a, b = float(p[0]), float(p[1])
+                except ValueError:
+                    continue
+                period = {"LONGITUDE": 360.0, "LST": 24.0}.get(key)
+                if period and abs(a - b) > period / 2:       # across 180 E / midnight
+                    b += period if b < a else -period
+                out[key] = 0.5 * (a + b) % period if period else 0.5 * (a + b)
+    return out
 
 
 def _index_zenodo_zip(ds: Dataset, progress=None) -> List[Dict[str, Any]]:
@@ -339,24 +402,29 @@ def _index_zenodo_zip(ds: Dataset, progress=None) -> List[Dict[str, Any]]:
     zf = _zip_path(ds, progress)
     rx = re.compile(r["members"])
     rows = []
-    with zipfile.ZipFile(zf) as z:
-        for name in z.namelist():
-            base = name.rsplit("/", 1)[-1]
-            if not rx.fullmatch(base):
-                continue
-            pid = base.split(".")[0]
-            t0 = ""
-            with z.open(name) as fh:
-                for _ in range(20):                    # the first line with a readable time
-                    line = fh.readline().decode("utf-8", "replace")
-                    if not line:
-                        break
-                    cells = line.rstrip("\r\n").split(r.get("delimiter", "\t"))
-                    if len(cells) > r["time_column"]:
-                        t0 = _parse_time(cells[r["time_column"]].strip())
-                    if t0:
-                        break
-            rows.append(_row(ds, pid, name, t0))
+    for name, text in _members(zf):
+        base = name.rsplit("/", 1)[-1]
+        m = rx.fullmatch(base)
+        if not m:
+            continue
+        pid = base.split(".")[0]
+        pt = _point(r, m)
+        if pt:
+            rows.append(_row(ds, pid, name, pt.pop("START_TIME"), pt))
+            continue
+        extra = _header_ranges(text, r["header_ranges"]) if r.get("header_ranges") else {}
+        if "date" in m.groupdict():                    # the time in the file name
+            d, t = m.group("date"), m.group("time")
+            rows.append(_row(ds, pid, name, f"{d[:4]}-{d[4:6]}-{d[6:8]}T{t[:2]}:{t[2:4]}:{t[4:6]}", extra))
+            continue
+        t0 = ""
+        for line in text.splitlines()[:20]:            # the first line with a readable time
+            cells = line.split(r.get("delimiter", "\t"))
+            if len(cells) > r["time_column"]:
+                t0 = _parse_time(cells[r["time_column"]].strip())
+            if t0:
+                break
+        rows.append(_row(ds, pid, name, t0, extra))
     return rows
 
 
@@ -364,18 +432,26 @@ def _zip_path(ds: Dataset, progress=None) -> Path:
     r = ds.repository
     if r.get("url"):
         url, key = r["url"], r["url"].rsplit("/", 1)[-1]
+    elif (_cache_dir(ds) / r["zip"]).is_file():
+        # downloaded already: without this every profile read asked Zenodo for the file list,
+        # and reading a few hundred (NOMAD: 324) ran into its rate limit (HTTP 429)
+        return _cache_dir(ds) / r["zip"]
     else:
         f = next((f for f in _zenodo_files(r["record"]) if f["key"] == r["zip"]), None)
         if f is None:
             raise http.ArchiveError(f"{r['zip']} is no longer in Zenodo record {r['record']}")
         url, key = f["url"], f["key"]
-    return _download(url, _cache_dir(ds) / key, progress=progress)
+    # the indexing progress is (done, total, what); the download's is (bytes, total)
+    return _download(url, _cache_dir(ds) / key,
+                     progress=(lambda done, total: progress(done, total, f"downloading {key}")) if progress else None)
 
 
 def _parse_time(s: str) -> str:
     """'17-Feb-2014 03:47:57.625000 (UTC)', ISO strings, or Julian dates -> ISO UTC."""
     s = s.replace("(UTC)", "").strip()
-    for fmt in ("%d-%b-%Y %H:%M:%S.%f", "%d-%b-%Y %H:%M:%S", "%Y-%m-%dT%H:%M:%S.%f", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d"):
+    if s[:2] in ("b'", 'b"'):
+        s = s[2:-1].strip()                          # a Python bytes repr (Juno, Coffin et al.)
+    for fmt in ("%d-%b-%Y %H:%M:%S.%f", "%d-%b-%Y %H:%M:%S", "%Y %b %d %H:%M:%S.%f", "%Y-%m-%dT%H:%M:%S.%f", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d"):
         try:
             return datetime.strptime(s, fmt).strftime("%Y-%m-%dT%H:%M:%S.%f")[:23]
         except ValueError:
@@ -391,11 +467,31 @@ def _parse_time(s: str) -> str:
 
 def _fetch_zip_member(ds: Dataset, prod: Dict[str, Any], out: Path) -> Path:
     r = ds.repository
-    zf = _zip_path(ds)
-    with zipfile.ZipFile(zf) as z:
-        text = z.read(prod["path"]).decode("utf-8", "replace")
+    text = next(t for n, t in _members(_zip_path(ds)) if n == prod["path"])
     names = r["columns"]
-    delim = r.get("delimiter", "\t")
+    rows = _parse_rows(text, names, r.get("delimiter", "\t"))
+    if r.get("min_kernel"):
+        # levels where the averaging kernel's diagonal is below the threshold hold the first
+        # guess (the measurement contributes under that fraction): masked, kernel kept
+        col, threshold = r["min_kernel"]
+        k = [n for n, _ in names].index(col)
+        keep = {i for i, (n, _) in enumerate(names) if i == 0 or n == col}
+        for row in rows:
+            if not row[k] >= threshold:
+                for i in range(len(row)):
+                    if i not in keep:
+                        row[i] = np.nan
+    out_names = [(n, "h" if u == "hh:mm:ss" else u) for n, u in names]
+    extra = prod.get("extra") or {}
+    extra = json.loads(extra) if isinstance(extra, str) else extra
+    meta = {"START_TIME": prod["start_time"], "SOURCE": f"{r.get('record', '')} {prod['path']}",
+            **{k: v for k, v in extra.items() if k.isupper()}}
+    return write_normalised(out, meta, out_names, rows)
+
+
+def _parse_rows(text: str, names: List[Tuple[str, str]], delim: Optional[str]) -> List[List[Any]]:
+    """Rows of a delimited text (None: any whitespace); "UTC" columns as ISO times and
+    "hh:mm:ss" ones as hours; header lines are skipped."""
     rows = []
     for line in text.splitlines():
         cells = [c.strip() for c in line.split(delim)]
@@ -411,60 +507,77 @@ def _fetch_zip_member(ds: Dataset, prod: Dict[str, Any], out: Path) -> Path:
                 try:
                     row.append(float(c))
                 except ValueError:
-                    row.append(np.nan)
-        rows.append(row)
-    out_names = [(n, "h" if u == "hh:mm:ss" else u) for n, u in names]
-    return write_normalised(out, {"START_TIME": prod["start_time"], "SOURCE": f"{r.get('record', '')} {prod['path']}"},
-                            out_names, rows)
+                    break
+        else:
+            rows.append(row)
+    return rows
 
 
-def _index_votable_split(ds: Dataset, progress=None) -> List[Dict[str, Any]]:
-    """Read the whole VOTable once, write every product's CSV, return the rows."""
+def _cell(c: str) -> float:
+    """A VOTable cell; "(76+0j)" (a complex number written by the SOIR w24 software, in
+    one file) is its real part."""
+    if not c:
+        return np.nan
+    try:
+        return float(c)
+    except ValueError:
+        try:
+            v = complex(c.strip("()").replace(" ", ""))
+        except ValueError:
+            return np.nan
+        return v.real if v.imag == 0 else np.nan
+
+
+def _write_votable_profile(ds: Dataset, pid: str, meta: Dict[str, Any], fields: List[Tuple[str, str]],
+                           cells: List[List[str]], keep: List[int]) -> None:
+    r = ds.repository
+    out_names = [fields[i] for i in keep]
+    cols = {fields[i][0]: np.array([_cell(c[i]) for c in cells]) for i in keep}
+    if r.get("mask_constant"):
+        mkey, also = r["mask_constant"]
+        _mask_constant_runs(cols, mkey, list(also))
+    if r.get("mask_zero_sigma"):
+        skey, masked = r["mask_zero_sigma"]
+        with np.errstate(invalid="ignore"):
+            zero = cols[skey] < 1e-6
+        for c in masked:
+            cols[c][zero] = np.nan
+    write_normalised(_cache_dir(ds) / f"{pid}.csv", meta, out_names,
+                     ([cols[n][j] for n, _ in out_names] for j in range(len(cells))))
+
+
+def _index_votable_files(ds: Dataset, progress=None) -> List[Dict[str, Any]]:
+    """One VOTable per profile in a zip (SOIR w24: CO2_0/Orbit0021.1_CO2_0_w24.01.xml), its
+    time and place in PARAMs; every product's CSV is written, the rows returned."""
     import xml.etree.ElementTree as ET
     r = ds.repository
-    zf = _zip_path(ds, progress)
-    with zipfile.ZipFile(zf) as z:
-        member = next((n for n in z.namelist() if n.rsplit("/", 1)[-1] == r["member"]), None)
-        if member is None:
-            raise http.ArchiveError(f"{r['member']} is not in {zf.name}")
-        fields: List[Tuple[str, str]] = []
-        groups: Dict[Tuple, List[List[str]]] = {}
-        with z.open(member) as fh:
-            for _ev, el in ET.iterparse(fh, events=("end",)):
-                tag = el.tag.rsplit("}", 1)[-1]
-                if tag == "FIELD":
-                    fields.append((el.get("name"), el.get("unit") or ""))
-                elif tag == "TR":
-                    cells = [(td.text or "").strip() for td in el]
-                    key = tuple(cells[fields_index(fields, c)] for c in r["split"])
-                    groups.setdefault(key, []).append(cells)
-                    el.clear()
-    keep = [i for i, (n, _) in enumerate(fields) if n in r["keep"]]
-    out_names = [fields[i] for i in keep]
+    rx = re.compile(r["members"])
     rows = []
-    for key, cells in groups.items():
-        pid = r["product_id"].format(*[float(k) for k in key])
-        first = cells[0]
-        get = lambda n: float(first[fields_index(fields, n)]) if first[fields_index(fields, n)] else np.nan  # noqa: E731
-        t0 = _parse_time(first[fields_index(fields, r["time"])])
+    for name, text in _members(_zip_path(ds, progress)):
+        m = rx.fullmatch(name)
+        if not m:
+            continue
+        pid = r["product_id"].format(**{k: int(v) for k, v in m.groupdict().items()})
+        root = ET.fromstring(text)
+        params, fields, cells = {}, [], []
+        for el in root.iter():
+            tag = el.tag.rsplit("}", 1)[-1]
+            if tag == "PARAM":
+                params[el.get("name")] = el.get("value")
+            elif tag == "FIELD":
+                fields.append((el.get("name"), el.get("unit") or ""))
+            elif tag == "TR":
+                cells.append([(td.text or "").strip() for td in el])
+        t0 = _parse_time(params.get(r["time"], ""))
         meta = {"START_TIME": t0}
-        for name, (lo, hi) in r["geometry"].items():
-            meta[name] = round((get(lo) + get(hi)) / 2.0, 4)
+        for key, names in r["geometry"].items():
+            vals = [_cell(params.get(n, "")) for n in names]
+            meta[key] = round(float(np.mean(vals)), 4)
         if r.get("revision"):
             meta["REVISION"] = r["revision"]
-        cols = {fields[i][0]: np.array([float(c[i]) if c[i] else np.nan for c in cells]) for i in keep}
-        if r.get("mask_constant"):
-            mkey, also = r["mask_constant"]
-            _mask_constant_runs(cols, mkey, list(also))
-        if r.get("mask_zero_sigma"):
-            skey, masked = r["mask_zero_sigma"]
-            with np.errstate(invalid="ignore"):
-                zero = cols[skey] < 1e-6
-            for c in masked:
-                cols[c][zero] = np.nan
-        write_normalised(_cache_dir(ds) / f"{pid}.csv", meta, out_names,
-                         ([cols[n][j] for n, _ in out_names] for j in range(len(cells))))
-        rows.append(_row(ds, pid, f"{r['member']}#{pid}", t0, {k: v for k, v in meta.items() if k not in ("START_TIME", "REVISION")}))
+        keep = [i for i, (n, _) in enumerate(fields) if n in r["keep"]]
+        _write_votable_profile(ds, pid, meta, fields, cells, keep)
+        rows.append(_row(ds, pid, name, t0, {k: v for k, v in meta.items() if k not in ("START_TIME", "REVISION")}))
     return rows
 
 

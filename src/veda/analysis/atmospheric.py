@@ -1466,7 +1466,7 @@ def export_profile_to_csv(profile: ObservationProfile) -> str:
 _EXTRA_UNITS = {"refractivity_n": "N-units", "dtheta_dz": "K/km", "number_density_m3": "m^-3", "molar_mass": "g/mol",
                 "co2_condensation_temperature": "K", "t_minus_co2_condensation": "K",
                 "dust_opacity_per_km": "1/km", "ice_opacity_per_km": "1/km",
-                "density_measured": "kg/m^3", "h2so4_ppm": "ppm", "absorptivity_db_km": "dB/km",
+                "density_measured": "kg/m^3", "h2so4_ppm": "ppm", "h2o_ppm": "ppm", "h2o_cm3": "cm^-3", "absorptivity_db_km": "dB/km",
                 "tec_m2": "m^-2 (electron content along the ray path, 0 at the start of the occultation)",
                 "dust_mixing_ratio": "1 (optical depth at 2.2 um per unit column-mass fraction)",
                 "ice_mixing_ratio": "1 (optical depth at 2.2 um per unit column-mass fraction)",

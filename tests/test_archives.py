@@ -569,7 +569,7 @@ def test_repository_pages_are_linked_without_the_trailing_slash():
     for did, page in (("vex-vera-gramigna2023", "https://zenodo.org/records/20056665"),
                       ("vex-vera-fsi-imamura", "https://zenodo.org/records/4621070"),
                       ("vex-soir-co2-temperature",
-                       "https://data.aeronomie.be/dataset/venus-atmospheric-profiles-from-spicav-soir-vexv23")):
+                       "https://data.aeronomie.be/dataset/venus-atmospheric-profiles-from-spicav-soir-vexv24")):
         ds = get_dataset(did)
         assert ds.base_url == page + "/" and ds.to_dict()["url"] == page
         row = {"dataset_id": did, "product_id": "x", "volume": "repository", "path": "x.csv", "start_time": "",
@@ -739,3 +739,73 @@ def test_curiosity_entry_profile_as_in_the_teams_document():
     th = np.isfinite(T) & (P <= 1.14e-2) & (P >= 1.89e-3)
     # (130.0 and 1.4 K on the full file; this copy keeps every 50th level)
     assert T[th].mean() == pytest.approx(130.0, abs=0.5) and T[th].std() == pytest.approx(1.4, abs=0.4)
+
+
+def test_spicam_stellar_occultation_as_published():
+    """Forget et al. (2009), in the archive volume (MEX-M-SPI-4-UVDDR-PROF-V1.0 DOCUMENT):
+    orbit 134 is the first of the regular series (Ls 353.4, 22 February 2004); each profile
+    is given for top temperatures of 100, 175 and 250 K (three columns under one name, the
+    middle one used), the densities are in kg/m^3 (the paper's frost-point formula), and
+    temperatures retrieved again from those densities agree with the team's below 120 km."""
+    from pathlib import Path
+    import numpy as np
+    from veda.archives.profiles import profile_from_label
+    ds = get_dataset("mex-m-spi-4-uvddr-prof-v1.0")
+    d = Path(__file__).parent / "data" / "mex_spicam"
+    prod = {"start_time": "2004-02-21T12:28:04", "volume": "MEX-M-SPI-4-UVDDR-PROF-V1.0", "url": ""}
+    t = profile_from_label(ds, {**prod, "product_id": "TOBS_ORB_0134A3", "product_type": "Temperature profile"},
+                           d / "TOBS_ORB_0134A3.LBL")
+    rho = profile_from_label(ds, {**prod, "product_id": "ROOBS_ORB_0134A3", "product_type": "CO2 density profile"},
+                             d / "ROOBS_ORB_0134A3.LBL")
+    assert (t.latitude, t.longitude) == (67.4, 246.4)
+    assert t.raw_attributes["LS"] == pytest.approx(353.4, abs=0.1)
+    z = np.asarray(t.altitude_km)
+    lo, hi = t.alternatives["temperature_k"]              # top at 100 and 250 K
+    assert np.all(abs(hi - lo)[z < 110] < 1.0) and abs(hi - lo)[-2] > 50
+    assert 1e-10 < np.nanmin(rho.derived["density_measured"]) and np.nanmax(rho.derived["density_measured"]) < 1e-3
+    tf = np.interp(z, rho.altitude_km, rho.derived["temperature_from_density"])
+    m = (z > 60) & (z < 120)
+    assert abs(np.median(tf[m] - np.asarray(t.temperature_k)[m])) < 4.0
+
+
+def test_spicam_water_vapour_profile():
+    from pathlib import Path
+    import numpy as np
+    from veda.archives.profiles import profile_from_label
+    ds = get_dataset("mex-m-spi-4-irddr-prof-v1.0")
+    p = profile_from_label(ds, {"product_id": "ORB18596A2_H2O_VMR", "start_time": "2018-09-12T13:42:27.559",
+                                "volume": "MEX-M-SPI-4-IRDDR-PROF-V1.0", "url": "", "product_type": "H2O VMR"},
+                           Path(__file__).parent / "data" / "mex_spicam" / "ORB18596A2_H2O_VMR.LBL")
+    assert (p.latitude, p.longitude) == (51.6, 243.6)
+    assert p.altitude_km[0] == pytest.approx(66.28) and p.derived["h2o_ppm"][0] == pytest.approx(31.51)
+    assert p.uncertainty["h2o_ppm"][0] == pytest.approx(23.36)
+
+
+def test_repeated_pds3_column_names_are_all_read():
+    from pathlib import Path
+    from veda.readers.pds3_reader import read_pds3_table
+    t = read_pds3_table(str(Path(__file__).parent / "data" / "mex_spicam" / "TOBS_ORB_0134A3.LBL"))
+    assert [c for c in t.columns if c.startswith("TEMPERATURE")] == [
+        "TEMPERATURE", "TEMPERATURE_2", "TEMPERATURE_3", "TEMPERATURE_ERROR"]
+
+
+def test_pathfinder_entry_profile_as_published():
+    """Magalhaes et al. (1999): thermospheric peak of 153 K at 134 km, a nearly isothermal
+    plateau at 127 K between 110 and 88 km, and between 85 and 77 km temperatures up to 7 K
+    below the CO2 saturation temperature (altitudes above the landing site, radius 3389.72 km)."""
+    from pathlib import Path
+    import numpy as np
+    from veda.archives.profiles import profile_from_label
+    ds = get_dataset("mpf-m-asimet-4-ddr-edl-v1.0")
+    p = profile_from_label(ds, {"product_id": "EDL_DDR", "start_time": "1997-07-04T16:51:44.467", "volume": "mpam_0001",
+                                "url": "", "product_type": "Entry profile"},
+                           Path(__file__).parent / "data" / "mpf_edl" / "edl_ddr.lbl")
+    z = np.asarray(p.altitude_km) + 3389.5 - 3389.72
+    t = np.asarray(p.temperature_k)
+    k = int(np.argmax(np.where(z > 120, t, -1)))
+    assert t[k] == pytest.approx(153, abs=0.5) and z[k] == pytest.approx(134, abs=0.5)
+    assert np.mean(t[(z >= 88) & (z <= 110)]) == pytest.approx(127, abs=1.5)
+    below = np.nanmin(np.asarray(p.derived["t_minus_co2_condensation"])[(z >= 77) & (z <= 85)])
+    assert -7.5 < below < -6.0
+    # 3-sigma envelopes in the file: 1-sigma is a third of them
+    assert p.uncertainty["temperature_k"][0] == pytest.approx(17.9654 / 3)

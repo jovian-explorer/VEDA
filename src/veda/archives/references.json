@@ -6637,6 +6637,302 @@
     }
    ],
    "note": "Galileo probe descent trajectory and winds (gp_0001 data/dwe)."
+  },
+  {
+   "key": "forget2009",
+   "authors": [
+    "Forget, F.",
+    "Montmessin, F.",
+    "Bertaux, J.-L.",
+    "González-Galindo, F.",
+    "Lebonnois, S.",
+    "Quémerais, E.",
+    "Reberac, A.",
+    "Dimarellis, E.",
+    "López-Valverde, M. A."
+   ],
+   "et_al": false,
+   "year": 2009,
+   "title": "Density and temperatures of the upper Martian atmosphere measured by stellar occultations with Mars Express SPICAM",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "114",
+   "issue": "E1",
+   "pages": "E01004",
+   "doi": "10.1029/2008JE003086",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mex",
+     "payload": "SPICAM"
+    }
+   ],
+   "note": "Crossref gives the electronic article number 2008JE003086; the paper's citation number is E01004."
+  },
+  {
+   "key": "fedorova2021",
+   "authors": [
+    "Fedorova, A.",
+    "Montmessin, F.",
+    "Korablev, O.",
+    "Lefèvre, F.",
+    "Trokhimovskiy, A.",
+    "Bertaux, J.-L."
+   ],
+   "et_al": false,
+   "year": 2021,
+   "title": "Multi-Annual Monitoring of the Water Vapor Vertical Distribution on Mars by SPICAM on Mars Express",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "126",
+   "issue": "1",
+   "pages": "e2020JE006616",
+   "doi": "10.1029/2020JE006616",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mex",
+     "payload": "SPICAM"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "coffin2025",
+   "authors": [
+    "Coffin, D. A.",
+    "Withers, P.",
+    "Agiwal, O.",
+    "Buccino, D.",
+    "Parisi, M.",
+    "Park, R. S.",
+    "Caruso, A.",
+    "Casajus, L. G.",
+    "Gramigna, E.",
+    "Tortora, P."
+   ],
+   "et_al": true,
+   "year": 2025,
+   "title": "Juno-Derived Electron Density Profiles of the High-Latitude Jovian Ionosphere",
+   "journal": "Journal of Geophysical Research: Space Physics",
+   "volume": "130",
+   "issue": "6",
+   "pages": "e2025JA033754",
+   "doi": "10.1029/2025JA033754",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "juno",
+     "payload": "Radio science (radio occultation)"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "caruso2025",
+   "authors": [
+    "Caruso, A.",
+    "Gomez Casajus, L.",
+    "Smirnova, M.",
+    "Buccino, D.",
+    "Galanti, E.",
+    "Hubbard, W. B.",
+    "Togni, A.",
+    "Gramigna, E.",
+    "Parisi, M.",
+    "Park, R. S."
+   ],
+   "et_al": true,
+   "year": 2025,
+   "title": "Probing Jupiter's Atmosphere Through Juno Radio Occultations: Methodology and Initial Observations",
+   "journal": "Geophysical Research Letters",
+   "volume": "52",
+   "issue": "22",
+   "pages": "e2024GL113231",
+   "doi": "10.1029/2024GL113231",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "juno",
+     "payload": "Radio science (radio occultation)"
+    }
+   ],
+   "note": "Method paper of the Caruso et al. electron density data set (Zenodo 22706200), whose own paper (Caruso et al. 2026) has no DOI yet."
+  },
+  {
+   "key": "lopezvalverde2023",
+   "authors": [
+    "López-Valverde, M. A.",
+    "Funke, B.",
+    "Brines, A.",
+    "Stolzenbach, A.",
+    "Modak, A.",
+    "Hill, B.",
+    "González-Galindo, F.",
+    "Thomas, I.",
+    "Trompet, L.",
+    "Aoki, S."
+   ],
+   "et_al": true,
+   "year": 2023,
+   "title": "Martian Atmospheric Temperature and Density Profiles During the First Year of NOMAD/TGO Solar Occultation Measurements",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "128",
+   "issue": "2",
+   "pages": "e2022JE007278",
+   "doi": "10.1029/2022JE007278",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "tgo",
+     "payload": "NOMAD SO"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "vandaele2018",
+   "authors": [
+    "Vandaele, A. C.",
+    "Lopez-Moreno, J. J.",
+    "Patel, M. R.",
+    "Bellucci, G.",
+    "Daerden, F.",
+    "Ristic, B.",
+    "Robert, S.",
+    "Thomas, I. R.",
+    "Wilquet, V."
+   ],
+   "et_al": true,
+   "year": 2018,
+   "title": "NOMAD, an Integrated Suite of Three Spectrometers for the ExoMars Trace Gas Mission: Technical Description, Science Objectives and Expected Performance",
+   "journal": "Space Science Reviews",
+   "volume": "214",
+   "issue": "5",
+   "pages": "80",
+   "doi": "10.1007/s11214-018-0517-2",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "tgo",
+     "payload": "NOMAD"
+    }
+   ],
+   "note": "Crossref lists the NOMAD Team as the first author entry; the persons follow."
+  },
+  {
+   "key": "mahieux2023",
+   "authors": [
+    "Mahieux, A.",
+    "Robert, S.",
+    "Piccialli, A.",
+    "Trompet, L.",
+    "Vandaele, A. C."
+   ],
+   "et_al": false,
+   "year": 2023,
+   "title": "The SOIR/Venus Express species concentration and temperature database: CO2, CO, H2O, HDO, H35Cl, H37Cl, HF individual and mean profiles",
+   "journal": "Icarus",
+   "volume": "405",
+   "issue": "",
+   "pages": "115713",
+   "doi": "10.1016/j.icarus.2023.115713",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "vex",
+     "payload": "SPICAV-SOIR"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "bira2024soir",
+   "authors": [
+    "Vandaele, A. C.",
+    "Mahieux, A.",
+    "Wilquet, V.",
+    "Chamberlain, S.",
+    "Trompet, L."
+   ],
+   "et_al": false,
+   "year": 2024,
+   "title": "Venus atmospheric profiles - From SPICAV-SOIR on board VEx version w24.00",
+   "journal": "Royal Belgian Institute for Space Aeronomy",
+   "volume": "",
+   "issue": "",
+   "pages": "",
+   "doi": "10.18758/71021090",
+   "verified": true,
+   "type": "dataset",
+   "used_for": [
+    {
+     "mission": "vex",
+     "payload": "SPICAV-SOIR"
+    }
+   ],
+   "note": "DOI registered with DataCite (creators, year 2024 and title as registered)."
+  },
+  {
+   "key": "magalhaes1999",
+   "authors": [
+    "Magalhães, J. A.",
+    "Schofield, J. T.",
+    "Seiff, A."
+   ],
+   "et_al": false,
+   "year": 1999,
+   "title": "Results of the Mars Pathfinder atmospheric structure investigation",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "104",
+   "issue": "E4",
+   "pages": "8943-8955",
+   "doi": "10.1029/1998JE900041",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mpf",
+     "payload": "ASI/MET"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "schofield1997",
+   "authors": [
+    "Schofield, J. T.",
+    "Barnes, J. R.",
+    "Crisp, D.",
+    "Haberle, R. M.",
+    "Larsen, S.",
+    "Magalhães, J. A.",
+    "Murphy, J. R.",
+    "Seiff, A.",
+    "Wilson, G."
+   ],
+   "et_al": false,
+   "year": 1997,
+   "title": "The Mars Pathfinder Atmospheric Structure Investigation/Meteorology (ASI/MET) Experiment",
+   "journal": "Science",
+   "volume": "278",
+   "issue": "5344",
+   "pages": "1752-1758",
+   "doi": "10.1126/science.278.5344.1752",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "mpf",
+     "payload": "ASI/MET"
+    }
+   ],
+   "note": ""
   }
  ]
 }

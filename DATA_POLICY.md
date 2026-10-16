@@ -58,7 +58,7 @@ The authoritative list is VEDA's own catalogue (`src/veda/archives/datasets.py`,
 | Venus Express (VEX) | VeRa (Radio Science) | L1 + ancillary | `vex-v-rss-1-ent-v1.0` | NASA PDS Atmospheres Node | Häusler et al. (2006); Svedhem et al. (2007) |
 | Venus Express (VEX) | VeRa radio occultation profiles 2014 (T, p, n) | Derived | `vex-vera-gramigna2023` | Zenodo, CC-BY-4.0 | Gramigna et al. (2023); data doi:10.5281/zenodo.20056665 |
 | Venus Express (VEX) | VeRa radio occultation profiles 2006-2009, Full Spectrum Inversion (T, p, n) | Derived | `vex-vera-fsi-imamura` | Zenodo, CC-BY-4.0 | Imamura et al. (2018); data doi:10.5281/zenodo.4621070 |
-| Venus Express (VEX) | SPICAV-SOIR solar occultation profiles 2006-2014 (CO2 density, p, T at 70-170 km) | Derived | `vex-soir-co2-temperature` | BIRA-IASB, CC-BY-4.0 | Mahieux et al. (2015); data doi:10.18758/71021089 |
+| Venus Express (VEX) | SPICAV-SOIR solar occultation profiles 2006-2014, version w24 (CO2 density, p, T at 66-167 km) | Derived | `vex-soir-co2-temperature` | BIRA-IASB, CC-BY-4.0 | Mahieux et al. (2023); data doi:10.18758/71021090 |
 | Venus Express (VEX) | VeRa (Radio Science) | L1A-L2 | `vex-v-vra-1-2-3` | ESA PSA | Häusler et al. (2006); Svedhem et al. (2007) |
 | Magellan | RSS (Radio Science) | L5 | `mgn-v-rss-5-occ-prof-rtpd-v1.0` | NASA PDS Atmospheres Node | Jenkins et al. (1994); Steffes et al. (1994); Saunders et al. (1992) |
 | Magellan | RSS (Radio Science) | L5 | `mgn-v-rss-5-occ-prof-abs-h2so4-v1.0` | NASA PDS Atmospheres Node | Jenkins et al. (1994); Steffes et al. (1994); Saunders et al. (1992) |
@@ -72,6 +72,12 @@ The authoritative list is VEDA's own catalogue (`src/veda/archives/datasets.py`,
 | Mars Science Laboratory (Curiosity) | EDL atmospheric reconstruction | Derived (PDS4) | `msl-edl-atmosphere` | NASA PDS Atmospheres Node | Holstein-Rathlou et al. (2016); data doi:10.17189/1518944 |
 | InSight | EDL atmospheric reconstruction | Derived (PDS4) | `insight-edl-atmosphere` | NASA PDS Atmospheres Node | Karatekin, Banfield & Ashley (2020), data doi:10.17189/1518935 |
 | Mars Reconnaissance Orbiter (MRO) | ACC (aerobraking density profiles, 2006) | L5 (derived) | `mro-m-accel-5-profile-v1.0` | NASA PDS Atmospheres Node | Tolson et al. (2008); data: Tolson et al. (2010) |
+| Mars Express (MEX) | SPICAM UV stellar occultations: CO2 density and temperature, 2004-2006 | L4 (derived) | `mex-m-spi-4-uvddr-prof-v1.0` | ESA PSA | Forget et al. (2009); Bertaux et al. (2006) |
+| Mars Express (MEX) | SPICAM IR solar occultations: water vapour density and mixing ratio, 2005-2018 | L4 (derived) | `mex-m-spi-4-irddr-prof-v1.0` | ESA PSA | Fedorova et al. (2021); Bertaux et al. (2006) |
+| ExoMars Trace Gas Orbiter (TGO) | NOMAD SO solar occultations: temperature and pressure, Mars Year 34 | Derived | `tgo-nomad-so-lopezvalverde2023` | Zenodo, CC-BY-4.0 | Lopez-Valverde et al. (2023); Vandaele et al. (2018); data doi:10.5281/zenodo.7086187 |
+| Mars Pathfinder | ASI/MET entry profile (density, pressure, temperature), July 1997 | DDR (derived) | `mpf-m-asimet-4-ddr-edl-v1.0` | NASA PDS Atmospheres Node | Magalhaes et al. (1999); Schofield et al. (1997) |
+| Juno | Radio occultations: Jupiter ionosphere electron density, perijoves 53-62 | Derived | `juno-ro-coffin2025` | Zenodo, CC-BY-4.0 | Coffin et al. (2025); data doi:10.5281/zenodo.15305795 |
+| Juno | Radio occultations: Jupiter ionosphere electron density, perijoves 53-80 | Derived | `juno-ro-caruso2026` | Zenodo, CC-BY-4.0 | Caruso et al. (2025, 2026); data doi:10.5281/zenodo.22706200 |
 | 2001 Mars Odyssey | ACC (aerobraking density profiles, 2001-2002) | L5 (derived) | `ody-m-accel-5-derived-v1.0` | NASA PDS Atmospheres Node | Tolson et al. (2005); data: Withers & Murphy (2009) |
 | MAVEN | ACC (accelerometer density profiles of the periapsis passes, 2014-2020) | L3 (derived, PDS4) | `maven-acc-profile` | NASA PDS Atmospheres Node | Zurek et al. (2015); data: Tolson & Lugo (2016) |
 | MAVEN | ROSE (ionospheric electron density profiles, 2016-2025) | L3 (derived, PDS4) | `maven-rose-edp` | NASA PDS PPI Node | Withers et al. (2020); Withers & Moore (2020); data: Withers (2017), doi:10.17189/1517630 |

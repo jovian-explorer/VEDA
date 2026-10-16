@@ -1,0 +1,95 @@
+PDS_VERSION_ID                 = PDS3                                         
+LABEL_REVISION_NOTE            = 0001                                         
+RECORD_TYPE                    = FIXED_LENGTH                                 
+^TABLE                         = ("TOBS_ORB_0134A3.TAB",1<BYTES>)           
+FILE_NAME                      = "TOBS_ORB_0134A3.TAB"                        
+DATA_SET_ID                    = "MEX-M-SPI-4-UVDDR-PROF-V1.0"                
+DATA_SET_NAME                  = "MARS EXPRESS MARS SPICAM 4 UV ATMOSPHERIC   
+                                 PROFILES V1.0"                               
+PRODUCT_ID                     = "TOBS_ORB_0134A3.TAB"                        
+PROCESSING_LEVEL_ID            = 4                                            
+PRODUCT_CREATION_TIME          = 2008-02-19T19:30:25                        
+MISSION_NAME                   = "MARS EXPRESS"                               
+INSTRUMENT_HOST_NAME           = "MARS EXPRESS"                               
+INSTRUMENT_HOST_ID             = MEX                                          
+MISSION_ID                     = MEX                                          
+TARGET_NAME                    = "MARS"                                       
+START_TIME                     = 2004-02-21T12:28:04.000                      
+STOP_TIME                      = 2004-02-21T12:32:42.000                      
+SPACECRAFT_CLOCK_START_COUNT   = "1/0025446477.03679"                         
+SPACECRAFT_CLOCK_STOP_COUNT    = "1/0025446755.03679"                         
+ORBIT_NUMBER                   = 0134                                       
+INTERCEPT_POINT_LATITUDE       = 67.4000                                    
+INTERCEPT_POINT_LONGITUDE      = 246.400                                    
+SOLAR_LONGITUDE                = 353.300                                    
+LOCAL_TRUE_SOLAR_TIME          = "20:06:00"                                   
+INSTRUMENT_ID                  = SPICAM                                       
+INSTRUMENT_NAME                = "SPICAM"                                     
+INSTRUMENT_TYPE                = "SPECTROMETER"                               
+CHANNEL_ID                     = IR                                           
+STANDARD_DATA_PRODUCT_ID       = IR                                           
+DISTRIBUTION_TYPE              = DATA                                         
+                                                                              
+                                                                              
+/* DATA OBJECT DEFINITION  */                                                 
+                                                                              
+OBJECT     = TABLE                                                            
+  NAME               = DATA                                                   
+  INTERCHANGE_FORMAT = ASCII                                                  
+  ROWS               = 23                                                     
+  COLUMNS            = 5                                                      
+  ROW_BYTES          = 72                                                     
+                                                                              
+  OBJECT     = COLUMN                                                         
+    NAME          = ALTITUDE                                                  
+    COLUMN_NUMBER = 1                                                         
+    DATA_TYPE     = ASCII_REAL                                                
+    START_BYTE    = 8                                                         
+    BYTES         = 9                                                         
+    FORMAT        = "F9.6"                                                    
+    DESCRIPTION   = "Altitude above Mars Zero Datum (km)"                     
+  END_OBJECT = COLUMN                                                         
+                                                                              
+  OBJECT     = COLUMN                                                         
+    NAME          = TEMPERATURE                                               
+    COLUMN_NUMBER = 2                                                         
+    DATA_TYPE     = ASCII_REAL                                                
+    START_BYTE    = 23                                                        
+    BYTES         = 7                                                         
+    FORMAT        = "F7.3"                                                    
+    DESCRIPTION   = "Temperature (K) assuming Ttop= 100 K"                    
+  END_OBJECT = COLUMN                                                         
+                                                                              
+  OBJECT     = COLUMN                                                         
+    NAME          = TEMPERATURE                                               
+    COLUMN_NUMBER = 3                                                         
+    DATA_TYPE     = ASCII_REAL                                                
+    START_BYTE    = 36                                                        
+    BYTES         = 7                                                         
+    FORMAT        = "F7.3"                                                    
+    DESCRIPTION   = "Temperature (K) assuming Ttop= 175 K"                    
+  END_OBJECT = COLUMN                                                         
+                                                                              
+  OBJECT     = COLUMN                                                         
+    NAME          = TEMPERATURE                                               
+    COLUMN_NUMBER = 4                                                         
+    DATA_TYPE     = ASCII_REAL                                                
+    START_BYTE    = 49                                                        
+    BYTES         = 7                                                         
+    FORMAT        = "F7.3"                                                    
+    DESCRIPTION   = "Temperature (K) assuming Ttop= 250 K"                    
+  END_OBJECT = COLUMN                                                         
+                                                                              
+  OBJECT     = COLUMN                                                         
+    NAME          = TEMPERATURE_ERROR                                         
+    COLUMN_NUMBER = 5                                                         
+    DATA_TYPE     = ASCII_REAL                                                
+    START_BYTE    = 63                                                        
+    BYTES         = 9                                                         
+    FORMAT        = "F9.6"                                                    
+    DESCRIPTION   = "Error of temperature (K)"                                
+  END_OBJECT = COLUMN                                                         
+                                                                              
+END_OBJECT = TABLE                                                            
+                                                                              
+END                                                                           

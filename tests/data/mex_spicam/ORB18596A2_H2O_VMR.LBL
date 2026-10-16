@@ -1,0 +1,75 @@
+PDS_VERSION_ID                 = PDS3                                         
+RECORD_TYPE                    = FIXED_LENGTH                                 
+^TABLE                         = ("ORB18596A2_H2O_VMR.TAB",1<BYTES>)          
+FILE_NAME                      = "ORB18596A2_H2O_VMR.TAB"                     
+DATA_SET_ID                    = "MEX-M-SPI-4-IRDDR-PROF-V1.0"                
+DATA_SET_NAME                  = "MARS EXPRESS MARS SPICAM 4 IR               
+                                 ATMOSPHERIC PROFILES V1.0"                   
+PRODUCT_ID                     = "ORB18596A2_H2O_VMR.TAB"                     
+PRODUCT_CREATION_TIME          = 2021-07-07T13:08:27                          
+PROCESSING_LEVEL_ID            = 4                                            
+MISSION_NAME                   = "MARS EXPRESS"                               
+INSTRUMENT_HOST_NAME           = "MARS EXPRESS"                               
+INSTRUMENT_HOST_ID             = MEX                                          
+MISSION_ID                     = MEX                                          
+TARGET_NAME                    = "MARS"                                       
+START_TIME                     = 2018-09-12T13:42:27.559                      
+STOP_TIME                      = 2018-09-12T13:52:07.559                      
+SPACECRAFT_CLOCK_START_COUNT   = "1/0484839718.26647"                         
+SPACECRAFT_CLOCK_STOP_COUNT    = "1/0484840298.26647"                         
+ORBIT_NUMBER                   = 18596                                        
+INTERCEPT_POINT_LATITUDE       = 51.6000                                      
+INTERCEPT_POINT_LONGITUDE      = 243.600                                      
+SOLAR_LONGITUDE                = 248.700                                      
+LOCAL_TRUE_SOLAR_TIME          = "20:17:59"                                   
+INSTRUMENT_ID                  = SPICAM                                       
+INSTRUMENT_NAME                = "SPICAM"                                     
+INSTRUMENT_TYPE                = "SPECTROMETER"                               
+CHANNEL_ID                     = IR                                           
+STANDARD_DATA_PRODUCT_ID       = IR                                           
+DISTRIBUTION_TYPE              = DATA                                         
+                                                                              
+                                                                              
+/* DATA OBJECT DEFINITION  */                                                 
+                                                                              
+OBJECT     = TABLE                                                            
+  NAME               = DATA                                                   
+  INTERCHANGE_FORMAT = ASCII                                                  
+  ROWS               = 9                                                      
+  COLUMNS            = 3                                                      
+  ROW_BYTES          = 29                                                     
+                                                                              
+  OBJECT     = COLUMN                                                         
+    NAME          = ALTITUDE                                                  
+    COLUMN_NUMBER = 1                                                         
+    DATA_TYPE     = ASCII_REAL                                                
+    START_BYTE    = 3                                                         
+    BYTES         = 6                                                         
+    FORMAT        = "F6.2"                                                    
+    DESCRIPTION   = "Altitude of the line-of-sight above Mars ellipsoid       
+                     (in kms, IAU_MARS frame)."                               
+  END_OBJECT = COLUMN                                                         
+                                                                              
+  OBJECT     = COLUMN                                                         
+    NAME          = "H2O VOLUME MIXING RATIO"                                 
+    COLUMN_NUMBER = 2                                                         
+    DATA_TYPE     = ASCII_REAL                                                
+    START_BYTE    = 13                                                        
+    BYTES         = 6                                                         
+    FORMAT        = "F6.2"                                                    
+    DESCRIPTION   = "H2O volume mixing ratio (ppm)"                           
+  END_OBJECT = COLUMN                                                         
+                                                                              
+  OBJECT     = COLUMN                                                         
+    NAME          = "H2O VOLUME MIXING RATIO ERROR"                           
+    COLUMN_NUMBER = 3                                                         
+    DATA_TYPE     = ASCII_REAL                                                
+    START_BYTE    = 23                                                        
+    BYTES         = 6                                                         
+    FORMAT        = "F6.2"                                                    
+    DESCRIPTION   = "Error of H2O volume mixing ratio (ppm)"                  
+  END_OBJECT = COLUMN                                                         
+
+END_OBJECT = TABLE                                                            
+
+END                                                                           

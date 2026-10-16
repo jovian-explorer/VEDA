@@ -254,24 +254,31 @@ def index_pds4(ds: Dataset, volume: str) -> List[Dict[str, Any]]:
 
     def labels(d):
         names = http.list_directory(root + d, login_url=ds.login_url)
-        return [d + n for n in names if n.lower().endswith((".xml", ".lblx")) and not n.lower().startswith("collection")]
+        # .lbl: a PDS3 volume without an index (MEX SPICAM profiles), its labels listed the same way
+        return [d + n for n in names if n.lower().endswith((".xml", ".lblx", ".lbl")) and not n.lower().startswith("collection")]
     with ThreadPoolExecutor(workers if len(dirs) > 1 else 1) as pool:
         paths = [p for ps in pool.map(labels, dirs) for p in ps]
-    out = []
-    for path in paths:
-        n = path.rsplit("/", 1)[-1]
-        folder = root + path[:len(path) - len(n)]
-        ptype, kind = ds.classify(path)
-        t0 = t1 = ""
+    def label_times(path):
         if ds.time_from_name:
-            t0 = ds.time_from_filename(n)
-        elif ds.times_from_labels:
-            try:
-                t0, t1 = _pds4_times(http.get_text(folder + n, login_url=ds.login_url))
-            except http.LoginRequired:
-                raise
-            except http.ArchiveError:
-                pass
+            return ds.time_from_filename(path.rsplit("/", 1)[-1]), ""
+        if not ds.times_from_labels:
+            return "", ""
+        try:
+            text = http.get_text(root + path, login_url=ds.login_url)
+        except http.LoginRequired:
+            raise
+        except http.ArchiveError:
+            return "", ""
+        if not path.lower().endswith(".lbl"):
+            return _pds4_times(text)
+        got = [re.search(rf"^\s*{k}\s*=\s*\"?([0-9T:.\-]+)", text, re.M) for k in ("START_TIME", "STOP_TIME")]
+        return tuple(_normalise_time(m.group(1)) if m else "" for m in got)
+    with ThreadPoolExecutor(workers) as pool:
+        times = list(pool.map(label_times, paths))
+    out = []
+    for path, (t0, t1) in zip(paths, times):
+        n = path.rsplit("/", 1)[-1]
+        ptype, kind = ds.classify(path)
         out.append({"dataset_id": ds.id, "product_id": PurePosixPath(n).stem, "volume": volume, "path": path,
                     "start_time": t0, "stop_time": t1,
                     "target": (ds.body_ids[0] if len(ds.body_ids) == 1 else "").upper(),

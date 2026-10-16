@@ -182,6 +182,13 @@ def parse_pds3_tables(label_text: str) -> List[TableDef]:
                     rows = int(attrs.get("ROWS", 0))
                 except ValueError:
                     rows = 0
+                # a repeated NAME (MEX SPICAM: CO2_DENSITY for each of three top
+                # temperatures) gets _2, _3: else only the last one would be read
+                seen: Dict[str, int] = {}
+                for c in cols:
+                    seen[c.name] = seen.get(c.name, 0) + 1
+                    if seen[c.name] > 1:
+                        c.name = f"{c.name}_{seen[c.name]}"
                 tables.append(TableDef(name=name, rows=rows, columns=cols, file=f, record=rec))
         elif stack:
             stack[-1][1][key] = val_c

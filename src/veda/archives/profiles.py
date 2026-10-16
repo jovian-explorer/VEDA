@@ -197,6 +197,11 @@ def _meta_value(tbl, name) -> Optional[float]:
     for n in ([name] if isinstance(name, str) else list(name or ())):
         for src in [tbl.metadata] + headers:       # the label, then one-row header tables
             v = src.get(n)
+            if isinstance(v, str):                 # PDS3 label keywords are kept as text ("17.0000")
+                try:
+                    v = float(v)
+                except ValueError:
+                    continue
             if isinstance(v, (int, float)) and not isinstance(v, bool) and np.isfinite(v):
                 return float(v)
     return None
@@ -474,7 +479,7 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
             prof.derived[key] = v * factor
             s = _col(tbl, sig) if sig else None
             if s is not None:
-                prof.uncertainty[key] = s * factor
+                prof.uncertainty[key] = s * factor * ds.sigma_factor.get(key, 1.0)
     # A 1-sigma uncertainty is never negative or zero: such values are fill (the Phoenix
     # entry profile writes -1 in its SIGMA columns where there is no value; the MSL EDL
     # file 0 for the temperatures it takes from the JPL reconstruction, which have none)

@@ -87,6 +87,8 @@ const VARIABLE_CONFIGS = {
   electron_density_cm3: { hint: 'Number of free electrons per cubic centimetre in the ionosphere, the electrically charged upper atmosphere', label: 'Electron Density (Ne)', units: 'cm⁻³', axis: 'Electron Density Ne (cm⁻³)', logScale: true, color: '#f06292' },
   // bodies: offered in the comparison only for these bodies (Magellan radio occultations)
   h2so4_ppm: { label: 'H₂SO₄ vapour', units: 'ppm', bodies: ['venus'], axis: 'H₂SO₄ vapour volume mixing ratio (ppm)', color: '#eab308' },
+  h2o_ppm: { label: 'Water vapour', units: 'ppm', bodies: ['mars'], axis: 'Water vapour volume mixing ratio (ppm)', logScale: true, color: '#38bdf8' },
+  h2o_cm3: { label: 'Water vapour density', units: 'cm⁻³', bodies: ['mars'], axis: 'Water vapour number density (cm⁻³)', logScale: true, color: '#0ea5e9' },
   absorptivity_db_km: { label: 'Microwave absorptivity', units: 'dB/km', bodies: ['venus'], axis: 'Absorptivity (dB/km)', color: '#f97316' },
   density_measured: { label: 'Mass density (archive)', units: 'kg/m³', axis: 'Mass density ρ (kg/m³)', logScale: true, color: '#14b8a6' },
   number_density_m3: { label: 'Number density (archive)', units: 'm⁻³', axis: 'Number density (m⁻³)', logScale: true, color: '#22d3ee' },
@@ -129,12 +131,14 @@ const MISSION_COLORS = {
   // the other Mars missions: without their own colour they took the palette's first one
   // (#38bdf8), which is almost MRO's, so MEX and MRO profiles looked the same
   mex: '#ff9100',
+  tgo: '#ffab40',
   mgs: '#b388ff',
   ody: '#76ff03',
   msl: '#f50057',
   insight: '#d4a600',
   phoenix: '#00bfa5',
   mer: '#a1887f',
+  mpf: '#ffcc80',
   vega: '#00e676',
   juno: '#ff6e40',
   galileo: '#7c4dff',
@@ -2762,6 +2766,7 @@ async function inspectProfileObservation(obs) {
       'scale_height',
       'h2so4_ppm',
       'absorptivity_db_km',
+      'h2o_ppm', 'h2o_cm3',
       'density_measured',
       'number_density_m3',
       'molar_mass',

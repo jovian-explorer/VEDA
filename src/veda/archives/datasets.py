@@ -304,6 +304,61 @@ ISSDC_HELP = ("ISRO's ISSDC distributes this data through PRADAN, which needs a 
               "Sign in, search by date and payload, download the products (PDS4 .xml labels with their "
               ".csv/.tab tables), then load them with Load File: select each .xml together with its table.")
 
+# Juno radio occultations of Jupiter: where and when the Juno-Earth line passed 1000 km above
+# the 1-bar ellipsoid (71492 x 66854 km), before ingress (I) and after egress (E), computed by
+# scripts/juno_occultation_points.py from the NAIF reconstructed Juno trajectory (spk_rec_*).
+# Perijove 53 was on 2023-07-31; 55-59 had no Earth occultation.  Against the team's own
+# geometry in Coffin et al.'s files (perijoves 53, 54, 62): within 1 s, 0.1 deg of latitude and
+# 0.7 deg of longitude.  (UTC, planetocentric latitude, east longitude.)
+JUNO_OCCULTATION_POINTS = {
+    "53I": ("2023-07-31T09:07:57", 41.08, 254.14),
+    "53E": ("2023-07-31T09:19:00", 12.61, 249.85),
+    "54I": ("2023-09-07T12:00:02", 42.90, 191.30),
+    "54E": ("2023-09-07T12:12:56", 10.02, 186.42),
+    "60I": ("2024-04-09T08:50:42", 46.88, 344.21),
+    "60E": ("2024-04-09T09:05:24", 10.35, 338.26),
+    "61I": ("2024-05-12T03:38:58", 54.53, 251.41),
+    "61E": ("2024-05-12T04:04:06", -6.74, 241.29),
+    "62I": ("2024-06-13T19:53:17", 59.14, 251.99),
+    "62E": ("2024-06-13T20:26:27", -20.95, 238.81),
+    "63I": ("2024-07-16T14:32:17", 64.47, 164.07),
+    "63E": ("2024-07-16T15:12:40", -34.57, 148.93),
+    "64I": ("2024-08-18T06:55:02", 67.61, 157.50),
+    "64E": ("2024-08-18T07:40:03", -44.42, 141.56),
+    "65I": ("2024-09-20T02:26:39", 69.35, 34.84),
+    "65E": ("2024-09-20T03:14:12", -50.08, 18.78),
+    "66I": ("2024-10-22T18:09:03", 69.49, 48.19),
+    "66E": ("2024-10-22T18:56:59", -49.67, 31.93),
+    "67I": ("2024-11-24T13:04:04", 67.95, 302.55),
+    "67E": ("2024-11-24T13:49:55", -42.88, 286.04),
+    "68I": ("2024-12-27T05:21:52", 65.71, 290.97),
+    "68E": ("2024-12-27T06:03:57", -33.14, 274.80),
+    "69I": ("2025-01-28T23:05:10", 64.37, 229.29),
+    "69E": ("2025-01-28T23:44:35", -26.79, 213.52),
+    "70I": ("2025-03-02T16:04:37", 65.01, 197.00),
+    "70E": ("2025-03-02T16:44:56", -27.69, 180.59),
+    "71I": ("2025-04-04T09:30:41", 67.27, 151.15),
+    "71E": ("2025-04-04T10:15:02", -35.04, 133.16),
+    "72I": ("2025-05-07T03:00:52", 70.29, 104.46),
+    "72E": ("2025-05-07T03:50:34", -46.45, 84.87),
+    "73I": ("2025-06-08T20:29:41", 73.45, 59.41),
+    "73E": ("2025-06-08T21:24:21", -59.89, 39.37),
+    "74I": ("2025-07-11T13:39:14", 76.00, 26.45),
+    "74E": ("2025-07-11T14:37:27", -73.54, 8.69),
+    "75I": ("2025-08-13T07:04:22", 78.65, 343.38),
+    "75E": ("2025-08-13T08:04:34", -86.32, 352.79),
+    "76I": ("2025-09-14T23:51:57", 80.99, 321.65),
+    "76E": ("2025-09-15T00:52:48", -81.60, 103.89),
+    "77I": ("2025-10-17T16:05:07", 82.62, 318.87),
+    "77E": ("2025-10-17T17:05:59", -74.34, 109.19),
+    "78I": ("2025-11-19T08:38:57", 83.02, 302.00),
+    "78E": ("2025-11-19T09:40:18", -72.92, 92.74),
+    "79I": ("2025-12-22T01:16:19", 81.79, 281.56),
+    "79E": ("2025-12-22T02:18:54", -78.35, 66.95),
+    "80I": ("2026-01-23T17:20:32", 79.47, 279.50),
+    "80E": ("2026-01-23T18:24:08", -87.48, 29.89),
+}
+
 DATASETS: List[Dataset] = [
     Dataset(
         id="issdc-mom", mission_id="mom", instrument="MOM payloads (MCC, MENCA, LAP, TIS, MSM)", level="ISSDC",
@@ -564,26 +619,30 @@ DATASETS: List[Dataset] = [
     ),
     Dataset(
         id="vex-soir-co2-temperature", mission_id="vex", instrument="SPICAV-SOIR", level="Derived (research data)",
-        title="Venus Express SOIR solar occultations 2006-2014: CO2 density, pressure and temperature at the terminator, 70-170 km (BIRA-IASB)",
+        title="Venus Express SOIR solar occultations 2006-2014: CO2 density, pressure and temperature at the terminator (BIRA-IASB, version w24)",
         body_ids=("venus",), archive="BIRA-IASB data repository (CC-BY-4.0)",
-        base_url="https://data.aeronomie.be/dataset/venus-atmospheric-profiles-from-spicav-soir-vexv23/",
+        base_url="https://data.aeronomie.be/dataset/venus-atmospheric-profiles-from-spicav-soir-vexv24/",
         volume_pattern=r"^repository$",
+        # Version w24 (Mahieux et al. 2023), which replaces w23: one VOTable per occultation,
+        # its time, the latitude and longitude at 120 km, local time and Ls in PARAMs.
         # Some profiles repeat one temperature over their top 10 km: the value the retrieval
         # starts its downward integration from, not a measurement (pressure there is n k T
         # with it); temperature and pressure are masked there, the density is kept.
         # The top level of every profile is that starting temperature too, written with an
-        # uncertainty of 0 (1e-13 K): also masked.
+        # uncertainty of 0 (1e-13 K): also masked.  (Both as in w23: 172 and 718 of the 718
+        # profiles.)
         # The mean molar mass at each level (total_molar_mass, g/mol) is kept: it falls from
         # 43.4 below 120 km to about 20 at 175 km (CO2 giving way to O and CO), and the mass
         # density, scale height and the temperature retrieved from the total density use it.
-        repository={"kind": "votable_split", "revision": 5,
+        repository={"kind": "votable_files", "revision": 6,
                     "mask_constant": ("temperature", ("err_temperature", "pressure", "err_pressure")),
                     "mask_zero_sigma": ("err_temperature", ("temperature", "err_temperature", "pressure", "err_pressure")),
-                    "url": "https://data.aeronomie.be/dataset/bc9068b4-00c0-41fd-a1fa-54a3afaa14a4/resource/0d385c08-73bc-4106-89da-47e9282d2cad/download/co2_soir_w23.zip",
-                    "member": "SOIRProfiles_CO2_0.xml", "split": ("orbit", "case"),
-                    "product_id": "soir_co2_orbit{0:04.0f}_{1:.0f}", "time": "time_JDUTC_min",
-                    "geometry": {"LATITUDE": ("latitude_min", "latitude_max"), "LONGITUDE": ("longitude_min", "longitude_max"),
-                                 "LST": ("local_time_min", "local_time_max"), "LS": ("solar_longitude_min", "solar_longitude_max")},
+                    "url": "https://data.aeronomie.be/dataset/26265617-8175-4a73-b219-4d837b7a6adc/resource/d1e25354-0f3f-4cab-827f-b682910035bb/download/cox_h2o_hdo_hxcl_hf_soir_w24.zip",
+                    "members": r"CO2_0/Orbit(?P<orbit>\d{4})\.(?P<case>\d)_CO2_0_w24\.\d+\.xml",
+                    "product_id": "soir_co2_orbit{orbit:04d}_{case}", "time": "time_min_calendar",
+                    "geometry": {"LATITUDE": ("latitude_120km",), "LONGITUDE": ("longitude_120km",),
+                                 "LST": ("local_time_min", "local_time_max"),
+                                 "LS": ("solar_longitude_min", "solar_longitude_max")},
                     "keep": ("altitude", "pressure", "err_pressure", "temperature", "err_temperature",
                              "total_density", "err_total_density", "total_molar_mass", "err_total_molar_mass",
                              "volume_mixing_ratio_SmoothingFactor=1.0")},
@@ -600,9 +659,10 @@ DATASETS: List[Dataset] = [
         extra_variables={"molar_mass": ("total_molar_mass", "err_total_molar_mass"),
                          "co2_fraction": ("volume_mixing_ratio_SmoothingFactor=1.0", None)},
         altitude_reference="the Venus surface at the tangent point, as given by the SOIR team",
-        citation=("Mahieux, A., et al. (2015). Update of the Venus density and temperature profiles at high altitude measured "
-                  "by SOIR on board Venus Express. PSS, 113-114, 309-320. Data: BIRA-IASB, doi:10.18758/71021089 (CC-BY-4.0)."),
-        doi="10.18758/71021089",
+        citation=("Mahieux, A., et al. (2023). The SOIR/Venus Express species concentration and temperature "
+                  "database: CO2, CO, H2O, HDO, H35Cl, H37Cl, HF individual and mean profiles. Icarus, 405, 115713. "
+                  "Data: Vandaele, A. C., et al. (2024), BIRA-IASB, doi:10.18758/71021090 (CC-BY-4.0)."),
+        doi="10.18758/71021090",
     ),
     Dataset(
         id="vega1-vega2-v-2-3-venus-v1.0", mission_id="vega", instrument="VEGA 2 lander METEO; VEGA 1/2 balloons",
@@ -649,6 +709,27 @@ DATASETS: List[Dataset] = [
                   "latitude of the Phoenix atmospheric entry. GRL, 37(24). Data: PHX-M-ASE-5-EDL-RDR-V1.0."),
         doi="10.1029/2010gl045382",
         label_from_data=True,
+    ),
+    Dataset(
+        id="mpf-m-asimet-4-ddr-edl-v1.0", mission_id="mpf", instrument="ASI/MET (entry)", level="DDR (derived)",
+        title="Mars Pathfinder entry profile at 19 N: density, pressure and temperature (July 1997)",
+        body_ids=("mars",), archive="NASA PDS Atmospheres Node",
+        base_url="https://pds-atmospheres.nmsu.edu/PDS/data/",
+        volume_pattern=r"^mpam_0001$",
+        index_path="index/ed_index.tab",
+        rules=((r"edl_ddr", "Entry profile (density, pressure, temperature)", "profile"),),
+        # Altitudes above the landing site, where the radius of Mars is 3389.72 km (label);
+        # the uncertainties are 3-sigma envelopes, + and - (the + one is used, as 1-sigma).
+        profile_columns={"altitude": "ALTITUDE", "temperature": "TEMPERATURE",
+                         "temperature_sigma": "POSITIVE_TEMP_UNCERTAINTY", "pressure": "PRESSURE",
+                         "pressure_sigma": "POSITIVE_PRESSURE_UNCERTAINTY",
+                         "latitude": "PLANETOCENTRIC_LATITUDE", "longitude": "EAST_LONGITUDE"},
+        extra_variables={"density_measured": ("DENSITY", "POSITIVE_DENSITY_UNCERTAINTY")},
+        sigma_factor={"temperature_k": 1 / 3, "temperature_c": 1 / 3, "pressure_hpa": 1 / 3, "density_measured": 1 / 3},
+        altitude_reference_km=3389.72,
+        citation=("Magalhaes, J. A., Schofield, J. T., & Seiff, A. (1999). Results of the Mars Pathfinder atmospheric "
+                  "structure investigation. JGR, 104(E4), 8943-8955. Data: MPF-M-ASIMET-4-DDR-EDL-V1.0."),
+        doi="10.1029/1998JE900041",
     ),
     Dataset(
         id="msl-edl-atmosphere", mission_id="msl", instrument="EDL reconstruction", level="Derived (PDS4)",
@@ -1033,6 +1114,139 @@ DATASETS: List[Dataset] = [
         time_from_name=r"_(?P<yy>\d{2})(?P<doy>\d{3})(?P<hh>\d{2})(?P<mm>\d{2})_\d+\.",
     ),
     Dataset(
+        id="mex-m-spi-4-uvddr-prof-v1.0", mission_id="mex", instrument="SPICAM (UV stellar occultation)",
+        level="L4 (derived)",
+        title="Mars Express SPICAM stellar occultations: CO2 density and temperature, 60-130 km (2004-2005, Forget et al. 2009)",
+        body_ids=("mars",), archive="ESA PSA",
+        base_url="https://archives.esac.esa.int/psa/ftp/MARS-EXPRESS/SPICAM/",
+        volume_pattern=r"^MEX-M-SPI-4-UVDDR-PROF-V1\.0$",
+        # no index: the labels in DATA/ are listed, with each one's START_TIME
+        pds4_product_dir="DATA/", times_from_labels=True,
+        rules=((r"roobs_", "CO2 density profile (stellar occultation)", "profile"),
+               (r"tobs_", "Temperature profile (stellar occultation)", "profile")),
+        # Each profile is given for three temperatures at the top (100, 175, 250 K), all
+        # three columns under one name (read as NAME, NAME_2, NAME_3): VEDA uses 175 K and
+        # keeps half the 100-250 K difference as the systematic uncertainty.  The labels
+        # and catalogue say cm^-3, but the values (2e-4 at 35 km, 5e-10 at 130 km) are the
+        # mass density in kg/m^3 that Forget et al. (2009) plot.
+        profile_columns={"altitude": "ALTITUDE", "temperature": "TEMPERATURE_2", "temperature_sigma": "TEMPERATURE_ERROR",
+                         "latitude": "INTERCEPT_POINT_LATITUDE", "longitude": "INTERCEPT_POINT_LONGITUDE"},
+        extra_variables={"density_measured": ("CO2_DENSITY_2", "CO2_DENSITY_ERROR")},
+        systematic_from_bracket={"temperature_k": ("TEMPERATURE", "TEMPERATURE_3")},
+        altitude_reference="the Mars zero datum (MOLA areoid), as given by the SPICAM team",
+        citation=("Forget, F., et al. (2009). Density and temperatures of the upper Martian atmosphere measured by "
+                  "stellar occultations with Mars Express SPICAM. J. Geophys. Res., 114, E01004. "
+                  "Data: MEX-M-SPI-4-UVDDR-PROF-V1.0, ESA PSA."),
+        doi="10.1029/2008JE003086",
+    ),
+    Dataset(
+        id="mex-m-spi-4-irddr-prof-v1.0", mission_id="mex", instrument="SPICAM (IR solar occultation)",
+        level="L4 (derived)",
+        title="Mars Express SPICAM solar occultations: water vapour profiles (2004-2018, Fedorova et al. 2021)",
+        body_ids=("mars",), archive="ESA PSA",
+        base_url="https://archives.esac.esa.int/psa/ftp/MARS-EXPRESS/SPICAM/",
+        volume_pattern=r"^MEX-M-SPI-4-IRDDR-PROF-V1\.0$",
+        # its index gives no observation times: the labels are listed and read, as above
+        pds4_product_dir="DATA/", times_from_labels=True,
+        rules=((r"_h2o_density", "Water vapour number density profile", "profile"),
+               (r"_h2o_vmr", "Water vapour volume mixing ratio profile", "profile")),
+        profile_columns={"altitude": "ALTITUDE",
+                         "latitude": "INTERCEPT_POINT_LATITUDE", "longitude": "INTERCEPT_POINT_LONGITUDE"},
+        extra_variables={"h2o_cm3": ("H2O_CONCENTRATION", "H2O_CONCENTRATION_ERROR"),
+                         "h2o_ppm": ("H2O VOLUME MIXING RATIO", "H2O VOLUME MIXING RATIO ERROR")},
+        altitude_reference="the Mars ellipsoid along the line of sight, as given by the SPICAM team",
+        citation=("Fedorova, A., et al. (2021). Multi-annual monitoring of the water vapor vertical distribution on "
+                  "Mars by SPICAM on Mars Express. J. Geophys. Res. Planets, 126, e2020JE006616. "
+                  "Data: MEX-M-SPI-4-IRDDR-PROF-V1.0, ESA PSA."),
+        doi="10.1029/2020JE006616",
+    ),
+    Dataset(
+        id="juno-ro-coffin2025", mission_id="juno", instrument="Radio science (radio occultation)",
+        level="Derived (research data)",
+        title="Juno radio occultations: Jupiter ionosphere electron density profiles, perijoves 53-62 (Coffin et al. 2025)",
+        body_ids=("jupiter",), archive="Zenodo (CC-BY-4.0)",
+        base_url="https://zenodo.org/records/15305795/",
+        volume_pattern=r"^repository$",
+        # The files' ELECDEN is in m^-3, not the cm^-3 of the readme: the peaks (1.3-3.3 x 10^11)
+        # equal those of the same occultations in Caruso et al.'s files in cm^-3 (1.3-3.4 x 10^5)
+        repository={"kind": "zenodo_files", "record": "15305795", "delimiter": ",",
+                    "files": r"PJ(?P<pj>\d{3})(?P<dir>[NX])_EDP_V01\.CSV",
+                    "points": JUNO_OCCULTATION_POINTS, "directions": {"N": "I", "X": "E"},
+                    "columns": [("ETTX", "s"), ("ETOCC", "s"), ("ETRX", "s"), ("UTCTX", "UTC"), ("UTCOCC", "UTC"),
+                                ("UTCRX", "UTC"), ("OCCPTRADIUS", "km"), ("OCCPTALT", "km"), ("OCCPTLAT", "deg"),
+                                ("OCCPTLON", "deg"), ("OCCPTSZA", "deg"), ("OCCPTLST", "h"), ("OCCPTSEP", "deg"),
+                                ("OCCPTEPS", "deg"), ("ELECDEN", "m-3"), ("ELECDENERR", "m-3")]},
+        rules=((r"^pj\d{3}n_", "Ionosphere electron density profile, ingress", "profile"),
+               (r"^pj\d{3}x_", "Ionosphere electron density profile, egress", "profile")),
+        profile_columns={"altitude": "OCCPTALT", "electron_density": "ELECDEN", "electron_density_sigma": "ELECDENERR",
+                         "latitude": "OCCPTLAT", "longitude": "OCCPTLON", "sza": "OCCPTSZA", "lst": "OCCPTLST",
+                         "et": "ETOCC"},
+        column_units={"OCCPTALT": "KM", "ELECDEN": "1/M**3", "ELECDENERR": "1/M**3"},
+        # the point 1000 km up (JUNO_OCCULTATION_POINTS), as for the Caruso et al. profiles
+        representative={"latitude": "LATITUDE", "longitude": "LONGITUDE"},
+        altitude_reference="Jupiter's 1-bar ellipsoid (71492 x 66854 km), at the occultation point",
+        # the profiles run to 9000-29000 km, far into the noise; Jupiter's peaks are at 450-1900 km
+        topside_min_snr=2.0, peak_below_km=3000.0,
+        citation=("Coffin, D. A., et al. (2025). Juno-derived electron density profiles of the high-latitude Jovian "
+                  "ionosphere. J. Geophys. Res. Space Physics, 130, e2025JA033754. Data: doi:10.5281/zenodo.15305795 "
+                  "(CC-BY-4.0)."),
+        doi="10.5281/zenodo.15305795",
+    ),
+    Dataset(
+        id="juno-ro-caruso2026", mission_id="juno", instrument="Radio science (radio occultation)",
+        level="Derived (research data)",
+        title="Juno radio occultations: Jupiter ionosphere electron density profiles, perijoves 53-80 (Caruso et al. 2026)",
+        body_ids=("jupiter",), archive="Zenodo (CC-BY-4.0)",
+        base_url="https://zenodo.org/records/22706200/",
+        volume_pattern=r"^repository$",
+        # two columns, no time or place: those come from JUNO_OCCULTATION_POINTS (1000 km up)
+        repository={"kind": "zenodo_zip", "record": "22706200", "zip": "Juno_Ne_profiles_UniBo.zip",
+                    "members": r"PJ(?P<pj>\d{2})(?P<dir>[IE])_Ne\.txt", "delimiter": None,
+                    "points": JUNO_OCCULTATION_POINTS,
+                    "columns": [("ELECTRON_DENSITY", "cm-3"), ("ALTITUDE", "km")]},
+        rules=((r"^pj\d{2}i_", "Ionosphere electron density profile, ingress", "profile"),
+               (r"^pj\d{2}e_", "Ionosphere electron density profile, egress", "profile")),
+        profile_columns={"altitude": "ALTITUDE", "electron_density": "ELECTRON_DENSITY",
+                         "latitude": "LATITUDE", "longitude": "LONGITUDE"},
+        column_units={"ALTITUDE": "KM", "ELECTRON_DENSITY": "1/CM**3"},
+        altitude_reference="Jupiter's 1-bar ellipsoid (71492 x 66854 km), as given by the team",
+        citation=("Caruso, A. (2026). Electron density profiles of Jupiter's ionosphere from Juno radio occultations, "
+                  "doi:10.5281/zenodo.22706200 (CC-BY-4.0), for Caruso et al. (2026); method: Caruso, A., et al. (2025). "
+                  "Probing Jupiter's atmosphere through Juno radio occultations: methodology and initial observations. "
+                  "Geophys. Res. Lett., 52, e2024GL113231."),
+        doi="10.5281/zenodo.22706200",
+    ),
+    Dataset(
+        id="tgo-nomad-so-lopezvalverde2023", mission_id="tgo", instrument="NOMAD SO (solar occultation)",
+        level="Derived (research data)",
+        title="ExoMars TGO NOMAD solar occultations: temperature and pressure profiles, Mars Year 34 (Lopez-Valverde et al. 2023)",
+        body_ids=("mars",), archive="Zenodo (CC-BY-4.0)",
+        base_url="https://zenodo.org/records/7086187/",
+        volume_pattern=r"^repository$",
+        # One text file per scan in a .tar.xz: a header with the ranges of latitude, longitude
+        # (east), local time and Ls over the scan (their midpoints are used), then 2-km levels
+        # from 0 to 200 km.  Levels where the averaging kernel's diagonal is below 0.01 are the
+        # first guess (the retrieval keeps it where the spectra say nothing) and are masked.
+        repository={"kind": "zenodo_zip", "record": "7086187", "zip": "Year1_3ndRun_allTPfiles.tar.xz",
+                    "members": r"TPcorrected_(?P<date>\d{8})_(?P<time>\d{6})_1p0a_SO_A_(?P<dir>[IE])_149_\.dat",
+                    "delimiter": None,
+                    "header_ranges": {"LATITUDE": "lats", "LONGITUDE": "longit", "LST": "lct", "LS_FILE": "L_s"},
+                    "min_kernel": ("AVK_DIAGONAL", 0.01),
+                    "columns": [("ALTITUDE", "km"), ("TEMPERATURE", "K"), ("PRESSURE", "hPa"),
+                                ("TEMPERATURE_FIRST_GUESS", "K"), ("PRESSURE_FIRST_GUESS", "hPa"),
+                                ("TEMPERATURE_ERROR", "K"), ("AVK_DIAGONAL", "")]},
+        rules=((r"_so_a_i_149", "Temperature-pressure profile, ingress", "profile"),
+               (r"_so_a_e_149", "Temperature-pressure profile, egress", "profile")),
+        profile_columns={"altitude": "ALTITUDE", "temperature": "TEMPERATURE", "pressure": "PRESSURE",
+                         "temperature_sigma": "TEMPERATURE_ERROR", "latitude": "LATITUDE", "longitude": "LONGITUDE"},
+        column_units={"ALTITUDE": "KM", "TEMPERATURE": "K", "PRESSURE": "HPA", "TEMPERATURE_ERROR": "K"},
+        altitude_reference="the tangent heights given by the NOMAD team (the data set does not name the reference surface)",
+        citation=("Lopez-Valverde, M. A., et al. (2023). Martian atmospheric temperature and density profiles during the "
+                  "first year of NOMAD/TGO solar occultation measurements. J. Geophys. Res. Planets, 128, e2022JE007278. "
+                  "Data: doi:10.5281/zenodo.7086187 (CC-BY-4.0)."),
+        doi="10.5281/zenodo.7086187",
+    ),
+    Dataset(
         id="vco-v-rs-5-occ-v1.0", times_earth_received=True, mission_id="akatsuki", instrument="RS (Radio Science)", level="L3/L4",
         title="Akatsuki radio occultation: refractivity (L3) and atmospheric profiles (L4)",
         body_ids=("venus",), archive="JAXA DARTS",
@@ -1081,7 +1295,7 @@ _REFS = {
     "vex-v-vra-1-2-3": ("hausler2006", "svedhem2007"),
     "vex-vera-gramigna2023": ("gramigna2023", "gramigna2026data", "hausler2006", "svedhem2007"),
     "vex-vera-fsi-imamura": ("imamura2018", "imamura2021data", "hausler2006", "svedhem2007"),
-    "vex-soir-co2-temperature": ("mahieux2015", "bira2020soir", "svedhem2007"),
+    "vex-soir-co2-temperature": ("mahieux2023", "mahieux2015", "bira2024soir", "svedhem2007"),
     "mgn-v-rss-5-occ-prof-rtpd-v1.0": ("jenkins1994", "steffes1994", "saunders1992"),
     "mgn-v-rss-5-occ-prof-abs-h2so4-v1.0": ("jenkins1994", "steffes1994", "saunders1992"),
     "mgn-v-rss-1-rocc-v2.0": ("jenkins1994", "saunders1992"),
@@ -1098,6 +1312,12 @@ _REFS = {
     "ody-m-accel-5-derived-v1.0": ("tolson2005",),
     "mro-m-accel-5-profile-v1.0": ("tolson2008",),
     "maven-acc-profile": ("zurek2015", "tolson2016data"),
+    "mpf-m-asimet-4-ddr-edl-v1.0": ("magalhaes1999", "schofield1997"),
+    "tgo-nomad-so-lopezvalverde2023": ("lopezvalverde2023", "vandaele2018"),
+    "juno-ro-coffin2025": ("coffin2025", "asmar2017", "bolton2017"),
+    "juno-ro-caruso2026": ("caruso2025", "asmar2017", "bolton2017"),
+    "mex-m-spi-4-uvddr-prof-v1.0": ("forget2009", "bertaux2006"),
+    "mex-m-spi-4-irddr-prof-v1.0": ("fedorova2021", "bertaux2006"),
     "maven-rose-edp": ("withers2020rose", "withers2020radiosci", "withers2017rosedata"),
     "mro-crism-smith2013-aerosol": ("smith2013", "khayat2024data"),
     "mro-crism-guzewich-aerosol": ("guzewich2014", "guzewich2019", "khayat2024data"),
@@ -1153,6 +1373,12 @@ COVERAGE = {
     "jno-j-jnc-2-3-edr-rdr-v1.0": ("2011-08-26", ""),
     "jno-x-mwr": ("2014-01-01", ""),
     "maven-acc-profile": ("2014-10-07", ""),
+    "mpf-m-asimet-4-ddr-edl-v1.0": ("1997-07-04", "1997-07-04"),
+    "tgo-nomad-so-lopezvalverde2023": ("2018-04-23", "2019-03-13"),
+    "juno-ro-coffin2025": ("2023-07-31", "2024-06-13"),
+    "juno-ro-caruso2026": ("2023-07-31", "2026-01-23"),
+    "mex-m-spi-4-uvddr-prof-v1.0": ("2004-01-13", "2006-04-11"),
+    "mex-m-spi-4-irddr-prof-v1.0": ("2005-01-19", "2018-09-12"),
     "maven-rose-edp": ("2016-07-05", ""),
     "mer-m-imu-5-edl-derived-v1.0": ("2004-01-04", "2004-01-25"),
     "mex-m-mrs-5-occ": ("2004-04-02", ""),

@@ -1,0 +1,236 @@
+PDS_VERSION_ID               = PDS3
+
+RECORD_TYPE                  = FIXED_LENGTH
+RECORD_BYTES                 = 160
+FILE_RECORDS                 = 701
+DESCRIPTION                  = "This table contains density, pressure,
+                                and temperature profiles derived from the
+                                ASI/MET data collected during the EDL
+                                phase of the Mars Pathfinder mission."
+^TABLE                       = "EDL_DDR.TAB"
+
+DATA_SET_ID                  = "MPFL-M-ASIMET-4-DDR-EDL-V1.0"
+MISSION_NAME                 = "MARS PATHFINDER"
+INSTRUMENT_HOST_NAME         = "MARS PATHFINDER LANDER"
+INSTRUMENT_NAME              = "ATMOSPHERIC STRUCTURE INSTRUMENT /
+                                METEOROLOGY PACKAGE"
+PRODUCT_NAME                 = "ASI/MET DERIVED EDL DENSITY/PRESSURE/
+                                TEMPERATURE PROFILES"
+PRODUCT_ID                   = "ASIMET_DDR-EDL-D/P/T-PROFILES"
+TARGET_NAME                  = "MARS"
+SPACECRAFT_CLOCK_START_COUNT = "1246726312.75"
+SPACECRAFT_CLOCK_STOP_COUNT  = "1246726487.59"
+START_TIME                   = 1997-07-04T16:51:46.440Z
+STOP_TIME                    = 1997-07-04T16:54:41.378Z
+PRODUCT_CREATION_TIME        = 1999-04-12T22:00:14.000Z
+
+OBJECT                       = TABLE
+  INTERCHANGE_FORMAT         = ASCII
+  ROW_BYTES                  = 160
+  ROWS                       = 701
+  COLUMNS                    = 15
+
+  OBJECT                     = COLUMN
+    NAME                     = SPACECRAFT_CLOCK_START_COUNT
+    DATA_TYPE                = ASCII_REAL
+    START_BYTE               = 1
+    BYTES                    = 13
+    FORMAT                   = "F13.2"
+    UNIT                     = SECOND
+    DESCRIPTION              = "Spacecraft clock count in decimal
+                                seconds.  Note that this is a
+                                non-standard format for the spacecraft
+                                clock which may not be used as input
+                                to NAIF-provided time conversion
+                                software tools.  It has been converted
+                                to a decimal format from the original
+                                format in which the fractional portion
+                                of the number represented the number
+                                of 256ths of a second.  Please see the
+                                SCLKTIME.ASC file on the MPAM_0001 CD
+                                for more information."
+  END_OBJECT                 = COLUMN
+
+  OBJECT                     = COLUMN
+    NAME                     = ELAPSED_TIME
+    DATA_TYPE                = ASCII_REAL
+    START_BYTE               = 15
+    BYTES                    = 8
+    FORMAT                   = "F8.3"
+    UNIT                     = SECOND
+    DESCRIPTION              = "Elapsed time from R=3,597.2 km, in
+                                seconds.  At time = 34.156 (first point
+                                in file), the spacecraft clock count was
+                                1246726312.75, and the UTC time was
+                                1997-07-04T16:51:46.440Z.  (Please
+                                read the 'Limitations' section of the
+                                EDLDDRDS.CAT file for more details on
+                                this value.)"
+  END_OBJECT                 = COLUMN
+
+  OBJECT                     = COLUMN
+    NAME                     = ALTITUDE
+    DATA_TYPE                = ASCII_REAL
+    START_BYTE               = 24
+    BYTES                    = 8
+    FORMAT                   = "F8.3"
+    UNIT                     = KILOMETER
+    DESCRIPTION              = "The altitude above the landing site, in
+                                kilometers.  Note that at the landing
+                                site, the radius of Mars is 3,389.72 km
+                                (cf., [FOLKNERETAL1997B])."
+  END_OBJECT                 = COLUMN
+
+  OBJECT                     = COLUMN
+    NAME                     = PLANETOCENTRIC_LATITUDE
+    DATA_TYPE                = ASCII_REAL
+    START_BYTE               = 33
+    BYTES                    = 7
+    FORMAT                   = "F7.3"
+    UNIT                     = DEGREE
+    DESCRIPTION              = "Planetocentric latitude."
+  END_OBJECT                 = COLUMN
+
+  OBJECT                     = COLUMN
+    NAME                     = EAST_LONGITUDE
+    DATA_TYPE                = ASCII_REAL
+    START_BYTE               = 41
+    BYTES                    = 8
+    FORMAT                   = "F8.3"
+    UNIT                     = DEGREE
+    DESCRIPTION              = "East longitude."
+  END_OBJECT                 = COLUMN
+
+  OBJECT                     = COLUMN
+    NAME                     = DENSITY
+    DATA_TYPE                = ASCII_REAL
+    START_BYTE               = 50
+    BYTES                    = 11
+    FORMAT                   = "E11.4E3"
+    UNIT                     = "KILOGRAM PER CUBIC METER"
+    DESCRIPTION              = "Atmospheric density, measured in
+                                kg/m**3."
+  END_OBJECT                 = COLUMN
+
+  OBJECT                     = COLUMN
+    NAME                     = PRESSURE
+    DATA_TYPE                = ASCII_REAL
+    START_BYTE               = 62
+    BYTES                    = 11
+    FORMAT                   = "E11.4E3"
+    UNIT                     = MILLIBAR
+    DESCRIPTION              = "Atmospheric pressure, measured in
+                                millibars."
+  END_OBJECT                 = COLUMN
+
+  OBJECT                     = COLUMN
+    NAME                     = TEMPERATURE
+    DATA_TYPE                = ASCII_REAL
+    START_BYTE               = 74
+    BYTES                    = 8
+    FORMAT                   = "F8.3"
+    UNIT                     = KELVIN
+    DESCRIPTION              = "Temperature, measured in degrees Kelvin."
+  END_OBJECT                 = COLUMN
+
+  OBJECT                     = COLUMN
+    NAME                     = MEAN_MOLECULAR_WEIGHT
+    DATA_TYPE                = ASCII_REAL
+    START_BYTE               = 83
+    BYTES                    = 7
+    FORMAT                   = "F7.3"
+    UNIT                     = "ATOMIC MASS UNIT"
+    DESCRIPTION              = "The mean molecular weight used to
+                                evaluate temperatures, measured in amu.
+                                This value is derived from the molecular
+                                weight as a function of pressure measured
+                                by the Viking 1 Upper Atmosphere Mass
+                                Spectrometer (cf. [SEIFF&KIRK1977])."
+  END_OBJECT                 = COLUMN
+
+  OBJECT                     = COLUMN
+    NAME                     = POSITIVE_DENSITY_UNCERTAINTY
+    DATA_TYPE                = ASCII_REAL
+    START_BYTE               = 91
+    BYTES                    = 11
+    FORMAT                   = "E11.4E3"
+    UNIT                     = "KILOGRAM PER CUBIC METER"
+    DESCRIPTION              = "The 3 sigma width of the density
+                                uncertainty envelope in the positive
+                                direction, measured in kg/m**3.  Col. 6 +
+                                10 gives the upper value of the density
+                                uncertainty envelope."
+  END_OBJECT                 = COLUMN
+
+  OBJECT                     = COLUMN
+    NAME                     = NEGATIVE_DENSITY_UNCERTAINTY
+    DATA_TYPE                = ASCII_REAL
+    START_BYTE               = 103
+    BYTES                    = 12
+    FORMAT                   = "E12.4E3"
+    UNIT                     = "KILOGRAM PER CUBIC METER"
+    DESCRIPTION              = "The 3 sigma width of the density
+                                uncertainty envelope in the negative
+                                direction, measured in kg/m**3.  Col. 6 +
+                                11 gives the lower value of the density
+                                uncertainty envelope."
+  END_OBJECT                 = COLUMN
+
+  OBJECT                     = COLUMN
+    NAME                     = POSITIVE_PRESSURE_UNCERTAINTY
+    DATA_TYPE                = ASCII_REAL
+    START_BYTE               = 116
+    BYTES                    = 11
+    FORMAT                   = "E11.4E3"
+    UNIT                     = MILLIBAR
+    DESCRIPTION              = "The 3 sigma width of the pressure
+                                uncertainty envelope in the positive
+                                direction, in millibars.  Col. 7 + 12
+                                gives the upper value of the pressure
+                                uncertainty envelope."
+  END_OBJECT                 = COLUMN
+
+  OBJECT                     = COLUMN
+    NAME                     = NEGATIVE_PRESSURE_UNCERTAINTY
+    DATA_TYPE                = ASCII_REAL
+    START_BYTE               = 128
+    BYTES                    = 12
+    FORMAT                   = "E12.4E3"
+    UNIT                     = MILLIBAR
+    DESCRIPTION              = "The 3 sigma width of the pressure
+                                uncertainty envelope in the negative
+                                direction, in millibars.  Col. 7 + 13
+                                gives the lower value of the pressure
+                                uncertainty envelope."
+  END_OBJECT                 = COLUMN
+
+  OBJECT                     = COLUMN
+    NAME                     = POSITIVE_TEMP_UNCERTAINTY
+    DATA_TYPE                = ASCII_REAL
+    START_BYTE               = 141
+    BYTES                    = 8
+    FORMAT                   = "F8.4"
+    UNIT                     = KELVIN
+    DESCRIPTION              = "The 3 sigma width of the temperature
+                                uncertainty envelope in the positive
+                                direction, in degrees Kelvin.  Col. 8 +
+                                14 gives the upper value of the
+                                temperature uncertainty envelope."
+  END_OBJECT                 = COLUMN
+
+  OBJECT                     = COLUMN
+    NAME                     = NEGATIVE_TEMP_UNCERTAINTY
+    DATA_TYPE                = ASCII_REAL
+    START_BYTE               = 150
+    BYTES                    = 9
+    FORMAT                   = "F9.4"
+    UNIT                     = KELVIN
+    DESCRIPTION              = "The 3 sigma width of the temperature
+                                uncertainty envelope in the negative
+                                direction, in degrees Kelvin.  Col. 8 +
+                                15 gives the lower value of the
+                                temperature uncertainty envelope."
+  END_OBJECT                 = COLUMN
+
+END_OBJECT                   = TABLE
+END

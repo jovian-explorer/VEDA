@@ -52,7 +52,7 @@ BODIES: Dict[str, BodyInfo] = {
         reference_pressure_hpa=6.1,  # ~6.1 hPa (610 Pa) surface pressure
         atmospheric_composition={"CO2": 95.1, "N2": 2.59, "Ar": 1.94, "O2": 0.161, "CO": 0.058},
         description="Terrestrial planet with a rarefied, highly dynamic carbon dioxide atmosphere (~6.1 hPa surface pressure) characterized by planetary dust storm cycles, polar CO2 and water-ice caps, diurnal thermal tides, and photochemical atmospheric loss driven by solar wind interaction with localized crustal remnant magnetic fields.",
-        supported_missions=["mex", "mgs", "maven", "mro", "ody", "mer", "phoenix", "msl", "insight", "mom"],
+        supported_missions=["mex", "tgo", "mgs", "maven", "mro", "ody", "mpf", "mer", "phoenix", "msl", "insight", "mom"],
         mission_page_url="https://science.nasa.gov/mars/",
         data_page_url="https://pds-atmospheres.nmsu.edu/data_and_services/atmospheres_data/Mars/Mars.html",
         # Gravity field MRO120D (Konopliv et al. 2016, Icarus 274, 253; PDS MRO-M-RSS-5-SDP-V1,
@@ -452,6 +452,28 @@ MISSIONS: Dict[str, MissionInfo] = {
         citation="Paetzold, M., et al. (2016). Mars Express 10 years at Mars: Observations by the Mars Express Radio Science Experiment (MaRS). PSS, 127, 44-90.",
         description="ESA's Mars orbiter, in operation since 2003. MaRS radio occultations sound the neutral atmosphere from the surface to about 50 km and the ionosphere up to several hundred kilometres.",
     ),
+    "tgo": MissionInfo(
+        id="tgo",
+        name="ExoMars Trace Gas Orbiter (TGO)",
+        agency="ESA/Roscosmos",
+        launch_date="2016-03-14",
+        mission_status="operational",
+        primary_targets=["mars"],
+        mission_type="orbiter",
+        target_encounters={"mars": "orbiter"},
+        instruments=[
+            InstrumentInfo(id="NOMAD", name="Nadir and Occultation for MArs Discovery", instrument_type="spectrometer",
+                           measurement_targets=["neutral_atmosphere"],
+                           description="Infrared and ultraviolet spectrometers; its solar occultation channel (SO) "
+                                       "gives temperature, pressure and trace-gas profiles."),
+        ],
+        authoritative_archive="ESA Planetary Science Archive (PSA); derived profiles in the teams' research data repositories",
+        archive_url="https://archives.esac.esa.int/psa/ftp/ExoMars2016/",
+        mission_page_url="https://www.esa.int/Science_Exploration/Human_and_Robotic_Exploration/Exploration/ExoMars",
+        data_page_url="https://nomad.aeronomie.be/data/publicly-available-datasets",
+        citation="Vandaele, A. C., et al. (2018). NOMAD, an integrated suite of three spectrometers for the ExoMars Trace Gas Mission. Space Sci. Rev., 214, 80.",
+        description="ESA/Roscosmos Mars orbiter, in science orbit since 2018. VEDA reads NOMAD solar occultation temperature and pressure profiles published by the IAA/CSIC team.",
+    ),
     "mgs": MissionInfo(
         id="mgs",
         name="Mars Global Surveyor (MGS)",
@@ -677,6 +699,28 @@ MISSIONS: Dict[str, MissionInfo] = {
         data_page_url="https://atmos.nmsu.edu/data_and_services/atmospheres_data/MARS/MER/mer.html",
         citation="Withers, P., & Smith, M. D. (2006). Atmospheric entry profiles from the Mars Exploration Rovers Spirit and Opportunity. Icarus, 185, 133-142.",
         description="Twin rovers that landed in January 2004; their entry accelerometer data give two vertical profiles of the Martian atmosphere.",
+    ),
+    "mpf": MissionInfo(
+        id="mpf",
+        name="Mars Pathfinder",
+        agency="NASA / JPL",
+        launch_date="1996-12-04",
+        mission_status="completed",
+        primary_targets=["mars"],
+        mission_type="lander",
+        target_encounters={"mars": "encounter"},
+        instruments=[
+            InstrumentInfo(id="ASI/MET", name="Atmospheric Structure Instrument / Meteorology package",
+                           instrument_type="accelerometer", measurement_targets=["neutral_atmosphere"],
+                           description="Entry accelerometers (density, pressure and temperature from 140 to 9 km above "
+                                       "the landing site, at night) and surface meteorology for 83 sols."),
+        ],
+        authoritative_archive="NASA PDS Atmospheres Node",
+        archive_url="https://pds-atmospheres.nmsu.edu/PDS/data/mpam_0001/",
+        mission_page_url="https://science.nasa.gov/mission/mars-pathfinder/",
+        data_page_url="https://atmos.nmsu.edu/data_and_services/atmospheres_data/MARS/pathfinder/pathfinder.html",
+        citation="Schofield, J. T., et al. (1997). The Mars Pathfinder Atmospheric Structure Investigation/Meteorology (ASI/MET) Experiment. Science, 278, 1752-1758.",
+        description="Lander in Ares Vallis (July 1997, 19 N); its night-time entry gives a density, pressure and temperature profile.",
     ),
     "phoenix": MissionInfo(
         id="phoenix",
@@ -1269,7 +1313,7 @@ DATA_PORTALS = [
         "description": "All PDS nodes (Atmospheres, Geosciences, Imaging, PPI, Small Bodies). VEDA reads PDS3 volume "
                        "and cumulative indexes and searches PDS4 products by instrument and date with the PDS "
                        "Registry API; no account is needed.",
-        "missions": ["magellan", "pvo", "vega", "vex", "mgs", "ody", "mro", "maven", "mer", "phoenix", "msl",
+        "missions": ["magellan", "pvo", "vega", "vex", "mgs", "ody", "mro", "maven", "mpf", "mer", "phoenix", "msl",
                      "insight", "galileo", "cassini", "juno", "new_horizons", "messenger", "lro", "dawn"],
         "login": False,
     },
@@ -1310,9 +1354,11 @@ DATA_PORTALS = [
         "agency": "CERN / BIRA-IASB",
         "url": "https://zenodo.org/",
         "description": "Profiles that the instrument teams published outside PDS and PSA: Venus Express VeRa "
-                       "radio occultations on Zenodo (Gramigna et al. 2023, Imamura et al. 2018) and SPICAV-SOIR "
-                       "solar occultations in the BIRA-IASB data repository (Mahieux et al. 2015); no account is needed.",
-        "missions": ["vex"],
+                       "radio occultations on Zenodo (Gramigna et al. 2023, Imamura et al. 2018), SPICAV-SOIR "
+                       "solar occultations in the BIRA-IASB data repository (Mahieux et al. 2023), ExoMars TGO "
+                       "NOMAD solar occultations (Lopez-Valverde et al. 2023) and Juno radio occultations of "
+                       "Jupiter's ionosphere (Coffin et al. 2025, Caruso et al. 2026) on Zenodo; no account is needed.",
+        "missions": ["vex", "tgo", "juno"],
         "login": False,
     },
     {

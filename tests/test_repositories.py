@@ -1,7 +1,9 @@
 """Profiles from research data repositories (Zenodo, BIRA-IASB): Venus Express VeRa and SOIR."""
 from __future__ import annotations
 
+import json
 import zipfile
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -167,53 +169,65 @@ def test_zip_of_profiles_with_header_lines(tmp_path, monkeypatch):
     assert t.columns["LOCAL_SOLAR_TIME"][0] == pytest.approx(3 + 40 / 60 + 21 / 3600)
 
 
-def test_votable_split_into_profiles(tmp_path, monkeypatch):
+_SOIR_FIELDS = ["altitude", "pressure", "temperature", "total_density", "total_molar_mass", "err_pressure",
+                "err_temperature", "err_total_density", "err_total_molar_mass"]
+
+
+def _soir_votable(params, rows):
+    """A SOIR w24 VOTable: one occultation, its time and place in PARAMs."""
+    return ('<?xml version="1.0"?><VOTABLE xmlns="http://www.ivoa.net/xml/VOTable/v1.2"><RESOURCE><TABLE>'
+            + "".join(f'<PARAM name="{k}" value="{v}" datatype="char"/>' for k, v in params.items())
+            + "".join(f'<FIELD name="{f}" datatype="double" unit="u"/>' for f in _SOIR_FIELDS)
+            + "<DATA><TABLEDATA>" + "".join("<TR>" + "".join(f"<TD>{v}</TD>" for v in r) + "</TR>" for r in rows)
+            + "</TABLEDATA></DATA></TABLE></RESOURCE></VOTABLE>")
+
+
+def _soir_zip(tmp_path, monkeypatch, members):
     ds = get_dataset("vex-soir-co2-temperature")
-    fields = ["orbit", "case", "longitude_min", "longitude_max", "latitude_min", "latitude_max", "solar_longitude_min",
-              "solar_longitude_max", "local_time_min", "local_time_max", "time_JDUTC_min", "time_JDUTC_max", "altitude",
-              "pressure", "err_pressure", "temperature", "err_temperature", "total_density", "err_total_density"]
-    def tr(orbit, case, alt, t):
-        vals = [orbit, case, 280, 300, 85, 87, 65, 65.1, 2.75, 3.96, 2453867.5629, 2453867.5684, alt, 0.1, 0.01, t, 5.0, 1e15, 1e14]
-        return "<TR>" + "".join(f"<TD>{v}</TD>" for v in vals) + "</TR>"
-    xml = ('<?xml version="1.0"?><VOTABLE xmlns="http://www.ivoa.net/xml/VOTable/v1.2"><RESOURCE><TABLE>'
-           + "".join(f'<FIELD name="{f}" datatype="double" unit="u"/>' for f in fields)
-           + "<DATA><TABLEDATA>" + tr(21, 1, 90, 170) + tr(21, 1, 100, 165) + tr(39, 2, 95, 180) + "</TABLEDATA></DATA></TABLE></RESOURCE></VOTABLE>")
-    zf = tmp_path / "co2.zip"
+    zf = tmp_path / "cox.zip"
     with zipfile.ZipFile(zf, "w") as z:
-        z.writestr("SOIRProfiles_CO2_0.xml", xml)
+        for name, xml in members.items():
+            z.writestr(name, xml)
     monkeypatch.setattr(repo, "_zip_path", lambda ds, progress=None: zf)
     monkeypatch.setattr(repo, "_cache_dir", lambda ds: tmp_path)
+    return ds
+
+
+_GEO = {"latitude_120km": 85.0, "longitude_120km": 282.0, "local_time_min": 2.75, "local_time_max": 3.963,
+        "solar_longitude_min": 65.355, "solar_longitude_max": 65.364, "time_min_calendar": "2006-05-12T01:30:36"}
+
+
+def test_soir_w24_profiles_one_file_each(tmp_path, monkeypatch):
+    """SOIR version w24: one VOTable per occultation (CO2_0/Orbit0021.1_CO2_0_w24.01.xml), the
+    product ids those of w23 (soir_co2_orbit0021_1); the other molecules' files are not
+    profiles of this data set; "(76+0j)", written in one file, is 76."""
+    row = lambda alt, t: [alt, 0.1, t, 1e15, 43.44, 0.01, 5.0, 1e14, 0.0]          # noqa: E731
+    ds = _soir_zip(tmp_path, monkeypatch, {
+        "CO2_0/Orbit0021.1_CO2_0_w24.01.xml": _soir_votable(_GEO, [row(90, 170), row(100, 165), row(110, 160)]),
+        "CO2_0/Orbit0039.2_CO2_0_w24.01.xml": _soir_votable(_GEO, [row("(76+0j)", 180), row(80, 181), row(84, 182)]),
+        "CO_0/Orbit0021.1_CO_0_w24.01.xml": _soir_votable(_GEO, [row(90, 170)])})
     idx = repo.index_repository(ds)
     assert sorted(r["product_id"] for r in idx) == ["soir_co2_orbit0021_1", "soir_co2_orbit0039_2"]
     t = repo.read_normalised(tmp_path / "soir_co2_orbit0021_1.csv")
-    assert t.columns["temperature"].tolist() == [170.0, 165.0]
-    assert t.metadata["LATITUDE"] == 86.0 and t.metadata["START_TIME"].startswith("2006-05-12T01:30")
+    assert t.columns["temperature"].tolist()[:2] == [170.0, 165.0]
+    assert t.metadata["LATITUDE"] == 85.0 and t.metadata["LONGITUDE"] == 282.0
+    assert t.metadata["LST"] == pytest.approx(3.3565) and t.metadata["START_TIME"].startswith("2006-05-12T01:30:36")
+    assert repo.read_normalised(tmp_path / "soir_co2_orbit0039_2.csv").columns["altitude"][0] == 76.0
 
 
 def test_soir_temperature_held_at_the_upper_boundary_is_masked(tmp_path, monkeypatch):
-    """156 of the 644 SOIR profiles repeat one temperature over their top 10 km (orbit 335:
-    226.19782 K from 147 to 156 km): the retrieval's starting value, with p = n k T from it.
-    In the other 488 only the top level holds it, with an uncertainty of about 1e-13 K."""
-    ds = get_dataset("vex-soir-co2-temperature")
-    fields = ["orbit", "case", "longitude_min", "longitude_max", "latitude_min", "latitude_max", "solar_longitude_min",
-              "solar_longitude_max", "local_time_min", "local_time_max", "time_JDUTC_min", "time_JDUTC_max", "altitude",
-              "pressure", "err_pressure", "temperature", "err_temperature", "total_density", "err_total_density"]
+    """Profiles that repeat one temperature over their top 10 km (orbit 335: 226.19782 K from
+    147 to 156 km; 172 of the 718 in w24): the retrieval's starting value, with p = n k T
+    from it.  In the others only the top level holds it, with an uncertainty of about 1e-13 K."""
     temps = [228.4, 227.88327] + [226.19782] * 10
-    def tr(alt, t, orbit=335, err=5.0):
+
+    def row(alt, t, err=5.0):
         n = 4.0e8 * 0.85 ** (alt - 145)
-        vals = [orbit, 1, 280, 300, -60, -58, 120, 120.1, 18.0, 18.1, 2454204.5, 2454204.51, alt,
-                n * 1e6 * 1.380649e-23 * t / 100.0, 1e-10, t, err, n, n / 20]
-        return "<TR>" + "".join(f"<TD>{v}</TD>" for v in vals) + "</TR>"
-    xml = ('<?xml version="1.0"?><VOTABLE xmlns="http://www.ivoa.net/xml/VOTable/v1.2"><RESOURCE><TABLE>'
-           + "".join(f'<FIELD name="{f}" datatype="double" unit="u"/>' for f in fields)
-           + "<DATA><TABLEDATA>" + "".join(tr(145 + i, t) for i, t in enumerate(temps))
-           + "".join(tr(120 + i, 180.0 + i, 336, 1.1e-13 if i == 4 else 6.0) for i in range(5))
-           + "</TABLEDATA></DATA></TABLE></RESOURCE></VOTABLE>")
-    zf = tmp_path / "co2.zip"
-    with zipfile.ZipFile(zf, "w") as z:
-        z.writestr("SOIRProfiles_CO2_0.xml", xml)
-    monkeypatch.setattr(repo, "_zip_path", lambda ds, progress=None: zf)
-    monkeypatch.setattr(repo, "_cache_dir", lambda ds: tmp_path)
+        return [alt, n * 1e6 * 1.380649e-23 * t / 100.0, t, n, 43.0, 1e-10, err, n / 20, 0.1]
+    ds = _soir_zip(tmp_path, monkeypatch, {
+        "CO2_0/Orbit0335.1_CO2_0_w24.01.xml": _soir_votable(_GEO, [row(145 + i, t) for i, t in enumerate(temps)]),
+        "CO2_0/Orbit0336.1_CO2_0_w24.01.xml": _soir_votable(
+            _GEO, [row(120 + i, 180.0 + i, 1.1e-13 if i == 4 else 6.0) for i in range(5)])})
     stale = tmp_path / "soir_co2_orbit0335_1.csv"
     stale.write_text("# START_TIME=2007-04-17\naltitude [km],temperature [K]\n156,226.19782\n")
     t = repo.read_normalised(repo.fetch_repository_product(ds, {"product_id": "soir_co2_orbit0335_1"}))
@@ -278,9 +292,13 @@ def test_repository_zip_download_reports_its_progress(tmp_path, monkeypatch):
     monkeypatch.setattr(repo, "_zenodo_files", lambda record: [{"key": get_dataset("vex-vera-gramigna2023").repository["zip"], "size": 1, "url": "https://example.org/x.zip"}])
     monkeypatch.setattr(repo.http, "download", lambda url, dest, progress=None: seen.append(progress) or dest)
     ds = get_dataset("vex-vera-gramigna2023")
-    cb = lambda *a: None                                    # noqa: E731
+    calls = []
+    cb = lambda *a: calls.append(a)                         # noqa: E731
     repo._zip_path(ds, cb)
-    assert seen == [cb]
+    # the download reports (bytes, total); the indexing callback takes (done, total, what):
+    # passed as it was, the first index of a zip data set failed with a TypeError
+    seen.pop()(5, 10)
+    assert calls == [(5, 10, f"downloading {ds.repository['zip']}")]
     from veda.archives.datasets import DATASETS
     crism = next(d for d in DATASETS if (d.repository or {}).get("kind") == "csv_split")
 
@@ -290,4 +308,86 @@ def test_repository_zip_download_reports_its_progress(tmp_path, monkeypatch):
     monkeypatch.setattr(repo, "_download", stop)
     with pytest.raises(RuntimeError):
         repo._index_csv_split(crism, cb)
-    assert seen == [cb, cb]
+    assert seen == [cb]
+
+
+def _juno(tmp_path, monkeypatch, ds_id, name):
+    ds = get_dataset(ds_id)
+    src = Path(__file__).parent / "data" / "juno_ro" / name
+    monkeypatch.setattr(repo, "_cache_dir", lambda ds: tmp_path)
+    return ds, src
+
+
+def test_juno_occultation_profiles_coffin_et_al(tmp_path, monkeypatch):
+    """Coffin et al. (2025): seven profiles of four occultations, four ingress and three
+    egress, all on the dawn limb.  ELECDEN is in m^-3 (the readme says cm^-3): the PJ53
+    ingress peak, 1.35e11, is the 1.28e5 cm^-3 at 625 km of Caruso et al.'s file within 6 %."""
+    from veda.archives.profiles import profile_from_label
+    ds, src = _juno(tmp_path, monkeypatch, "juno-ro-coffin2025", "PJ053N_EDP_V01.CSV")
+    monkeypatch.setattr(repo, "_download", lambda url, dest, progress=None: src)
+    names = ["PJ053N", "PJ053X", "PJ054N", "PJ060N", "PJ060X", "PJ062N", "PJ062X"]
+    monkeypatch.setattr(repo, "_zenodo_files", lambda record: [{"key": f"{n}_EDP_V01.CSV", "url": f"https://x/{n}"} for n in names]
+                        + [{"key": "ZenodoReadme.pdf", "url": "https://x/r"}])
+    rows = repo._index_zenodo_files(ds)
+    assert len(rows) == 7 and sum("ingress" in r["product_type"] for r in rows) == 4
+    assert all(r["start_time"] for r in rows)
+    prod = {**rows[0], "url": "", "extra": json.loads(rows[0]["extra"])}
+    p = profile_from_label(ds, prod, repo.fetch_repository_product(ds, prod))
+    assert p.time_utc.startswith("2023-07-31T09:07:5")
+    assert (p.latitude, p.longitude) == pytest.approx((41.08, 254.14))
+    ne, z = np.asarray(p.electron_density_cm3), np.asarray(p.altitude_km)
+    k = int(np.nanargmax(ne))
+    assert ne[k] == pytest.approx(1.35e5, rel=0.01) and z[k] == pytest.approx(617, abs=5)
+    assert 5.5 < float(np.nanmedian(p.track["lst"])) < 7.0                 # dawn
+
+
+def test_juno_occultation_profiles_caruso_et_al(tmp_path, monkeypatch):
+    """Two columns, no time or place: from the occultation table, 1000 km up."""
+    import zipfile
+    from veda.archives.profiles import profile_from_label
+    ds, src = _juno(tmp_path, monkeypatch, "juno-ro-caruso2026", "PJ53I_Ne.txt")
+    zf = tmp_path / ds.repository["zip"]
+    with zipfile.ZipFile(zf, "w") as z:
+        z.write(src, "PJ53I_Ne.txt")
+    monkeypatch.setattr(repo, "_zip_path", lambda ds, progress=None: zf)
+    rows = repo._index_zenodo_zip(ds)
+    assert [r["start_time"] for r in rows] == ["2023-07-31T09:07:57"]
+    prod = {**rows[0], "url": "", "extra": json.loads(rows[0]["extra"])}
+    p = profile_from_label(ds, prod, repo.fetch_repository_product(ds, prod))
+    assert (p.latitude, p.longitude) == pytest.approx((41.08, 254.14))
+    ne, z = np.asarray(p.electron_density_cm3), np.asarray(p.altitude_km)
+    k = int(np.nanargmax(ne))
+    assert ne[k] == pytest.approx(1.28e5, rel=0.01) and z[k] == pytest.approx(625, abs=5)
+    assert 6.0 < p.raw_attributes["LST"] < 7.0
+
+
+def test_bytes_repr_times_are_read():
+    assert repo._parse_time("b'2023 JUL 31 08:56:16.074515'") == "2023-07-31T08:56:16.074"
+
+
+def test_nomad_profiles_from_a_tar_archive(tmp_path, monkeypatch):
+    """Lopez-Valverde et al. (2023) NOMAD scans: one text file per scan in a .tar.xz; the
+    header's ranges give the place (east longitude: VEDA's local time and solar zenith angle
+    at it are those of the terminator a solar occultation sees, 16.8 h against the file's
+    17.0 h, 88.7 deg); levels where the averaging kernel is under 0.01 are the first guess."""
+    import tarfile
+    from veda.archives.profiles import profile_from_label
+    ds = get_dataset("tgo-nomad-so-lopezvalverde2023")
+    name = "TPcorrected_20180423_204351_1p0a_SO_A_I_149_.dat"
+    tz = tmp_path / ds.repository["zip"]
+    with tarfile.open(tz, "w:xz") as t:
+        t.add(Path(__file__).parent / "data" / "tgo_nomad" / name, f"Year1_3ndRun_allTPfiles/{name}")
+    monkeypatch.setattr(repo, "_cache_dir", lambda ds: tmp_path)
+    rows = repo._index_zenodo_zip(ds)
+    assert len(rows) == 1 and rows[0]["start_time"] == "2018-04-23T20:43:51" and "ingress" in rows[0]["product_type"]
+    prod = {**rows[0], "url": "", "extra": json.loads(rows[0]["extra"])}
+    p = profile_from_label(ds, prod, repo.fetch_repository_product(ds, prod))
+    assert (p.latitude, p.longitude) == pytest.approx((-64.93, 221.91), abs=0.01)
+    z, t = np.asarray(p.altitude_km), np.asarray(p.temperature_k, dtype=float)
+    ok = np.isfinite(t)
+    assert z[ok].min() == 24.0 and z[ok].max() == 100.0
+    assert t[z == 30.0][0] == pytest.approx(166.69) and p.pressure_hpa[z == 30.0][0] == pytest.approx(0.1768)
+    assert p.raw_attributes["LS"] == pytest.approx(p.raw_attributes["LS_FILE"], abs=0.02)     # 164.2
+    from veda.analysis.solar_geometry import solar_geometry
+    g = solar_geometry("mars", p.time_utc, p.latitude, p.longitude)
+    assert g["lst"] == pytest.approx(16.8, abs=0.1) and g["sza"] == pytest.approx(88.7, abs=0.2)

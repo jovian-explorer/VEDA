@@ -53,17 +53,18 @@ In **By Planetary Mission**, *Archive data* lists every payload and data set of 
 
 ### Connected archives and payloads
 
-All 25 missions in VEDA are connected (163 data sets: 57 read from archive indexes, 106 searched live). Highlights:
+All 27 missions in VEDA are connected (170 data sets: 64 read from archive indexes, 106 searched live). Highlights:
 
 | Body | Mission | Payloads | Route |
 |---|---|---|---|
 | Venus | Akatsuki | RS (L2-L4), UVI, IR1, IR2 and LIR (raw, calibrated, geometry); UVI and LIR to the end of the mission (March 2024) with the 2023 LIR recalibration and L3d maps (PDS4) | JAXA DARTS, indexed |
 | Venus | Venus Express | VeRa temperature profiles (2006-2009 and 2014, research data on Zenodo) and SPICAV-SOIR profiles (2006-2014, BIRA-IASB); VeRa raw data, VMC, VIRTIS, SPICAV/SOIR, ASPERA-4, MAG | ESA PSA, live; Zenodo; BIRA-IASB |
 | Venus | Magellan, Pioneer Venus, VEGA | Radio occultation profiles (Magellan; PVO 1978-1989 temperature-pressure and electron density, recovered by Withers et al. 2020), radar, gravity; the VEGA 2 lander descent (63 km to the surface) and VEGA balloon records; PVO OIMS, ONMS, probes | NASA PDS |
-| Mars | Mars Express | MaRS L4 profiles (indexed); SPICAM, PFS, OMEGA, ASPERA-3, MARSIS, HRSC, VMC | ESA PSA |
+| Mars | Mars Express | MaRS L4 profiles and SPICAM stellar (CO2 density, temperature) and solar (water vapour) occultation profiles (indexed); PFS, OMEGA, ASPERA-3, MARSIS, HRSC, VMC | ESA PSA |
+| Mars | ExoMars TGO | NOMAD solar occultation temperature and pressure profiles, Mars Year 34 (Lopez-Valverde et al. 2023) | Zenodo |
 | Mars | MRO | MCS DDR/EDR/RDR (indexed), CRISM, SHARAD; CTX and MARCI on request | NASA PDS |
 | Mars | MAVEN, MGS, MRO, Mars Odyssey, MER, Phoenix, MSL, InSight | NGIMS, IUVS, ACC; MGS and MRO radio occultation profiles; MRO MCS temperature profiles (each row of the 4-hour DDR files); MAVEN accelerometer density profiles (deep dips, aerobraking, science orbits) and ROSE ionospheric electron density profiles; MRO and Mars Odyssey aerobraking density profiles; MRO CRISM dust and water-ice aerosol profiles; entry profiles of Spirit, Opportunity, Phoenix, Curiosity and InSight; TES, MOLA | NASA PDS |
-| Jupiter | Juno, Galileo | MWR, JIRAM, UVS, JunoCam, MAG, gravity; Galileo SSI, NIMS, UVS, PPR, MAG, PLS, EPD, probe | NASA PDS, OPUS |
+| Jupiter | Juno, Galileo | Juno radio occultation electron density profiles of the ionosphere (2023-2026, Coffin et al. 2025 and Caruso et al. 2026, Zenodo); MWR, JIRAM, UVS, JunoCam, MAG, gravity; Galileo SSI, NIMS, UVS, PPR, MAG, PLS, EPD, probe | NASA PDS, OPUS |
 | Saturn, Titan | Cassini-Huygens | ISS, VIMS, UVIS, CIRS (OPUS), INMS; RSS profiles of the Titan neutral atmosphere and ionosphere and of the Saturn ionosphere; UVIS Saturn thermosphere profiles; Huygens HASI, DISR, GCMS, ACP, DWE, SSP | NASA PDS, OPUS, ESA PSA |
 | Pluto | New Horizons | REX, Alice, LORRI, Ralph MVIC/LEISA, SWAP, PEPSSI, SDC | NASA PDS |
 | Mercury | MESSENGER, BepiColombo | MLA, GRS, NS, XRS, MAG, MASCS, RS; BepiColombo MPO-MAG, MCAM, SERENA, PHEBUS, MERTIS, MORE ... | NASA PDS, ESA PSA |
@@ -119,7 +120,7 @@ Heat capacity depends on temperature for Venus, Mars, Titan and Pluto ($c_p(T)$ 
 **Plot style** controls lines, markers, palettes, uncertainty bands or error bars, linear or log axes, swapped axes, altitude or pressure as the vertical axis, grid, ticks, fonts and legend, with journal templates for AGU, Elsevier (Icarus/PSS), A&A and MNRAS. It applies to profiles, comparisons, time series, spectra and images. **Export figure** writes PNG at a chosen DPI or vector SVG at the journal's single- or double-column width.
 
 ### Observation geometry with SPICE, kernels downloaded for you
-**Geometry** is set up for 17 of the 25 missions (not yet for Mars Odyssey, the Mars landers and rovers or VEGA; MOM and Chandrayaan-2 publish no kernels):
+**Geometry** is set up for 17 of the 27 missions (not yet for Mars Odyssey, ExoMars TGO, the Mars landers and rovers or VEGA; MOM and Chandrayaan-2 publish no kernels):
 
 * **Radio occultations**: the orbit around the occultation (planet-fixed and J2000), the view from Earth, the tangent-point track (cylindrical, polar or orthographic) and SZA, local time and Sun-Earth-probe angle along the profile. Times are Earth-received and light-time corrected; tangent radii agree with Mars Express's archived values to about 1 km.
 * **Any other observation**: the spacecraft orbit, the sub-spacecraft ground track and altitude, local solar time and solar zenith, emission and phase angles over the observation.
