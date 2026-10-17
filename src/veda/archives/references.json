@@ -7172,6 +7172,60 @@
     }
    ],
    "note": "DOI registered with DataCite (creators, year 2014 and title as registered); PDS4 bundle urn:nasa:pds:maven.ngims.calibrated."
+  },
+  {
+   "key": "groller2018",
+   "authors": [
+    "Gröller, H.",
+    "Montmessin, F.",
+    "Yelle, R. V.",
+    "Lefèvre, F.",
+    "Forget, F.",
+    "Schneider, N. M.",
+    "Koskinen, T. T.",
+    "Deighan, J.",
+    "Jain, S. K."
+   ],
+   "et_al": false,
+   "year": 2018,
+   "title": "MAVEN/IUVS Stellar Occultation Measurements of Mars Atmospheric Structure and Composition",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "123",
+   "issue": "6",
+   "pages": "1449-1483",
+   "doi": "10.1029/2017JE005466",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "maven",
+     "payload": "IUVS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "deighan2018data",
+   "authors": [
+    "Deighan, J."
+   ],
+   "et_al": false,
+   "year": 2018,
+   "title": "Mars Atmosphere and Volatile Evolution (MAVEN) Imaging Ultraviolet Spectrograph (IUVS) Derived-level Data Product Bundle",
+   "journal": "NASA Planetary Data System",
+   "volume": "",
+   "issue": "",
+   "pages": "",
+   "doi": "10.17189/1518956",
+   "verified": true,
+   "type": "dataset",
+   "used_for": [
+    {
+     "mission": "maven",
+     "payload": "IUVS"
+    }
+   ],
+   "note": "DOI registered with DataCite (creator, year 2018 and title as registered); PDS4 bundle urn:nasa:pds:maven.iuvs.derived."
   }
  ]
 }

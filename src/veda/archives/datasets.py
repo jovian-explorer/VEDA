@@ -1000,6 +1000,32 @@ DATASETS: List[Dataset] = [
         doi="10.17189/1518931",
     ),
     Dataset(
+        id="maven-iuvs-occultation", mission_id="maven", instrument="IUVS (Imaging Ultraviolet Spectrograph)",
+        level="L2 (derived, PDS4)",
+        title="MAVEN IUVS stellar occultations: CO2, O2 and ozone density, temperature and pressure profiles (2015 - present)",
+        body_ids=("mars",), archive="NASA PDS Atmospheres Node (PDS4)",
+        base_url="https://pds-atmospheres.nmsu.edu/PDS/data/PDS4/MAVEN/",
+        volume_pattern=r"^iuvs_derived_bundle$",
+        pds4_product_dir="l2/occultation/", pds4_walk=2,           # l2/occultation/<year>/<month>/
+        time_from_name=r"_(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})T(?P<hh>\d{2})(?P<mm>\d{2})(?P<ss>\d{2})",
+        rules=((r"iuv_l2_occultation", "Stellar occultation profile (CO2, O2, O3, temperature, pressure)", "profile"),),
+        # FITS tables read by readers/iuvs_reader.py; densities in cm^-3, pressure in Pa,
+        # longitudes east; the place is the half light point (HLP_geometry), as the team quotes it
+        profile_columns={"altitude": "ALTITUDE", "temperature": "TEMPERATURE", "temperature_sigma": "SIGMA_TEMPERATURE",
+                         "pressure": "PRESSURE", "pressure_sigma": "SIGMA_PRESSURE",
+                         "number_density": "N_CO2", "number_density_sigma": "SIGMA_N_CO2",
+                         "latitude": "LATITUDE_PC", "longitude": "LONGITUDE_PC", "sza": "SZA", "lst": "LOCAL_TIME"},
+        representative={"latitude": "HLP_LAT_PC", "longitude": "HLP_LON_PC", "sza": "HLP_SZA", "lst": "HLP_LT"},
+        extra_variables={"n_co2_m3": ("N_CO2", "SIGMA_N_CO2"), "n_o2_m3": ("N_O2", "SIGMA_N_O2"),
+                         "n_o3_m3": ("N_O3", "SIGMA_N_O3")},
+        value_factor={"n_co2_m3": 1e6, "n_o2_m3": 1e6, "n_o3_m3": 1e6},
+        density_molar_mass=44.01,
+        citation=("Deighan, J. (2018). MAVEN IUVS Derived-level Data Product Bundle (urn:nasa:pds:maven.iuvs.derived), "
+                  "NASA Planetary Data System, doi:10.17189/1518956; Gröller, H., et al. (2018). MAVEN/IUVS stellar "
+                  "occultation measurements of Mars atmospheric structure and composition. JGR Planets, 123, 1449-1483."),
+        doi="10.17189/1518956",
+    ),
+    Dataset(
         id="pvoro-nssdc", mission_id="pvo", instrument="ORO (Radio Occultation)", level="Derived (PDS4)",
         title="Pioneer Venus Orbiter radio occultations: temperature-pressure and electron density profiles "
               "(1978-1992, recovered from NSSDC by Withers et al. 2020)",
@@ -1531,6 +1557,7 @@ _REFS = {
     "mex-m-spi-4-irddr-prof-v1.0": ("fedorova2021", "bertaux2006"),
     "maven-rose-edp": ("withers2020rose", "withers2020radiosci", "withers2017rosedata"),
     "maven-ngims-l2": ("mahaffy2015", "elrod2014data"),
+    "maven-iuvs-occultation": ("groller2018", "mcclintock2015", "deighan2018data"),
     "mro-crism-smith2013-aerosol": ("smith2013", "khayat2024data"),
     "mro-crism-guzewich-aerosol": ("guzewich2014", "guzewich2019", "khayat2024data"),
     "corss-titan-neutral-profiles": ("schinder2011", "schinder2012", "schinder2015"),
@@ -1599,6 +1626,7 @@ COVERAGE = {
     "mex-m-spi-4-irddr-prof-v1.0": ("2005-01-19", "2018-09-12"),
     "maven-rose-edp": ("2016-07-05", ""),
     "maven-ngims-l2": ("2014-10-18", ""),
+    "maven-iuvs-occultation": ("2015-03-24", ""),
     "mer-m-imu-5-edl-derived-v1.0": ("2004-01-04", "2004-01-25"),
     "mex-m-mrs-5-occ": ("2004-04-02", ""),
     "mgn-v-rss-1-rocc-v2.0": ("1991-10-05", "1994-10-12"),

@@ -68,6 +68,13 @@ def read_pds4_table(xml_path: str) -> Pds3Table:
         for table in list(fao):
             if table.tag in ("Table_Character", "Table_Delimited") and fname:
                 tables.append((fname, table, "character" if table.tag == "Table_Character" else "delimited"))
+    fits_name = _text(root, "File_Area_Observational/File/file_name")
+    if not tables and "iuv_l2_occultation" in fits_name.lower() and fits_name.lower().endswith(".fits"):
+        from .iuvs_reader import read_iuvs_occultation
+        data_p = p.parent / fits_name
+        if not data_p.exists():
+            raise FileNotFoundError(f"{fits_name} (named in {p.name}) was not loaded with the label")
+        return read_iuvs_occultation(str(data_p), meta)
     if not tables:
         raise ValueError(f"{p.name}: no character or delimited table found (binary tables are not supported)")
     main = max(tables, key=lambda x: int(_text(x[1], "records", "0") or 0))
