@@ -183,6 +183,13 @@ def _store(name, cells, dtype, unit, field, columns, units, text_cols):
                     arr[i] = float(c)
                 except ValueError:
                     pass
+        # stored value * scaling_factor + value_offset (PDS4 Field): the New Horizons REX Pluto
+        # number densities are written in units of 1e19 m^-3 and were read 1e19 too small
+        sf, vo = _text(field, "scaling_factor"), _text(field, "value_offset")
+        try:
+            arr = arr * (float(sf) if sf else 1.0) + (float(vo) if vo else 0.0)
+        except ValueError:
+            pass
         columns[name] = arr
         units[name] = unit
     else:

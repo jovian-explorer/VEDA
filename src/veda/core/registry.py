@@ -462,6 +462,10 @@ MISSIONS: Dict[str, MissionInfo] = {
         mission_type="orbiter",
         target_encounters={"mars": "orbiter"},
         instruments=[
+            InstrumentInfo(id="ACS", name="Atmospheric Chemistry Suite", instrument_type="spectrometer",
+                           measurement_targets=["neutral_atmosphere", "aerosols"],
+                           description="Three infrared spectrometers (NIR, MIR, TIRVIM); in solar occultation they give "
+                                       "CO2 density, temperature, water vapour and aerosol profiles."),
             InstrumentInfo(id="NOMAD", name="Nadir and Occultation for MArs Discovery", instrument_type="spectrometer",
                            measurement_targets=["neutral_atmosphere"],
                            description="Infrared and ultraviolet spectrometers; its solar occultation channel (SO) "
@@ -472,7 +476,7 @@ MISSIONS: Dict[str, MissionInfo] = {
         mission_page_url="https://www.esa.int/Science_Exploration/Human_and_Robotic_Exploration/Exploration/ExoMars",
         data_page_url="https://nomad.aeronomie.be/data/publicly-available-datasets",
         citation="Vandaele, A. C., et al. (2018). NOMAD, an integrated suite of three spectrometers for the ExoMars Trace Gas Mission. Space Sci. Rev., 214, 80.",
-        description="ESA/Roscosmos Mars orbiter, in science orbit since 2018. VEDA reads NOMAD solar occultation temperature and pressure profiles published by the IAA/CSIC team.",
+        description="ESA/Roscosmos Mars orbiter, in science orbit since 2018. VEDA reads the solar occultation profiles the NOMAD (IAA/CSIC) and ACS (IKI) teams published in research data repositories.",
     ),
     "mgs": MissionInfo(
         id="mgs",
@@ -1356,7 +1360,9 @@ DATA_PORTALS = [
         "description": "Profiles that the instrument teams published outside PDS and PSA: Venus Express VeRa "
                        "radio occultations on Zenodo (Gramigna et al. 2023, Imamura et al. 2018), SPICAV-SOIR "
                        "solar occultations in the BIRA-IASB data repository (Mahieux et al. 2023), ExoMars TGO "
-                       "NOMAD solar occultations (Lopez-Valverde et al. 2023) and Juno radio occultations of "
+                       "NOMAD solar occultations on Zenodo and BIRA-IASB (Lopez-Valverde et al. 2023, Trompet et al. "
+                       "2023, Brines et al. 2026), TGO ACS solar occultations "
+                       "(Belyaev et al. 2022, Fedorova et al. 2022) on Mendeley Data, and Juno radio occultations of "
                        "Jupiter's ionosphere (Coffin et al. 2025, Caruso et al. 2026) on Zenodo; no account is needed.",
         "missions": ["vex", "tgo", "juno"],
         "login": False,

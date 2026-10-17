@@ -23,8 +23,11 @@ which both the product viewer and the profile loader read like any other table.
   (``record``, ``zip``, ``members`` regex, ``columns``, ``delimiter``, None for any
   whitespace); the time is a column (``time_column``) or the name's ``date`` and
   ``time`` groups; ``header_ranges`` names the header lines whose midpoints place the
-  profile (NOMAD), ``min_kernel`` (column, threshold) masks levels whose averaging
-  kernel is below the threshold;
+  profile (NOMAD), ``header_values`` the "# Label: value" lines that do, ``min_kernel`` (column, threshold) masks levels whose averaging
+  kernel is below the threshold; a ``catalog`` table in the archive can place the
+  profiles instead (``_catalog``), ``product_id`` is formatted from the name's groups and
+  ``columns`` may be given per ``kind`` group; with ``url`` (Mendeley, BIRA-IASB) ``zip``
+  names the cached file;
 * in both, ``points`` gives each profile's time, latitude and longitude from a table keyed
   by the name's ``pj`` and ``dir`` groups (``directions`` maps the letters), for files
   without them (Juno); ``delimiter`` in ``zenodo_files`` reads delimited text with time
@@ -46,7 +49,7 @@ import json
 import re
 import zipfile
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import numpy as np
@@ -366,8 +369,8 @@ def _fetch_zenodo_file(ds: Dataset, prod: Dict[str, Any], out: Path) -> Path:
 
 
 def _members(zf: Path):
-    """(name, text) of each file in a zip or .tar.xz archive."""
-    if zf.name.endswith((".tar.xz", ".tar.gz", ".tgz")):
+    """(name, text) of each file in a zip or tar (.tar, .tar.xz, .tar.gz) archive."""
+    if not zipfile.is_zipfile(zf):
         import tarfile
         with tarfile.open(zf) as t:
             for m in t.getmembers():
@@ -377,6 +380,32 @@ def _members(zf: Path):
         with zipfile.ZipFile(zf) as z:
             for name in z.namelist():
                 yield name, z.read(name).decode("utf-8", "replace")
+
+
+def _member_text(ds: Dataset, name: str) -> str:
+    """One file of the data set's archive: read from a zip directly; a tar is unpacked into
+    the cache the first time (reading one member of a .tar.gz otherwise decompresses the
+    archive up to it, and a data set's thousands of profiles took minutes each)."""
+    zf = _zip_path(ds)
+    if zipfile.is_zipfile(zf):
+        with zipfile.ZipFile(zf) as z:
+            return z.read(name).decode("utf-8", "replace")
+    import tarfile
+    root = _cache_dir(ds) / "members"
+    done = root / ".unpacked"
+    stamp = f"{zf.name} {zf.stat().st_size}"           # (a new version of the archive is unpacked again)
+    if not done.is_file() or done.read_text() != stamp:
+        # member by member: extractall(filter="data") fails on Windows paths (WinError 4390)
+        with tarfile.open(zf) as t:
+            for m in t:
+                parts = PurePosixPath(m.name).parts
+                if not m.isfile() or m.name.startswith("/") or ".." in parts:
+                    continue
+                dest = root.joinpath(*parts)
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                dest.write_bytes(t.extractfile(m).read())
+        done.write_text(stamp)
+    return (root / name).read_text(encoding="utf-8", errors="replace")
 
 
 def _header_ranges(text: str, keys: Dict[str, str]) -> Dict[str, float]:
@@ -397,22 +426,85 @@ def _header_ranges(text: str, keys: Dict[str, str]) -> Dict[str, float]:
     return out
 
 
+def _group_key(v: str):
+    """A catalogue key from a file name's group or a table cell: numbers as integers,
+    words by their first letter (NORTHERN -> N)."""
+    try:
+        return int(float(v))
+    except ValueError:
+        return v[:1].upper()
+
+
+def _catalog(text: str, spec: Dict[str, Any]) -> Dict[tuple, Dict[str, Any]]:
+    """Time and place of each profile from a table in the archive (TGO ACS): ``key`` the
+    (column, how) pairs a row is found by ("sign": N or S from a latitude), ``meta`` the
+    columns of the values, the date from ``date`` (year, month name, day columns) or from
+    ``ls`` with the Mars year counted from ``first_mars_year`` (rows in time order)."""
+    from ..analysis.solar_geometry import mars_time_from_ls
+    out: Dict[tuple, Dict[str, Any]] = {}
+    my, prev = spec.get("first_mars_year"), None
+    for line in text.splitlines():
+        p = line.split()
+        try:
+            meta = {k: float(p[i]) for k, i in spec["meta"].items()}
+            key = tuple(("N" if float(p[i]) >= 0 else "S") if how == "sign" else _group_key(p[i])
+                        for i, how in spec["key"])
+        except (ValueError, IndexError):
+            continue                                   # header lines
+        if "LONGITUDE" in meta:
+            meta["LONGITUDE"] %= 360.0
+        if spec.get("date"):
+            y, mon, d = (p[i] for i in spec["date"])
+            meta["START_TIME"] = datetime.strptime(f"{y} {mon} {d}", "%Y %b %d").date().isoformat()
+        elif my:
+            if prev is not None and meta["LS"] < prev - 180:
+                my += 1                                # a new Mars year
+            prev = meta["LS"]
+            # the date only: the table gives the season, not the time of day
+            meta["START_TIME"], meta["MARS_YEAR"] = (mars_time_from_ls(my, meta["LS"]) or "")[:10], my
+        # a key found twice (two Belyaev et al. occultations of one orbit in one hemisphere)
+        # cannot be told apart: neither is placed
+        out[key] = None if key in out else meta
+    return out
+
+
 def _index_zenodo_zip(ds: Dataset, progress=None) -> List[Dict[str, Any]]:
     r = ds.repository
     zf = _zip_path(ds, progress)
     rx = re.compile(r["members"])
+    cat = None
+    if r.get("catalog"):
+        spec = r["catalog"]
+        text = next((t for n, t in _members(zf) if n.rsplit("/", 1)[-1] == spec["member"]), None)
+        if text is None:
+            raise http.ArchiveError(f"{spec['member']} is not in {zf.name}")
+        cat = _catalog(text, spec)
     rows = []
     for name, text in _members(zf):
         base = name.rsplit("/", 1)[-1]
-        m = rx.fullmatch(base)
+        m = rx.fullmatch(base) or rx.fullmatch(name)
         if not m:
             continue
-        pid = base.split(".")[0]
+        pid = r["product_id"].format(**m.groupdict()) if r.get("product_id") else base.split(".")[0]
+        if not any(ln.strip() and not ln.lstrip().startswith("#") for ln in text.splitlines()):
+            continue                                   # a header without data (one Brines et al. scan)
+        if cat is not None:
+            meta = cat.get(tuple(_group_key(m.group(g)) for g in r["catalog"]["groups"]))
+            if meta is None:
+                continue                               # not in the team's list
+            meta = dict(meta, KIND=m.groupdict().get("kind"))
+            rows.append(_row(ds, pid, name, meta.pop("START_TIME"), meta))
+            continue
         pt = _point(r, m)
         if pt:
             rows.append(_row(ds, pid, name, pt.pop("START_TIME"), pt))
             continue
         extra = _header_ranges(text, r["header_ranges"]) if r.get("header_ranges") else {}
+        if r.get("header_values"):                     # "# Latitude: 78.94" lines (NOMAD, Brines et al.)
+            for key, label in r["header_values"].items():
+                hit = re.search(rf"^#\s*{re.escape(label)}\s*:\s*([-+0-9.eE]+)", text, re.M)
+                if hit:
+                    extra[key] = float(hit.group(1)) % 360.0 if key == "LONGITUDE" else float(hit.group(1))
         if "date" in m.groupdict():                    # the time in the file name
             d, t = m.group("date"), m.group("time")
             rows.append(_row(ds, pid, name, f"{d[:4]}-{d[4:6]}-{d[6:8]}T{t[:2]}:{t[2:4]}:{t[4:6]}", extra))
@@ -431,7 +523,9 @@ def _index_zenodo_zip(ds: Dataset, progress=None) -> List[Dict[str, Any]]:
 def _zip_path(ds: Dataset, progress=None) -> Path:
     r = ds.repository
     if r.get("url"):
-        url, key = r["url"], r["url"].rsplit("/", 1)[-1]
+        url, key = r["url"], r.get("zip") or r["url"].rsplit("/", 1)[-1]
+        if (_cache_dir(ds) / key).is_file():
+            return _cache_dir(ds) / key
     elif (_cache_dir(ds) / r["zip"]).is_file():
         # downloaded already: without this every profile read asked Zenodo for the file list,
         # and reading a few hundred (NOMAD: 324) ran into its rate limit (HTTP 429)
@@ -467,8 +561,11 @@ def _parse_time(s: str) -> str:
 
 def _fetch_zip_member(ds: Dataset, prod: Dict[str, Any], out: Path) -> Path:
     r = ds.repository
-    text = next(t for n, t in _members(_zip_path(ds)) if n == prod["path"])
-    names = r["columns"]
+    text = _member_text(ds, prod["path"])
+    extra = prod.get("extra") or {}
+    extra = json.loads(extra) if isinstance(extra, str) else extra
+    # one column layout, or one per kind of file (TGO ACS NIR: water, temperature, aerosol)
+    names = r["columns"] if isinstance(r["columns"], list) else r["columns"][extra["KIND"]]
     rows = _parse_rows(text, names, r.get("delimiter", "\t"))
     if r.get("min_kernel"):
         # levels where the averaging kernel's diagonal is below the threshold hold the first
@@ -482,8 +579,6 @@ def _fetch_zip_member(ds: Dataset, prod: Dict[str, Any], out: Path) -> Path:
                     if i not in keep:
                         row[i] = np.nan
     out_names = [(n, "h" if u == "hh:mm:ss" else u) for n, u in names]
-    extra = prod.get("extra") or {}
-    extra = json.loads(extra) if isinstance(extra, str) else extra
     meta = {"START_TIME": prod["start_time"], "SOURCE": f"{r.get('record', '')} {prod['path']}",
             **{k: v for k, v in extra.items() if k.isupper()}}
     return write_normalised(out, meta, out_names, rows)

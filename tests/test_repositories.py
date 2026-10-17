@@ -391,3 +391,106 @@ def test_nomad_profiles_from_a_tar_archive(tmp_path, monkeypatch):
     from veda.analysis.solar_geometry import solar_geometry
     g = solar_geometry("mars", p.time_utc, p.latitude, p.longitude)
     assert g["lst"] == pytest.approx(16.8, abs=0.1) and g["sza"] == pytest.approx(88.7, abs=0.2)
+
+
+def _acs(tmp_path, monkeypatch, ds_id, name):
+    ds = get_dataset(ds_id)
+    monkeypatch.setattr(repo, "_cache_dir", lambda ds: tmp_path)
+    monkeypatch.setattr(repo, "_zip_path", lambda ds, progress=None: Path(__file__).parent / "data" / "tgo_acs" / name)
+    return ds
+
+
+def test_acs_mir_profiles_placed_from_the_observation_list(tmp_path, monkeypatch):
+    """Belyaev et al. (2022), Mendeley Data: files found by orbit and hemisphere in the
+    observation list (orbit 2229: 24 May 2018, Ls 181.12, 83.51 N 94.95 E, 6.38 h); an orbit
+    with two northern occultations in the list (3321) cannot be told apart and is left out.
+    VEDA's temperatures from the CO2 density agree with the team's below 140 km."""
+    from veda.archives.profiles import profile_from_label
+    ds = _acs(tmp_path, monkeypatch, "tgo-acs-mir-belyaev2022", "acs_mir_excerpt.zip")
+    rows = {r["product_id"]: r for r in repo._index_zenodo_zip(ds)}
+    assert sorted(rows) == ["acs_mir_002229_NORTHERN_1", "acs_mir_002302_SOUTHERN_2"]
+    r = rows["acs_mir_002229_NORTHERN_1"]
+    assert r["start_time"] == "2018-05-24"
+    prod = {**r, "url": "", "extra": json.loads(r["extra"])}
+    p = profile_from_label(ds, prod, repo.fetch_repository_product(ds, prod))
+    assert (p.latitude, p.longitude) == pytest.approx((83.51, 94.95)) and p.raw_attributes["LST"] == 6.38
+    assert p.raw_attributes["LS"] == 181.12 and p.raw_attributes["MESOPAUSE_KM"] == 89.2
+    z, t = np.asarray(p.altitude_km), np.asarray(p.temperature_k, float)
+    m = (z > 60) & (z < 140)
+    assert abs(np.nanmedian(np.asarray(p.derived["temperature_from_density"])[m] - t[m])) < 5.0
+
+
+def test_acs_nir_files_of_three_kinds_dated_from_ls(tmp_path, monkeypatch):
+    """Fedorova et al. (2022): water, temperature and aerosol files of one occultation, each
+    with its own columns; the list gives Ls 163.3 of Mars year 34 and no date: 22 April 2018
+    (Belyaev et al.'s list dates the same orbits to within a day)."""
+    from veda.archives.profiles import profile_from_label
+    ds = _acs(tmp_path, monkeypatch, "tgo-acs-nir-fedorova2022", "acs_nir_excerpt.zip")
+    rows = {r["product_id"]: r for r in repo._index_zenodo_zip(ds)}
+    assert sorted(rows) == ["acs_nir_001833_2_H2O_S", "acs_nir_001833_2_Temperature", "acs_nir_001833_2_aerosol_extinction"]
+    assert {r["start_time"] for r in rows.values()} == {"2018-04-22"}
+    get = lambda pid: profile_from_label(ds, {**rows[pid], "url": "", "extra": json.loads(rows[pid]["extra"])},  # noqa: E731
+                                         repo.fetch_repository_product(ds, {**rows[pid], "extra": json.loads(rows[pid]["extra"])}))
+    w = get("acs_nir_001833_2_H2O_S")
+    assert w.derived["h2o_ppm"][0] == 2.9 and w.derived["saturation_ratio"][0] == pytest.approx(4.592e-3)
+    assert (w.latitude, w.longitude) == pytest.approx((79.5, 246.0)) and w.raw_attributes["MARS_YEAR"] == 34
+    assert get("acs_nir_001833_2_Temperature").temperature_k[0] == 125.2
+    assert get("acs_nir_001833_2_aerosol_extinction").derived["aerosol_extinction_km"][0] == pytest.approx(4.466e-3)
+
+
+def _archive(tmp_path, monkeypatch, ds_id, members, kind):
+    """A one-file copy of a data set's archive (zip or tar) made from tests/data/tgo_nomad."""
+    import tarfile
+    ds = get_dataset(ds_id)
+    src = Path(__file__).parent / "data" / "tgo_nomad"
+    a = tmp_path / ds.repository["zip"]
+    if kind == "zip":
+        with zipfile.ZipFile(a, "w") as z:
+            for arc, name in members:
+                z.write(src / name, arc)
+    else:
+        with tarfile.open(a, "w") as t:
+            for arc, name in members:
+                t.add(src / name, arc)
+    monkeypatch.setattr(repo, "_cache_dir", lambda ds: tmp_path)
+    return ds
+
+
+def _one(ds):
+    from veda.archives.profiles import profile_from_label
+    rows = repo._index_zenodo_zip(ds)
+    assert len(rows) == 1
+    prod = {**rows[0], "url": "", "extra": json.loads(rows[0]["extra"])}
+    return rows[0], profile_from_label(ds, prod, repo.fetch_repository_product(ds, prod))
+
+
+def test_nomad_trompet_profiles_east_longitude_and_hydrostatic_temperatures(tmp_path, monkeypatch):
+    """Trompet et al. (2023): per-level latitude, longitude and local time; the longitudes
+    are east (VEDA's local time at them and the file's time agrees with the file's), and the
+    team's temperatures are hydrostatic from the CO2 density, as VEDA's own (44.01 g/mol)."""
+    from veda.analysis.solar_geometry import solar_geometry
+    name = "20200909_234948_1p0a_SO_A_E_148.dat"
+    ds = _archive(tmp_path, monkeypatch, "tgo-nomad-so-trompet2023", [(f"Trompet_JGR2022/{name}", name)], "zip")
+    row, p = _one(ds)
+    assert row["start_time"] == "2020-09-09T23:49:48" and "egress" in row["product_type"]
+    g = solar_geometry("mars", p.time_utc, p.latitude, p.longitude)
+    assert abs(((g["lst"] - np.nanmedian(p.track["lst"]) + 12) % 24) - 12) < 0.5
+    z, t = np.asarray(p.altitude_km), np.asarray(p.temperature_k, float)
+    m = z < np.nanmax(z) - 10                      # below the top boundary of both integrations
+    assert abs(np.nanmedian(np.asarray(p.derived["temperature_from_density"])[m] - t[m])) < 6.0
+
+
+def test_nomad_order_165_and_brines_water_profiles(tmp_path, monkeypatch):
+    """Order 165 (Trompet 2026): local time before latitude and longitude in its columns,
+    profiles at 140-190 km.  Brines et al. (2026): place from "# Label: value" header lines in
+    a plain tar."""
+    name = "20181130_205230_1p0a_SO_A_E_165.dat"
+    ds = _archive(tmp_path, monkeypatch, "tgo-nomad-so165-trompet2026", [(f"Trompet_2026_NOMADSO165/{name}", name)], "tar")
+    _, p = _one(ds)
+    assert 140 < np.nanmin(p.altitude_km) and np.nanmax(p.altitude_km) < 200
+    assert np.nanmedian(p.track["lst"]) == pytest.approx(7.4, abs=0.1) and np.nanmedian(p.track["latitude"]) == pytest.approx(41.0, abs=0.3)
+    name = "20180421_202111_1p0a_SO_A_E_134-168.dat"
+    ds = _archive(tmp_path, monkeypatch, "tgo-nomad-so-h2o-brines2026", [(name, name)], "tar")
+    _, w = _one(ds)
+    assert (w.latitude, w.longitude) == (78.94, 2.93) and w.raw_attributes["LST"] == 3.32
+    assert w.altitude_km[0] == 20.0 and w.derived["h2o_ppm"][0] == pytest.approx(0.3781)

@@ -76,7 +76,7 @@ def _to_per_cm3(values: np.ndarray, unit: str) -> np.ndarray:
     import re as _re
     values = values * _scale(unit)      # e.g. "10^6 PER CUBIC METER"
     # Word-level test: squeezing out spaces made "CUBIC METER" contain "CM".
-    if "CENTIMETER" in unit or _re.search(r"(?<![A-Z])CM(?![A-Z])", unit):
+    if "CENTIMETER" in unit or _re.search(r"(?<![A-Z])(CM|CC)(?![A-Z])", unit):     # (PARTICLES_PER_CC)
         return values
     return values / 1e6                 # per cubic metre -> per cm^3
 
@@ -191,6 +191,47 @@ def load_profile(dataset_id: str, product_id: str) -> ObservationProfile:
     return profile_from_label(ds, prod, Path(fetch_product(dataset_id, product_id)))
 
 
+def _species_on_one_time_grid(tbl) -> None:
+    """MAVEN NGIMS tables: one row per species and sample (SPECIES, ABUNDANCE, PRECISION in
+    percent, QUALITY).  Rows flagged UR are not used ("unreliable, data not useable for
+    science", NGIMS SIS 8.3.10; in the early passes all outbound CO2 and N2).  The main
+    species (CO2) keeps its rows as the table's, with ABUNDANCE and PRECISION as its density
+    and absolute 1-sigma; every species becomes ABUNDANCE_<X> and PRECISION_<X> put on the
+    main species' times by linear interpolation in T_UNIX, empty beyond its own first and
+    last sample and across gaps of more than 10 s: species are sampled in turn, so their
+    counts and times need not be the main species'."""
+    sp = tbl.text_columns.get("SPECIES")
+    if not sp or "ABUNDANCE" not in tbl.columns or "T_UNIX" not in tbl.columns:
+        return
+    sp = np.array([s.strip() for s in sp])
+    names = list(dict.fromkeys(sp))
+    ab = np.asarray(tbl.columns["ABUNDANCE"], dtype=float)
+    pr = np.asarray(tbl.columns.get("PRECISION", np.full(ab.shape, np.nan)), dtype=float)
+    ok = np.array([q.strip() != "UR" for q in tbl.text_columns.get("QUALITY", [""] * sp.size)]) & (ab > 0)
+    sig = ab * pr / 100.0
+    t = np.asarray(tbl.columns["T_UNIX"], dtype=float)
+    base = sp == ("CO2" if "CO2" in names else names[0])
+    tb = t[base]
+    cols = {k: np.asarray(v)[base] for k, v in tbl.columns.items()}
+    cols["ABUNDANCE"] = np.where(ok[base], ab[base], np.nan)
+    cols["PRECISION"] = np.where(ok[base], sig[base], np.nan)
+    for name in names:
+        m = (sp == name) & ok
+        out_a, out_s = np.full(tb.shape, np.nan), np.full(tb.shape, np.nan)
+        if m.sum() >= 2:
+            o = np.argsort(t[m])
+            ts, a_s, s_s = t[m][o], ab[m][o], sig[m][o]
+            inside = (tb >= ts[0]) & (tb <= ts[-1])
+            j = np.clip(np.searchsorted(ts, tb), 1, ts.size - 1)
+            inside &= (ts[j] - ts[j - 1]) <= 10.0
+            out_a[inside] = np.interp(tb[inside], ts, a_s)
+            out_s[inside] = np.interp(tb[inside], ts, s_s)
+        cols[f"ABUNDANCE_{name.upper()}"] = out_a
+        cols[f"PRECISION_{name.upper()}"] = out_s
+    tbl.columns = cols
+    tbl.text_columns = {k: [x for x, b in zip(v, base) if b] for k, v in tbl.text_columns.items()}
+
+
 def _meta_value(tbl, name) -> Optional[float]:
     """A number from the label metadata (e.g. a PDS4 header table), by column-style name."""
     headers = list((tbl.metadata.get("HEADER_TABLES") or {}).values())
@@ -235,7 +276,7 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
     if ds.repository:
         from .repositories import read_normalised
         tbl = read_normalised(label)
-    elif label.suffix.lower() == ".xml":
+    elif label.suffix.lower() in (".xml", ".lblx"):
         from ..readers.pds4_reader import read_pds4_table
         tbl = read_pds4_table(str(label))
     else:
@@ -254,24 +295,40 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
         tbl.columns = {k: v[mask] for k, v in tbl.columns.items()}
         tbl.text_columns = {k: [x for x, m in zip(v, mask) if m] for k, v in tbl.text_columns.items()}
 
+    _species_on_one_time_grid(tbl)
+
     time_utc = prod.get("start_time") or ""
     if ds.label_time and tbl.metadata.get("START_TIME"):
         time_utc = str(tbl.metadata["START_TIME"])          # the catalogue has the date only
     if ds.representative.get("time") and tbl.metadata.get(ds.representative["time"]):
         time_utc = str(tbl.metadata[ds.representative["time"]])      # the profile's representative time
     leg = prod.get("leg")
-    if ds.pass_legs and leg and ds.pass_legs in tbl.columns:
-        # One leg of an aerobraking pass: before periapsis (inbound) or from it on.  Both
-        # legs take the periapsis time (the index time is the start of the file).
-        t = np.asarray(tbl.columns[ds.pass_legs], dtype=float)
-        from ..analysis.solar_geometry import parse_utc
-        start = parse_utc(time_utc)
-        if start is not None and t.size and np.isfinite(t[0]):
-            import datetime as _dt
-            time_utc = (start - _dt.timedelta(seconds=float(t[0]))).isoformat(timespec="milliseconds")
-        mask = (t < 0) if leg == "inbound" else (t >= 0)
-        tbl.columns = {k: v[mask] for k, v in tbl.columns.items()}
-        tbl.text_columns = {k: [x for x, m in zip(v, mask) if m] for k, v in tbl.text_columns.items()}
+    if ds.pass_legs and leg:
+        if ds.pass_legs in tbl.columns:
+            # One leg of an aerobraking pass: before periapsis (inbound) or from it on.  Both
+            # legs take the periapsis time (the index time is the start of the file).
+            t = np.asarray(tbl.columns[ds.pass_legs], dtype=float)
+            from ..analysis.solar_geometry import parse_utc
+            start = parse_utc(time_utc)
+            if start is not None and t.size and np.isfinite(t[0]):
+                import datetime as _dt
+                time_utc = (start - _dt.timedelta(seconds=float(t[0]))).isoformat(timespec="milliseconds")
+        elif "ALT" in tbl.columns:
+            # Periapsis pass without a precomputed periapsis-time column (e.g. MAVEN NGIMS)
+            alt = np.asarray(tbl.columns["ALT"], dtype=float)
+            i_peri = int(np.nanargmin(alt)) if alt.size else 0
+            if "T_UNIX" in tbl.columns:
+                t = np.asarray(tbl.columns["T_UNIX"], dtype=float) - float(tbl.columns["T_UNIX"][i_peri])
+            else:
+                t = np.arange(len(alt)) - i_peri
+            if "T_UTC" in tbl.text_columns and len(tbl.text_columns["T_UTC"]) > i_peri:
+                time_utc = tbl.text_columns["T_UTC"][i_peri]
+        else:
+            t = np.array([])
+        if t.size:
+            mask = (t < 0) if leg == "inbound" else (t >= 0)
+            tbl.columns = {k: v[mask] for k, v in tbl.columns.items()}
+            tbl.text_columns = {k: [x for x, m in zip(v, mask) if m] for k, v in tbl.text_columns.items()}
 
     for col, fills in ds.fill_values.items():
         k = col if col in tbl.columns else _key(tbl, col)      # (exact name first: error columns)

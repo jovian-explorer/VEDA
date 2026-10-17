@@ -661,7 +661,7 @@ def _local_key(volume: str, path: str) -> str:
             return ""
         return f"{hashlib.sha1(f'{volume}|{folder}'.encode('utf-8')).hexdigest()[:16]}/{name}"
     parts = [s for s in path.split("/") if s and s != "."]
-    return "/".join([volume] + parts) if volume else "/".join(parts)
+    return "/".join([volume.replace(":", "_")] + parts) if volume else "/".join(parts)
 
 
 def search(q: SearchQuery) -> Dict[str, Any]:
@@ -779,7 +779,9 @@ def local_label_path(dataset_id: str, volume: str, path: str) -> Path:
         if not name or name in (".", ".."):
             raise http.ArchiveError("Refusing a product path outside the archive")
         return PRODUCT_ROOT / dataset_id / key / name
-    return PRODUCT_ROOT / dataset_id / volume / PurePosixPath(path)
+    # a ":" in a folder name (the Small Bodies Node's pds4-nh_derived:plutosystem_atmospherics-v1.0)
+    # is not allowed in Windows paths
+    return PRODUCT_ROOT / dataset_id / volume.replace(":", "_") / PurePosixPath(path)
 
 
 _POINTER = re.compile(r'^\s*\^(\w+)\s*=\s*\(?\s*"?([^",)\s]+\.\w+)"?', re.M)

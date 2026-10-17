@@ -10,6 +10,19 @@ Changes go to the main branch continuously and are released as "VEDA 0.2.0 build
 
 ### Data sets
 - **Seven more profile data sets, each checked against its paper** (USAGE, section 3):
+  - ExoMars TGO ACS, from Mendeley Data: the MIR CO2 density, temperature and pressure profiles of Belyaev et al. (2022), and the NIR water vapour, saturation ratio, temperature and aerosol profiles of Fedorova et al. (2022). Each profile's time and place come from the team's list in the archive. The NIR list gives only Ls, so those profiles are dated from Ls and the Mars year; the dates agree within a day with the dated MIR list on the same orbits.
+  - ExoMars TGO NOMAD: the CO2 density and temperature profiles of Trompet et al. (2023, 968 profiles) and of order 165 in the upper thermosphere (Trompet 2026, 5490 profiles, 140-190 km), both from BIRA-IASB, and the water vapour profiles of Brines et al. (2026, 7568 profiles, Zenodo).
+  - MAVEN NGIMS neutral density profiles of the periapsis passes, PDS Atmospheres Node (the NGIMS work started on a separate branch). Each pass is split into its inbound and outbound legs. The team's Level-3 CO2 scale height for orbit 108 is reproduced (11.64 km against 11.43 +- 1.40 km).
+    - Samples the files flag UR (unreliable, NGIMS SIS) are not used, including all outbound CO2 and N2 of the early passes.
+    - PRECISION is a percent error and is read as such.
+    - Every species is put on the CO2 times by interpolation instead of being dropped when its sample count differs.
+    - The ion files are listed but not read as neutral profiles.
+  - New Horizons radio occultation of Pluto (entry and exit), from the PDS Small Bodies Node.
+- **Fix: PDS4 scaling factors were ignored in profiles.** A field's `scaling_factor` and `value_offset` are now applied. The Pluto number densities are written in units of 10^19 m^-3 and were read 10^19 too small.
+- **Fix: reading one profile of a .tar.gz research archive decompressed the whole archive.** A data set's thousands of profiles took minutes each. Tar archives are now unpacked into the cache once, and again when the archive changes. Archive files without data rows are left out.
+- PDS4 `.lblx` labels are read as PDS4, and a ":" in an archive folder name (Small Bodies Node) no longer breaks the local file path on Windows.
+- The MAVEN NGIMS per-cm^3 unit (PARTICLES_PER_CC) is matched by whole words.
+- **Seven more profile data sets, each checked against its paper** (USAGE, section 3):
   - Mars Express SPICAM: the stellar-occultation CO2 density and temperature profiles of Forget et al. (2009, 616 of each) and the solar-occultation water vapour profiles of Fedorova et al. (2021), from ESA PSA. USAGE wrongly said SPICAM had no derived products. The archive labels give the densities in cm^-3, but they are kg m^-3.
   - ExoMars TGO (a new mission in VEDA): the NOMAD solar-occultation temperature and pressure profiles of Mars Year 34 (Lopez-Valverde et al. 2023, Zenodo, 324 scans). Levels where the averaging kernel is below 0.01, which hold only the first guess, are masked.
   - Juno radio occultations of Jupiter's ionosphere: Coffin et al. (2025, 7 profiles) and Caruso et al. (2026, 39 profiles to perijove 80), both on Zenodo. Coffin et al.'s densities are in m^-3, not the cm^-3 of their readme. The Caruso files give no time or place, so `scripts/juno_occultation_points.py` computes them from the NAIF Juno trajectory. Where both data sets cover an occultation, the computed time and place agree with Coffin et al.'s within 1 s and 0.7 deg.

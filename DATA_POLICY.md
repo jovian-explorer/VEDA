@@ -75,12 +75,19 @@ The authoritative list is VEDA's own catalogue (`src/veda/archives/datasets.py`,
 | Mars Express (MEX) | SPICAM UV stellar occultations: CO2 density and temperature, 2004-2006 | L4 (derived) | `mex-m-spi-4-uvddr-prof-v1.0` | ESA PSA | Forget et al. (2009); Bertaux et al. (2006) |
 | Mars Express (MEX) | SPICAM IR solar occultations: water vapour density and mixing ratio, 2005-2018 | L4 (derived) | `mex-m-spi-4-irddr-prof-v1.0` | ESA PSA | Fedorova et al. (2021); Bertaux et al. (2006) |
 | ExoMars Trace Gas Orbiter (TGO) | NOMAD SO solar occultations: temperature and pressure, Mars Year 34 | Derived | `tgo-nomad-so-lopezvalverde2023` | Zenodo, CC-BY-4.0 | Lopez-Valverde et al. (2023); Vandaele et al. (2018); data doi:10.5281/zenodo.7086187 |
+| ExoMars Trace Gas Orbiter (TGO) | NOMAD SO: CO2 density and temperature, Mars years 35-36 | Derived | `tgo-nomad-so-trompet2023` | BIRA-IASB, CC-BY-4.0 | Trompet et al. (2023a, b); data doi:10.18758/71021074 |
+| ExoMars Trace Gas Orbiter (TGO) | NOMAD SO order 165: upper thermosphere CO2 density and temperature, 2018-2025 | Derived | `tgo-nomad-so165-trompet2026` | BIRA-IASB, CC-BY-4.0 | Trompet (2026), data doi:10.18758/kk9pzsjq |
+| ExoMars Trace Gas Orbiter (TGO) | NOMAD SO: water vapour, 2018-2023 | Derived | `tgo-nomad-so-h2o-brines2026` | Zenodo, CC-BY-4.0 | Brines et al. (2026); data doi:10.5281/zenodo.15146458 |
+| ExoMars Trace Gas Orbiter (TGO) | ACS MIR: CO2 density, temperature and pressure, 2018-2021 | Derived | `tgo-acs-mir-belyaev2022` | Mendeley Data, CC-BY-4.0 | Belyaev et al. (2022); Korablev et al. (2017); data doi:10.17632/g6j5t2z73z.2 |
+| ExoMars Trace Gas Orbiter (TGO) | ACS NIR: water vapour, saturation ratio, temperature and aerosol extinction, MY34-36 | Derived | `tgo-acs-nir-fedorova2022` | Mendeley Data, CC-BY-4.0 | Fedorova et al. (2022); Korablev et al. (2017); data doi:10.17632/6xrn9v4dc5.1 |
+| New Horizons | REX radio occultation of Pluto: number density, pressure and temperature at entry and exit | Derived (PDS4) | `nh-pluto-rex-profiles` | NASA PDS Small Bodies Node | Hinson et al. (2017); Stern et al. (2008) |
 | Mars Pathfinder | ASI/MET entry profile (density, pressure, temperature), July 1997 | DDR (derived) | `mpf-m-asimet-4-ddr-edl-v1.0` | NASA PDS Atmospheres Node | Magalhaes et al. (1999); Schofield et al. (1997) |
 | Juno | Radio occultations: Jupiter ionosphere electron density, perijoves 53-62 | Derived | `juno-ro-coffin2025` | Zenodo, CC-BY-4.0 | Coffin et al. (2025); data doi:10.5281/zenodo.15305795 |
 | Juno | Radio occultations: Jupiter ionosphere electron density, perijoves 53-80 | Derived | `juno-ro-caruso2026` | Zenodo, CC-BY-4.0 | Caruso et al. (2025, 2026); data doi:10.5281/zenodo.22706200 |
 | 2001 Mars Odyssey | ACC (aerobraking density profiles, 2001-2002) | L5 (derived) | `ody-m-accel-5-derived-v1.0` | NASA PDS Atmospheres Node | Tolson et al. (2005); data: Withers & Murphy (2009) |
 | MAVEN | ACC (accelerometer density profiles of the periapsis passes, 2014-2020) | L3 (derived, PDS4) | `maven-acc-profile` | NASA PDS Atmospheres Node | Zurek et al. (2015); data: Tolson & Lugo (2016) |
 | MAVEN | ROSE (ionospheric electron density profiles, 2016-2025) | L3 (derived, PDS4) | `maven-rose-edp` | NASA PDS PPI Node | Withers et al. (2020); Withers & Moore (2020); data: Withers (2017), doi:10.17189/1517630 |
+| MAVEN | NGIMS (neutral gas and ion density profiles of the periapsis passes, 2014-present) | L2 (PDS4) | `maven-ngims-l2` | NASA PDS Atmospheres Node (PDS4) | Mahaffy et al. (2015); data: Elrod, Benna & Navas (2014), doi:10.17189/1518931 |
 | Mars Reconnaissance Orbiter (MRO) | CRISM limb dust and water-ice aerosol profiles, 2009-2012 | Derived (PDS4) | `mro-crism-smith2013-aerosol` | NASA PDS Atmospheres Node | Smith et al. (2013); data: Khayat (2024), doi:10.17189/76ha-be75 |
 | Mars Reconnaissance Orbiter (MRO) | CRISM limb aerosol abundance and particle size profiles, 2010-2017 | Derived (PDS4) | `mro-crism-guzewich-aerosol` | NASA PDS Atmospheres Node | Guzewich et al. (2014, 2019); data: Khayat (2024), doi:10.17189/76ha-be75 |
 | Mars Express (MEX) | MaRS (Radio Science) | L4 | `mex-m-mrs-5-occ` | ESA PSA (mirror: NASA PDS Geosciences Node) | Pätzold et al. (2016); Pätzold et al. (2004); Chicarro et al. (2004) |
@@ -222,6 +229,7 @@ The authoritative list is VEDA's own catalogue (`src/veda/archives/datasets.py`,
 
 * **MAVEN STATIC, SWEA, SWIA, MAG, LPW, EUV and SEP, and the raw and calibrated ROSE data** (its electron density profiles are connected), and most Juno, Cassini, Galileo, MESSENGER and MGS plasma data: the PDS PPI node registers these only as bundles and collections, so they cannot be searched by date yet.
 * **Pioneer Venus OUVS, OIR and OCPP**: no public archive route was found.
+* **MAVEN IUVS occultation and periapse profiles** and the **NOMAD UVIS ozone profiles** (Piccialli et al. 2023, HDF5): their files need readers VEDA does not have yet. The MAVEN NGIMS ion abundance files are listed but not read as profiles.
 * **Galileo NIMS Jupiter cubes, MRO gravity** and, while their indexes are unverified, **Cassini CAPS/MAG/RPWS/MIMI/RADAR, Juno JADE/JEDI/Waves, MESSENGER MDIS/EPPS, LRO LAMP/CRaTER and Dawn FC/VIR** volume indexes.
 * **Akatsuki LAC**: not yet published by JAXA.
 * **MRO CTX and MARCI** are indexed only when you press *Index now* (their archive indexes are about 95 MB each).

@@ -809,3 +809,29 @@ def test_pathfinder_entry_profile_as_published():
     assert -7.5 < below < -6.0
     # 3-sigma envelopes in the file: 1-sigma is a third of them
     assert p.uncertainty["temperature_k"][0] == pytest.approx(17.9654 / 3)
+
+
+def test_pluto_radio_occultation_as_published():
+    """Hinson et al. (2017): entry at sunset at 193.5 E, 17.0 S and exit at sunrise at 15.7 E,
+    15.1 N; above 1215 km radius no discernible difference between them.  The labels give
+    the number densities in units of 1e19 m^-3 (PDS4 scaling_factor), read unscaled before."""
+    from pathlib import Path
+    import numpy as np
+    from veda.archives.profiles import profile_from_label
+    ds = get_dataset("nh-pluto-rex-profiles")
+    d = Path(__file__).parent / "data" / "nh_rex"
+    prof = {}
+    for leg in ("entry", "exit"):
+        p = profile_from_label(ds, {"product_id": f"nh_pluto_rex_profile_{leg}", "start_time": "2015-07-14T12:17:30",
+                                    "volume": "pds4-nh_derived:plutosystem_atmospherics-v1.0", "url": "",
+                                    "product_type": leg}, d / f"nh_pluto_rex_profile_{leg}.lblx")
+        r = np.asarray(p.altitude_km) + 1188.3
+        i = int(np.argmin(r))
+        prof[leg] = (r, np.asarray(p.temperature_k), p.track["latitude"][i], p.track["longitude"][i], np.median(p.track["lst"]))
+        n = np.asarray(p.derived["number_density_m3"])
+        assert np.median(np.asarray(p.pressure_hpa) * 100 / (n * 1.380649e-23 * np.asarray(p.temperature_k))) == pytest.approx(1, abs=1e-4)
+    assert prof["entry"][2:4] == pytest.approx((-17.0, 193.5), abs=0.1) and prof["entry"][4] > 16
+    assert prof["exit"][2:4] == pytest.approx((15.1, 15.7), abs=0.1) and prof["exit"][4] < 6
+    grid = np.arange(1215.0, 1300.0, 5.0)
+    t = [np.interp(grid, r[::-1], tt[::-1]) for r, tt, *_ in prof.values()]
+    assert np.max(np.abs(t[0] - t[1])) < 2.5

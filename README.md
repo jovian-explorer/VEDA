@@ -53,7 +53,7 @@ In **By Planetary Mission**, *Archive data* lists every payload and data set of 
 
 ### Connected archives and payloads
 
-All 27 missions in VEDA are connected (170 data sets: 64 read from archive indexes, 106 searched live). Highlights:
+All 27 missions in VEDA are connected (177 data sets: 71 read from archive indexes, 106 searched live). Highlights:
 
 | Body | Mission | Payloads | Route |
 |---|---|---|---|
@@ -61,12 +61,12 @@ All 27 missions in VEDA are connected (170 data sets: 64 read from archive index
 | Venus | Venus Express | VeRa temperature profiles (2006-2009 and 2014, research data on Zenodo) and SPICAV-SOIR profiles (2006-2014, BIRA-IASB); VeRa raw data, VMC, VIRTIS, SPICAV/SOIR, ASPERA-4, MAG | ESA PSA, live; Zenodo; BIRA-IASB |
 | Venus | Magellan, Pioneer Venus, VEGA | Radio occultation profiles (Magellan; PVO 1978-1989 temperature-pressure and electron density, recovered by Withers et al. 2020), radar, gravity; the VEGA 2 lander descent (63 km to the surface) and VEGA balloon records; PVO OIMS, ONMS, probes | NASA PDS |
 | Mars | Mars Express | MaRS L4 profiles and SPICAM stellar (CO2 density, temperature) and solar (water vapour) occultation profiles (indexed); PFS, OMEGA, ASPERA-3, MARSIS, HRSC, VMC | ESA PSA |
-| Mars | ExoMars TGO | NOMAD solar occultation temperature and pressure profiles, Mars Year 34 (Lopez-Valverde et al. 2023) | Zenodo |
+| Mars | ExoMars TGO | NOMAD solar occultation profiles: temperature and pressure (Lopez-Valverde et al. 2023), CO2 density and temperature in the mesosphere and upper thermosphere (Trompet et al.), water vapour 2018-2023 (Brines et al. 2026); ACS solar occultation profiles: CO2 density and temperature to 180 km (Belyaev et al. 2022), water vapour, saturation, temperature and aerosol extinction (Fedorova et al. 2022) | Zenodo, BIRA-IASB, Mendeley Data |
 | Mars | MRO | MCS DDR/EDR/RDR (indexed), CRISM, SHARAD; CTX and MARCI on request | NASA PDS |
-| Mars | MAVEN, MGS, MRO, Mars Odyssey, MER, Phoenix, MSL, InSight | NGIMS, IUVS, ACC; MGS and MRO radio occultation profiles; MRO MCS temperature profiles (each row of the 4-hour DDR files); MAVEN accelerometer density profiles (deep dips, aerobraking, science orbits) and ROSE ionospheric electron density profiles; MRO and Mars Odyssey aerobraking density profiles; MRO CRISM dust and water-ice aerosol profiles; entry profiles of Spirit, Opportunity, Phoenix, Curiosity and InSight; TES, MOLA | NASA PDS |
+| Mars | MAVEN, MGS, MRO, Mars Odyssey, MER, Phoenix, MSL, InSight | NGIMS neutral density profiles of the periapsis passes, IUVS, ACC; MGS and MRO radio occultation profiles; MRO MCS temperature profiles (each row of the 4-hour DDR files); MAVEN accelerometer density profiles (deep dips, aerobraking, science orbits) and ROSE ionospheric electron density profiles; MRO and Mars Odyssey aerobraking density profiles; MRO CRISM dust and water-ice aerosol profiles; entry profiles of Spirit, Opportunity, Phoenix, Curiosity and InSight; TES, MOLA | NASA PDS |
 | Jupiter | Juno, Galileo | Juno radio occultation electron density profiles of the ionosphere (2023-2026, Coffin et al. 2025 and Caruso et al. 2026, Zenodo); MWR, JIRAM, UVS, JunoCam, MAG, gravity; Galileo SSI, NIMS, UVS, PPR, MAG, PLS, EPD, probe | NASA PDS, OPUS |
 | Saturn, Titan | Cassini-Huygens | ISS, VIMS, UVIS, CIRS (OPUS), INMS; RSS profiles of the Titan neutral atmosphere and ionosphere and of the Saturn ionosphere; UVIS Saturn thermosphere profiles; Huygens HASI, DISR, GCMS, ACP, DWE, SSP | NASA PDS, OPUS, ESA PSA |
-| Pluto | New Horizons | REX, Alice, LORRI, Ralph MVIC/LEISA, SWAP, PEPSSI, SDC | NASA PDS |
+| Pluto | New Horizons | REX radio occultation profiles of Pluto's atmosphere (entry and exit, Hinson et al. 2017); REX, Alice, LORRI, Ralph MVIC/LEISA, SWAP, PEPSSI, SDC | NASA PDS |
 | Mercury | MESSENGER, BepiColombo | MLA, GRS, NS, XRS, MAG, MASCS, RS; BepiColombo MPO-MAG, MCAM, SERENA, PHEBUS, MERTIS, MORE ... | NASA PDS, ESA PSA |
 | Moon | LRO | Diviner, LOLA, LEND, Mini-RF, radio science | NASA PDS |
 | Ceres, Vesta | Dawn | GRaND, gravity | NASA PDS |

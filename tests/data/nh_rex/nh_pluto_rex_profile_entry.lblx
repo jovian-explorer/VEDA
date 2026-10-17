@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="https://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1L00.sch" schematypens="http://purl.oclc.org/dsdl/schematron"?>
+
+<Product_Observational xmlns="http://pds.nasa.gov/pds4/pds/v1"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://pds.nasa.gov/pds4/pds/v1 http://pds.nasa.gov/pds4/pds/v1/PDS4_PDS_1L00.xsd">
+    
+    <Identification_Area>
+        <logical_identifier>urn:nasa:pds:nh_derived:plutosystem_atmospherics:nh_pluto_rex_profile_entry</logical_identifier>
+        <version_id>1.0</version_id>
+        <title>
+            Pluto Atmospheric Composition Profiles: Radio Science Atmospheric Temperature-Pressure
+            Profile, Occultation Entry, from the New Horizons Radio Science Experiment
+        </title>
+        <information_model_version>1.21.0.0</information_model_version>
+        <product_class>Product_Observational</product_class>
+        
+        <Alias_List>
+            <Alias>
+                <alternate_id>NH-P/PSA-LORRI/ALICE/REX-5-ATMOS-V2.0:NH_PLUTO_REX_PROFILE_ENTRY</alternate_id>
+                <comment>PDS3 product identifier</comment>
+            </Alias>
+        </Alias_List>
+        
+        <Modification_History>
+            <Modification_Detail>
+                <modification_date>2025-05-06</modification_date>
+                <version_id>1.0</version_id>
+                <description>
+                    ACR: Minimal effort migration from PDS3
+                </description>
+            </Modification_Detail>
+        </Modification_History>
+    </Identification_Area>
+    
+    <Observation_Area>
+        <Time_Coordinates>
+            <start_date_time>2015-07-14T12:17:30Z</start_date_time>
+            <stop_date_time>2015-07-14T13:25:34Z</stop_date_time>
+        </Time_Coordinates>
+        
+        <Primary_Result_Summary>
+            <purpose>Science</purpose>
+            <processing_level>Derived</processing_level>
+        </Primary_Result_Summary>
+        
+        <Investigation_Area>
+            <name>New Horizons</name>
+            <type>Mission</type>
+            <Internal_Reference>
+                <lid_reference>urn:nasa:pds:context:investigation:mission.new_horizons</lid_reference>
+                <reference_type>data_to_investigation</reference_type>
+            </Internal_Reference>
+        </Investigation_Area>
+        
+        <Observing_System>
+            <Observing_System_Component>
+                <name>New Horizons</name>
+                <type>Host</type>
+                <Internal_Reference>
+                    <lid_reference>urn:nasa:pds:context:instrument_host:spacecraft.nh</lid_reference>
+                    <reference_type>is_instrument_host</reference_type>
+                </Internal_Reference>
+            </Observing_System_Component>
+            <Observing_System_Component>
+                <name>Radio Science Experiment</name>
+                <type>Instrument</type>
+                <Internal_Reference>
+                    <lid_reference>urn:nasa:pds:context:instrument:nh.rex</lid_reference>
+                    <reference_type>is_instrument</reference_type>
+                </Internal_Reference>
+            </Observing_System_Component>
+        </Observing_System>
+        
+        <Target_Identification>
+            <name>(134340) Pluto</name>
+            <type>Dwarf Planet</type>
+            <Internal_Reference>
+                <lid_reference>urn:nasa:pds:context:target:dwarf_planet.134340_pluto</lid_reference>
+                <reference_type>data_to_target</reference_type>
+            </Internal_Reference>
+        </Target_Identification>
+        
+    </Observation_Area>
+    
+    <Reference_List>
+        <Internal_Reference>
+            <lidvid_reference>urn:nasa:pds:nh_derived:plutosystem_atmospherics:overview::1.0</lidvid_reference>
+            <reference_type>data_to_document</reference_type>
+            <comment>
+                The overview document for this collection provides details of and references for the 
+                production of each of the products in the collection.
+            </comment>
+        </Internal_Reference>
+    </Reference_List>
+    
+    <File_Area_Observational>
+        <File>
+            <file_name>nh_pluto_rex_profile_entry.tab</file_name>
+        </File>
+        
+        <Table_Character>
+            <name>Azimuthal average profile</name>
+            <offset unit="byte">0</offset>
+            <records>29</records>
+            <description>
+                This file contains the atmospheric pressure-temperature profile     
+                derived from measurements at occultation entry, which occurred at sunset      
+                near the center of the anti-Charon hemisphere.
+                
+                Note that the gutter space between fields contains a comma (',')
+                character, so that this file could also be read as a CSV file.
+            </description>
+            <record_delimiter>Carriage-Return Line-Feed</record_delimiter>
+            <Record_Character>
+                <fields>12</fields>
+                <groups>0</groups>
+                <record_length unit="byte">75</record_length>
+                
+                <Field_Character>
+                    <name>Altitude</name>
+                    <field_number>1</field_number>
+                    <field_location unit="byte">1</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">5</field_length>
+                    <field_format>%5.1f</field_format>
+                    <unit>km</unit>
+                    <description>
+                        Measurement altitude from local surface      
+                        of Pluto.
+                    </description>
+                </Field_Character>
+                
+                <Field_Character>
+                    <name>Radius</name>
+                    <field_number>2</field_number>
+                    <field_location unit="byte">7</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">6</field_length>
+                    <field_format>%6.1f</field_format>
+                    <unit>km</unit>
+                    <description>
+                        Measurement radius from center of mass       
+                        of Pluto.
+                    </description>
+                </Field_Character>
+                
+                <Field_Character>
+                    <name>Longitude</name>
+                    <field_number>3</field_number>
+                    <field_location unit="byte">14</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">5</field_length>
+                    <field_format>%5.1f</field_format>
+                    <unit>deg</unit>
+                    <description>
+                        Planetocentric (positive east) longitude of           
+                        measurement in body fixed coordinates (IAU small body pole                
+                        convention).
+                    </description>
+                </Field_Character>
+                
+                <Field_Character>
+                    <name>Latitude</name>
+                    <field_number>4</field_number>
+                    <field_location unit="byte">20</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">5</field_length>
+                    <field_format>%5.1f</field_format>
+                    <unit>deg</unit>
+                    <description>
+                        Planetocentric (north) latitude of           
+                        measurement (IAU small body pole convention).
+                    </description>
+                </Field_Character>
+                
+                <Field_Character>
+                    <name>Local True Solar Time</name>
+                    <field_number>5</field_number>
+                    <field_location unit="byte">26</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">5</field_length>
+                    <field_format>%5.2f</field_format>
+                    <unit>hour</unit>
+                    <description>
+                        Local true solar time (LTST) at the          1234567890
+                        time and location of the occultation measurement.  LTST at the            
+                        sub-solar longitude is defined as 12 solar hours.  LTST on other          
+                        meridians changes by one solar hour for each 15 degree increment          
+                        in longitude.
+                    </description>
+                </Field_Character>
+                
+                <Field_Character>
+                    <name>Solar Zenith Angle</name>
+                    <field_number>6</field_number>
+                    <field_location unit="byte">32</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">4</field_length>
+                    <field_format>%4.1f</field_format>
+                    <unit>deg</unit>
+                    <description>
+                        Angle between the direction to Sun           
+                        and the local vertical direction on Pluto at time and location            
+                        of the occultation measurement.
+                    </description>
+                </Field_Character>
+                
+                <Field_Character>
+                    <name>Number Density</name>
+                    <field_number>7</field_number>
+                    <field_location unit="byte">37</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">6</field_length>
+                    <field_format>%6.2f</field_format>
+                    <unit>m**-3</unit>
+                    <scaling_factor>1.e19</scaling_factor>
+                    <description>
+                        Molecular number density of the              
+                        atmosphere at RADIUS.
+                    </description>
+                </Field_Character>
+                
+                <Field_Character>
+                    <name>Sigma Number Density</name>
+                    <field_number>8</field_number>
+                    <field_location unit="byte">44</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">4</field_length>
+                    <field_format>%4.2f</field_format>
+                    <unit>m**-3</unit>
+                    <scaling_factor>1.e19</scaling_factor>
+                    <description>
+                        One standard deviation uncertainty           
+                        in NUMBER DENSITY.
+                    </description>
+                </Field_Character>
+                
+                <Field_Character>
+                    <name>Pressure</name>
+                    <field_number>9</field_number>
+                    <field_location unit="byte">49</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">6</field_length>
+                    <field_format>%6.4f</field_format>
+                    <unit>pascal</unit>
+                    <description>
+                        Atmospheric pressure at RADIUS.
+                    </description>
+                </Field_Character>
+                
+                <Field_Character>
+                    <name>Sigma Pressure</name>
+                    <field_number>10</field_number>
+                    <field_location unit="byte">56</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">6</field_length>
+                    <field_format>%6.4f</field_format>
+                    <unit>pascal</unit>
+                    <description>
+                        One standard deviation uncertainty           
+                        in PRESSURE.
+                    </description>
+                </Field_Character>
+                
+                <Field_Character>
+                    <name>Temperature</name>
+                    <field_number>11</field_number>
+                    <field_location unit="byte">63</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">6</field_length>
+                    <field_format>%6.2f</field_format>
+                    <unit>kelvin</unit>
+                    <description>
+                        Atmospheric temperature at RADIUS.
+                    </description>
+                </Field_Character>
+                
+                <Field_Character>
+                    <name>Sigma Temperature</name>
+                    <field_number>12</field_number>
+                    <field_location unit="byte">70</field_location>
+                    <data_type>ASCII_Real</data_type>
+                    <field_length unit="byte">4</field_length>
+                    <field_format>%4.2f</field_format>
+                    <unit>kelvin</unit>
+                    <description>
+                        One standard deviation uncertainty           
+                        in TEMPERATURE.
+                    </description>
+                </Field_Character>
+                
+            </Record_Character>
+        </Table_Character>
+    </File_Area_Observational>
+</Product_Observational>

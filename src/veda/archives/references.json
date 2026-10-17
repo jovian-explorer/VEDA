@@ -6933,6 +6933,245 @@
     }
    ],
    "note": ""
+  },
+  {
+   "key": "belyaev2022",
+   "authors": [
+    "Belyaev, D. A.",
+    "Fedorova, A. A.",
+    "Trokhimovskiy, A.",
+    "Alday, J.",
+    "Korablev, O. I.",
+    "Montmessin, F.",
+    "Starichenko, E. D.",
+    "Olsen, K. S.",
+    "Patrakeev, A. S."
+   ],
+   "et_al": false,
+   "year": 2022,
+   "title": "Thermal Structure of the Middle and Upper Atmosphere of Mars From ACS/TGO CO2 Spectroscopy",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "127",
+   "issue": "10",
+   "pages": "e2022JE007286",
+   "doi": "10.1029/2022JE007286",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "tgo",
+     "payload": "ACS MIR"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "fedorova2022",
+   "authors": [
+    "Fedorova, A.",
+    "Montmessin, F.",
+    "Trokhimovskiy, A.",
+    "Luginin, M.",
+    "Korablev, O.",
+    "Alday, J.",
+    "Belyaev, D.",
+    "Holmes, J.",
+    "Lefevre, F.",
+    "Olsen, K."
+   ],
+   "et_al": true,
+   "year": 2022,
+   "title": "A Two-Martian Years Survey of the Water Vapor Saturation State on Mars Based on ACS NIR/TGO Occultations",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "128",
+   "issue": "1",
+   "pages": "e2022JE007348",
+   "doi": "10.1029/2022JE007348",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "tgo",
+     "payload": "ACS NIR"
+    }
+   ],
+   "note": "Published online in 2022 (Crossref), in the 2023 volume 128."
+  },
+  {
+   "key": "korablev2017",
+   "authors": [
+    "Korablev, O.",
+    "Montmessin, F.",
+    "Trokhimovskiy, A.",
+    "Fedorova, A. A.",
+    "Shakun, A. V.",
+    "Grigoriev, A. V.",
+    "Moshkin, B. E.",
+    "Ignatiev, N. I.",
+    "Forget, F.",
+    "Lefèvre, F."
+   ],
+   "et_al": true,
+   "year": 2017,
+   "title": "The Atmospheric Chemistry Suite (ACS) of Three Spectrometers for the ExoMars 2016 Trace Gas Orbiter",
+   "journal": "Space Science Reviews",
+   "volume": "214",
+   "issue": "1",
+   "pages": "7",
+   "doi": "10.1007/s11214-017-0437-6",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "tgo",
+     "payload": "ACS"
+    }
+   ],
+   "note": "Published online in 2017 (Crossref), in the 2018 volume 214."
+  },
+  {
+   "key": "trompet2023a",
+   "authors": [
+    "Trompet, L.",
+    "Vandaele, A. C.",
+    "Thomas, I.",
+    "Aoki, S.",
+    "Daerden, F.",
+    "Erwin, J.",
+    "Flimon, Z.",
+    "Mahieux, A.",
+    "Neary, L.",
+    "Robert, S."
+   ],
+   "et_al": true,
+   "year": 2023,
+   "title": "Carbon Dioxide Retrievals From NOMAD-SO on ESA's ExoMars Trace Gas Orbiter and Temperature Profiles Retrievals With the Hydrostatic Equilibrium Equation: 1. Description of the Method",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "128",
+   "issue": "3",
+   "pages": "e2022JE007277",
+   "doi": "10.1029/2022JE007277",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "tgo",
+     "payload": "NOMAD SO"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "trompet2023b",
+   "authors": [
+    "Trompet, L.",
+    "Vandaele, A. C.",
+    "Thomas, I.",
+    "Aoki, S.",
+    "Daerden, F.",
+    "Erwin, J.",
+    "Flimon, Z.",
+    "Mahieux, A.",
+    "Neary, L.",
+    "Robert, S."
+   ],
+   "et_al": true,
+   "year": 2023,
+   "title": "Carbon Dioxide Retrievals From NOMAD-SO on ESA's ExoMars Trace Gas Orbiter and Temperature Profile Retrievals With the Hydrostatic Equilibrium Equation: 2. Temperature Variabilities in the Mesosphere at Mars Terminator",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "128",
+   "issue": "3",
+   "pages": "e2022JE007279",
+   "doi": "10.1029/2022JE007279",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "tgo",
+     "payload": "NOMAD SO"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "brines2026",
+   "authors": [
+    "Brines, A.",
+    "López-Valverde, M. A.",
+    "Funke, B.",
+    "González-Galindo, F.",
+    "Aoki, S.",
+    "Thomas, I. R.",
+    "Villanueva, G. L.",
+    "Liuzzi, G.",
+    "Erwin, J. T.",
+    "Grabowski, U."
+   ],
+   "et_al": true,
+   "year": 2026,
+   "title": "Water Vapor Vertical Distribution on Mars After Six Years of TGO/NOMAD Solar Occultations: 1. Global Climatology",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "131",
+   "issue": "2",
+   "pages": "e2024JE008916",
+   "doi": "10.1029/2024JE008916",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "tgo",
+     "payload": "NOMAD SO"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "trompet2026data",
+   "authors": [
+    "Trompet, L."
+   ],
+   "et_al": false,
+   "year": 2026,
+   "title": "Mars upper thermosphere CO2 density and temperature vertical profiles retrieved from NOMAD-SO diffraction order 165",
+   "journal": "Royal Belgian Institute for Space Aeronomy",
+   "volume": "",
+   "issue": "",
+   "pages": "",
+   "doi": "10.18758/kk9pzsjq",
+   "verified": true,
+   "type": "dataset",
+   "used_for": [
+    {
+     "mission": "tgo",
+     "payload": "NOMAD SO"
+    }
+   ],
+   "note": "DOI registered with DataCite (creator, year and title as registered); no paper yet."
+  },
+  {
+   "key": "elrod2014data",
+   "authors": [
+    "Elrod, M.",
+    "Benna, M.",
+    "Navas, T."
+   ],
+   "et_al": false,
+   "year": 2014,
+   "title": "MAVEN Neutral Gas and Ion Mass Spectrometer Data",
+   "journal": "NASA Planetary Data System",
+   "volume": "",
+   "issue": "",
+   "pages": "",
+   "doi": "10.17189/1518931",
+   "verified": true,
+   "type": "dataset",
+   "used_for": [
+    {
+     "mission": "maven",
+     "payload": "NGIMS"
+    }
+   ],
+   "note": "DOI registered with DataCite (creators, year 2014 and title as registered); PDS4 bundle urn:nasa:pds:maven.ngims.calibrated."
   }
  ]
 }
