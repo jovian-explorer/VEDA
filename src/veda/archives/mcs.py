@@ -6,8 +6,7 @@ longitude of the profile, the radius of the surface point, quality flags) and 10
 on fixed pressure surfaces (p_i = 610 Pa exp(-0.125 (i - 10))) with temperature, its
 1-sigma, dust, water and CO2 ice opacities, and the level's altitude above the surface
 point, latitude and longitude (Kleinboehl et al. 2009).  VEDA offers each row as a profile
-of its own, product id ``<file>_P<row>`` (``2006120120_DDR_P017``): read from the file,
-which is downloaded once, and never stored in the catalogue, which lists the files.
+of its own, product id ``<file>_P<row>`` (``2006120120_DDR_P017``; archives/row_files.py).
 
 Altitudes are put on VEDA's Mars sphere (3389.5 km) from the radius of the surface point
 plus the level's altitude above it, so MCS lines up with the radio occultations.  The
@@ -24,30 +23,13 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
-ROW_ID = re.compile(r"^(?P<file>.+_DDR)_P(?P<row>\d{3,4})$", re.IGNORECASE)
+ROW_TYPE = "MCS temperature profile"
 FILL = -9999.0
 LEVEL = "FRAME_STRUCTURE."
 
 _CACHE: "OrderedDict[str, Dict[str, Any]]" = OrderedDict()
 _CACHE_MAX = 24
 _lock = threading.Lock()
-
-
-def split_id(product_id: str) -> Optional[Tuple[str, int]]:
-    """(file product id, row) of an MCS profile id, or None."""
-    m = ROW_ID.match(product_id or "")
-    return (m.group("file"), int(m.group("row"))) if m else None
-
-
-def row_id(file_id: str, row: int) -> str:
-    return f"{file_id}_P{row:03d}"
-
-
-def sub_product(file_prod: Dict[str, Any], row: int) -> Dict[str, Any]:
-    """The catalogue entry of one row of a DDR file (the file's own entry, as a profile)."""
-    return {**file_prod, "product_id": row_id(file_prod["product_id"], row), "kind": "profile",
-            "product_type": f"MCS temperature profile (row {row} of the 4-hour file)", "row": row,
-            "file_product_id": file_prod["product_id"]}
 
 
 def _num(table: Dict[str, Any], name: str) -> Optional[np.ndarray]:
@@ -117,6 +99,7 @@ def row_profile(ds, prod: Dict[str, Any], label_path: Path, row: int):
     """One row of a DDR file as an ObservationProfile."""
     from ..core.models import ObservationProfile, ProvenanceRecord
     from ..core.registry import get_body
+    from .row_files import split_id
     d = read_file(label_path)
     if not 0 <= row < d["rows"] or row not in valid_rows(d):
         raise ValueError(f"{prod['product_id']}: row {row} of {label_path.name} holds no valid MCS profile")
@@ -166,24 +149,3 @@ def row_profile(ds, prod: Dict[str, Any], label_path: Path, row: int):
         raw_attributes=attrs, uncertainty=unc, track=track)
     prof.derived.update(aerosols)
     return prof
-
-
-def candidates(ds, files: List[Dict[str, Any]], fetch, geometry_ok, per_file: int) -> List[Dict[str, Any]]:
-    """Profile entries from DDR ``files`` (catalogue rows), up to ``per_file`` rows each,
-    spread over the file, of the valid rows whose geometry ``geometry_ok`` accepts;
-    ``fetch(file)`` gives the downloaded label path (or raises).  The files' rows are
-    interleaved, so the first entries span all the files' dates."""
-    from ..missions.selection import spread_order
-    per: List[List[Dict[str, Any]]] = []
-    for f in files:
-        try:
-            d = read_file(Path(fetch(f)))
-        except Exception:  # noqa: BLE001 - a file that cannot be read gives no candidates
-            continue
-        rows = [r for r in valid_rows(d) if geometry_ok(row_geometry(d, r))]
-        rows = [rows[i] for i in spread_order(len(rows))][:per_file]
-        per.append([sub_product(f, r) for r in rows])
-    out = []
-    for k in range(max((len(x) for x in per), default=0)):
-        out += [x[k] for x in per if k < len(x)]
-    return out

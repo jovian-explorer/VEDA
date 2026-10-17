@@ -364,6 +364,8 @@ def _index_row(ds: Dataset, volume: str, vol_url: str, row: Dict[str, str]) -> O
         return None  # never let an index entry point outside the volume
     product_id = PurePosixPath(path).stem
     ptype, kind = ds.classify(path)   # full path: some archives encode the type in the folder
+    if ds.rules_only and not any(re.search(rx, path.lower()) for rx, _, _ in ds.rules):
+        return None
     extra = {k: v for k, v in row.items()
              if k not in ("FILE_SPECIFICATION_NAME", "PATH_NAME", "FILE_NAME") and v}
     return {
@@ -755,15 +757,15 @@ def get_product(dataset_id: str, product_id: str) -> Optional[Dict[str, Any]]:
                          (dataset_id.lower(), product_id)).fetchone()
     if r:
         return product_dict(r)
-    # one profile of a file that holds many (MRO MCS: <file>_P<row>), from the file's entry
+    # one profile of a file that holds many (<file>_P<row>, archives/row_files.py), from the file's entry
     ds = get_dataset(dataset_id)
     if ds is not None and ds.profile_rows:
-        from .mcs import split_id, sub_product
+        from .row_files import split_id, sub_product
         parts = split_id(product_id)
         if parts:
             parent = get_product(dataset_id, parts[0])
             if parent:
-                return sub_product(parent, parts[1])
+                return sub_product(ds, parent, parts[1])
     return None
 
 

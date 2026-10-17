@@ -121,9 +121,11 @@ class Dataset:
     # Profiles published in a research data repository (Zenodo, BIRA-IASB) without PDS
     # labels: how to list and read them (see archives/repositories.py)
     repository: Dict[str, Any] = field(default_factory=dict)
-    # Files holding many profiles, one per table row, offered as profiles <file>_P<row>
-    # without listing them in the catalogue ("mcs_ddr": MRO MCS, archives/mcs.py)
+    # Files holding many profiles, one per row, offered as profiles <file>_P<row> without
+    # listing them in the catalogue: the reader's name (archives/row_files.py)
     profile_rows: str = ""
+    # Index only the files a rule names (a volume shared with another data set: Juno MWR)
+    rules_only: bool = False
     # The gravity the archive's own hydrostatic integration used, where it is not VEDA's
     # ("gm_r2": GM/r^2 without J2 or rotation, MRO MCS), for VEDA's hydrostatic check and
     # temperature from density; the other derived quantities keep VEDA's gravity
@@ -407,6 +409,24 @@ DATASETS: List[Dataset] = [
             (r"/grdr/", "GRDR record", "other"),
         ),
         citation="Janssen, M. A., et al. (2017). MWR: Microwave Radiometer for the Juno mission to Jupiter. Space Sci. Rev., 213, 139-185.",
+    ),
+    Dataset(
+        id="jno-mwr-nh3-h2o", mission_id="juno", instrument="MWR (Microwave Radiometer)", level="L5 (derived)",
+        title="Juno MWR ammonia and water mole fraction against pressure, 0.1-200 bar, by latitude (perijove composite)",
+        body_ids=("jupiter",), archive="NASA PDS Atmospheres Node",
+        base_url="https://pds-atmospheres.nmsu.edu/PDS/data/",
+        volume_pattern=r"^jnomwr_2100$", index_path="INDEX/INDEX.TAB",
+        # one file per species, one column per latitude: each column a profile <file>_P<column>
+        # with pressure levels only (archives/juno_mwr.py, archives/row_files.py)
+        rules=((r"mwrnh3a", "MWR ammonia mole fraction by latitude (one profile per latitude)", "table"),
+               (r"mwrh2oa", "MWR water mole fraction by latitude (one profile per latitude)", "table"),
+               (r"mwr(nh3|h2o)u", "1-sigma of the MWR mole fractions", "other")),
+        profile_rows="juno_mwr", rules_only=True,
+        profile_columns={"pressure": "pressure_bar"},
+        extra_variables={"nh3_ppm": ("NH3", None), "h2o_ppm": ("H2O", None)},
+        citation=("Levin, S. M. (2024). Juno Jupiter MWR Ammonia and Water Distribution V1.0, JNO-J-MWR-5-NH3-DISTRIBUTION-V1.0 "
+                  "and JNO-J-MWR-5-H2O-DISTRIBUTION-V1.0, NASA Planetary Data System; Li, C., et al. (2020). The water "
+                  "abundance in Jupiter's equatorial zone. Nature Astronomy, 4, 609-616."),
     ),
     Dataset(
         id="vex-v-rss-1-ent-v1.0", mission_id="vex", instrument="VeRa (Radio Science)", level="L1 + ancillary",
@@ -968,6 +988,28 @@ DATASETS: List[Dataset] = [
         doi="10.17189/1517630",
     ),
     Dataset(
+        id="maven-iuvs-periapse", mission_id="maven", instrument="IUVS (Imaging Ultraviolet Spectrograph)",
+        level="L2 (derived, PDS4)",
+        title="MAVEN IUVS periapse limb scans: CO2, N2 and O density and temperature of the thermosphere (2014 - present)",
+        body_ids=("mars",), archive="NASA PDS Atmospheres Node (PDS4)",
+        base_url="https://pds-atmospheres.nmsu.edu/PDS/data/PDS4/MAVEN/",
+        volume_pattern=r"^iuvs_derived_bundle$",
+        pds4_product_dir="l2/limb/", pds4_walk=2,                  # l2/limb/<year>/<month>/
+        time_from_name=r"_(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})T(?P<hh>\d{2})(?P<mm>\d{2})(?P<ss>\d{2})",
+        # one file per periapsis pass, up to 12 limb scans: each scan a profile <file>_P<scan>
+        # (readers/iuvs_reader.py, archives/row_files.py)
+        rules=((r"iuv_l2_periapse", "IUVS periapse file (up to 12 limb scans of CO2, N2, O and temperature)", "table"),),
+        profile_rows="iuvs_periapse",
+        profile_columns={"temperature": "TEMPERATURE", "number_density": "CO2"},
+        extra_variables={"n_co2_m3": ("CO2", None), "n_n2_m3": ("N2", None), "n_o_m3": ("O", None)},
+        altitude_spheroid=(3396.19, 5.88600756e-3),
+        density_molar_mass=44.01,
+        citation=("Deighan, J. (2018). MAVEN IUVS Derived-level Data Product Bundle (urn:nasa:pds:maven.iuvs.derived), "
+                  "NASA Planetary Data System, doi:10.17189/1518956; Evans, J. S., et al. (2015). Retrieval of CO2 and N2 "
+                  "in the Martian thermosphere using dayglow observations by IUVS on MAVEN. Geophys. Res. Lett., 42, 9040-9049."),
+        doi="10.17189/1518956",
+    ),
+    Dataset(
         id="maven-ngims-l2", mission_id="maven", instrument="NGIMS (Neutral Gas and Ion Mass Spectrometer)",
         level="L2 (PDS4)",
         title="MAVEN NGIMS: neutral gas and ion density profiles of the periapsis passes (Oct 2014 - present)",
@@ -1406,6 +1448,32 @@ DATASETS: List[Dataset] = [
         doi="10.18758/71021074",
     ),
     Dataset(
+        id="tgo-nomad-so-h2o-aoki2022", mission_id="tgo", instrument="NOMAD SO (solar occultation)",
+        level="Derived (research data)",
+        title="ExoMars TGO NOMAD solar occultations: water vapour profiles, April 2018 - September 2021 (Aoki et al. 2022)",
+        body_ids=("mars",), archive="BIRA-IASB data repository (CC-BY-4.0)",
+        base_url="https://data.aeronomie.be/dataset/7501cf53-8258-4a83-979b-5d399ad58db3/",
+        volume_pattern=r"^repository$",
+        # One CSV per scan and diffraction order (134 or 136), its time in the name; Ls,
+        # latitude, longitude (east) and local time at each level; altitudes above the areoid
+        repository={"kind": "zenodo_zip", "zip": "aoki2022_archive.zip", "delimiter": ",",
+                    "url": "https://data.aeronomie.be/dataset/7501cf53-8258-4a83-979b-5d399ad58db3/resource/95339a33-b43a-4b74-9376-527a16355d75/download/archive.zip",
+                    "members": r"(?P<date>\d{8})_(?P<time>\d{6})_1p0a_SO_[A-Z]_(?P<dir>[IE])_13[46]\.csv",
+                    "columns": [("ALTITUDE", "km"), ("H2O_VMR", "ppm"), ("H2O_VMR_ERROR", "ppm"), ("H2O_DENSITY", "cm-3"),
+                                ("H2O_DENSITY_ERROR", "cm-3"), ("LS", "deg"), ("LATITUDE", "deg"), ("LONGITUDE", "deg"),
+                                ("LST", "h")]},
+        rules=((r"_so_[a-z]_i_", "Water vapour profile, ingress", "profile"),
+               (r"_so_[a-z]_e_", "Water vapour profile, egress", "profile")),
+        profile_columns={"altitude": "ALTITUDE", "latitude": "LATITUDE", "longitude": "LONGITUDE", "lst": "LST"},
+        column_units={"ALTITUDE": "KM"},
+        extra_variables={"h2o_ppm": ("H2O_VMR", "H2O_VMR_ERROR"), "h2o_cm3": ("H2O_DENSITY", "H2O_DENSITY_ERROR")},
+        altitude_reference="the areoid (the NOMAD team's tangent heights)",
+        citation=("Aoki, S., et al. (2022). Global vertical distribution of water vapor on Mars: results from 3.5 years "
+                  "of ExoMars-TGO/NOMAD science operations. J. Geophys. Res. Planets, 127, e2022JE007231. "
+                  "Data: BIRA-IASB, doi:10.18758/71021072 (CC-BY-4.0)."),
+        doi="10.18758/71021072",
+    ),
+    Dataset(
         id="tgo-nomad-so165-trompet2026", mission_id="tgo", instrument="NOMAD SO (solar occultation)",
         level="Derived (research data)",
         title="ExoMars TGO NOMAD solar occultations, order 165: upper thermosphere CO2 density and temperature, 140-190 km, 2018-2025 (Trompet 2026)",
@@ -1547,6 +1615,7 @@ _REFS = {
     "tgo-nomad-so-trompet2023": ("trompet2023a", "trompet2023b", "vandaele2018"),
     "tgo-nomad-so165-trompet2026": ("trompet2026data", "vandaele2018"),
     "tgo-nomad-so-h2o-brines2026": ("brines2026", "vandaele2018"),
+    "tgo-nomad-so-h2o-aoki2022": ("aoki2022", "aoki2022data", "vandaele2018"),
     "tgo-acs-mir-belyaev2022": ("belyaev2022", "korablev2017"),
     "tgo-acs-nir-fedorova2022": ("fedorova2022", "korablev2017"),
     "mpf-m-asimet-4-ddr-edl-v1.0": ("magalhaes1999", "schofield1997"),
@@ -1558,6 +1627,8 @@ _REFS = {
     "maven-rose-edp": ("withers2020rose", "withers2020radiosci", "withers2017rosedata"),
     "maven-ngims-l2": ("mahaffy2015", "elrod2014data"),
     "maven-iuvs-occultation": ("groller2018", "mcclintock2015", "deighan2018data"),
+    "maven-iuvs-periapse": ("evans2015", "mcclintock2015", "deighan2018data"),
+    "jno-mwr-nh3-h2o": ("li2020", "li2017", "janssen2017"),
     "mro-crism-smith2013-aerosol": ("smith2013", "khayat2024data"),
     "mro-crism-guzewich-aerosol": ("guzewich2014", "guzewich2019", "khayat2024data"),
     "corss-titan-neutral-profiles": ("schinder2011", "schinder2012", "schinder2015"),
@@ -1620,6 +1691,7 @@ COVERAGE = {
     "tgo-nomad-so-h2o-brines2026": ("2018-04-21", "2023-12-23"),
     "mpf-m-asimet-4-ddr-edl-v1.0": ("1997-07-04", "1997-07-04"),
     "tgo-nomad-so-lopezvalverde2023": ("2018-04-23", "2019-03-13"),
+    "tgo-nomad-so-h2o-aoki2022": ("2018-04-21", "2021-09-30"),
     "juno-ro-coffin2025": ("2023-07-31", "2024-06-13"),
     "juno-ro-caruso2026": ("2023-07-31", "2026-01-23"),
     "mex-m-spi-4-uvddr-prof-v1.0": ("2004-01-13", "2006-04-11"),
@@ -1627,6 +1699,8 @@ COVERAGE = {
     "maven-rose-edp": ("2016-07-05", ""),
     "maven-ngims-l2": ("2014-10-18", ""),
     "maven-iuvs-occultation": ("2015-03-24", ""),
+    "maven-iuvs-periapse": ("2014-10-18", ""),
+    "jno-mwr-nh3-h2o": ("2016-08-27", "2018-04-01"),
     "mer-m-imu-5-edl-derived-v1.0": ("2004-01-04", "2004-01-25"),
     "mex-m-mrs-5-occ": ("2004-04-02", ""),
     "mgn-v-rss-1-rocc-v2.0": ("1991-10-05", "1994-10-12"),

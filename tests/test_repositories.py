@@ -494,3 +494,17 @@ def test_nomad_order_165_and_brines_water_profiles(tmp_path, monkeypatch):
     _, w = _one(ds)
     assert (w.latitude, w.longitude) == (78.94, 2.93) and w.raw_attributes["LST"] == 3.32
     assert w.altitude_km[0] == 20.0 and w.derived["h2o_ppm"][0] == pytest.approx(0.3781)
+
+
+def test_nomad_aoki_water_profiles_from_csv(tmp_path, monkeypatch):
+    """Aoki et al. (2022): one comma-separated file per scan and order with a header line,
+    place and local time at each level.  The archive holds the paper's 5,472 profiles (and
+    one empty file); after Ls 180 water is above NOMAD's detection limit (~1e9 cm^-3) at 70 km."""
+    name = "20180623_075629_1p0a_SO_A_E_134.csv"
+    ds = _archive(tmp_path, monkeypatch, "tgo-nomad-so-h2o-aoki2022", [(f"archive/{name}", name)], "zip")
+    row, p = _one(ds)
+    assert row["start_time"] == "2018-06-23T07:56:29" and "egress" in row["product_type"]
+    k = int(np.argmin(np.abs(np.asarray(p.altitude_km) - 70.0)))
+    assert p.derived["h2o_ppm"][k] == pytest.approx(59.8946) and p.derived["h2o_cm3"][k] == pytest.approx(1.8727e10)
+    assert p.derived["h2o_cm3"][k] > 1e9
+    assert p.track["latitude"][0] == pytest.approx(-73.3439) and p.track["lst"][0] == pytest.approx(19.8064)

@@ -975,7 +975,7 @@ def _group_composites(mat: np.ndarray, summaries: List[Dict[str, Any]], log_like
 MAX_GRID_LEVELS = 20000
 
 # Variables compared in log space (they change by orders of magnitude with height)
-LOG_VARIABLES = {"pressure_hpa", "density", "density_measured", "number_density_m3", "n_co2_m3", "n_ar_m3", "n_n2_m3", "n_he_m3", "n_o2_m3", "n_o3_m3", "electron_density_cm3",
+LOG_VARIABLES = {"pressure_hpa", "density", "density_measured", "number_density_m3", "n_co2_m3", "n_ar_m3", "n_n2_m3", "n_he_m3", "n_o2_m3", "n_o3_m3", "n_o_m3", "electron_density_cm3",
                  "pressure_from_density"}
 
 
@@ -1110,6 +1110,10 @@ def compare_profiles_on_body(
     z_mins = [float(np.nanmin(z)) for z in all_z if np.isfinite(z).any()]
     z_maxs = [float(np.nanmax(z)) for z in all_z if np.isfinite(z).any()]
     if not z_mins or not z_maxs:
+        if not by_pressure and any(p.pressure_hpa is not None and np.isfinite(p.pressure_hpa).any() for p in valid_profiles):
+            # (Juno MWR: mole fractions on pressure levels only)
+            return {**_empty_comparison(body, variable_name),
+                    "error": "These profiles have pressure levels only, no altitudes: compare them on pressure."}
         return _empty_comparison(body, variable_name)
 
     # Grid levels on whole multiples of the step (20.0, 20.5 km ...), covering every
@@ -1466,7 +1470,7 @@ def export_profile_to_csv(profile: ObservationProfile) -> str:
 _EXTRA_UNITS = {"refractivity_n": "N-units", "dtheta_dz": "K/km", "number_density_m3": "m^-3", "molar_mass": "g/mol",
                 "co2_condensation_temperature": "K", "t_minus_co2_condensation": "K",
                 "dust_opacity_per_km": "1/km", "ice_opacity_per_km": "1/km",
-                "density_measured": "kg/m^3", "h2so4_ppm": "ppm", "h2o_ppm": "ppm", "h2o_cm3": "cm^-3", "saturation_ratio": "1", "aerosol_extinction_km": "1/km", "n_co2_m3": "m^-3", "n_ar_m3": "m^-3", "n_n2_m3": "m^-3", "n_he_m3": "m^-3", "n_o2_m3": "m^-3", "n_o3_m3": "m^-3", "absorptivity_db_km": "dB/km",
+                "density_measured": "kg/m^3", "h2so4_ppm": "ppm", "h2o_ppm": "ppm", "nh3_ppm": "ppm", "h2o_cm3": "cm^-3", "saturation_ratio": "1", "aerosol_extinction_km": "1/km", "n_co2_m3": "m^-3", "n_ar_m3": "m^-3", "n_n2_m3": "m^-3", "n_he_m3": "m^-3", "n_o2_m3": "m^-3", "n_o3_m3": "m^-3", "n_o_m3": "m^-3", "absorptivity_db_km": "dB/km",
                 "tec_m2": "m^-2 (electron content along the ray path, 0 at the start of the occultation)",
                 "dust_mixing_ratio": "1 (optical depth at 2.2 um per unit column-mass fraction)",
                 "ice_mixing_ratio": "1 (optical depth at 2.2 um per unit column-mass fraction)",

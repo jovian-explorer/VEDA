@@ -7226,6 +7226,142 @@
     }
    ],
    "note": "DOI registered with DataCite (creator, year 2018 and title as registered); PDS4 bundle urn:nasa:pds:maven.iuvs.derived."
+  },
+  {
+   "key": "li2017",
+   "authors": [
+    "Li, C.",
+    "Ingersoll, A.",
+    "Janssen, M.",
+    "Levin, S.",
+    "Bolton, S.",
+    "Adumitroaie, V."
+   ],
+   "et_al": true,
+   "year": 2017,
+   "title": "The distribution of ammonia on Jupiter from a preliminary inversion of Juno microwave radiometer data",
+   "journal": "Geophysical Research Letters",
+   "volume": "44",
+   "issue": "11",
+   "pages": "5317-5325",
+   "doi": "10.1002/2017GL073159",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "juno",
+     "payload": "MWR"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "li2020",
+   "authors": [
+    "Li, C.",
+    "Ingersoll, A.",
+    "Bolton, S.",
+    "Levin, S.",
+    "Janssen, M.",
+    "Atreya, S."
+   ],
+   "et_al": true,
+   "year": 2020,
+   "title": "The water abundance in Jupiter's equatorial zone",
+   "journal": "Nature Astronomy",
+   "volume": "4",
+   "issue": "6",
+   "pages": "609-616",
+   "doi": "10.1038/s41550-020-1009-3",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "juno",
+     "payload": "MWR"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "evans2015",
+   "authors": [
+    "Evans, J. S.",
+    "Stevens, M. H.",
+    "Lumpe, J. D.",
+    "Schneider, N. M.",
+    "Stewart, A. I. F.",
+    "Deighan, J."
+   ],
+   "et_al": true,
+   "year": 2015,
+   "title": "Retrieval of CO2 and N2 in the Martian thermosphere using dayglow observations by IUVS on MAVEN",
+   "journal": "Geophysical Research Letters",
+   "volume": "42",
+   "issue": "21",
+   "pages": "9040-9049",
+   "doi": "10.1002/2015GL065489",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "maven",
+     "payload": "IUVS"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "aoki2022",
+   "authors": [
+    "Aoki, S.",
+    "Vandaele, A. C.",
+    "Daerden, F.",
+    "Villanueva, G. L.",
+    "Liuzzi, G.",
+    "Clancy, R. T."
+   ],
+   "et_al": true,
+   "year": 2022,
+   "title": "Global Vertical Distribution of Water Vapor on Mars: Results From 3.5 Years of ExoMars-TGO/NOMAD Science Operations",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "127",
+   "issue": "9",
+   "pages": "e2022JE007231",
+   "doi": "10.1029/2022JE007231",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "tgo",
+     "payload": "NOMAD"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "aoki2022data",
+   "authors": [
+    "Aoki, S.",
+    "Vandaele, A. C."
+   ],
+   "et_al": false,
+   "year": 2022,
+   "title": "Global vertical distribution of water vapor on Mars retrieved from 3.5 years of TGO/NOMAD science operations, presented in Aoki et al., 2022",
+   "journal": "Royal Belgian Institute for Space Aeronomy",
+   "volume": "",
+   "issue": "",
+   "pages": "",
+   "doi": "10.18758/71021072",
+   "verified": true,
+   "type": "dataset",
+   "used_for": [
+    {
+     "mission": "tgo",
+     "payload": "NOMAD"
+    }
+   ],
+   "note": "DOI registered with DataCite (creators, year and title as registered); CC-BY-4.0."
   }
  ]
 }

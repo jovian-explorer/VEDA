@@ -211,7 +211,7 @@ def _row_candidates(ds_ids: List[str], f: ProfileFilter, n: int) -> Tuple[int, L
     """Up to ``n`` profiles from the files of many profiles of ``ds_ids`` in the date range:
     up to MAX_ROW_FILES files spread over the dates (downloaded when the filter allows),
     and in each about n / files rows spread over the file whose geometry passes ``f``."""
-    from ..archives.mcs import candidates
+    from ..archives.row_files import candidates
     from ..parallel import thread_map
     q = catalog.SearchQuery(dataset_ids=ds_ids, start=f.start, end=f.end, kind="table",
                             downloaded_only=not f.download, limit=1)
@@ -273,7 +273,7 @@ def provides(ds, variable: str) -> bool:
         return "density_measured" in ds.extra_variables or "number_density" in ds.profile_columns
     if any(variable in d.extra_variables for d in DATASETS):
         return variable in ds.extra_variables
-    if ds.profile_rows:                  # (MCS rows: temperature, pressure and what follows from them)
+    if ds.profile_rows and not ds.profile_columns:   # (MCS rows: temperature, pressure and what follows)
         return True
     return any(c in ds.profile_columns for c in _CORE_COLUMNS) or not ds.extra_variables
 
