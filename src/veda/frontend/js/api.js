@@ -111,6 +111,7 @@ export const api = {
     }
     return call(`/api/veda/archive/search?${q.toString()}`);
   },
+  archiveReachable: (datasetIds) => call('/api/veda/archive/reachable', {method: 'POST', body: {dataset_ids: datasetIds}}),
   archiveFetch: (items) => call('/api/veda/archive/fetch', {method: 'POST', body: {items}}),
   // Any product, any payload: structure, table series, images, cubes (see product_routes.py)
   productStructure: (ds, pid, confirmLarge = false) =>

@@ -2042,10 +2042,14 @@ function renderComparisonPlot() {
   // The vertical axis is the comparison grid's coordinate: altitude, or pressure (log, top at top).
   const savedVertical = plotStyle.vertical;
   plotStyle.vertical = byPressure ? 'pressure' : 'altitude';
+  // a selected profile without this variable is named on the plot itself, not only in the status line
+  const missing = data.without_values || [];
+  const missingNote = !missing.length ? '' : `<br><span style="font-size: 0.75em">left out, no ${escHtml(varCfg.label)} values: ${
+    escHtml(missing.slice(0, 3).join(', '))}${missing.length > 3 ? ` and ${missing.length - 3} more` : ''}</span>`;
   const layout = styleLayout({
-    title: { text: cleanPlotlyMath(`${(data.body_name || data.body_id || '').toUpperCase()} • ${data.profile_count} profile${data.profile_count === 1 ? '' : 's'} (${varCfg.label})`) },
+    title: { text: cleanPlotlyMath(`${(data.body_name || data.body_id || '').toUpperCase()} • ${data.profile_count} profile${data.profile_count === 1 ? '' : 's'} (${varCfg.label})`) + missingNote },
     hovermode: 'closest',
-    margin: { l: 70, r: 25, t: 56, b: 60 },
+    margin: { l: 70, r: 25, t: missing.length ? 76 : 56, b: 60 },
   }, { xLog: !!varCfg.logScale && !view.deviation,
        varTitle: view.deviation
          ? `Deviation from the ${view.fromReference ? 'reference atmosphere' : view.groups.length ? 'group mean' : 'composite mean'} (${view.logVar ? '%' : cleanPlotlyMath(varCfg.units || '')})`

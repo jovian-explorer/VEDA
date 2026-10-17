@@ -39,7 +39,11 @@ which both the product viewer and the profile loader read like any other table.
   [(name, unit), ...] in file order, ``header``: whether the first line names them),
   split into products by ``split`` columns.  ``mars_year``/``ls`` name the columns
   that date a profile when the table has no time, ``west_longitude`` a longitude
-  given positive west, ``fill`` the value meaning missing.
+  given positive west, ``fill`` the value meaning missing;
+* ``text_blocks``: one text file at ``url`` holding every profile as a block (NOMAD UVIS,
+  Flimon et al.): a line starting with ``block``, the line of its values (the product id,
+  then the columns ``meta`` names), a line naming the ``columns``, then the levels; the
+  time is the product id's ``date`` and ``time`` groups (``members``).
 """
 from __future__ import annotations
 
@@ -282,7 +286,7 @@ def index_repository(ds: Dataset, progress=None) -> List[Dict[str, Any]]:
     kind = ds.repository["kind"]
     return {"zenodo_files": _index_zenodo_files, "zenodo_zip": _index_zenodo_zip,
             "votable_files": _index_votable_files,
-            "csv_split": _index_csv_split}[kind](ds, progress)
+            "csv_split": _index_csv_split, "text_blocks": _index_text_blocks}[kind](ds, progress)
 
 
 def fetch_repository_product(ds: Dataset, prod: Dict[str, Any]) -> Path:
@@ -295,8 +299,8 @@ def fetch_repository_product(ds: Dataset, prod: Dict[str, Any]) -> Path:
         return _fetch_zenodo_file(ds, prod, out)
     if kind == "zenodo_zip":
         return _fetch_zip_member(ds, prod, out)
-    if kind == "csv_split":
-        _index_csv_split(ds, None)            # writes every product of the table
+    if kind in ("csv_split", "text_blocks"):
+        index_repository(ds, None)            # writes every product of the table
     else:
         _index_votable_files(ds, None)
     if not out.is_file():
@@ -737,4 +741,30 @@ def _index_csv_split(ds: Dataset, progress=None) -> List[Dict[str, Any]]:
                          ([value(c[i]) for i in keep] for c in cells))
         out_rows.append(_row(ds, pid, f"{r['url'].rsplit('/', 1)[-1]}#{pid}", t0,
                              {k: v for k, v in meta.items() if k not in ("START_TIME", "REVISION")}))
+    return out_rows
+
+
+def _index_text_blocks(ds: Dataset, progress=None) -> List[Dict[str, Any]]:
+    """Read the whole file once, write every block's CSV, return the rows."""
+    r = ds.repository
+    name = r["url"].rsplit("/", 1)[-1]
+    lines = _download(r["url"], _cache_dir(ds) / name, progress=progress).read_text(
+        encoding="utf-8-sig", errors="replace").splitlines()
+    starts = [i for i, ln in enumerate(lines) if ln.startswith(r["block"])] + [len(lines)]
+    rx = re.compile(r["members"])
+    keys = [k.strip() for k in lines[starts[0]].split(",")] if starts[:-1] else []
+    out_rows = []
+    for a, b in zip(starts, starts[1:]):
+        vals = [v.strip() for v in lines[a + 1].split(",")]
+        m = rx.fullmatch(vals[0])
+        if not m:
+            continue
+        d, t = m.group("date"), m.group("time")
+        t0 = f"{d[:4]}-{d[4:6]}-{d[6:8]}T{t[:2]}:{t[2:4]}:{t[4:6]}"
+        meta = {key: float(vals[keys.index(col)]) for key, col in r["meta"].items()}
+        if "LONGITUDE" in meta:
+            meta["LONGITUDE"] %= 360.0
+        rows = _parse_rows("\n".join(lines[a + 3:b]), r["columns"], ",")
+        write_normalised(_cache_dir(ds) / f"{vals[0]}.csv", {"START_TIME": t0, **meta}, r["columns"], rows)
+        out_rows.append(_row(ds, vals[0], f"{name}#{vals[0]}", t0, meta))
     return out_rows

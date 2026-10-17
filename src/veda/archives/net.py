@@ -136,6 +136,34 @@ def get(url: str, *, login_url: Optional[str] = None, stream: bool = False,
     raise ArchiveError(f"{urlparse(url).netloc} kept failing; try again later.")
 
 
+# A first search skips the data sets of an archive server that does not answer this
+# quickly: a server that is down would otherwise cost the full timeout and every retry
+# (about 4 min) for each of its data sets.  (ESA PSA took 13 s for its first answer once:
+# a shorter wait would skip a server that works.)
+PROBE_TIMEOUT_S = 20
+
+
+def answers(url: str, timeout: Optional[float] = None) -> bool:
+    """Whether the server of ``url`` answers within ``timeout`` (one try). Any reply
+    counts, even 404, except a gateway's 502/503/504 (the archive behind it is down);
+    an archive with an FTP mirror counts when the mirror answers."""
+    _check_network()
+    timeout = timeout or PROBE_TIMEOUT_S
+    try:
+        with session().get(url, timeout=timeout, stream=True, allow_redirects=False) as r:
+            if r.status_code not in (502, 503, 504):
+                return True
+    except requests.RequestException:
+        pass
+    if _ftp_url(url):
+        try:
+            with ftplib.FTP(urlparse(url).netloc, timeout=timeout):
+                return True
+        except (OSError, ftplib.Error):
+            pass
+    return False
+
+
 def get_text(url: str, **kw) -> str:
     r = get(url, **kw)
     if not r.encoding:

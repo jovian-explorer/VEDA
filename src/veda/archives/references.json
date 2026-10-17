@@ -7362,6 +7362,57 @@
     }
    ],
    "note": "DOI registered with DataCite (creators, year and title as registered); CC-BY-4.0."
+  },
+  {
+   "key": "flimon2025",
+   "authors": [
+    "Flimon, Z.",
+    "Erwin, J.",
+    "Robert, S.",
+    "Neary, L.",
+    "Piccialli, A.",
+    "Trompet, L."
+   ],
+   "et_al": true,
+   "year": 2025,
+   "title": "Aerosol Climatology on Mars as Observed by NOMAD UVIS on ExoMars TGO",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "130",
+   "issue": "3",
+   "pages": "e2024JE008303",
+   "doi": "10.1029/2024JE008303",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "tgo",
+     "payload": "NOMAD"
+    }
+   ],
+   "note": ""
+  },
+  {
+   "key": "flimon2024data",
+   "authors": [
+    "Flimon, Z."
+   ],
+   "et_al": false,
+   "year": 2024,
+   "title": "UVIS aerosols climatology",
+   "journal": "Royal Belgian Institute for Space Aeronomy",
+   "volume": "",
+   "issue": "",
+   "pages": "",
+   "doi": "10.18758/71021091",
+   "verified": true,
+   "type": "dataset",
+   "used_for": [
+    {
+     "mission": "tgo",
+     "payload": "NOMAD"
+    }
+   ],
+   "note": "DOI registered with DataCite (creators, year and title as registered); CC-BY-4.0."
   }
  ]
 }

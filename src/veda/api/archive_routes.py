@@ -85,6 +85,34 @@ def index_dataset(dataset_id: str, force: bool = False) -> Dict[str, Any]:
     return {"job_id": job["id"]}
 
 
+class ReachRequest(BaseModel):
+    dataset_ids: List[str] = Field(min_length=1, max_length=500)
+
+
+@router.post("/reachable")
+def reachable(req: ReachRequest) -> Dict[str, Any]:
+    """The archive servers among these data sets' that do not answer now (one short
+    request per server, all at once), with their data sets, so a search can skip them."""
+    from concurrent.futures import ThreadPoolExecutor
+    from urllib.parse import urlparse
+    hosts: Dict[str, Any] = {}
+    for d in req.dataset_ids:
+        ds = get_dataset(d)
+        if not ds:
+            raise HTTPException(404, f"Unknown dataset '{d}'")
+        url = ds.repository.get("url") or ds.base_url
+        hosts.setdefault(urlparse(url).netloc, (url, []))[1].append(ds)
+    try:
+        net._check_network()
+    except net.ArchiveError as exc:
+        raise HTTPException(503, str(exc))
+    with ThreadPoolExecutor(len(hosts)) as ex:
+        ok = dict(zip(hosts, ex.map(lambda h: net.answers(hosts[h][0]), hosts)))
+    # (the archive's name without "(PDS4)" or a licence)
+    return {"down": [{"host": h, "archive": sets[0].archive.split(" (")[0], "dataset_ids": [d.id for d in sets]}
+                     for h, (_, sets) in hosts.items() if not ok[h]]}
+
+
 # ------------------------------------------------------------------ search
 
 @router.get("/search")

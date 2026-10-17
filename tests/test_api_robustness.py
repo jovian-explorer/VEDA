@@ -1276,3 +1276,44 @@ def test_cassini_titan_ionosphere_peak_as_published():
     p = get_mission_manager().load_profile("cassini", "s19tioc2006078_0107_n_sx_14_titan_edp_v01_r00")
     assert 1150 < p.raw_attributes["hmf2_km"] < 1250 and 1000 < p.raw_attributes["nmf2_cm3"] < 3000
     assert 86 <= np.nanmedian(p.track["sza"]) <= 96
+
+
+def test_archive_servers_that_do_not_answer_are_reported(client, monkeypatch):
+    """A first search skips the data sets of a server that does not answer quickly
+    (a hung server, or a gateway's 502) instead of waiting minutes per data set."""
+    import socket
+    import threading
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+    from types import SimpleNamespace
+    from veda.api import archive_routes
+    from veda.archives import net
+
+    class Gateway(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(502 if self.path.startswith("/down") else 404)
+            self.end_headers()
+
+        def log_message(self, *a):
+            pass
+    web = HTTPServer(("127.0.0.1", 0), Gateway)
+    threading.Thread(target=web.serve_forever, daemon=True).start()
+    hung = socket.socket()
+    hung.bind(("127.0.0.1", 0))
+    hung.listen(4)                         # accepts, never replies
+    urls = {"up": f"http://127.0.0.1:{web.server_port}/data/",
+            "gw": f"http://localhost:{web.server_port}/down/",
+            "hung": f"http://127.0.0.1:{hung.getsockname()[1]}/data/"}
+    sets = {k: SimpleNamespace(id=k, archive="Test Node (PDS4)", base_url=u, repository={})
+            for k, u in urls.items()}
+    monkeypatch.setattr(archive_routes, "get_dataset", sets.get)
+    monkeypatch.setattr(net, "PROBE_TIMEOUT_S", 1)
+    monkeypatch.setattr(SETTINGS, "network_enabled", True)
+    try:
+        down = client.post("/api/veda/archive/reachable", json={"dataset_ids": list(sets)}).json()["down"]
+    finally:
+        web.shutdown()
+        hung.close()
+    assert sorted(d for h in down for d in h["dataset_ids"]) == ["gw", "hung"]
+    assert {h["archive"] for h in down} == {"Test Node"}
+    monkeypatch.setattr(SETTINGS, "network_enabled", False)
+    assert client.post("/api/veda/archive/reachable", json={"dataset_ids": ["up"]}).status_code == 503

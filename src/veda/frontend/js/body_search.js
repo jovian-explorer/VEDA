@@ -6,13 +6,18 @@ import { api } from './api.js';
 import { toast, esc } from './ui.js';
 
 const PAGE = 300;
-const st = { bodyId: null, results: [], total: 0, selected: new Map(), onOpen: null, onCompare: null, token: 0 };
+const st = { bodyId: null, results: [], total: 0, selected: new Map(), onOpen: null, onCompare: null, token: 0, notes: [] };
 const $ = (id) => document.getElementById(id);
 const keyOf = (p) => `${p.dataset_id}|${p.product_id}`;
 
 export function setupBodySearch({ onOpen, onCompare }) {
   st.onOpen = onOpen;
   st.onCompare = onCompare;
+  // (the search sits below the comparison: one click from the top of the page)
+  $('veda-jump-search')?.addEventListener('click', () => {
+    $('veda-body-search')?.scrollIntoView({ behavior: 'smooth' });
+    $('bs-start')?.focus({ preventScroll: true });
+  });
   $('bs-form')?.addEventListener('submit', (e) => { e.preventDefault(); run(true); });
   $('bs-kind')?.addEventListener('change', () => run(true));
   $('bs-more')?.addEventListener('click', () => run(false));
@@ -55,7 +60,7 @@ export async function showBodySearch(bodyId, bodyName) {
   }
 }
 
-async function poll(jobId, label, keepLabel = false) {
+async function poll(jobId, label, keepLabel = false, keepBar = false) {
   progress(true, 0, label);
   for (;;) {
     await new Promise(r => setTimeout(r, 700));
@@ -63,28 +68,42 @@ async function poll(jobId, label, keepLabel = false) {
     progress(true, j.total ? Math.round(100 * j.done / j.total) : 5,
       keepLabel ? `${label}${j.message ? ` (${j.message})` : ''}` : (j.message || label));
     if (j.status === 'running') continue;
-    progress(false);
+    if (!keepBar) progress(false);
     if (j.status !== 'completed') toast(j.message || `${label} failed`, 'bad');
     return j;
   }
 }
 
-async function ensureIndexed(start, end) {
+async function ensureIndexed(start, end, onRead) {
   // (a data set whose observations all lie outside the dates is not read)
   const outside = ([first, last] = []) => (first && end && end < first) || (last && start && start > last);
-  const ds = ((await api.archiveDatasets(null, st.bodyId)).datasets || []).filter(d =>
+  let ds = ((await api.archiveDatasets(null, st.bodyId)).datasets || []).filter(d =>
     !d.portal_only && !d.indexed_volumes && !d.live && d.auto_index !== false && !outside(d.coverage));
   if (!ds.length) return;
+  // (with the authors of a research data set: several NOMAD sets share one instrument name)
+  const who = d => (/\(([^()]*[A-Za-z][^()]* \d{4})\)$/.exec(d.title || '') || [])[1];
+  const name = d => `${d.instrument.toUpperCase().startsWith(d.mission_id.toUpperCase()) ? '' : `${d.mission_id.toUpperCase()} `}${d.instrument}${who(d) ? `, ${who(d)}` : ''}`;
+  // an archive server that does not answer now would cost minutes per data set in
+  // timeouts and retries: its data sets are skipped this time (one short check per server)
+  progress(true, 0, 'Checking that the archive servers answer');
+  try {
+    const down = (await api.archiveReachable(ds.map(d => d.id))).down || [];
+    const skip = new Set(down.flatMap(h => h.dataset_ids));
+    st.notes.push(...down.map(h => `${h.archive} did not answer; ${h.dataset_ids.length} data set${h.dataset_ids.length > 1 ? 's' : ''} skipped (${
+      ds.filter(d => h.dataset_ids.includes(d.id)).map(name).join(', ')}): try again later`));
+    ds = ds.filter(d => !skip.has(d.id));
+  } catch (err) {
+    if (err.status === 503) { st.notes.push(err.message); return; }   // network switched off
+  }
   // the first search on a computer reads each data set's archive catalogue once (minutes
   // for the large ones), three at a time; later searches use the local copy
-  const name = d => `${d.instrument.toUpperCase().startsWith(d.mission_id.toUpperCase()) ? '' : `${d.mission_id.toUpperCase()} `}${d.instrument}`;
   // never two at once from one archive server (a busy server refuses: JAXA, the PDS nodes)
   const host = d => { try { return new URL(d.url).host; } catch (e) { return d.archive; } };
   const queue = [...ds], running = new Set(), busy = new Set(), failed = [];
   let done = 0;
   const show = () => progress(true, Math.round(100 * done / ds.length),
     `First search on this computer: reading the archive catalogues, ${done} of ${ds.length} done`
-    + (running.size ? ` (now ${[...running].join(', ')})` : '') + '; later searches are instant');
+    + (running.size ? ` (now ${[...running].join(', ')})` : '') + '; results appear below as each is read, and later searches are instant');
   async function worker() {
     while (queue.length) {
       const k = queue.findIndex(x => !busy.has(host(x)));
@@ -104,11 +123,11 @@ async function ensureIndexed(start, end) {
         failed.push(name(d));
       }
       busy.delete(host(d)); running.delete(name(d)); done += 1; show();
+      onRead();
     }
   }
-  await Promise.all([worker(), worker(), worker()]);
-  progress(false);
-  if (failed.length) toast(`The archive did not answer for ${failed.join(', ')}: their observations are left out; search again later`, 'bad');
+  if (ds.length) await Promise.all([worker(), worker(), worker()]);
+  if (failed.length) st.notes.push(`The archive did not answer for ${failed.join(', ')}: their observations are left out; search again later`);
 }
 
 async function run(reset) {
@@ -116,29 +135,49 @@ async function run(reset) {
   const start = $('bs-start').value, end = $('bs-end').value;
   if (start && end && end < start) return toast('The end date is before the start date', 'bad');
   const token = ++st.token;
+  const query = () => api.archiveSearch({
+    body_id: st.bodyId, start, end, kind: $('bs-kind').value,
+    limit: PAGE, offset: reset ? 0 : st.results.length,
+  });
+  const show = (res) => {
+    st.results = reset ? res.products : st.results.concat(res.products);
+    st.total = res.total;
+    st.undated = res.undated || 0;
+    rows();
+  };
+  // while the first search reads the catalogues, what is already read is listed (one
+  // listing at a time; one more after the last catalogue that finished meanwhile)
+  let listing = null, again = false;
+  const partial = () => {
+    if (listing) { again = true; return; }
+    listing = query().then(res => { if (token === st.token && res.products.length) show(res); })
+      .catch(() => {}).finally(() => { listing = null; if (again) { again = false; partial(); } });
+  };
   try {
-    if (reset) await ensureIndexed(start, end);
+    if (reset) {
+      st.notes = [];
+      await ensureIndexed(start, end, partial);
+    }
     if (reset && start && end && st.liveCount) {
       const key = `${st.bodyId}|${start}|${end}`;
       if (key !== st.liveKey) {
         st.liveKey = key;
         const { job_id } = await api.archiveLive({ start, end, body_id: st.bodyId });
-        const j = await poll(job_id, 'Searching the archive servers');
+        const j = await poll(job_id, 'Searching the archive servers', false, true);
         if (j.status === 'completed' && j.message) toast(j.message, j.result?.truncated?.length ? '' : 'good');
       }
     }
     if (token !== st.token) return;
-    const res = await api.archiveSearch({
-      body_id: st.bodyId, start, end, kind: $('bs-kind').value,
-      limit: PAGE, offset: reset ? 0 : st.results.length,
-    });
+    if (reset) progress(true, 100, 'Listing the observations');
+    while (listing) await listing;
+    const res = await query();
     if (token !== st.token) return;
-    st.results = reset ? res.products : st.results.concat(res.products);
-    st.total = res.total;
-    st.undated = res.undated || 0;
-    rows();
+    show(res);
+    if (reset && st.notes.length) toast(st.notes.join('. '), 'bad');
   } catch (err) {
     $('bs-results').innerHTML = `<tr><td colspan="8" class="empty-state">Search failed: ${esc(err.message)}</td></tr>`;
+  } finally {
+    if (token === st.token) progress(false);
   }
 }
 
@@ -170,6 +209,7 @@ function rows() {
   const noDates = !($('bs-start').value && $('bs-end').value);
   $('bs-count').textContent = (st.total ? `${st.results.length.toLocaleString()} of ${st.total.toLocaleString()} from ${missions.size} mission${missions.size > 1 ? 's' : ''}` : '') +
     (noDates && st.liveCount ? `${st.total ? ' · ' : ''}Give From and To dates to include the ${st.liveCount} live data sets` : '') +
+    (st.notes.length ? ` · ${st.notes.join(' · ')}` : '') +
     (st.undated ? ` · ${st.undated.toLocaleString()} product${st.undated > 1 ? 's' : ''} without a time in the archive index ${st.undated > 1 ? 'are' : 'is'} not listed for dates; clear the dates to see ${st.undated > 1 ? 'them' : 'it'}` : '');
   $('bs-more').hidden = st.results.length >= st.total;
   buttons();

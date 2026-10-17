@@ -53,7 +53,7 @@ In **By Planetary Mission**, *Archive data* lists every payload and data set of 
 
 ### Connected archives and payloads
 
-All 27 missions in VEDA are connected (181 data sets: 75 read from archive indexes, 106 searched live). Highlights:
+All 27 missions in VEDA are connected (182 data sets: 76 read from archive indexes, 106 searched live). Highlights:
 
 | Body | Mission | Payloads | Route |
 |---|---|---|---|
@@ -61,7 +61,7 @@ All 27 missions in VEDA are connected (181 data sets: 75 read from archive index
 | Venus | Venus Express | VeRa temperature profiles (2006-2009 and 2014, research data on Zenodo) and SPICAV-SOIR profiles (2006-2014, BIRA-IASB); VeRa raw data, VMC, VIRTIS, SPICAV/SOIR, ASPERA-4, MAG | ESA PSA, live; Zenodo; BIRA-IASB |
 | Venus | Magellan, Pioneer Venus, VEGA | Radio occultation profiles (Magellan; PVO 1978-1989 temperature-pressure and electron density, recovered by Withers et al. 2020), radar, gravity; the VEGA 2 lander descent (63 km to the surface) and VEGA balloon records; PVO OIMS, ONMS, probes | NASA PDS |
 | Mars | Mars Express | MaRS L4 profiles and SPICAM stellar (CO2 density, temperature) and solar (water vapour) occultation profiles (indexed); PFS, OMEGA, ASPERA-3, MARSIS, HRSC, VMC | ESA PSA |
-| Mars | ExoMars TGO | NOMAD solar occultation profiles: temperature and pressure (Lopez-Valverde et al. 2023), CO2 density and temperature in the mesosphere and upper thermosphere (Trompet et al.), water vapour 2018-2021 (Aoki et al. 2022) and 2018-2023 (Brines et al. 2026); ACS solar occultation profiles: CO2 density and temperature to 180 km (Belyaev et al. 2022), water vapour, saturation, temperature and aerosol extinction (Fedorova et al. 2022) | Zenodo, BIRA-IASB, Mendeley Data |
+| Mars | ExoMars TGO | NOMAD solar occultation profiles: temperature and pressure (Lopez-Valverde et al. 2023), CO2 density and temperature in the mesosphere and upper thermosphere (Trompet et al.), water vapour 2018-2021 (Aoki et al. 2022) and 2018-2023 (Brines et al. 2026); NOMAD UVIS aerosol extinction 2018-2022 (Flimon et al. 2025); ACS solar occultation profiles: CO2 density and temperature to 180 km (Belyaev et al. 2022), water vapour, saturation, temperature and aerosol extinction (Fedorova et al. 2022) | Zenodo, BIRA-IASB, Mendeley Data |
 | Mars | MRO | MCS DDR/EDR/RDR (indexed), CRISM, SHARAD; CTX and MARCI on request | NASA PDS |
 | Mars | MAVEN, MGS, MRO, Mars Odyssey, MER, Phoenix, MSL, InSight | NGIMS neutral density profiles of the periapsis passes, IUVS stellar occultation profiles (CO2, O2, ozone, temperature, pressure) and periapse limb scans (CO2, N2, O, temperature), ACC; MGS and MRO radio occultation profiles; MRO MCS temperature profiles (each row of the 4-hour DDR files); MAVEN accelerometer density profiles (deep dips, aerobraking, science orbits) and ROSE ionospheric electron density profiles; MRO and Mars Odyssey aerobraking density profiles; MRO CRISM dust and water-ice aerosol profiles; entry profiles of Spirit, Opportunity, Phoenix, Curiosity and InSight; TES, MOLA | NASA PDS |
 | Jupiter | Juno, Galileo | Juno radio occultation electron density profiles of the ionosphere (2023-2026, Coffin et al. 2025 and Caruso et al. 2026, Zenodo); MWR ammonia and water against pressure by latitude (Li et al. 2017, 2020); MWR, JIRAM, UVS, JunoCam, MAG, gravity; Galileo SSI, NIMS, UVS, PPR, MAG, PLS, EPD, probe | NASA PDS, OPUS |

@@ -521,3 +521,27 @@ def test_downloads_report_indexing_progress_with_three_arguments(tmp_path, monke
     seen = []
     repo._download("https://example.org/t.csv", tmp_path / "t.csv", progress=lambda d, t, what: seen.append((d, t, what)))
     assert seen == [(5, 10, "downloading t.csv")]
+
+
+def test_nomad_uvis_aerosol_blocks_of_one_text_file(tmp_path, monkeypatch):
+    """Flimon et al. (2025): one text file of 10,519 blocks (the paper's 10,519 processed
+    occultations), each the scan's name, latitude, east longitude, Ls and local time, then
+    its levels.  The excerpt holds the archive's first two blocks."""
+    from veda.analysis.solar_geometry import solar_geometry
+    from veda.archives.profiles import profile_from_label
+    ds = get_dataset("tgo-nomad-uvis-aerosol-flimon2025")
+    src = Path(__file__).parent / "data" / "tgo_nomad" / "uvis_paper_excerpt.txt"
+    (tmp_path / "uvis_paper.txt").write_bytes(src.read_bytes())
+    monkeypatch.setattr(repo, "_cache_dir", lambda ds: tmp_path)
+    rows = repo.index_repository(ds)
+    assert [r["product_id"] for r in rows] == ["20190101_045959_1p0a_UVIS_I", "20190101_074215_1p0a_UVIS_E"]
+    assert rows[1]["start_time"] == "2019-01-01T07:42:15" and "egress" in rows[1]["product_type"]
+    (tmp_path / "20190101_074215_1p0a_UVIS_E.csv").unlink()          # written again when asked for
+    prod = {**rows[1], "url": "", "extra": json.loads(rows[1]["extra"])}
+    p = profile_from_label(ds, prod, repo.fetch_repository_product(ds, prod))
+    assert len(p.altitude_km) == 19 and p.altitude_km[0] == pytest.approx(38.198435)
+    assert p.derived["aerosol_extinction_km"][-1] == pytest.approx(0.018713965)
+    assert p.uncertainty["aerosol_extinction_km"][-1] == pytest.approx(0.0052025406)
+    assert (p.latitude, p.raw_attributes["LST"]) == (pytest.approx(-71.1535), pytest.approx(1.6325))
+    # the longitudes are east: the local time computed there agrees with the file's
+    assert solar_geometry("mars", rows[1]["start_time"], p.latitude, p.longitude)["lst"] == pytest.approx(1.63, abs=0.3)
