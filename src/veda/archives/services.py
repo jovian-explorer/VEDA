@@ -230,6 +230,7 @@ def query_opus(q: Dict[str, Any], t0: dt.datetime, t1: dt.datetime, limit: int) 
 
 
 QUERIES = {"psa_tap": query_psa, "pds_api": query_pds, "opus": query_opus}
+URLS = {"psa_tap": PSA_TAP, "pds_api": PDS_API, "opus": OPUS_API}      # (asked whether they answer)
 
 
 # ------------------------------------------------------------------ windows in the catalogue

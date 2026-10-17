@@ -1303,7 +1303,7 @@ def test_archive_servers_that_do_not_answer_are_reported(client, monkeypatch):
     urls = {"up": f"http://127.0.0.1:{web.server_port}/data/",
             "gw": f"http://localhost:{web.server_port}/down/",
             "hung": f"http://127.0.0.1:{hung.getsockname()[1]}/data/"}
-    sets = {k: SimpleNamespace(id=k, archive="Test Node (PDS4)", base_url=u, repository={})
+    sets = {k: SimpleNamespace(id=k, archive="Test Node (PDS4)", base_url=u, repository={}, service=None)
             for k, u in urls.items()}
     monkeypatch.setattr(archive_routes, "get_dataset", sets.get)
     monkeypatch.setattr(net, "PROBE_TIMEOUT_S", 1)
@@ -1317,3 +1317,31 @@ def test_archive_servers_that_do_not_answer_are_reported(client, monkeypatch):
     assert {h["archive"] for h in down} == {"Test Node"}
     monkeypatch.setattr(SETTINGS, "network_enabled", False)
     assert client.post("/api/veda/archive/reachable", json={"dataset_ids": ["up"]}).status_code == 503
+
+
+def test_live_search_skips_a_service_that_does_not_answer(client, monkeypatch):
+    """The live searches (ESA PSA, PDS Registry, OPUS) ask their service once too: a hung
+    PSA is skipped and named, instead of each of its data sets waiting through every retry."""
+    import socket
+    import time
+    from veda.archives import net, services
+    from veda.archives.datasets import DATASETS
+    hung = socket.socket()
+    hung.bind(("127.0.0.1", 0))
+    hung.listen(4)
+    monkeypatch.setitem(services.URLS, "psa_tap", f"http://127.0.0.1:{hung.getsockname()[1]}/tap")
+    monkeypatch.setattr(net, "PROBE_TIMEOUT_S", 1)
+    monkeypatch.setattr(SETTINGS, "network_enabled", True)
+    psa = [d.id for d in DATASETS if d.service == "psa_tap"][:3]
+    try:
+        job = client.post("/api/veda/archive/live", json={"start": "2016-01-01", "end": "2016-01-31",
+                                                          "dataset_ids": psa}).json()["job_id"]
+        for _ in range(50):
+            j = client.get(f"/api/veda/archive/jobs/{job}").json()
+            if j["status"] != "running":
+                break
+            time.sleep(0.2)
+    finally:
+        hung.close()
+    assert j["status"] == "completed" and j["result"]["listed"] == 0
+    assert j["result"]["skipped"] == "ESA PSA did not answer; 3 live data sets skipped: try again later"

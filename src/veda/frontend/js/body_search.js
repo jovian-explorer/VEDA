@@ -6,7 +6,9 @@ import { api } from './api.js';
 import { toast, esc } from './ui.js';
 
 const PAGE = 300;
-const st = { bodyId: null, results: [], total: 0, selected: new Map(), onOpen: null, onCompare: null, token: 0, notes: [] };
+const st = { bodyId: null, results: [], total: 0, selected: new Map(), onOpen: null, onCompare: null, token: 0, notes: [], reading: new Map(), refresh: null };
+// a first search shows what is read by then and keeps reading the slow catalogues
+const FIRST_WAIT_MS = 60000;
 const $ = (id) => document.getElementById(id);
 const keyOf = (p) => `${p.dataset_id}|${p.product_id}`;
 
@@ -74,14 +76,15 @@ async function poll(jobId, label, keepLabel = false, keepBar = false) {
   }
 }
 
-async function ensureIndexed(start, end, onRead) {
+async function ensureIndexed(start, end) {
   // (a data set whose observations all lie outside the dates is not read)
   const outside = ([first, last] = []) => (first && end && end < first) || (last && start && start > last);
   let ds = ((await api.archiveDatasets(null, st.bodyId)).datasets || []).filter(d =>
-    !d.portal_only && !d.indexed_volumes && !d.live && d.auto_index !== false && !outside(d.coverage));
-  if (!ds.length) return;
+    !d.portal_only && !d.indexed_volumes && !d.live && d.auto_index !== false && !outside(d.coverage)
+    && !st.reading.has(d.id));                     // (still being read for an earlier search)
+  if (!ds.length) return null;
   // (with the authors of a research data set: several NOMAD sets share one instrument name)
-  const who = d => (/\(([^()]*[A-Za-z][^()]* \d{4})\)$/.exec(d.title || '') || [])[1];
+  const who = d => ((/\(([^()]*[A-Za-z][^()]* \d{4})\)$/.exec(d.title || '') || [])[1] || '').split(', ').pop();
   const name = d => `${d.instrument.toUpperCase().startsWith(d.mission_id.toUpperCase()) ? '' : `${d.mission_id.toUpperCase()} `}${d.instrument}${who(d) ? `, ${who(d)}` : ''}`;
   // an archive server that does not answer now would cost minutes per data set in
   // timeouts and retries: its data sets are skipped this time (one short check per server)
@@ -93,23 +96,23 @@ async function ensureIndexed(start, end, onRead) {
       ds.filter(d => h.dataset_ids.includes(d.id)).map(name).join(', ')}): try again later`));
     ds = ds.filter(d => !skip.has(d.id));
   } catch (err) {
-    if (err.status === 503) { st.notes.push(err.message); return; }   // network switched off
+    if (err.status === 503) { st.notes.push(err.message); return null; }   // network switched off
   }
   // the first search on a computer reads each data set's archive catalogue once (minutes
   // for the large ones), three at a time; later searches use the local copy
   // never two at once from one archive server (a busy server refuses: JAXA, the PDS nodes)
   const host = d => { try { return new URL(d.url).host; } catch (e) { return d.archive; } };
-  const queue = [...ds], running = new Set(), busy = new Set(), failed = [];
-  let done = 0;
-  const show = () => progress(true, Math.round(100 * done / ds.length),
+  const queue = [...ds], busy = new Set(), failed = [];
+  let done = 0, background = false;
+  const show = () => background ? readingLine() : progress(true, Math.round(100 * done / ds.length),
     `First search on this computer: reading the archive catalogues, ${done} of ${ds.length} done`
-    + (running.size ? ` (now ${[...running].join(', ')})` : '') + '; results appear below as each is read, and later searches are instant');
+    + (st.reading.size ? ` (now ${[...st.reading.values()].join(', ')})` : '') + '; results appear below as each is read, and later searches are instant');
   async function worker() {
     while (queue.length) {
       const k = queue.findIndex(x => !busy.has(host(x)));
       if (k < 0) { await new Promise(r => setTimeout(r, 500)); continue; }
       const d = queue.splice(k, 1)[0];
-      busy.add(host(d)); running.add(name(d)); show();
+      busy.add(host(d)); st.reading.set(d.id, name(d)); show();
       try {
         const { job_id } = await api.archiveIndex(d.id);
         for (;;) {
@@ -122,12 +125,23 @@ async function ensureIndexed(start, end, onRead) {
       } catch (err) {
         failed.push(name(d));
       }
-      busy.delete(host(d)); running.delete(name(d)); done += 1; show();
-      onRead();
+      busy.delete(host(d)); st.reading.delete(d.id); done += 1; show();
+      st.refresh?.();
     }
   }
-  if (ds.length) await Promise.all([worker(), worker(), worker()]);
-  if (failed.length) st.notes.push(`The archive did not answer for ${failed.join(', ')}: their observations are left out; search again later`);
+  const all = Promise.all([worker(), worker(), worker()]).then(() => {
+    if (!failed.length) return;
+    const note = `The archive did not answer for ${failed.join(', ')}: their observations are left out; search again later`;
+    if (background) { st.notes.push(note); toast(note, 'bad'); st.refresh?.(); } else st.notes.push(note);
+  });
+  return { all, toBackground: () => { background = true; show(); } };
+}
+
+/** The catalogues still being read after a first search has shown what it has. */
+function readingLine() {
+  const el = $('bs-reading');
+  if (el) el.textContent = st.reading.size ? `Still reading the catalogue${st.reading.size > 1 ? 's' : ''} of ${
+    [...st.reading.values()].join(', ')}: their observations are added to the list when ready` : '';
 }
 
 async function run(reset) {
@@ -146,17 +160,24 @@ async function run(reset) {
     rows();
   };
   // while the first search reads the catalogues, what is already read is listed (one
-  // listing at a time; one more after the last catalogue that finished meanwhile)
+  // listing at a time; one more after the last catalogue that finished meanwhile); a
+  // listing of the first page only, so pages loaded with Load more are kept
   let listing = null, again = false;
   const partial = () => {
     if (listing) { again = true; return; }
+    if (st.results.length > PAGE) return;
     listing = query().then(res => { if (token === st.token && res.products.length) show(res); })
       .catch(() => {}).finally(() => { listing = null; if (again) { again = false; partial(); } });
   };
   try {
     if (reset) {
       st.notes = [];
-      await ensureIndexed(start, end, partial);
+      st.refresh = partial;
+      const reading = await ensureIndexed(start, end);
+      // the slow catalogues go on in the background after a minute; the rest of the
+      // search (live archives, the list) does not wait for them
+      if (reading && await Promise.race([reading.all.then(() => false),
+        new Promise(r => setTimeout(() => r(true), FIRST_WAIT_MS))])) reading.toBackground();
     }
     if (reset && start && end && st.liveCount) {
       const key = `${st.bodyId}|${start}|${end}`;
@@ -164,7 +185,8 @@ async function run(reset) {
         st.liveKey = key;
         const { job_id } = await api.archiveLive({ start, end, body_id: st.bodyId });
         const j = await poll(job_id, 'Searching the archive servers', false, true);
-        if (j.status === 'completed' && j.message) toast(j.message, j.result?.truncated?.length ? '' : 'good');
+        if (j.status === 'completed' && j.message) toast(j.message, j.result?.truncated?.length || j.result?.skipped ? '' : 'good');
+        if (j.result?.skipped) { st.notes.push(j.result.skipped); st.liveKey = null; }   // (asked again next time)
       }
     }
     if (token !== st.token) return;
@@ -212,6 +234,7 @@ function rows() {
     (st.notes.length ? ` · ${st.notes.join(' · ')}` : '') +
     (st.undated ? ` · ${st.undated.toLocaleString()} product${st.undated > 1 ? 's' : ''} without a time in the archive index ${st.undated > 1 ? 'are' : 'is'} not listed for dates; clear the dates to see ${st.undated > 1 ? 'them' : 'it'}` : '');
   $('bs-more').hidden = st.results.length >= st.total;
+  readingLine();
   buttons();
 }
 

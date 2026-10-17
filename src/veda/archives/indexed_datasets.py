@@ -12,16 +12,29 @@ _VCO_TIME = r"_(?P<year>\d{4})(?P<month>\d\d)(?P<day>\d\d)_(?P<hh>\d\d)(?P<mm>\d
 
 INDEXED_DATASETS = [
     Dataset(
-        id='vco-lir-pds4', mission_id='akatsuki', instrument='LIR camera', level='L2b, L2c, L2d, L3d, geometry (PDS4)',
-        title='VCO LIR brightness temperature 2010-2024 (PDS4): L2d with the 2023 recalibration, L3d maps, geometry',
+        id='vco-lir-pds4', mission_id='akatsuki', instrument='LIR camera', level='L2d, L3d (PDS4)',
+        title='VCO LIR brightness temperature 2010-2024 (PDS4): L2d with the 2023 recalibration, L3d maps',
         body_ids=('venus',), archive='JAXA DARTS (PDS4)',
         base_url=_VCO4, volume_pattern='^vco_lir$',
-        pds4_product_dir=('data_calibrated/l2b/', 'data_calibrated/l2c/', 'data_calibrated/l2d/',
-                          'data_map/l3d/', 'geometry/l1b/'),
+        # (the superseded L2b/L2c images and the geometry backplanes are vco-lir-pds4-more,
+        # indexed on request: with them this catalogue was 400,000 products, 207 MB)
+        pds4_product_dir=('data_calibrated/l2d/', 'data_map/l3d/'),
         pds4_walk=True, time_from_name=_VCO_TIME,
         rules=(('_l2d_v', 'LIR brightness temperature, recalibrated 2023 (L2d; Taguchi et al. 2023)', 'image'),
-               ('_l3d_v', 'LIR brightness temperature map, longitude-latitude (L3d)', 'image'),
-               ('_l2c_v', 'LIR brightness temperature, background-bias corrected (L2c)', 'image'),
+               ('_l3d_v', 'LIR brightness temperature map, longitude-latitude (L3d)', 'image')),
+        citation=AKATSUKI_CAMERA_CITATION,
+        refs=('taguchi2023', 'fukuhara2017', 'fukuhara2011', 'nakamura2016'),
+    ),
+    Dataset(
+        id='vco-lir-pds4-more', mission_id='akatsuki', instrument='LIR camera', level='L2b, L2c, geometry (PDS4)',
+        auto_index=False, index_note='Superseded L2b and L2c images (L2d replaces them) and geometry backplanes; '
+                                     'about 250,000 products and 130 MB of catalogue. Index it on request',
+        title='VCO LIR 2010-2024 (PDS4): L2b and L2c brightness temperature before the 2023 recalibration, geometry backplanes',
+        body_ids=('venus',), archive='JAXA DARTS (PDS4)',
+        base_url=_VCO4, volume_pattern='^vco_lir$',
+        pds4_product_dir=('data_calibrated/l2b/', 'data_calibrated/l2c/', 'geometry/l1b/'),
+        pds4_walk=True, time_from_name=_VCO_TIME,
+        rules=(('_l2c_v', 'LIR brightness temperature, background-bias corrected (L2c)', 'image'),
                ('_l2b_v', 'LIR brightness temperature, no background correction (L2b)', 'image'),
                ('_geo_v', 'LIR geometry backplanes', 'geometry')),
         citation=AKATSUKI_CAMERA_CITATION,

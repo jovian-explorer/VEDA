@@ -89,28 +89,44 @@ class ReachRequest(BaseModel):
     dataset_ids: List[str] = Field(min_length=1, max_length=500)
 
 
-@router.post("/reachable")
-def reachable(req: ReachRequest) -> Dict[str, Any]:
-    """The archive servers among these data sets' that do not answer now (one short
-    request per server, all at once), with their data sets, so a search can skip them."""
+def _down(sets) -> List[Dict[str, Any]]:
+    """The archive servers of these data sets that do not answer now (one short request
+    per server, all at once), each with its data sets: a search skips them."""
     from concurrent.futures import ThreadPoolExecutor
     from urllib.parse import urlparse
+    from ..archives import services
     hosts: Dict[str, Any] = {}
+    for ds in sets:
+        url = services.URLS[ds.service] if ds.service else ds.repository.get("url") or ds.base_url
+        hosts.setdefault(urlparse(url).netloc, (url, []))[1].append(ds)
+    if not hosts:
+        return []
+    with ThreadPoolExecutor(len(hosts)) as ex:
+        ok = dict(zip(hosts, ex.map(lambda h: net.answers(hosts[h][0]), hosts)))
+    # (the archive's name without "(PDS4)", "(live search)" or a licence)
+    return [{"host": h, "archive": sets[0].archive.split(" (")[0], "dataset_ids": [d.id for d in sets]}
+            for h, (_, sets) in hosts.items() if not ok[h]]
+
+
+def _skipped_note(down: List[Dict[str, Any]]) -> str:
+    return "; ".join(f"{h['archive']} did not answer; {len(h['dataset_ids'])} live data set"
+                     f"{'s' if len(h['dataset_ids']) > 1 else ''} skipped: try again later" for h in down)
+
+
+@router.post("/reachable")
+def reachable(req: ReachRequest) -> Dict[str, Any]:
+    """The archive servers among these data sets' that do not answer now (see _down)."""
+    sets = []
     for d in req.dataset_ids:
         ds = get_dataset(d)
         if not ds:
             raise HTTPException(404, f"Unknown dataset '{d}'")
-        url = ds.repository.get("url") or ds.base_url
-        hosts.setdefault(urlparse(url).netloc, (url, []))[1].append(ds)
+        sets.append(ds)
     try:
         net._check_network()
     except net.ArchiveError as exc:
         raise HTTPException(503, str(exc))
-    with ThreadPoolExecutor(len(hosts)) as ex:
-        ok = dict(zip(hosts, ex.map(lambda h: net.answers(hosts[h][0]), hosts)))
-    # (the archive's name without "(PDS4)" or a licence)
-    return {"down": [{"host": h, "archive": sets[0].archive.split(" (")[0], "dataset_ids": [d.id for d in sets]}
-                     for h, (_, sets) in hosts.items() if not ok[h]]}
+    return {"down": _down(sets)}
 
 
 # ------------------------------------------------------------------ search
@@ -171,7 +187,12 @@ def live_search(req: LiveRequest) -> Dict[str, Any]:
 
     def work(j):
         results = []
+        # (a live service that does not answer would cost every timeout and retry per data set)
+        down = _down(sets)
+        skip = {d for h in down for d in h["dataset_ids"]}
         for i, ds in enumerate(sets):
+            if ds.id in skip:
+                continue
             j.update(done=i, message=f"Searching {ds.archive.replace(' (live search)', '')}: "
                                      f"{ds.mission_id.upper()} {ds.instrument}")
             try:
@@ -186,8 +207,9 @@ def live_search(req: LiveRequest) -> Dict[str, Any]:
         more = [r for r in results if r["available"] > r["listed"]]
         j.update(done=len(sets), message=f"{listed} products listed from {len(results)} live data sets" +
                  (f"; {len(more)} have more than {services.MAX_PER_QUERY} in this range, narrow the dates to see all"
-                  if more else ""))
-        return {"results": results, "listed": listed, "truncated": [r["dataset_id"] for r in more]}
+                  if more else "") + (f"; {_skipped_note(down)}" if down else ""))
+        return {"results": results, "listed": listed, "truncated": [r["dataset_id"] for r in more],
+                "skipped": _skipped_note(down)}
 
     _run(job, work)
     return {"job_id": job["id"], "datasets": len(sets)}

@@ -53,7 +53,7 @@ In **By Planetary Mission**, *Archive data* lists every payload and data set of 
 
 ### Connected archives and payloads
 
-All 27 missions in VEDA are connected (182 data sets: 76 read from archive indexes, 106 searched live). Highlights:
+All 27 missions in VEDA are connected (183 data sets: 77 read from archive indexes, 106 searched live). Highlights:
 
 | Body | Mission | Payloads | Route |
 |---|---|---|---|
