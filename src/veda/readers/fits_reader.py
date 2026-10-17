@@ -12,19 +12,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Optional
 import numpy as np
-from astropy.io import fits
-from astropy.visualization import (
-    AsinhStretch,
-    HistEqStretch,
-    ImageNormalize,
-    LogStretch,
-    MinMaxInterval,
-    PercentileInterval,
-    SqrtStretch,
-    ZScaleInterval,
-)
-import matplotlib.cm as cm
 from PIL import Image
+# astropy and matplotlib are imported where they are used: at import they took about a
+# second of the app's start
 
 
 @dataclass
@@ -71,6 +61,7 @@ def load_fits_image(file_path: str) -> FitsImageData:
             )
 
     try:
+        from astropy.io import fits
         with fits.open(str(p), ignore_missing_simple=True) as hdul:
             primary_hdu = hdul[0]
             data = primary_hdu.data
@@ -154,6 +145,8 @@ def apply_contrast_stretch(
     percentile_high: float = 99.5,
 ) -> np.ndarray:
     """Normalize 2D array to [0.0, 1.0] using astronomical algorithms."""
+    from astropy.visualization import (AsinhStretch, HistEqStretch, ImageNormalize, LogStretch, MinMaxInterval,
+                                       PercentileInterval, SqrtStretch, ZScaleInterval)
     arr = np.nan_to_num(image, nan=0.0, posinf=0.0, neginf=0.0)
 
     # Determine interval
@@ -208,13 +201,7 @@ def render_to_png(
 
     # Apply Matplotlib colormap
     import matplotlib as mpl
-    try:
-        if hasattr(mpl, "colormaps"):
-            cmap = mpl.colormaps[colormap]
-        else:
-            cmap = cm.get_cmap(colormap)
-    except Exception:
-        cmap = mpl.colormaps["gray"] if hasattr(mpl, "colormaps") else cm.get_cmap("gray")
+    cmap = mpl.colormaps[colormap] if colormap in mpl.colormaps else mpl.colormaps["gray"]
 
     rgba = (cmap(norm) * 255.0).astype(np.uint8)
     pil_img = Image.fromarray(rgba)

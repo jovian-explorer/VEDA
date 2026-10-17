@@ -75,8 +75,11 @@ def _zenodo_files(record: str) -> List[Dict[str, Any]]:
 
 
 def _download(url: str, dest: Path, progress=None) -> Path:
+    """``progress`` is the indexing progress (done, total, what); the download's is (bytes,
+    total): passed on as it was, the CRISM tables' indexing stopped with a TypeError."""
     if not dest.is_file():
-        http.download(url, dest, progress=progress)
+        http.download(url, dest, progress=(lambda done, total: progress(done, total, f"downloading {dest.name}"))
+                      if progress else None)
     return dest
 
 
@@ -535,9 +538,7 @@ def _zip_path(ds: Dataset, progress=None) -> Path:
         if f is None:
             raise http.ArchiveError(f"{r['zip']} is no longer in Zenodo record {r['record']}")
         url, key = f["url"], f["key"]
-    # the indexing progress is (done, total, what); the download's is (bytes, total)
-    return _download(url, _cache_dir(ds) / key,
-                     progress=(lambda done, total: progress(done, total, f"downloading {key}")) if progress else None)
+    return _download(url, _cache_dir(ds) / key, progress=progress)
 
 
 def _parse_time(s: str) -> str:

@@ -447,6 +447,7 @@ DATASETS: List[Dataset] = [
     ),
     Dataset(
         id="vex-v-vra-1-2-3", mission_id="vex", instrument="VeRa (Radio Science)", level="L1A-L2",
+        auto_index=False, index_note="Raw Doppler and power records (about 79,000 files, two minutes to read); index it on request",
         title="Venus Express VeRa (ESA PSA): open- and closed-loop Doppler and power, levels 1A to 2, per orbit",
         body_ids=("venus",), archive="ESA PSA",
         base_url="https://archives.esac.esa.int/psa/ftp/VENUS-EXPRESS/VRA/",

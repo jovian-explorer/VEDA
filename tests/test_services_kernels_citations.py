@@ -26,6 +26,7 @@ def test_psa_product_type_and_julian_dates():
     d = dt.datetime(2009, 6, 17, 12)
     assert services._from_jd(services._jd(d)).startswith("2009-06-17T12:00")
     assert services._iso(["1965-01-01T00:00:00Z"]) == ""             # registry placeholder time
+    assert services._iso("null") == ""                                # (MRO CRISM processing level)
 
 
 def test_live_window_cache(tmp_path, monkeypatch):

@@ -237,7 +237,7 @@ The authoritative list is VEDA's own catalogue (`src/veda/archives/datasets.py`,
 * **NOMAD UVIS ozone profiles** (Piccialli et al. 2023): one HDF5 file of 290-440 MB per retrieval method, which the BIRA-IASB server delivered at 15-50 kB/s (several hours per file) when tried in October 2026, and the profiles cannot be placed before the whole file is in. The MAVEN NGIMS ion abundance files are listed but not read as profiles.
 * **Galileo NIMS Jupiter cubes, MRO gravity** and, while their indexes are unverified, **Cassini CAPS/MAG/RPWS/MIMI/RADAR, Juno JADE/JEDI/Waves, MESSENGER MDIS/EPPS, LRO LAMP/CRaTER and Dawn FC/VIR** volume indexes.
 * **Akatsuki LAC**: not yet published by JAXA.
-* **MRO CTX and MARCI** are indexed only when you press *Index now* (their archive indexes are about 95 MB each).
+* **MRO CTX and MARCI** are indexed only when you press *Index now* (their archive indexes are about 95 MB each), and so are the Akatsuki PDS3 camera data sets of raw counts, geometry backplanes or superseded calibrated images (UVI, LIR) and the Venus Express VeRa raw records.
 * Products whose label describes the file only as raw bytes (some raw telemetry, e.g. Rosetta lander L1, RSI L1A) can be downloaded but not plotted.
 
 ### SPICE kernels

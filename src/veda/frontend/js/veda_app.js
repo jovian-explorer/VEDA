@@ -3050,6 +3050,7 @@ function altitudeAxisTitle(refs) {
   const sphere = (r) => /^a sphere|^as given/.test(r);
   if (uniq.length > 1 && !uniq.every(sphere)) return 'Altitude (km; the references differ)';
   if (!uniq.length || sphere(uniq[0])) return 'Altitude above reference radius (km)';
+  if (/^the tangent heights/.test(uniq[0])) return 'Tangent height, as given by the team (km)';   // (NOMAD, ACS)
   return `Altitude above ${uniq[0].split(/ \(|,/)[0]} (km)`;
 }
 
@@ -3078,6 +3079,7 @@ function trackChips(prof) {
   if (!rng(t.sza) && g.sza != null) chips.push(`<div class="diag-chip" title="${how}"><strong>Solar zenith angle:</strong> ${g.sza.toFixed(1)}°${g.computed ? '*' : ''}</div>`);
   if (g.ls != null) chips.push(`<div class="diag-chip" title="Mars solar longitude: 0 northern spring equinox, 90 summer solstice, 180 autumn, 270 winter. ${g.ls_computed ? 'Computed by VEDA from the time (no archive value)' : 'From the archive'}"><strong>Ls:</strong> ${g.ls.toFixed(1)}°${g.ls_computed ? '*' : ''}</div>`);
   if (g.computed && (rng(t.lst) || rng(t.sza))) chips.push(`<div class="diag-chip" title="${how}"><strong>Geometry:</strong> computed*</div>`);
+  if (g.computed || g.ls_computed) chips.push('<div class="diag-chip" title="The archive gives no value; hover a value for how it was computed">* computed by VEDA from the time and place</div>');
   if (g.label_time) {
     const lt = g.light_time_s ? `; the one-way light time (${(g.light_time_s / 60).toFixed(1)} min) was subtracted` : '';
     chips.push(`<div class="diag-chip" title="The time shown is the measurement at the planet (lowest level), from the archive's per-sample or spacecraft times${lt}. The label or file name gives ${escHtml(g.label_time)}, a ground-station or pass time."><strong>Label time:</strong> ${escHtml(g.label_time)}</div>`);

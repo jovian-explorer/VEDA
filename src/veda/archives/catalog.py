@@ -347,6 +347,12 @@ def _pass_legs(ds: Dataset, row: Dict[str, Any]) -> List[Dict[str, Any]]:
     return out
 
 
+# index columns the catalogue row holds already (or that name the file)
+_ROW_COLUMNS = {"FILE_SPECIFICATION_NAME", "PATH_NAME", "FILE_NAME", "PATH", "FILENAME", "START_TIME", "STOP_TIME",
+                "PRODUCT_CREATION_TIME", "DATA_SET_ID", "VOLUME_ID", "TARGET_NAME"}
+_NUMBER = re.compile(r"[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?")
+
+
 def _index_row(ds: Dataset, volume: str, vol_url: str, row: Dict[str, str]) -> Optional[Dict[str, Any]]:
     """One index-table row as a catalogue row (None when it names no product)."""
     path = _pick(row, "FILE_SPECIFICATION_NAME", "PATH_NAME", "FILE_NAME")
@@ -366,8 +372,12 @@ def _index_row(ds: Dataset, volume: str, vol_url: str, row: Dict[str, str]) -> O
     ptype, kind = ds.classify(path)   # full path: some archives encode the type in the folder
     if ds.rules_only and not any(re.search(rx, path.lower()) for rx, _, _ in ds.rules):
         return None
+    # The index's other columns, kept for the text search and the orbit, less what the row
+    # already holds and plain numbers (image statistics and geometry of the Akatsuki camera
+    # indexes made 1.2 kB per product, a 1 GB catalogue for Venus); kept numbers: orbits, places
+    keep_numbers = {"ORBIT_NUMBER", "REVOLUTION_NUMBER", "LATITUDE", "LONGITUDE", *ds.split_by}
     extra = {k: v for k, v in row.items()
-             if k not in ("FILE_SPECIFICATION_NAME", "PATH_NAME", "FILE_NAME") and v}
+             if v and k not in _ROW_COLUMNS and (k in keep_numbers or not _NUMBER.fullmatch(v.strip()))}
     return {
         "dataset_id": ds.id, "product_id": product_id, "volume": volume, "path": path,
         # Never fall back to PRODUCT_CREATION_TIME: that is when the archive

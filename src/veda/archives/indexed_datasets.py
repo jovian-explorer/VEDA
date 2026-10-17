@@ -42,6 +42,7 @@ INDEXED_DATASETS = [
     ),
     Dataset(
         id='vco-v-uvi-2-edr-v1.0', mission_id='akatsuki', instrument='UVI camera', level='L1b',
+        auto_index=False, index_note='Raw counts; the archive index is about 80 MB of catalogue. Index it on request',
         title='VCO UVI raw data (L1b counts)',
         body_ids=('venus',), archive='JAXA DARTS',
         base_url='https://data.darts.isas.jaxa.jp/pub/pds3/vco-v-uvi-2-edr-v1.0/',
@@ -52,6 +53,7 @@ INDEXED_DATASETS = [
     ),
     Dataset(
         id='vco-v-uvi-3-cdr-v1.0', mission_id='akatsuki', instrument='UVI camera', level='L2b',
+        auto_index=False, index_note='Superseded by the PDS4 UVI images (vco-uvi-pds4, to 2024); index it on request',
         title='VCO UVI calibrated data (L2b)',
         body_ids=('venus',), archive='JAXA DARTS',
         base_url='https://data.darts.isas.jaxa.jp/pub/pds3/vco-v-uvi-3-cdr-v1.0/',
@@ -62,6 +64,7 @@ INDEXED_DATASETS = [
     ),
     Dataset(
         id='vco-v-uvi-3-sedr-v1.0', mission_id='akatsuki', instrument='UVI camera', level='geometry',
+        auto_index=False, index_note='Geometry backplanes; the archive index is about 65 MB of catalogue. Index it on request',
         title='VCO UVI geometry information (per-pixel backplanes)',
         body_ids=('venus',), archive='JAXA DARTS',
         base_url='https://data.darts.isas.jaxa.jp/pub/pds3/vco-v-uvi-3-sedr-v1.0/',
@@ -132,6 +135,7 @@ INDEXED_DATASETS = [
     ),
     Dataset(
         id='vco-v-lir-2-edr-v1.0', mission_id='akatsuki', instrument='LIR camera', level='L1b',
+        auto_index=False, index_note='Raw counts; the archive index is about 150 MB of catalogue. Index it on request',
         title='VCO LIR raw data (L1b counts)',
         body_ids=('venus',), archive='JAXA DARTS',
         base_url='https://data.darts.isas.jaxa.jp/pub/pds3/vco-v-lir-2-edr-v1.0/',
@@ -142,6 +146,7 @@ INDEXED_DATASETS = [
     ),
     Dataset(
         id='vco-v-lir-3-cdr-v1.0', mission_id='akatsuki', instrument='LIR camera', level='L2b+L2c',
+        auto_index=False, index_note='Superseded by the PDS4 LIR data with the 2023 recalibration (vco-lir-pds4); index it on request',
         title='VCO LIR calibrated data (L2b+L2c)',
         body_ids=('venus',), archive='JAXA DARTS',
         base_url='https://data.darts.isas.jaxa.jp/pub/pds3/vco-v-lir-3-cdr-v1.0/',
@@ -152,6 +157,7 @@ INDEXED_DATASETS = [
     ),
     Dataset(
         id='vco-v-lir-3-sedr-v1.0', mission_id='akatsuki', instrument='LIR camera', level='geometry',
+        auto_index=False, index_note='Geometry backplanes; the archive index is about 130 MB of catalogue. Index it on request',
         title='VCO LIR geometry information (per-pixel backplanes)',
         body_ids=('venus',), archive='JAXA DARTS',
         base_url='https://data.darts.isas.jaxa.jp/pub/pds3/vco-v-lir-3-sedr-v1.0/',

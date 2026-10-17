@@ -508,3 +508,16 @@ def test_nomad_aoki_water_profiles_from_csv(tmp_path, monkeypatch):
     assert p.derived["h2o_ppm"][k] == pytest.approx(59.8946) and p.derived["h2o_cm3"][k] == pytest.approx(1.8727e10)
     assert p.derived["h2o_cm3"][k] > 1e9
     assert p.track["latitude"][0] == pytest.approx(-73.3439) and p.track["lst"][0] == pytest.approx(19.8064)
+
+
+def test_downloads_report_indexing_progress_with_three_arguments(tmp_path, monkeypatch):
+    """The indexing progress is (done, total, what), the download's (bytes, total): the CRISM
+    tables (csv_split) passed the indexing callback to the download and stopped with a TypeError."""
+    def fake_download(url, dest, progress=None, **kw):
+        progress(5, 10)
+        Path(dest).write_text("x", encoding="utf-8")
+        return dest
+    monkeypatch.setattr(repo.http, "download", fake_download)
+    seen = []
+    repo._download("https://example.org/t.csv", tmp_path / "t.csv", progress=lambda d, t, what: seen.append((d, t, what)))
+    assert seen == [(5, 10, "downloading t.csv")]

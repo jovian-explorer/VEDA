@@ -63,7 +63,8 @@ def _from_jd(jd: float) -> str:
 def _iso(v: Any) -> str:
     s = (v[0] if isinstance(v, list) and v else v) or ""
     s = str(s).strip().rstrip("Z")
-    if not s or s.startswith(("1965-01-01", "0001")):   # registry placeholders, not real times
+    # registry placeholders, not real values ("null": the processing level of MRO CRISM)
+    if not s or s.lower() in ("null", "none") or s.startswith(("1965-01-01", "0001")):
         return ""
     return s
 

@@ -74,14 +74,41 @@ async function ensureIndexed(start, end) {
   const outside = ([first, last] = []) => (first && end && end < first) || (last && start && start > last);
   const ds = ((await api.archiveDatasets(null, st.bodyId)).datasets || []).filter(d =>
     !d.portal_only && !d.indexed_volumes && !d.live && d.auto_index !== false && !outside(d.coverage));
+  if (!ds.length) return;
   // the first search on a computer reads each data set's archive catalogue once (minutes
-  // for the large ones); later searches use the local copy
-  for (const [i, d] of ds.entries()) {
-    const { job_id } = await api.archiveIndex(d.id);
-    await poll(job_id, `First search on this computer: reading the archive catalogue of `
-      + `${d.instrument.toUpperCase().startsWith(d.mission_id.toUpperCase()) ? '' : `${d.mission_id.toUpperCase()} `}`
-      + `${d.instrument}, ${i + 1} of ${ds.length}; later searches are instant`, true);
+  // for the large ones), three at a time; later searches use the local copy
+  const name = d => `${d.instrument.toUpperCase().startsWith(d.mission_id.toUpperCase()) ? '' : `${d.mission_id.toUpperCase()} `}${d.instrument}`;
+  // never two at once from one archive server (a busy server refuses: JAXA, the PDS nodes)
+  const host = d => { try { return new URL(d.url).host; } catch (e) { return d.archive; } };
+  const queue = [...ds], running = new Set(), busy = new Set(), failed = [];
+  let done = 0;
+  const show = () => progress(true, Math.round(100 * done / ds.length),
+    `First search on this computer: reading the archive catalogues, ${done} of ${ds.length} done`
+    + (running.size ? ` (now ${[...running].join(', ')})` : '') + '; later searches are instant');
+  async function worker() {
+    while (queue.length) {
+      const k = queue.findIndex(x => !busy.has(host(x)));
+      if (k < 0) { await new Promise(r => setTimeout(r, 500)); continue; }
+      const d = queue.splice(k, 1)[0];
+      busy.add(host(d)); running.add(name(d)); show();
+      try {
+        const { job_id } = await api.archiveIndex(d.id);
+        for (;;) {
+          await new Promise(r => setTimeout(r, 700));
+          const j = await api.archiveJob(job_id);
+          if (j.status === 'running') continue;
+          if (j.status !== 'completed') failed.push(name(d));
+          break;
+        }
+      } catch (err) {
+        failed.push(name(d));
+      }
+      busy.delete(host(d)); running.delete(name(d)); done += 1; show();
+    }
   }
+  await Promise.all([worker(), worker(), worker()]);
+  progress(false);
+  if (failed.length) toast(`The archive did not answer for ${failed.join(', ')}: their observations are left out; search again later`, 'bad');
 }
 
 async function run(reset) {

@@ -136,7 +136,9 @@ Profiles read once are kept in memory for the session (the 512 most recent), so 
 ### Live data sets
 Data sets marked **live search** are not copied as an index: when you give **From** and **To** dates, VEDA asks the archive server for that instrument and window (ESA PSA EPN-TAP for Mars Express, Venus Express, Rosetta, BepiColombo and Huygens; the NASA PDS Registry API for MAVEN, Juno, New Horizons, MESSENGER, LRO, Galileo, Magellan, MGS, MRO, Pioneer Venus and Dawn; OPUS for Cassini and Galileo imaging and spectra). Up to 5,000 products per data set and window are listed; if there are more, VEDA says so and you can narrow the dates. Windows already searched in the last week are answered from the local catalogue.
 
-Very large indexes (MRO CTX and MARCI, about 95 MB each) are read only when you press **Index now** on their data set.
+Very large indexes (MRO CTX and MARCI, about 95 MB each) are read only when you press **Index now** on their data set. So are the Akatsuki camera data sets of the PDS3 archive that are raw counts, geometry backplanes or superseded by the PDS4 archive (UVI and LIR), and the Venus Express VeRa raw records: on a new computer they made the first Venus search take about 15 minutes and a 1 GB catalogue.
+
+**Cost of the first search.** The first search on a body reads the catalogue of every data set with observations in the dates, three at a time and never two from one archive server at once. Measured on a fresh data folder (October 2026): Mars, June 2018, 17 data sets in 4.3 minutes (14 minutes when they were read one after another); Venus, March 2016, 10 data sets in 5 minutes, 240 MB of catalogue, most of it the Akatsuki LIR index (400,000 products). An archive server that does not answer costs up to 4 minutes before VEDA moves on and says which data sets were left out. Later searches use the local catalogue and take a few seconds.
 
 ### Viewing any product
 **View** opens the product viewer for anything that is not an atmosphere profile (and **All fields** opens it from a profile):
