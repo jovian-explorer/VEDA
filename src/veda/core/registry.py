@@ -1288,7 +1288,7 @@ FIELD_REGISTRY: Dict[str, dict] = {
 # ===========================================================================
 
 LEAD_RESEARCHER = (
-    "Keshav Aggarwal, Student visitor at the Space Physics Laboratory (SPL), "
+    "Keshav Aggarwal, Student Visitor at the Space Physics Laboratory (SPL), "
     "Vikram Sarabhai Space Centre (VSSC), Indian Space Research Organisation (ISRO), "
     "Thiruvananthapuram, Kerala, India (Former PMRF Scholar at DAASE, IIT Indore)"
 )

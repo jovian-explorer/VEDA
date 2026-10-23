@@ -800,7 +800,7 @@ function aboutBody() {
     </div>
 
     <h3>Author</h3>
-    <p><strong>Keshav Aggarwal</strong>, Student visitor at the Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO, Thiruvananthapuram, India. Formerly Prime Minister's Research Fellow, DAASE, IIT Indore. Research: planetary radio occultation, planetary atmospheres and ionospheres, solar wind and coronal plasma.</p>
+    <p><strong>Keshav Aggarwal</strong>, Student Visitor at the Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO, Thiruvananthapuram, India. Formerly Prime Minister's Research Fellow, DAASE, IIT Indore. Research: planetary radio occultation, planetary atmospheres and ionospheres, solar wind and coronal plasma.</p>
 
     <h3>Connected archive data</h3>
     <p class="about-missions" id="about-datasets">Loading&hellip;</p>
