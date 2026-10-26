@@ -144,7 +144,9 @@ def veda_bibtex() -> str:
             "  title     = {{VEDA: Visualization, Exploration, and Data Analysis - A Multi-Mission Planetary Science Data Laboratory}},\n"
             f"  year      = {{2026}},\n  version   = {{{__version__}}},\n"
             f"  doi       = {{{VEDA_DOI}}},\n"
-            f"  url       = {{{REPO_URL}}}\n}}")
+            f"  url       = {{{REPO_URL}}},\n"
+            "  publisher = {Zenodo},\n"
+            "  affiliation = {Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO}\n}")
 
 
 def _archive_key(archive: str) -> Optional[str]:

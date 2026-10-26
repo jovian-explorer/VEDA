@@ -66,14 +66,15 @@ This directory contains master high-resolution graphical assets for VEDA (Visual
 When utilizing these logos or scientific software outputs in publications or posters, please credit:
 
 * **Lead Researcher and Author**: Keshav Aggarwal
-* **Affiliation**: Student Visitor, Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), Indian Space Research Organisation (ISRO), Thiruvananthapuram, Kerala, India (Former PMRF Scholar at DAASE, IIT Indore).
+* **Affiliation (for citations)**: Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), Indian Space Research Organisation (ISRO), Thiruvananthapuram, Kerala, India (Former PMRF Scholar at DAASE, IIT Indore).
 
 ```bibtex
 @software{Aggarwal_VEDA_2026,
   author = {Aggarwal, Keshav},
   title = {{VEDA: Visualization, Exploration, and Data Analysis for Planetary Science and Comparative Atmospheric Profiling}},
   year = {2026},
-  address = {Thiruvananthapuram, Kerala, India},
+  publisher = {Zenodo},
+  affiliation = {Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO},
   doi = {10.5281/zenodo.23215291},
   url = {https://github.com/jovian-explorer/VEDA}
 }

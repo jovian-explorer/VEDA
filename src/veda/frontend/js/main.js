@@ -180,7 +180,8 @@ function vedaBibtex() {
   version   = {${appVersion()}},
   doi       = {${VEDA_DOI}},
   url       = {${REPO_URL}},
-  address   = {Thiruvananthapuram, Kerala, India}
+  publisher = {Zenodo},
+  affiliation = {Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO}
 }`;
 }
 

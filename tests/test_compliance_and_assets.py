@@ -73,7 +73,8 @@ def test_license_terms_and_affiliation():
     assert "MIT License" in license_text
     assert "Keshav Aggarwal" in license_text
     assert "Copyright (c) 2026 Keshav Aggarwal" in license_text
-    assert "ISRO" not in license_text
+    for banned in ("ISRO", "VSSC", "Space Physics Laboratory"):
+        assert banned not in license_text, f"LICENSE names an institution: {banned}"
 
 
 def test_data_policy_archives_and_bibtex():
@@ -283,3 +284,10 @@ def test_exosphere_bodies_show_no_placeholder_gas_constants():
         d = c.get(f"/api/veda/bodies/{b}").json()
         assert d["exosphere"] and d["atmospheric_composition"] == {} and d["composition_source"] != "" or b == "vesta"
     assert not c.get("/api/veda/bodies/mars").json()["exosphere"]
+
+
+def test_citation_cff_affiliation_without_visitor_title():
+    """Citations carry the SPL/VSSC/ISRO affiliation but not the visitor title."""
+    cff = (ROOT_DIR / "CITATION.cff").read_text(encoding="utf-8")
+    assert "Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO" in cff
+    assert "Student Visitor" not in cff

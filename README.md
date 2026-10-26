@@ -247,7 +247,9 @@ VEDA does not own or host any data. Each archive's terms apply to the data you d
   year         = {2026},
   version      = {0.2.0},
   doi          = {10.5281/zenodo.23215291},
-  url          = {https://github.com/jovian-explorer/VEDA}
+  url          = {https://github.com/jovian-explorer/VEDA},
+  publisher    = {Zenodo},
+  affiliation  = {Space Physics Laboratory (SPL), Vikram Sarabhai Space Centre (VSSC), ISRO}
 }
 ```
 
