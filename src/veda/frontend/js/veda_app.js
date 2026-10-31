@@ -3073,6 +3073,8 @@ function trackChips(prof) {
     return v.length ? `${Math.min(...v).toFixed(d)} to ${Math.max(...v).toFixed(d)}` : null;
   };
   const chips = [];
+  const alt = (prof.altitude_km || []).filter(x => x != null);
+  if (alt.length) chips.push(`<div class="diag-chip" title="Lowest and highest level of the profile (${escHtml(prof.altitude_reference || 'reference as archived')})"><strong>Altitude range:</strong> ${Math.min(...alt).toFixed(1)} to ${Math.max(...alt).toFixed(1)} km</div>`);
   if (rng(t.latitude)) chips.push(`<div class="diag-chip" title="The tangent point of the ray for occultations; the spacecraft or probe for accelerometer passes and descents"><strong>Latitude along the profile:</strong> ${rng(t.latitude)}°</div>`);
   const SZA = 'title="Solar zenith angle: the angle of the Sun from overhead; 0° noon overhead, 90° at the horizon, more is night"';
   if (rng(t.sza)) chips.push(`<div class="diag-chip" ${SZA}><strong>Solar zenith angle:</strong> ${rng(t.sza)}°</div>`);

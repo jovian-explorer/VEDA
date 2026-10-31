@@ -378,8 +378,7 @@ def geometry(dataset_id: str, product_id: str, span_min: float = Query(90, ge=5,
             g = orbit_geometry(plan, kernels.MISSION_SPICE[ds.mission_id].naif_id, body_id, start, stop)
         except (LookupError, ValueError) as exc:
             raise HTTPException(422, str(exc))
-        g["kernels"] = [u.rsplit("/", 1)[1] for u in plan.urls]
-        g["ephemeris_source"] = kernels.MISSION_SPICE[ds.mission_id].source
+        _kernel_fields(g, plan, ds.mission_id)
         return g
     body = get_body(body_id)
     try:
@@ -389,9 +388,15 @@ def geometry(dataset_id: str, product_id: str, span_min: float = Query(90, ge=5,
                                                 "radius": prof.altitude_km + body.radius_km})
     except (LookupError, ValueError) as exc:
         raise HTTPException(422, str(exc))
-    g["kernels"] = [u.rsplit("/", 1)[1] for u in plan.urls]
-    g["ephemeris_source"] = kernels.MISSION_SPICE[ds.mission_id].source
+    _kernel_fields(g, plan, ds.mission_id)
     return g
+
+
+def _kernel_fields(g: Dict[str, Any], plan, mission_id: str) -> None:
+    from ..geometry import kernels
+    g["kernel_info"] = kernels.describe(plan)
+    g["kernels"] = [k["name"] for k in g["kernel_info"]]
+    g["ephemeris_source"] = kernels.MISSION_SPICE[mission_id].source
 
 
 def get_body_info(body_id: str):

@@ -50,3 +50,15 @@ def test_mars_needs_the_satellite_kernel(listings):
     assert "mar099s.bsp" in names and "de440s.bsp" in names
     venus = [u.rsplit("/", 1)[1] for u in kernels.plan("akatsuki", "venus", dt.date(2016, 3, 3)).urls]
     assert "mar099s.bsp" not in venus
+
+
+def test_kernel_list_names_what_each_file_supplies(listings):
+    """The geometry response lists the loaded kernels with their role (no attitude or clock kernels)."""
+    info = kernels.describe(kernels.plan("mex", "mars", dt.date(2004, 4, 2)))
+    roles = {k["name"]: k["role"] for k in info}
+    assert roles["naif0012.tls"] == "leap seconds"
+    assert roles["pck00011.tpc"] == "planet constants"
+    assert roles["de440s.bsp"] == "planet ephemeris"
+    assert roles["mar099s.bsp"] == "planet ephemeris"
+    assert roles["MEX_ROB_040101_041231_003.BSP"] == "spacecraft ephemeris"
+    assert not {"attitude", "clock"} & set(roles.values())

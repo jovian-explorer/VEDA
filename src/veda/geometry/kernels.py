@@ -322,6 +322,25 @@ class KernelPlan:
         return KERNEL_DIR / url.rsplit("/", 1)[1]
 
 
+_ROLES = {".tls": "leap seconds", ".tpc": "planet constants", ".tf": "frames", ".bsp": "ephemeris"}
+
+
+def describe(p: KernelPlan) -> List[Dict[str, str]]:
+    """The kernels of a plan with what each supplies (only files the plan loads: VEDA uses no
+    attitude or clock kernels). A ``.bsp`` is the planet ephemeris when it is a generic or
+    body kernel, else the spacecraft's."""
+    own = set(GENERIC) | {u for v in BODY_KERNELS.values() for u in v}
+    out = []
+    for u in p.urls:
+        name = u.rsplit("/", 1)[1]
+        ext = "." + name.rsplit(".", 1)[-1].lower()
+        role = _ROLES.get(ext, "other")
+        if ext == ".bsp":
+            role = ("planet ephemeris" if u in own else "spacecraft ephemeris")
+        out.append({"name": name, "role": role})
+    return out
+
+
 def plan(mission_id: str, body_id: str, when: dt.date) -> KernelPlan:
     p = KernelPlan()
     ms = MISSION_SPICE.get(mission_id)

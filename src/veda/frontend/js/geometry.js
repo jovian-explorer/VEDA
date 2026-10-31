@@ -30,6 +30,10 @@ const PROJECTIONS = [
 
 const state = { view: 'orbit-fixed', projection: 'equirectangular', data: null };
 
+/** Loaded kernel files with what each supplies (VEDA loads no attitude or clock kernels). */
+const kernelList = (g) => (g.kernel_info || g.kernels.map(name => ({ name, role: '' })))
+  .map(k => `<code>${esc(k.name)}</code>${k.role ? ` (${esc(k.role)})` : ''}`).join(', ');
+
 async function fetchGeometry(ds, pid) {
   const res = await fetch(`/api/veda/geometry/${encodeURIComponent(ds)}/${encodeURIComponent(pid)}`);
   const body = await res.json().catch(() => ({}));
@@ -120,7 +124,7 @@ function renderOrbit(box) {
       <div class="diag-chip"><strong>Solar zenith / emission / phase:</strong> ${t.sza[mid].toFixed(1)}° / ${t.emission[mid].toFixed(1)}° / ${t.phase[mid].toFixed(1)}°</div>
       <div class="diag-chip"><strong>Subsolar point:</strong> ${g.subsolar.lat.toFixed(1)}°, ${g.subsolar.lon.toFixed(1)}°E</div>
     </div>
-    <p class="hint">Ephemeris: ${esc(g.ephemeris_source)}; kernels ${esc(g.kernels.join(', '))}. Spacecraft times; positions light-time corrected (frame ${esc(g.frame_fixed)}). ${t.in_observation.every(Boolean) ? '' : 'The thick part of the track is the observation itself.'}</p>`;
+    <p class="hint">Ephemeris: ${esc(g.ephemeris_source)}; kernels ${kernelList(g)}. Spacecraft times; positions light-time corrected (frame ${esc(g.frame_fixed)}). ${t.in_observation.every(Boolean) ? '' : 'The thick part of the track is the observation itself.'}</p>`;
   box.querySelectorAll('[data-view]').forEach(btn => btn.addEventListener('click', () => { state.view = btn.dataset.view; renderOrbit(box); }));
   box.querySelector('#geo-projection')?.addEventListener('change', (e) => { state.projection = e.target.value; draw(); });
   draw();
@@ -223,7 +227,7 @@ function render(box) {
       <div class="diag-chip"><strong>Tangent track:</strong> ${esc(g.tangent_source)}</div>
       ${b ? `<div class="diag-chip" title="Straight-line tangent radius minus the product's refracted tangent radius; large values mean strong ray bending"><strong>Ray bending:</strong> straight-line offset median ${b.median_km.toFixed(1)} km, max ${b.max_abs_km.toFixed(0)} km</div>` : ''}
     </div>
-    <p class="hint">Ephemeris: ${esc(g.ephemeris_source)}; kernels ${esc(g.kernels.join(', '))}. Times are Earth-reception times; positions are light-time corrected.</p>`;
+    <p class="hint">Ephemeris: ${esc(g.ephemeris_source)}; kernels ${kernelList(g)}. Times are Earth-reception times; positions are light-time corrected.</p>`;
   box.querySelectorAll('[data-view]').forEach(btn => btn.addEventListener('click', () => { state.view = btn.dataset.view; render(box); }));
   box.querySelector('#geo-projection')?.addEventListener('change', (e) => { state.projection = e.target.value; draw(); });
   draw();
