@@ -92,3 +92,23 @@ def test_ngims_co2_scale_height_as_the_teams_level_3_fit():
 
 def test_ion_files_are_not_neutral_profiles():
     assert DS.classify("mvn_ngi_l2_ion-abund-14015_20141018T100458_v08_r01.xml")[1] == "other"
+
+
+def test_ion_densities_have_their_own_data_set():
+    """Ion file of the same pass (ion-abund): ION_MASS in u/e, PRECISION an absolute 1-sigma.
+    Not the neutral density, so no number density and no temperature from density."""
+    xml = DATA / "mvn_ngi_l2_ion-abund-14015_20141018T100458_v08_r01.xml"
+    ions = get_dataset("maven-ngims-ions")
+    assert ions.classify(xml.name)[1] == "profile"
+    prod = {"product_id": xml.stem + "_IN", "volume": "ngims_bundle", "leg": "inbound",
+            "start_time": ions.time_from_filename(xml.name),
+            "url": ions.base_url + "ngims_bundle/l2/2014/10/" + xml.name,
+            "product_type": "Ion density profile along the periapsis pass, inbound leg"}
+    p = profile_from_label(ions, prod, xml)
+    assert p.time_utc.startswith("2014-10-18T11:38:5")      # periapsis, from the ion file's own samples
+    assert "number_density_m3" not in p.derived and "temperature_from_density" not in p.derived
+    o2 = np.asarray(p.derived["ion_o2plus_m3"])
+    assert np.isfinite(o2).any() and np.nanmax(o2) > 1e8        # particles/cc -> m^-3
+    assert np.all(np.diff(p.altitude_km) <= 0)
+    k = int(np.nanargmax(o2))
+    assert p.uncertainty["ion_o2plus_m3"][k] < o2[k]

@@ -199,8 +199,12 @@ def _species_on_one_time_grid(tbl) -> None:
     and absolute 1-sigma; every species becomes ABUNDANCE_<X> and PRECISION_<X> put on the
     main species' times by linear interpolation in T_UNIX, empty beyond its own first and
     last sample and across gaps of more than 10 s: species are sampled in turn, so their
-    counts and times need not be the main species'."""
+    counts and times need not be the main species'.  Ion tables have ION_MASS (u/e) instead
+    of SPECIES, named M<mass> here, and give PRECISION as an absolute 1-sigma."""
     sp = tbl.text_columns.get("SPECIES")
+    ions = sp is None and "ION_MASS" in tbl.columns
+    if ions:
+        sp = [f"M{m:g}" for m in tbl.columns["ION_MASS"]]
     if not sp or "ABUNDANCE" not in tbl.columns or "T_UNIX" not in tbl.columns:
         return
     sp = np.array([s.strip() for s in sp])
@@ -208,9 +212,9 @@ def _species_on_one_time_grid(tbl) -> None:
     ab = np.asarray(tbl.columns["ABUNDANCE"], dtype=float)
     pr = np.asarray(tbl.columns.get("PRECISION", np.full(ab.shape, np.nan)), dtype=float)
     ok = np.array([q.strip() != "UR" for q in tbl.text_columns.get("QUALITY", [""] * sp.size)]) & (ab > 0)
-    sig = ab * pr / 100.0
+    sig = pr if ions else ab * pr / 100.0
     t = np.asarray(tbl.columns["T_UNIX"], dtype=float)
-    base = sp == ("CO2" if "CO2" in names else names[0])
+    base = sp == next((n for n in ("CO2", "M44") if n in names), names[0])
     tb = t[base]
     cols = {k: np.asarray(v)[base] for k, v in tbl.columns.items()}
     cols["ABUNDANCE"] = np.where(ok[base], ab[base], np.nan)

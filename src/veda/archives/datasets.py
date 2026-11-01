@@ -1023,8 +1023,8 @@ DATASETS: List[Dataset] = [
         volume_pattern=r"^ngims_bundle$",
         pds4_product_dir="l2/", pds4_walk=2,                       # l2/<year>/<month>/
         time_from_name=r"_(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})T(?P<hh>\d{2})(?P<mm>\d{2})(?P<ss>\d{2})_v\d+",
-        # the ion files are listed but not read as profiles: their densities would be taken for
-        # the neutral number density (and its hydrostatic temperature)
+        # the ion files are read by their own data set (maven-ngims-ions): their densities would be
+        # taken for the neutral number density (and its hydrostatic temperature)
         rules=((r"csn-abund", "Neutral gas density profile along the periapsis pass", "profile"),
                (r"ion-abund", "Ion abundances along the periapsis pass", "other")),
         profile_columns={"altitude": "ALT", "number_density": "ABUNDANCE", "number_density_sigma": "PRECISION",
@@ -1040,6 +1040,31 @@ DATASETS: List[Dataset] = [
                      "ABUNDANCE_CO2": (-999.0, 0.0), "ABUNDANCE_AR": (-999.0, 0.0),
                      "ABUNDANCE_N2": (-999.0, 0.0), "ABUNDANCE_HE": (-999.0, 0.0)},
         density_molar_mass=44.01,
+        pass_legs="periapsis", pass_leg_altitude="ALT", pass_leg_time="T_UNIX",
+        citation=("Elrod, M., Benna, M., & Navas, T. (2014). MAVEN Neutral Gas and Ion Mass Spectrometer Data "
+                  "(urn:nasa:pds:maven.ngims.calibrated), NASA Planetary Data System, doi:10.17189/1518931; Mahaffy, P. R., et al. (2015). The Neutral Gas and Ion Mass Spectrometer on "
+                  "the Mars Atmosphere and Volatile Evolution Mission. Space Sci. Rev., 195, 49-73."),
+        doi="10.17189/1518931",
+    ),
+    Dataset(
+        id="maven-ngims-ions", mission_id="maven", instrument="NGIMS (Neutral Gas and Ion Mass Spectrometer)",
+        level="L2 (PDS4)",
+        title="MAVEN NGIMS: ion density profiles of the periapsis passes (Oct 2014 - present)",
+        body_ids=("mars",), archive="NASA PDS Atmospheres Node (PDS4)",
+        base_url="https://pds-atmospheres.nmsu.edu/PDS/data/PDS4/MAVEN/",
+        volume_pattern=r"^ngims_bundle$",
+        pds4_product_dir="l2/", pds4_walk=2,                       # l2/<year>/<month>/
+        time_from_name=r"_(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})T(?P<hh>\d{2})(?P<mm>\d{2})(?P<ss>\d{2})_v\d+",
+        rules=((r"ion-abund", "Ion density profile along the periapsis pass", "profile"),),
+        # the main ions on the CO2+ times (profiles.py, _species_on_one_time_grid; ION_MASS in u/e),
+        # in m^-3; there is no neutral density, so no temperature from density
+        profile_columns={"altitude": "ALT", "latitude": "LAT", "longitude": "LONG", "lst": "LST", "sza": "SZA"},
+        extra_variables={"ion_oplus_m3": ("ABUNDANCE_M16", "PRECISION_M16"),
+                         "ion_noplus_m3": ("ABUNDANCE_M30", "PRECISION_M30"),
+                         "ion_o2plus_m3": ("ABUNDANCE_M32", "PRECISION_M32"),
+                         "ion_co2plus_m3": ("ABUNDANCE_M44", "PRECISION_M44")},
+        value_factor={"ion_oplus_m3": 1e6, "ion_noplus_m3": 1e6, "ion_o2plus_m3": 1e6, "ion_co2plus_m3": 1e6},
+        fill_values={"ABUNDANCE": (-999.0, 0.0)},
         pass_legs="periapsis", pass_leg_altitude="ALT", pass_leg_time="T_UNIX",
         citation=("Elrod, M., Benna, M., & Navas, T. (2014). MAVEN Neutral Gas and Ion Mass Spectrometer Data "
                   "(urn:nasa:pds:maven.ngims.calibrated), NASA Planetary Data System, doi:10.17189/1518931; Mahaffy, P. R., et al. (2015). The Neutral Gas and Ion Mass Spectrometer on "
@@ -1658,6 +1683,7 @@ _REFS = {
     "mex-m-spi-4-irddr-prof-v1.0": ("fedorova2021", "bertaux2006"),
     "maven-rose-edp": ("withers2020rose", "withers2020radiosci", "withers2017rosedata"),
     "maven-ngims-l2": ("mahaffy2015", "elrod2014data"),
+    "maven-ngims-ions": ("mahaffy2015", "elrod2014data"),
     "maven-iuvs-occultation": ("groller2018", "mcclintock2015", "deighan2018data"),
     "maven-iuvs-periapse": ("evans2015", "mcclintock2015", "deighan2018data"),
     "jno-mwr-nh3-h2o": ("li2020", "li2017", "janssen2017"),
@@ -1731,6 +1757,7 @@ COVERAGE = {
     "mex-m-spi-4-irddr-prof-v1.0": ("2005-01-19", "2018-09-12"),
     "maven-rose-edp": ("2016-07-05", ""),
     "maven-ngims-l2": ("2014-10-18", ""),
+    "maven-ngims-ions": ("2014-10-18", ""),
     "maven-iuvs-occultation": ("2015-03-24", ""),
     "maven-iuvs-periapse": ("2014-10-18", ""),
     "jno-mwr-nh3-h2o": ("2016-08-27", "2018-04-01"),
