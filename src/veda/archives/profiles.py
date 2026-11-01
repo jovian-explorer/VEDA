@@ -313,12 +313,12 @@ def profile_from_label(ds: Dataset, prod: Dict, label: Path) -> ObservationProfi
             if start is not None and t.size and np.isfinite(t[0]):
                 import datetime as _dt
                 time_utc = (start - _dt.timedelta(seconds=float(t[0]))).isoformat(timespec="milliseconds")
-        elif "ALT" in tbl.columns:
+        elif ds.pass_leg_altitude in tbl.columns:
             # Periapsis pass without a precomputed periapsis-time column (e.g. MAVEN NGIMS)
-            alt = np.asarray(tbl.columns["ALT"], dtype=float)
+            alt = np.asarray(tbl.columns[ds.pass_leg_altitude], dtype=float)
             i_peri = int(np.nanargmin(alt)) if alt.size else 0
-            if "T_UNIX" in tbl.columns:
-                t = np.asarray(tbl.columns["T_UNIX"], dtype=float) - float(tbl.columns["T_UNIX"][i_peri])
+            if ds.pass_leg_time in tbl.columns:
+                t = np.asarray(tbl.columns[ds.pass_leg_time], dtype=float) - float(tbl.columns[ds.pass_leg_time][i_peri])
             else:
                 t = np.arange(len(alt)) - i_peri
             if "T_UTC" in tbl.text_columns and len(tbl.text_columns["T_UTC"]) > i_peri:

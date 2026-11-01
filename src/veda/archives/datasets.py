@@ -109,6 +109,10 @@ class Dataset:
     # two profiles, the inbound leg (before periapsis) and the outbound leg, which are at
     # different places and local times and would zigzag if compared as one profile.
     pass_legs: Optional[str] = None
+    # Pass legs without a time-from-periapsis column: the altitude column, whose lowest
+    # sample is periapsis (MAVEN NGIMS), and optionally the time column (else the sample index).
+    pass_leg_altitude: str = ""
+    pass_leg_time: str = ""
     # Pass legs: the measured density is kept from periapsis outward while it is at least
     # this many times its 1-sigma, and left out beyond (MAVEN accelerometer files run to
     # 300 s from periapsis, 200-230 km, where the density is noise).  0: all levels.
@@ -1036,7 +1040,7 @@ DATASETS: List[Dataset] = [
                      "ABUNDANCE_CO2": (-999.0, 0.0), "ABUNDANCE_AR": (-999.0, 0.0),
                      "ABUNDANCE_N2": (-999.0, 0.0), "ABUNDANCE_HE": (-999.0, 0.0)},
         density_molar_mass=44.01,
-        pass_legs="periapsis",
+        pass_legs="periapsis", pass_leg_altitude="ALT", pass_leg_time="T_UNIX",
         citation=("Elrod, M., Benna, M., & Navas, T. (2014). MAVEN Neutral Gas and Ion Mass Spectrometer Data "
                   "(urn:nasa:pds:maven.ngims.calibrated), NASA Planetary Data System, doi:10.17189/1518931; Mahaffy, P. R., et al. (2015). The Neutral Gas and Ion Mass Spectrometer on "
                   "the Mars Atmosphere and Volatile Evolution Mission. Space Sci. Rev., 195, 49-73."),
