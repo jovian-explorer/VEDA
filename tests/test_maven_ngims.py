@@ -90,6 +90,16 @@ def test_ngims_co2_scale_height_as_the_teams_level_3_fit():
     assert np.nanmedian(t[ok]) == pytest.approx(201, abs=25)
 
 
+def test_level_3_summaries_are_not_profiles():
+    """res-sht holds one scale height and temperature per species and pass (a single exobase
+    altitude), res-den the instrument's density-bin index: neither is a vertical profile, so
+    neither is offered as one (the res-sht values are the check above)."""
+    for name in ("mvn_ngi_l3_res-sht-14015_20141018T100458_v06_r01.xml",
+                 "mvn_ngi_l3_res-den-14015_20141018T100458_v06_r01.xml"):
+        assert DS.classify(name)[1] != "profile"
+        assert get_dataset("maven-ngims-ions").classify(name)[1] != "profile"
+
+
 def test_ion_files_are_not_neutral_profiles():
     assert DS.classify("mvn_ngi_l2_ion-abund-14015_20141018T100458_v08_r01.xml")[1] == "other"
 
