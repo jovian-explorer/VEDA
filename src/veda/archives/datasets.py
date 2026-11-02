@@ -1513,8 +1513,10 @@ DATASETS: List[Dataset] = [
         # v2 zip (the first, "incorrect headers" zip is superseded): one text file per occultation,
         # a header with the ranges of Ls, latitude and local time (midpoints are used; there is no
         # longitude), then the CO/CO2 ratio (dimensionless) and its error at
-        # each integer altitude from 75 km.  No quality filter is applied: the paper's own cut is
-        # not known to VEDA (full text not read), see the paper.
+        # each integer altitude (62-105 km, mostly from 75 km).  No quality filter is applied: the
+        # paper's cuts (CO/CO2 orders 190/149 observed together, slant opacity < 1, upper altitude
+        # limit at an absorption-depth SNR of 4, MY 34 left out; 649 orbits selected) are already
+        # made in the files, which hold 642 occultations; the paper gives no further user cut.
         repository={"kind": "zenodo_zip", "zip": "yoshida22_repo_new.zip", "delimiter": None,
                     "url": "https://data.aeronomie.be/dataset/b6b50975-0953-4d0c-8e6b-ab41e58de6a9/resource/bedfa357-d4b1-4742-b77a-7e9869a75cce/download/yoshida22_repo_new.zip",
                     "members": r"(?P<date>\d{8})_(?P<time>\d{6})_1p0a_SO_[A-Z]_(?P<dir>[IE])\.txt",
@@ -1529,7 +1531,7 @@ DATASETS: List[Dataset] = [
         citation=("Yoshida, N., et al. (2022). Variations in Vertical CO/CO2 Profiles in the Martian Mesosphere and "
                   "Lower Thermosphere Measured by the ExoMars TGO/NOMAD: Implications of Variations in Eddy Diffusion "
                   "Coefficient. Geophys. Res. Lett., 49, e2022GL098485. Data: Yoshida, N., Vandaele, A. C., & Thomas, I. "
-                  "(2022), BIRA-IASB, doi:10.18758/71021076 (CC-BY-4.0). No quality filter is applied; see the paper."),
+                  "(2022), BIRA-IASB, doi:10.18758/71021076 (CC-BY-4.0). The files are the authors' selected profiles (642 occultations); VEDA applies no further cut."),
         doi="10.18758/71021076",
     ),
     Dataset(
