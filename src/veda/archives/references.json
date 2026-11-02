@@ -7364,6 +7364,59 @@
    "note": "DOI registered with DataCite (creators, year and title as registered); CC-BY-4.0."
   },
   {
+   "key": "yoshida2022",
+   "authors": [
+    "Yoshida, N.",
+    "Nakagawa, H.",
+    "Aoki, S.",
+    "Erwin, J.",
+    "Vandaele, A. C.",
+    "Daerden, F."
+   ],
+   "et_al": true,
+   "year": 2022,
+   "title": "Variations in Vertical CO/CO2 Profiles in the Martian Mesosphere and Lower Thermosphere Measured by the ExoMars TGO/NOMAD: Implications of Variations in Eddy Diffusion Coefficient",
+   "journal": "Geophysical Research Letters",
+   "volume": "49",
+   "issue": "10",
+   "pages": "e2022GL098485",
+   "doi": "10.1029/2022GL098485",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "tgo",
+     "payload": "NOMAD"
+    }
+   ],
+   "note": "Checked with Argus (Crossref and OpenAlex); title as registered in Crossref."
+  },
+  {
+   "key": "yoshida2022data",
+   "authors": [
+    "Yoshida, N.",
+    "Vandaele, A. C.",
+    "Thomas, I."
+   ],
+   "et_al": false,
+   "year": 2022,
+   "title": "Dataset CO/CO2 ratio retrieved from solar occultation by TGO/NOMAD, presented in Yoshida et al., 2022",
+   "journal": "Royal Belgian Institute for Space Aeronomy",
+   "volume": "",
+   "issue": "",
+   "pages": "",
+   "doi": "10.18758/71021076",
+   "verified": true,
+   "type": "dataset",
+   "used_for": [
+    {
+     "mission": "tgo",
+     "payload": "NOMAD"
+    }
+   ],
+   "note": "DOI registered with DataCite (creators Yoshida, Vandaele, Thomas; year 2022); Argus flagged only an OpenAlex author-list mismatch. CC-BY-4.0."
+  },
+  {
    "key": "flimon2025",
    "authors": [
     "Flimon, Z.",

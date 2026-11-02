@@ -1504,6 +1504,35 @@ DATASETS: List[Dataset] = [
         doi="10.18758/71021072",
     ),
     Dataset(
+        id="tgo-nomad-so-co-co2-yoshida2022", mission_id="tgo", instrument="NOMAD SO (solar occultation)",
+        level="Derived (research data)",
+        title="ExoMars TGO NOMAD solar occultations: CO/CO2 ratio profiles, 75-105 km, April 2019 - February 2021 (Yoshida et al. 2022)",
+        body_ids=("mars",), archive="BIRA-IASB data repository (CC-BY-4.0)",
+        base_url="https://data.aeronomie.be/dataset/b6b50975-0953-4d0c-8e6b-ab41e58de6a9/",
+        volume_pattern=r"^repository$",
+        # v2 zip (the first, "incorrect headers" zip is superseded): one text file per occultation,
+        # a header with the ranges of Ls, latitude and local time (midpoints are used; there is no
+        # longitude), then the CO/CO2 ratio (dimensionless) and its error at
+        # each integer altitude from 75 km.  No quality filter is applied: the paper's own cut is
+        # not known to VEDA (full text not read), see the paper.
+        repository={"kind": "zenodo_zip", "zip": "yoshida22_repo_new.zip", "delimiter": None,
+                    "url": "https://data.aeronomie.be/dataset/b6b50975-0953-4d0c-8e6b-ab41e58de6a9/resource/bedfa357-d4b1-4742-b77a-7e9869a75cce/download/yoshida22_repo_new.zip",
+                    "members": r"(?P<date>\d{8})_(?P<time>\d{6})_1p0a_SO_[A-Z]_(?P<dir>[IE])\.txt",
+                    "header_ranges": {"LATITUDE": "Lat", "LS_FILE": "Ls", "LST": "LST"},
+                    "columns": [("ALTITUDE", "km"), ("CO_CO2_RATIO", ""), ("CO_CO2_RATIO_ERROR", "")]},
+        rules=((r"_so_[a-z]_i(.txt)?$", "CO/CO2 ratio profile, ingress", "profile"),
+               (r"_so_[a-z]_e(.txt)?$", "CO/CO2 ratio profile, egress", "profile")),
+        profile_columns={"altitude": "ALTITUDE", "latitude": "LATITUDE"},
+        column_units={"ALTITUDE": "KM"},
+        extra_variables={"co_co2_ratio": ("CO_CO2_RATIO", "CO_CO2_RATIO_ERROR")},
+        altitude_reference="tangent height as given by the NOMAD team",
+        citation=("Yoshida, N., et al. (2022). Variations in Vertical CO/CO2 Profiles in the Martian Mesosphere and "
+                  "Lower Thermosphere Measured by the ExoMars TGO/NOMAD: Implications of Variations in Eddy Diffusion "
+                  "Coefficient. Geophys. Res. Lett., 49, e2022GL098485. Data: Yoshida, N., Vandaele, A. C., & Thomas, I. "
+                  "(2022), BIRA-IASB, doi:10.18758/71021076 (CC-BY-4.0). No quality filter is applied; see the paper."),
+        doi="10.18758/71021076",
+    ),
+    Dataset(
         id="tgo-nomad-uvis-aerosol-flimon2025", mission_id="tgo", instrument="NOMAD UVIS (solar occultation)",
         level="Derived (research data)",
         title="ExoMars TGO NOMAD UVIS solar occultations: aerosol extinction and effective radius, MY34-36 (Flimon et al. 2025)",
@@ -1672,6 +1701,7 @@ _REFS = {
     "tgo-nomad-so165-trompet2026": ("trompet2026data", "vandaele2018"),
     "tgo-nomad-so-h2o-brines2026": ("brines2026", "vandaele2018"),
     "tgo-nomad-so-h2o-aoki2022": ("aoki2022", "aoki2022data", "vandaele2018"),
+    "tgo-nomad-so-co-co2-yoshida2022": ("yoshida2022", "yoshida2022data", "vandaele2018"),
     "tgo-nomad-uvis-aerosol-flimon2025": ("flimon2025", "flimon2024data", "vandaele2018"),
     "tgo-acs-mir-belyaev2022": ("belyaev2022", "korablev2017"),
     "tgo-acs-nir-fedorova2022": ("fedorova2022", "korablev2017"),
@@ -1750,6 +1780,7 @@ COVERAGE = {
     "mpf-m-asimet-4-ddr-edl-v1.0": ("1997-07-04", "1997-07-04"),
     "tgo-nomad-so-lopezvalverde2023": ("2018-04-23", "2019-03-13"),
     "tgo-nomad-so-h2o-aoki2022": ("2018-04-21", "2021-09-30"),
+    "tgo-nomad-so-co-co2-yoshida2022": ("2019-04-01", "2021-02-01"),
     "tgo-nomad-uvis-aerosol-flimon2025": ("2018-04-22", "2022-12-24"),
     "juno-ro-coffin2025": ("2023-07-31", "2024-06-13"),
     "juno-ro-caruso2026": ("2023-07-31", "2026-01-23"),

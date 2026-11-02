@@ -416,14 +416,17 @@ def _member_text(ds: Dataset, name: str) -> str:
 
 
 def _header_ranges(text: str, keys: Dict[str, str]) -> Dict[str, float]:
-    """Midpoints of header lines "<min> <max> <name> (...)" (NOMAD: lats, longit, lct, L_s)."""
+    """Midpoints of header lines "<min> <max> <name> (...)" (NOMAD: lats, longit, lct, L_s) or
+    "<name> range <min> <max>" (Yoshida et al.: Ls, Lat, LST)."""
     out = {}
     for line in text.splitlines()[:30]:
         p = line.split()
         for key, name in keys.items():
-            if len(p) >= 3 and p[2] == name:
+            # "<min> <max> <name> (...)" or "<name> range <min> <max>" (Yoshida et al.)
+            lead = len(p) >= 4 and p[1] == "range" and p[0] == name
+            if lead or (len(p) >= 3 and p[2] == name):
                 try:
-                    a, b = float(p[0]), float(p[1])
+                    a, b = (float(p[2]), float(p[3])) if lead else (float(p[0]), float(p[1]))
                 except ValueError:
                     continue
                 period = {"LONGITUDE": 360.0, "LST": 24.0}.get(key)

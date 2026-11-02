@@ -545,3 +545,28 @@ def test_nomad_uvis_aerosol_blocks_of_one_text_file(tmp_path, monkeypatch):
     assert (p.latitude, p.raw_attributes["LST"]) == (pytest.approx(-71.1535), pytest.approx(1.6325))
     # the longitudes are east: the local time computed there agrees with the file's
     assert solar_geometry("mars", rows[1]["start_time"], p.latitude, p.longitude)["lst"] == pytest.approx(1.63, abs=0.3)
+
+
+def test_header_ranges_named_first():
+    text = "Ls range 350.0 10.0\nLat range -44.0 -43.0\nLST range 6.0 6.2\n"
+    r = repo._header_ranges(text, {"LATITUDE": "Lat", "LS": "Ls", "LST": "LST"})
+    assert r == {"LATITUDE": pytest.approx(-43.5), "LS": pytest.approx(180.0), "LST": pytest.approx(6.1)}
+
+
+def test_nomad_co_co2_ratio_profiles_of_yoshida_et_al(tmp_path, monkeypatch):
+    """Yoshida et al. (2022): one text file per occultation, header ranges of Ls, latitude and
+    local time (no longitude), then altitude, CO/CO2 ratio and error.  The excerpt keeps the
+    header and every third level of the first file of the archive (75-90 km)."""
+    from veda.archives.profiles import profile_from_label
+    name = "20190401_001818_1p0a_SO_A_E.txt"
+    ds = _archive(tmp_path, monkeypatch, "tgo-nomad-so-co-co2-yoshida2022", [(name, name)], "zip")
+    rows = repo.index_repository(ds)
+    assert len(rows) == 1 and rows[0]["start_time"] == "2019-04-01T00:18:18" and "egress" in rows[0]["product_type"]
+    prod = {**rows[0], "url": "", "extra": json.loads(rows[0]["extra"])}
+    p = profile_from_label(ds, prod, repo.fetch_repository_product(ds, prod))
+    assert list(p.altitude_km) == [75.0, 78.0, 81.0, 84.0, 87.0, 90.0]
+    assert p.derived["co_co2_ratio"][0] == pytest.approx(0.0018760410692981505)
+    assert p.uncertainty["co_co2_ratio"][0] == pytest.approx(0.00016389269166087236)
+    assert p.latitude == pytest.approx(-43.4585, abs=1e-3) and p.raw_attributes["LS_FILE"] == pytest.approx(4.2411, abs=1e-3)
+    assert p.raw_attributes["LS"] == pytest.approx(p.raw_attributes["LS_FILE"], abs=0.02)
+    assert p.raw_attributes["LST"] == pytest.approx(6.1172, abs=1e-3)
