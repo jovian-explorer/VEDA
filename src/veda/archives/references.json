@@ -7417,6 +7417,66 @@
    "note": "DOI registered with DataCite (creators Yoshida, Vandaele, Thomas; year 2022); Argus flagged only an OpenAlex author-list mismatch. CC-BY-4.0."
   },
   {
+   "key": "brines2023",
+   "authors": [
+    "Brines, A.",
+    "López-Valverde, M. A.",
+    "Stolzenbach, A.",
+    "Modak, A.",
+    "Funke, B.",
+    "González-Galindo, F.",
+    "Aoki, S.",
+    "Villanueva, G. L.",
+    "Liuzzi, G.",
+    "Thomas, I. R."
+   ],
+   "et_al": true,
+   "year": 2023,
+   "title": "Water Vapor Vertical Distribution on Mars During Perihelion Season of MY 34 and MY 35 With ExoMars-TGO/NOMAD Observations",
+   "journal": "Journal of Geophysical Research: Planets",
+   "volume": "128",
+   "issue": "11",
+   "pages": "e2022JE007273",
+   "doi": "10.1029/2022JE007273",
+   "verified": true,
+   "type": "article",
+   "used_for": [
+    {
+     "mission": "tgo",
+     "payload": "NOMAD"
+    }
+   ],
+   "note": "Checked with Argus (Crossref); title as registered."
+  },
+  {
+   "key": "brines2023data",
+   "authors": [
+    "Brines, A.",
+    "López-Valverde, M. A.",
+    "Stolzenbach, A.",
+    "Modak, A.",
+    "Gonzalez Galindo, F.",
+    "Funke, B."
+   ],
+   "et_al": false,
+   "year": 2022,
+   "title": "Water vapor vertical distribution on Mars during perihelion season of MY 34 and MY 35 with ExoMars-TGO/NOMAD observations [Dataset]",
+   "journal": "Zenodo",
+   "volume": "",
+   "issue": "",
+   "pages": "",
+   "doi": "10.5281/zenodo.7085454",
+   "verified": true,
+   "type": "dataset",
+   "used_for": [
+    {
+     "mission": "tgo",
+     "payload": "NOMAD"
+    }
+   ],
+   "note": "Checked with Argus; the title is as registered with DataCite (the only difference Argus flagged is its [Dataset] suffix). CC-BY-4.0."
+  },
+  {
    "key": "flimon2025",
    "authors": [
     "Flimon, Z.",

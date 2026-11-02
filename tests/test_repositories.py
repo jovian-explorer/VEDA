@@ -570,3 +570,22 @@ def test_nomad_co_co2_ratio_profiles_of_yoshida_et_al(tmp_path, monkeypatch):
     assert p.latitude == pytest.approx(-43.4585, abs=1e-3) and p.raw_attributes["LS_FILE"] == pytest.approx(4.2411, abs=1e-3)
     assert p.raw_attributes["LS"] == pytest.approx(p.raw_attributes["LS_FILE"], abs=0.02)
     assert p.raw_attributes["LST"] == pytest.approx(6.1172, abs=1e-3)
+
+
+def test_nomad_water_temperature_saturation_profiles_of_brines_et_al_2023(tmp_path, monkeypatch):
+    """Brines et al. (2023): one CSV per scan in a tar, a header line, then per level water vapour,
+    NOMAD temperature and pressure (mbar) and saturation ratio with Ls, latitude and local time.
+    The excerpt keeps the header and every third level of the first scan (20-35 km)."""
+    from veda.archives.profiles import profile_from_label
+    name = "20180522_192928_1p0a_SO_A_E.csv"
+    ds = _archive(tmp_path, monkeypatch, "tgo-nomad-so-h2o-brines2023", [("lvl2_NOMAD_data/" + name, name)], "tar")
+    rows = repo.index_repository(ds)
+    assert len(rows) == 1 and rows[0]["start_time"] == "2018-05-22T19:29:28" and "egress" in rows[0]["product_type"]
+    prod = {**rows[0], "url": "", "extra": json.loads(rows[0]["extra"])}
+    p = profile_from_label(ds, prod, repo.fetch_repository_product(ds, prod))
+    assert list(p.altitude_km) == [20.0, 23.0, 26.0, 29.0, 32.0, 35.0]
+    assert p.derived["h2o_ppm"][0] == pytest.approx(261.9456949219098)
+    assert p.derived["saturation_ratio"][1] == pytest.approx(0.1299333535548041)
+    assert p.uncertainty["saturation_ratio"][1] == pytest.approx(0.0101150469706285)
+    assert p.temperature_k[0] == pytest.approx(194.524) and p.pressure_hpa[0] == pytest.approx(0.7856)
+    assert p.latitude == pytest.approx(-13.234, abs=1e-3) and np.nanmedian(p.track["lst"]) == pytest.approx(6.005, abs=1e-3)

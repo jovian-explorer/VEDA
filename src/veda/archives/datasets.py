@@ -1535,6 +1535,38 @@ DATASETS: List[Dataset] = [
         doi="10.18758/71021076",
     ),
     Dataset(
+        id="tgo-nomad-so-h2o-brines2023", mission_id="tgo", instrument="NOMAD SO (solar occultation)",
+        level="Derived (research data)",
+        title="ExoMars TGO NOMAD solar occultations: water vapour, temperature, pressure and saturation ratio, perihelion seasons of Mars years 34 and 35 (Brines et al. 2023)",
+        body_ids=("mars",), archive="Zenodo (CC-BY-4.0)",
+        base_url="https://zenodo.org/records/7085454/",
+        volume_pattern=r"^repository$",
+        # One CSV per scan in lvl2_NOMAD_data.tar (its time in the name), one header line, then
+        # per level the water vapour VMR and density, NOMAD's temperature and pressure and the
+        # saturation ratio, with Ls, latitude and local time (no longitude).  The 36 files of the
+        # separate TP_corrected folder (name ends _TP) repeat scans with corrected temperature
+        # and are left out; the GCM a-priori column is not read.
+        repository={"kind": "zenodo_zip", "record": "7085454", "zip": "lvl2_NOMAD_data.tar", "delimiter": ",",
+                    "members": r"(?P<date>\d{8})_(?P<time>\d{6})_1p0a_SO_[A-Z]_(?P<dir>[IE])\.csv",
+                    "columns": [("ALTITUDE", "km"), ("H2O_VMR", "ppm"), ("H2O_VMR_ERROR", "ppm"), ("H2O_DENSITY", "cm-3"),
+                                ("H2O_APRIORI_GCM", "ppm"), ("TEMPERATURE", "K"), ("TEMPERATURE_ERROR", "K"),
+                                ("PRESSURE", "hPa"), ("LS", "deg"), ("LATITUDE", "deg"), ("LST", "h"),
+                                ("SATURATION_RATIO", ""), ("SATURATION_RATIO_ERROR", "")]},
+        rules=((r"_so_[a-z]_i(.csv)?$", "Water vapour profile, ingress", "profile"),
+               (r"_so_[a-z]_e(.csv)?$", "Water vapour profile, egress", "profile")),
+        profile_columns={"altitude": "ALTITUDE", "temperature": "TEMPERATURE", "temperature_sigma": "TEMPERATURE_ERROR",
+                         "pressure": "PRESSURE", "latitude": "LATITUDE", "lst": "LST"},
+        column_units={"ALTITUDE": "KM", "TEMPERATURE": "K", "TEMPERATURE_ERROR": "K", "PRESSURE": "HPA"},
+        extra_variables={"h2o_ppm": ("H2O_VMR", "H2O_VMR_ERROR"), "h2o_cm3": ("H2O_DENSITY", None),
+                         "saturation_ratio": ("SATURATION_RATIO", "SATURATION_RATIO_ERROR")},
+        altitude_reference="the tangent heights given by the NOMAD team",
+        citation=("Brines, A., et al. (2023). Water vapor vertical distribution on Mars during perihelion season of MY 34 "
+                  "and MY 35 with ExoMars-TGO/NOMAD observations. J. Geophys. Res. Planets, 128, e2022JE007273. "
+                  "Data: Brines, A., Lopez-Valverde, M. A., Stolzenbach, A., Modak, A., Gonzalez Galindo, F., & Funke, B. "
+                  "(2022), doi:10.5281/zenodo.7085454 (CC-BY-4.0)."),
+        doi="10.5281/zenodo.7085454",
+    ),
+    Dataset(
         id="tgo-nomad-uvis-aerosol-flimon2025", mission_id="tgo", instrument="NOMAD UVIS (solar occultation)",
         level="Derived (research data)",
         title="ExoMars TGO NOMAD UVIS solar occultations: aerosol extinction and effective radius, MY34-36 (Flimon et al. 2025)",
@@ -1704,6 +1736,7 @@ _REFS = {
     "tgo-nomad-so-h2o-brines2026": ("brines2026", "vandaele2018"),
     "tgo-nomad-so-h2o-aoki2022": ("aoki2022", "aoki2022data", "vandaele2018"),
     "tgo-nomad-so-co-co2-yoshida2022": ("yoshida2022", "yoshida2022data", "vandaele2018"),
+    "tgo-nomad-so-h2o-brines2023": ("brines2023", "brines2023data", "vandaele2018"),
     "tgo-nomad-uvis-aerosol-flimon2025": ("flimon2025", "flimon2024data", "vandaele2018"),
     "tgo-acs-mir-belyaev2022": ("belyaev2022", "korablev2017"),
     "tgo-acs-nir-fedorova2022": ("fedorova2022", "korablev2017"),
@@ -1782,6 +1815,7 @@ COVERAGE = {
     "mpf-m-asimet-4-ddr-edl-v1.0": ("1997-07-04", "1997-07-04"),
     "tgo-nomad-so-lopezvalverde2023": ("2018-04-23", "2019-03-13"),
     "tgo-nomad-so-h2o-aoki2022": ("2018-04-21", "2021-09-30"),
+    "tgo-nomad-so-h2o-brines2023": ("2018-05-22", "2020-08-31"),
     "tgo-nomad-so-co-co2-yoshida2022": ("2019-04-01", "2021-02-01"),
     "tgo-nomad-uvis-aerosol-flimon2025": ("2018-04-22", "2022-12-24"),
     "juno-ro-coffin2025": ("2023-07-31", "2024-06-13"),
