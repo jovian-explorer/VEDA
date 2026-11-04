@@ -1722,3 +1722,9 @@ a.btn-feedback:hover { border-color: var(--accent); }
 .load-dialog .ld-cols td, .load-dialog .ld-cols th { padding: 4px 6px; vertical-align: top; }
 .load-dialog .ld-cols select { min-width: 8em; }
 .load-dialog .ld-msg { color: var(--warn); }
+
+.mission-timeline { display: grid; gap: 4px; margin: 6px 0 10px; font-size: calc(11px * var(--font-scale, 1.0)); color: var(--ink-soft); }
+.mt-row { display: grid; grid-template-columns: 130px 1fr 90px; gap: 8px; align-items: center; }
+.mt-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mt-track { position: relative; height: 8px; background: var(--focal-soft); border-radius: 4px; }
+.mt-bar { position: absolute; top: 0; bottom: 0; background: var(--focal); border-radius: 4px; }

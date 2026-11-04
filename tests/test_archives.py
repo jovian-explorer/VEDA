@@ -835,3 +835,15 @@ def test_pluto_radio_occultation_as_published():
     grid = np.arange(1215.0, 1300.0, 5.0)
     t = [np.interp(grid, r[::-1], tt[::-1]) for r, tt, *_ in prof.values()]
     assert np.max(np.abs(t[0] - t[1])) < 2.5
+
+
+def test_mission_timeline_spans_each_missions_data_sets():
+    from veda.archives.datasets import datasets_for, mission_timeline
+    rows = mission_timeline("mars")
+    assert rows and rows == sorted(rows, key=lambda r: (r["first"], r["mission_id"]))
+    for r in rows:
+        sets = [d for d in datasets_for(r["mission_id"], "mars") if d.coverage and not d.portal_only]
+        assert r["datasets"] == len(sets)
+        assert r["first"] == min(d.coverage[0] for d in sets)
+        assert (r["last"] == "") == any(d.coverage[1] == "" for d in sets)
+    assert mission_timeline("no-such-body") == []

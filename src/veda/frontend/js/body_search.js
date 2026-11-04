@@ -35,12 +35,29 @@ export function setupBodySearch({ onOpen, onCompare }) {
   });
 }
 
+// One bar per mission over the years of its data sets (open-ended bars run to today)
+function timeline(rows) {
+  const box = $('bs-timeline');
+  if (!box) return;
+  const t = s => Date.parse(s);
+  const end = r => (r.last ? t(r.last) : Date.now());
+  const lo = Math.min(...rows.map(r => t(r.first))), span = Math.max(...rows.map(end)) - lo || 1;
+  box.innerHTML = rows.map(r => {
+    const a = 100 * (t(r.first) - lo) / span, b = 100 * (end(r) - lo) / span;
+    return `<div class="mt-row" title="${esc(r.datasets)} data set(s)"><span class="mt-name">${esc(r.mission_id)}</span>` +
+      `<span class="mt-track"><span class="mt-bar" style="left:${a}%;width:${Math.max(b - a, 1)}%"></span></span>` +
+      `<span class="mt-dates">${esc(r.first.slice(0, 4))}&ndash;${esc(r.last ? r.last.slice(0, 4) : 'now')}</span></div>`;
+  }).join('');
+}
+
 export async function showBodySearch(bodyId, bodyName) {
   if (st.bodyId !== bodyId) { st.selected.clear(); st.results = []; st.total = 0; }
   st.bodyId = bodyId;
   if ($('bs-body-name')) $('bs-body-name').textContent = bodyName || bodyId;
   try {
-    const ds = (await api.archiveDatasets(null, bodyId)).datasets || [];
+    const res = await api.archiveDatasets(null, bodyId);
+    const ds = res.datasets || [];
+    timeline(res.timeline || []);
     const real = ds.filter(d => !d.portal_only);
     st.liveCount = real.filter(d => d.live).length;
     const missions = [...new Set(real.map(d => d.mission_id))];

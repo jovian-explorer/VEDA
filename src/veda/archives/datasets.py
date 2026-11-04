@@ -1886,3 +1886,18 @@ def datasets_for(mission_id: Optional[str] = None, body_id: Optional[str] = None
     return [d for d in DATASETS
             if (not mission_id or d.mission_id == mission_id.lower())
             and (not body_id or body_id.lower() in d.body_ids)]
+
+
+def mission_timeline(body_id: str) -> List[Dict[str, object]]:
+    """One row per mission for a body: the earliest first and latest last observation date of
+    its data sets with known dates ("" last: still growing), earliest mission first."""
+    rows: Dict[str, Dict[str, object]] = {}
+    for d in datasets_for(None, body_id):
+        if d.portal_only or not d.coverage:
+            continue
+        first, last = d.coverage
+        r = rows.setdefault(d.mission_id, {"mission_id": d.mission_id, "first": first, "last": last, "datasets": 0})
+        r["datasets"] += 1
+        r["first"] = min(r["first"], first)
+        r["last"] = "" if "" in (r["last"], last) else max(r["last"], last)
+    return sorted(rows.values(), key=lambda r: (r["first"], r["mission_id"]))

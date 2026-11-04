@@ -10,7 +10,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from ..archives import catalog, net
-from ..archives.datasets import datasets_for, get_dataset
+from ..archives.datasets import datasets_for, get_dataset, mission_timeline
 from ..archives.profiles import load_profile
 
 router = APIRouter(prefix="/api/veda/archive", tags=["archive"])
@@ -64,7 +64,7 @@ def list_datasets(mission_id: Optional[str] = None, body_id: Optional[str] = Non
     out = []
     for ds in datasets_for(mission_id, body_id):
         out.append({**ds.to_dict(), **catalog.dataset_status(ds)})
-    return {"datasets": out}
+    return {"datasets": out, "timeline": mission_timeline(body_id) if body_id else []}
 
 
 @router.post("/datasets/{dataset_id}/index")
