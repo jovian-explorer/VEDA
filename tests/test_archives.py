@@ -847,3 +847,13 @@ def test_mission_timeline_spans_each_missions_data_sets():
         assert r["first"] == min(d.coverage[0] for d in sets)
         assert (r["last"] == "") == any(d.coverage[1] == "" for d in sets)
     assert mission_timeline("no-such-body") == []
+
+
+def test_mission_timeline_events_are_ordered_and_inside_known_missions():
+    from veda.archives.datasets import MISSION_EVENTS, mission_timeline
+    rows = {r["mission_id"]: r for r in mission_timeline("mars")}
+    assert [e["kind"] for e in rows["msl"]["events"]] == ["launch", "arrival"]
+    assert rows["mro"]["events"][1] == {"kind": "arrival", "date": "2006-03-10", "label": "Mars orbit insertion"}
+    assert rows["mex"]["events"] == []          # no verified date yet: left out
+    for evs in MISSION_EVENTS.values():
+        assert evs[0][1] < evs[1][1]

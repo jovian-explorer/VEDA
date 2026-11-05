@@ -35,19 +35,25 @@ export function setupBodySearch({ onOpen, onCompare }) {
   });
 }
 
-// One bar per mission over the years of its data sets (open-ended bars run to today)
+// One bar per mission over the years of its data sets (open-ended bars run to today); a tick marks
+// the launch and the arrival (orbit insertion or landing) where the date is verified
 function timeline(rows) {
   const box = $('bs-timeline');
   if (!box) return;
   const t = s => Date.parse(s);
   const end = r => (r.last ? t(r.last) : Date.now());
-  const lo = Math.min(...rows.map(r => t(r.first))), span = Math.max(...rows.map(end)) - lo || 1;
+  const evs = r => r.events || [];
+  const lo = Math.min(...rows.flatMap(r => [t(r.first), ...evs(r).map(e => t(e.date))]));
+  const span = Math.max(...rows.map(end)) - lo || 1;
+  const pct = x => 100 * (x - lo) / span;
   box.innerHTML = rows.map(r => {
-    const a = 100 * (t(r.first) - lo) / span, b = 100 * (end(r) - lo) / span;
-    return `<div class="mt-row" title="${esc(r.datasets)} data set(s)"><span class="mt-name">${esc(r.mission_id)}</span>` +
-      `<span class="mt-track"><span class="mt-bar" style="left:${a}%;width:${Math.max(b - a, 1)}%"></span></span>` +
+    const a = pct(t(r.first)), b = pct(end(r));
+    const ticks = evs(r).map(e => `<span class="mt-ev mt-${esc(e.kind)}" style="left:${pct(t(e.date))}%" title="${esc(e.label)} ${esc(e.date)}"></span>`).join('');
+    const key = evs(r).map(e => `${e.label.toLowerCase()} ${e.date.slice(0, 4)}`).join(', ');
+    return `<div class="mt-row" title="${esc(r.datasets)} data set(s)${key ? '; ' + esc(key) : ''}"><span class="mt-name">${esc(r.mission_id)}</span>` +
+      `<span class="mt-track"><span class="mt-bar" style="left:${a}%;width:${Math.max(b - a, 1)}%"></span>${ticks}</span>` +
       `<span class="mt-dates">${esc(r.first.slice(0, 4))}&ndash;${esc(r.last ? r.last.slice(0, 4) : 'now')}</span></div>`;
-  }).join('');
+  }).join('') + '<div class="mt-key"><span class="mt-ev mt-launch"></span> launch <span class="mt-ev mt-arrival"></span> arrival <span class="mt-keybar"></span> data</div>';
 }
 
 export async function showBodySearch(bodyId, bodyName) {

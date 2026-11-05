@@ -1888,6 +1888,20 @@ def datasets_for(mission_id: Optional[str] = None, body_id: Optional[str] = None
             and (not body_id or body_id.lower() in d.body_ids)]
 
 
+# Launch and arrival dates (UTC calendar day) per mission, each checked against the NASA NSSDCA
+# spacecraft page of the mission; only missions verified there are listed.
+MISSION_EVENTS: Dict[str, List[Tuple[str, str, str]]] = {
+    "mpf": [("launch", "1996-12-04", "Launch"), ("arrival", "1997-07-04", "Landing")],
+    "mgs": [("launch", "1996-11-07", "Launch"), ("arrival", "1997-09-12", "Mars orbit insertion")],
+    "ody": [("launch", "2001-04-07", "Launch"), ("arrival", "2001-10-24", "Mars orbit insertion")],
+    "mro": [("launch", "2005-08-12", "Launch"), ("arrival", "2006-03-10", "Mars orbit insertion")],
+    "phoenix": [("launch", "2007-08-04", "Launch"), ("arrival", "2008-05-25", "Landing")],
+    "msl": [("launch", "2011-11-26", "Launch"), ("arrival", "2012-08-06", "Landing")],
+    "maven": [("launch", "2013-11-18", "Launch"), ("arrival", "2014-09-22", "Mars orbit insertion")],
+    "insight": [("launch", "2018-05-05", "Launch"), ("arrival", "2018-11-26", "Landing")],
+}
+
+
 def mission_timeline(body_id: str) -> List[Dict[str, object]]:
     """One row per mission for a body: the earliest first and latest last observation date of
     its data sets with known dates ("" last: still growing), earliest mission first."""
@@ -1896,7 +1910,8 @@ def mission_timeline(body_id: str) -> List[Dict[str, object]]:
         if d.portal_only or not d.coverage:
             continue
         first, last = d.coverage
-        r = rows.setdefault(d.mission_id, {"mission_id": d.mission_id, "first": first, "last": last, "datasets": 0})
+        r = rows.setdefault(d.mission_id, {"mission_id": d.mission_id, "first": first, "last": last, "datasets": 0,
+                                                    "events": [{"kind": k, "date": dt, "label": lb} for k, dt, lb in MISSION_EVENTS.get(d.mission_id, [])]})
         r["datasets"] += 1
         r["first"] = min(r["first"], first)
         r["last"] = "" if "" in (r["last"], last) else max(r["last"], last)

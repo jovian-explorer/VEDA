@@ -1728,3 +1728,8 @@ a.btn-feedback:hover { border-color: var(--accent); }
 .mt-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mt-track { position: relative; height: 8px; background: var(--focal-soft); border-radius: 4px; }
 .mt-bar { position: absolute; top: 0; bottom: 0; background: var(--focal); border-radius: 4px; }
+.mt-ev { position: absolute; top: -2px; width: 3px; height: 12px; margin-left: -1px; border-radius: 1px; background: var(--ink-soft); }
+.mt-ev.mt-arrival { background: var(--warn); }
+.mt-key { display: flex; gap: 10px; align-items: center; margin-top: 2px; }
+.mt-key .mt-ev { position: static; display: inline-block; margin: 0 -6px 0 0; vertical-align: middle; }
+.mt-keybar { display: inline-block; width: 16px; height: 6px; background: var(--focal); border-radius: 3px; margin-right: -4px; }
