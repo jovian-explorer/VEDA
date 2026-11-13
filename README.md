@@ -236,6 +236,21 @@ PyInstaller cannot cross-compile, so each OS builds its own binary. `.github/wor
 
 ---
 
+## Release history
+
+Dates are in UTC and are taken from the git history, the GitHub releases and the Zenodo archive of each version.
+
+| Date | Event |
+|---|---|
+| 19 September 2026 | Development began (first commit). |
+| 29 September 2026 | GitHub repository created. |
+| 2 October 2026 | Versions 0.0.1 and 0.1.0; the repository was made public with version 0.1.0. |
+| 5 October 2026 | First build of version 0.2.0 (build 81). |
+| 7 October 2026 | Version 0.2.0 build 144, the first version archived on Zenodo ([10.5281/zenodo.23215292](https://doi.org/10.5281/zenodo.23215292)). |
+| 9 November 2026 | Version 0.2.0 build 149 ([10.5281/zenodo.24087294](https://doi.org/10.5281/zenodo.24087294)). |
+
+Every build keeps its git tag, so older builds can still be checked out after their GitHub release is removed.
+
 ## Data, citation and license
 
 VEDA does not own or host any data. Each archive's terms apply to the data you download (see [DATA_POLICY.md](DATA_POLICY.md)); the MIT License applies to the VEDA software. When you publish results, cite the data set, the instrument team's reference publication and VEDA. **Data & Licenses** in the app lists every connected data set with its citation and gives a data availability statement you can copy.
