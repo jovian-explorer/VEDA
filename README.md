@@ -242,7 +242,8 @@ Dates are in UTC and are taken from the git history, the GitHub releases and the
 
 | Date | Event |
 |---|---|
-| 19 September 2026 | Development began (first commit). |
+| 2025 | Development began as a tool for planetary radio occultation data; it later grew into the present laboratory for planetary atmosphere and ionosphere data. |
+| 19 September 2026 | First commit to the git repository. |
 | 29 September 2026 | GitHub repository created. |
 | 2 October 2026 | Versions 0.0.1 and 0.1.0; the repository was made public with version 0.1.0. |
 | 5 October 2026 | First build of version 0.2.0 (build 81). |
